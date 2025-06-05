@@ -146,8 +146,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             timeGridDay: {
               firstDay: 0,
               slotDuration: '00:30:00',
-              slot
-Label: '01:00'
+              slotLabel: '01:00'
             }
           }}
           datesSet={handleDatesSet}
