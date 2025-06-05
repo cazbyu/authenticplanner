@@ -27,9 +27,23 @@ interface TaskFormValues {
 
 interface TaskFormProps {
   onClose?: () => void;
+  onSave?: () => void;
+  onCancel?: () => void;
+  availableRoles?: Role[];
+  availableDomains?: Domain[];
+  initialTask?: Partial<TaskFormValues>;
+  initialRole?: Role;
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
+const TaskForm: React.FC<TaskFormProps> = ({
+  onClose,
+  onSave,
+  onCancel,
+  availableRoles,
+  availableDomains,
+  initialTask,
+  initialRole,
+}) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -38,17 +52,17 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
   const [error, setError] = useState<string | null>(null);
 
   const [form, setForm] = useState<TaskFormValues>({
-    title: "",
-    isAuthenticDeposit: false,
-    isTwelveWeekGoal: false,
-    isUrgent: false,
-    isImportant: false,
-    dueDate: "",
-    startTime: "",
-    endTime: "",
-    notes: "",
-    selectedRoleIds: [],
-    selectedDomainIds: [],
+    title: initialTask?.title ?? "",
+    isAuthenticDeposit: initialTask?.isAuthenticDeposit ?? false,
+    isTwelveWeekGoal: initialTask?.isTwelveWeekGoal ?? false,
+    isUrgent: initialTask?.isUrgent ?? false,
+    isImportant: initialTask?.isImportant ?? false,
+    dueDate: initialTask?.dueDate ?? "",
+    startTime: initialTask?.startTime ?? "",
+    endTime: initialTask?.endTime ?? "",
+    notes: initialTask?.notes ?? "",
+    selectedRoleIds: initialTask?.selectedRoleIds ?? (initialRole ? [initialRole.id] : []),
+    selectedDomainIds: initialTask?.selectedDomainIds ?? [],
   });
 
   useEffect(() => {
@@ -58,6 +72,12 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
   }, []);
 
   useEffect(() => {
+    if (availableRoles && availableDomains) {
+      setRoles(availableRoles);
+      setDomains(availableDomains);
+      setLoading(false);
+      return;
+    }
     if (!userId) return;
 
     const fetchLists = async () => {
@@ -83,7 +103,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
     };
 
     fetchLists();
-  }, [userId]);
+  }, [userId, availableRoles, availableDomains]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -201,6 +221,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
     });
     setSubmitting(false);
 
+    if (onSave) {
+      onSave();
+    }
     if (onClose) {
       onClose();
     }
@@ -332,13 +355,24 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
           />
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {submitting ? "Saving…" : "Save Task"}
-        </button>
+        <div className="flex justify-end gap-2">
+          {onCancel && (
+            <button
+              type="button"
+              onClick={onCancel}
+              className="rounded border px-4 py-2 text-sm hover:bg-gray-100"
+            >
+              Cancel
+            </button>
+          )}
+          <button
+            type="submit"
+            disabled={submitting}
+            className="rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {submitting ? "Saving…" : "Save Task"}
+          </button>
+        </div>
       </form>
     </div>
   );
