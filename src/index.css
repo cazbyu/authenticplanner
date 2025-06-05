@@ -155,6 +155,8 @@ html, body, #root {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 4rem); /* account for top header */
+  overflow-y: auto;
 }
 
 .calendar-container {
@@ -176,8 +178,10 @@ html, body, #root {
   flex: 1;
 }
 
+
+/* Ensure calendar scrolls within its container */
 .fc-scroller {
-  height: auto !important;
+  height: 100% !important;
 }
 
 .fc-scroller-liquid-absolute {
@@ -185,7 +189,7 @@ html, body, #root {
 }
 
 .fc-timegrid-container {
-  height: auto !important;
+  height: 100% !important;
 }
 
 .fc-timegrid-body {
