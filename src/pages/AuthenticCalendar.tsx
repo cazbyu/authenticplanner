@@ -8,9 +8,7 @@ import type { FullCalendar } from '@fullcalendar/core';
 const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>(
-    'timeGridDay'
-  );
+  const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridDay');
   const calendarRef = useRef<FullCalendar | null>(null);
 
   const handleDateChange = (newStart: Date) => {
@@ -30,9 +28,9 @@ const AuthenticCalendar: React.FC = () => {
   };
 
   return (
-    <div className="h-full flex flex-col min-h-0">
+    <div className="calendar-container">
       {/* Main content */}
-      <div className="flex-1 grid grid-cols-4 gap-6 min-h-0">
+      <div className="h-full grid grid-cols-4 gap-6">
         {/* Left Column */}
         <div className="flex flex-col space-y-6 overflow-auto">
           <div className="flex-1 rounded-lg border border-gray-200 bg-white p-4">
