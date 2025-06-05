@@ -78,6 +78,73 @@
   }
 }
 
+/* Progress Bar */
+.progress-bar {
+  @apply h-2 w-full overflow-hidden rounded-full bg-gray-200;
+}
+
+.progress-bar-value {
+  @apply h-full rounded-full bg-primary-500 transition-all duration-300 ease-in-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded-full;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full hover:bg-gray-400;
+}
+
+/* Modern toggle switch */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+}
+
+.switch input {
+  display: none;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 20px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #468cf0;
+}
+
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+/* Calendar specific styles */
 html, body, #root {
   height: 100%;
   min-height: 0;
@@ -96,4 +163,31 @@ html, body, #root {
   min-height: 0;
   display: flex;
   flex-direction: column;
+}
+
+/* FullCalendar overrides */
+.fc {
+  height: 100% !important;
+}
+
+.fc-view-harness {
+  height: 100% !important;
+}
+
+.fc-scroller {
+  height: auto !important;
+}
+
+.fc-scroller-liquid-absolute {
+  position: static !important;
+}
+
+.fc-timegrid-container {
+  height: auto !important;
+  min-height: 0;
+  overflow-y: auto !important;
+}
+
+.fc-timegrid-body {
+  overflow: visible !important;
 }
