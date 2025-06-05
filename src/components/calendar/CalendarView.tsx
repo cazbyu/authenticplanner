@@ -104,104 +104,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     return (
       <div className="h-full">
-        <style>
-          {`
-          .fc {
-            height: 100% !important;
-            font-family: inherit;
-          }
-          .fc-view-harness {
-            height: 100% !important;
-          }
-          .fc-scrollgrid-sync-inner {
-            padding: 8px 0;
-          }
-          .fc-theme-standard td, .fc-theme-standard th {
-            border-color: #e5e7eb;
-          }
-          .fc-timegrid-slot {
-            height: 48px !important;
-            border-bottom: 1px solid #f3f4f6 !important;
-          }
-          .fc-timegrid-slot-label {
-            font-size: 0.75rem;
-            color: #6B7280;
-            padding-right: 1rem;
-          }
-          .fc-timegrid-axis {
-            padding-right: 0.5rem;
-          }
-          .fc-timegrid-now-indicator-line {
-            border-color: #EF4444;
-            border-width: 1px;
-            left: 0 !important;
-            right: 0 !important;
-            margin-left: 0 !important;
-          }
-          .fc-timegrid-now-indicator-arrow {
-            display: none !important;
-          }
-          .fc-col-header-cell {
-            padding: 0;
-            background: #fff;
-          }
-          .fc-col-header-cell.fc-day-today {
-            background: transparent !important;
-          }
-          .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
-            color: #4B5563;
-          }
-          .fc-col-header-cell-cushion {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px 0;
-            color: #4B5563;
-            font-weight: 500;
-          }
-          .fc-col-header-cell-cushion .day-name {
-            font-size: 11px;
-            text-transform: uppercase;
-            margin-bottom: 4px;
-          }
-          .fc-col-header-cell-cushion .day-number {
-            font-size: 20px;
-            font-weight: 400;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-          }
-          .fc-col-header-cell-cushion .day-number.today {
-            background: #3B82F6;
-            color: white;
-          }
-          .fc-dayGridMonth-view .fc-col-header-cell {
-            text-align: center;
-            padding: 8px 0;
-          }
-          .fc-dayGridMonth-view .fc-daygrid-day-top {
-            justify-content: center;
-            padding-top: 4px;
-          }
-          .fc-dayGridMonth-view .fc-daygrid-day-number {
-            font-size: 14px;
-            padding: 4px 8px;
-            color: #4B5563;
-          }
-          .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number {
-            background: #3B82F6;
-            color: white;
-            border-radius: 50%;
-          }
-          .fc-header-toolbar {
-            display: none !important;
-          }
-          `}
-        </style>
-
         <FullCalendar
           ref={fullCalendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -244,7 +146,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             timeGridDay: {
               firstDay: 0,
               slotDuration: '00:30:00',
-              slotLabelInterval: '01:00'
+              slot
+Label: '01:00'
             }
           }}
           datesSet={handleDatesSet}
