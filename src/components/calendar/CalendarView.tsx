@@ -42,7 +42,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const calendarRef = useRef<FullCalendar | null>(null);
-    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
     const fullCalendarRef = (ref as any) || calendarRef;
 
@@ -104,86 +103,68 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     }
 
     return (
-      <div className="h-full flex flex-col" ref={scrollContainerRef}>
+      <div className="h-full">
         <style>
           {`
           .fc {
             height: 100% !important;
             font-family: inherit;
-            display: flex;
-            flex-direction: column;
           }
           .fc-view-harness {
-            flex: 1;
-            min-height: 0;
-          }
-          .fc-scrollgrid {
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-          }
-          .fc-scrollgrid-section-header {
-            position: sticky;
-            top: 0;
-            z-index: 3;
-            background: white;
-          }
-          .fc-scrollgrid-section-body {
-            flex: 1;
-            min-height: 0;
-          }
-          .fc-scroller {
             height: 100% !important;
-            overflow-y: auto !important;
-            overscroll-behavior: contain;
           }
-          .fc-timegrid-body {
-            overflow-x: auto !important;
-            overflow-y: auto !important;
-          }
-          .fc-timegrid-axis-frame {
-            position: sticky;
-            left: 0;
-            z-index: 2;
-            background: white;
-          }
-          .fc-timegrid-axis-cushion {
-            padding: 8px;
-            font-size: 0.875rem;
-            color: #6B7280;
-          }
-          .fc-timegrid-slots {
-            position: relative;
-            z-index: 1;
-          }
-          .fc-timegrid-slot {
-            height: 48px !important;
-            border-bottom: 1px solid #f3f4f6;
-          }
-          .fc-timegrid-col-frame {
-            min-height: 100%;
+          .fc-scrollgrid-sync-inner {
+            padding: 8px 0;
           }
           .fc-theme-standard td, .fc-theme-standard th {
             border-color: #e5e7eb;
           }
+          .fc-timegrid-slot {
+            height: 48px !important;
+            border-bottom: 1px solid #f3f4f6 !important;
+          }
+          .fc-timegrid-slot-label {
+            font-size: 0.75rem;
+            color: #6B7280;
+            padding-right: 1rem;
+          }
+          .fc-timegrid-axis {
+            padding-right: 0.5rem;
+          }
+          .fc-timegrid-now-indicator-line {
+            border-color: #EF4444;
+            border-width: 1px;
+            left: 0 !important;
+            right: 0 !important;
+            margin-left: 0 !important;
+          }
+          .fc-timegrid-now-indicator-arrow {
+            display: none !important;
+          }
           .fc-col-header-cell {
-            padding: 8px 0;
-            background: white;
+            padding: 0;
+            background: #fff;
+          }
+          .fc-col-header-cell.fc-day-today {
+            background: transparent !important;
+          }
+          .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+            color: #4B5563;
           }
           .fc-col-header-cell-cushion {
             display: flex;
             flex-direction: column;
             align-items: center;
+            padding: 8px 0;
             color: #4B5563;
             font-weight: 500;
-            padding: 4px;
           }
-          .day-name {
+          .fc-col-header-cell-cushion .day-name {
             font-size: 11px;
             text-transform: uppercase;
             margin-bottom: 4px;
           }
-          .day-number {
+          .fc-col-header-cell-cushion .day-number {
             font-size: 20px;
             font-weight: 400;
             width: 32px;
@@ -193,32 +174,30 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             justify-content: center;
             border-radius: 50%;
           }
-          .day-number.today {
+          .fc-col-header-cell-cushion .day-number.today {
             background: #3B82F6;
             color: white;
           }
-          .fc-day-today {
-            background: transparent !important;
+          .fc-dayGridMonth-view .fc-col-header-cell {
+            text-align: center;
+            padding: 8px 0;
           }
-          .fc-timegrid-now-indicator-line {
-            border-color: #EF4444;
-            z-index: 4;
+          .fc-dayGridMonth-view .fc-daygrid-day-top {
+            justify-content: center;
+            padding-top: 4px;
           }
-          .fc-timegrid-now-indicator-arrow {
-            display: none;
+          .fc-dayGridMonth-view .fc-daygrid-day-number {
+            font-size: 14px;
+            padding: 4px 8px;
+            color: #4B5563;
           }
-          .fc-event {
-            border-radius: 4px;
-            margin: 1px;
+          .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number {
+            background: #3B82F6;
+            color: white;
+            border-radius: 50%;
           }
-          .fc-event-main {
-            padding: 2px 4px;
-          }
-          .fc-event-time {
-            font-size: 12px;
-          }
-          .fc-event-title {
-            font-size: 13px;
+          .fc-header-toolbar {
+            display: none !important;
           }
           `}
         </style>
