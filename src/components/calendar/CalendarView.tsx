@@ -1,5 +1,3 @@
-// src/components/calendar/CalendarView.tsx
-
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import FullCalendar, { DatesSetArg, DateHeaderContentArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -29,15 +27,23 @@ const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
   html: `
     <div class="day-name">${weekdayShort[arg.date.getDay()]}</div>
-    <div class="day-number">${arg.date.getDate()}</div>
+    <div class="day-number ${isToday(arg.date) ? 'today' : ''}">${arg.date.getDate()}</div>
   `,
 });
+
+const isToday = (date: Date) => {
+  const today = new Date();
+  return date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear();
+};
 
 const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
   ({ view, currentDate, onDateChange }, ref) => {
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const calendarRef = useRef<FullCalendar | null>(null);
+    const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
     // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
@@ -75,6 +81,17 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       fetchTasks();
     }, []);
 
+    // Scroll to business hours on initial load
+    useEffect(() => {
+      if (view !== 'dayGridMonth' && fullCalendarRef?.current) {
+        const scrollContainer = fullCalendarRef.current.getApi().el.querySelector('.fc-timegrid-body');
+        if (scrollContainer) {
+          const scrollTo = (7 * 48); // 7am (48px per hour)
+          scrollContainer.scrollTop = scrollTo;
+        }
+      }
+    }, [view, fullCalendarRef]);
+
     // Respond to prop changes
     useEffect(() => {
       if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
@@ -100,11 +117,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       );
     }
 
-    // "100%" is ideal for scroll (if parent has h-full/min-h-0/flex-1), fallback to 900px if parent not set up right
-    const calendarHeight = '100%';
-
     return (
-      <div className="h-full min-h-0 flex flex-col flex-1">
+      <div className="h-full min-h-0 flex flex-col flex-1" ref={scrollContainerRef}>
         <style>
           {`
           .fc {
@@ -114,21 +128,28 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-scroller, .fc-scroller.fc-scroller-liquid {
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
-            scroll-behavior: auto !important;
+            scroll-behavior: smooth !important;
           }
           .fc-timegrid .fc-scroller-liquid {
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
-            scroll-behavior: auto !important;
+            scroll-behavior: smooth !important;
           }
           .fc-theme-standard td, .fc-theme-standard th {
             border-color: #e5e7eb;
           }
           .fc-theme-standard th {
             padding: 0;
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: white;
           }
-          .fc-addEvent-button {
-            display: none !important;
+          .fc-timegrid-axis {
+            position: sticky;
+            left: 0;
+            z-index: 3;
+            background: white;
           }
           .fc-timegrid-slot {
             height: 48px !important;
@@ -138,25 +159,25 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             font-size: 0.75rem;
             color: #6B7280;
             padding-right: 1rem;
-          }
-          .fc-timegrid-axis {
-            padding-right: 0.5rem;
+            position: sticky;
+            left: 0;
+            background: white;
+            z-index: 1;
           }
           .fc-timegrid-now-indicator-line {
             border-color: #EF4444;
+            z-index: 4;
           }
           .fc-timegrid-now-indicator-arrow {
             border-color: #EF4444;
+            z-index: 4;
           }
           .fc-col-header-cell {
             padding: 0;
             background: #fff;
           }
           .fc-col-header-cell.fc-day-today {
-            background: #3B82F6 !important;
-          }
-          .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
-            color: white;
+            background: transparent !important;
           }
           .fc-col-header-cell-cushion {
             display: flex;
@@ -165,42 +186,73 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             padding: 8px 0;
             color: #4B5563;
             font-weight: 500;
+          }
+          .fc-col-header-cell-cushion .day-name {
+            font-size: 11px;
             text-transform: uppercase;
-            font-size: 0.75rem;
+            margin-bottom: 4px;
+          }
+          .fc-col-header-cell-cushion .day-number {
+            font-size: 20px;
+            font-weight: 400;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+          }
+          .fc-col-header-cell-cushion .day-number.today {
+            background: #3B82F6;
+            color: white;
           }
           .fc-daygrid-day-frame {
             min-height: 100px;
           }
           .fc-daygrid-day-top {
             justify-content: center;
-            padding: 0;
-            flex-direction: row;
+            padding-top: 4px;
           }
           .fc-daygrid-day-number {
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-            padding: 0 !important;
-            font-size: 0.875rem;
-            color: #374151;
+            padding: 4px 8px !important;
+            color: #4B5563;
           }
           .fc-day-today .fc-daygrid-day-number {
             background: #3B82F6;
             color: white;
-            border-radius: 9999px;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto;
           }
           .fc-timegrid-col-frame {
             background: white;
           }
-          .fc-direction-ltr .fc-timegrid-now-indicator-arrow {
-            border-width: 5px 0 5px 6px;
-            border-top-color: transparent;
-            border-bottom-color: transparent;
+          .fc-timegrid-event {
+            border-radius: 4px;
           }
-        `}
+          .fc-event-main {
+            padding: 2px 4px;
+          }
+          .fc-event-time {
+            font-size: 12px;
+          }
+          .fc-event-title {
+            font-size: 13px;
+          }
+          .fc-timegrid-event-harness {
+            z-index: 1;
+          }
+          .fc-timegrid-col-events {
+            z-index: 1;
+          }
+          .fc-timegrid-now-indicator-container {
+            z-index: 4;
+          }
+          `}
         </style>
         <FullCalendar
           ref={fullCalendarRef}
@@ -217,10 +269,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           weekends={true}
           events={events}
           eventClick={handleEventClick}
-          height={calendarHeight}
+          height="100%"
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={false}
+          scrollTime="07:00:00"
+          slotDuration="00:30:00"
+          slotLabelInterval="01:00"
           slotLabelFormat={{
             hour: 'numeric',
             minute: '2-digit',
@@ -228,12 +283,23 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             meridiem: 'short',
           }}
           views={{
-            dayGridMonth: { firstDay: 0, fixedWeekCount: false, showNonCurrentDates: true },
-            timeGridWeek: { firstDay: 0 },
-            timeGridDay: { firstDay: 0 },
+            dayGridMonth: { 
+              firstDay: 0,
+              fixedWeekCount: false,
+              showNonCurrentDates: true
+            },
+            timeGridWeek: { 
+              firstDay: 0,
+              slotDuration: '00:30:00',
+              slotLabelInterval: '01:00'
+            },
+            timeGridDay: { 
+              firstDay: 0,
+              slotDuration: '00:30:00',
+              slotLabelInterval: '01:00'
+            }
           }}
           datesSet={handleDatesSet}
-          // Only show custom header in week/day view; let month use default
           dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
         />
       </div>

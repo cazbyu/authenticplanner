@@ -13,7 +13,6 @@ const AuthenticCalendar: React.FC = () => {
   );
   const calendarRef = useRef<FullCalendar | null>(null);
 
-  // Called whenever FullCalendar’s visible date range changes
   const handleDateChange = (newStart: Date) => {
     setCurrentDate(newStart);
   };
@@ -31,9 +30,9 @@ const AuthenticCalendar: React.FC = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-6rem)] flex flex-col">
+    <div className="h-full flex flex-col min-h-0">
       {/* Main content */}
-      <div className="flex-1 grid grid-cols-4 gap-6 min-h-0 px-4">
+      <div className="flex-1 grid grid-cols-4 gap-6 min-h-0">
         {/* Left Column */}
         <div className="flex flex-col space-y-6 overflow-auto">
           <div className="flex-1 rounded-lg border border-gray-200 bg-white p-4">
@@ -74,11 +73,11 @@ const AuthenticCalendar: React.FC = () => {
               </div>
               <span className="text-lg font-medium">
                 {view === 'dayGridMonth'
-                  ? format(currentDate, 'MMMM yyyy') // e.g. “June 2025”
+                  ? format(currentDate, 'MMMM yyyy')
                   : `${format(currentDate, 'd')} – ${format(
                       addDays(currentDate, 6),
                       'd MMM, yyyy'
-                    )}`} {/* e.g. “4 – 10 Jun, 2025” */}
+                    )}`}
               </span>
             </div>
 
