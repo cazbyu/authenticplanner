@@ -178,7 +178,6 @@ html, body, #root {
 
 .fc-scroller {
   height: auto !important;
-  overflow-y: auto !important;
 }
 
 .fc-scroller-liquid-absolute {
@@ -187,7 +186,6 @@ html, body, #root {
 
 .fc-timegrid-container {
   height: auto !important;
-  overflow-y: auto !important;
 }
 
 .fc-timegrid-body {
@@ -330,20 +328,4 @@ html, body, #root {
 .fc-timegrid-cols {
   position: relative;
   z-index: 1;
-}
-
-.fc-timegrid-col-frame {
-  min-height: 100%;
-  position: relative;
-}
-
-.fc-timegrid-scroll-hidden {
-  overflow: auto !important;
-}
-
-.fc-scrollgrid-section-header {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  background: white;
 }

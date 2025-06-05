@@ -103,7 +103,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     }
 
     return (
-      <div className="h-full flex flex-col overflow-hidden">
+      <div className="h-full flex flex-col">
         <FullCalendar
           ref={fullCalendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
