@@ -181,7 +181,7 @@ html, body, #root {
 }
 
 .fc-scroller-liquid-absolute {
-  position: static !important;
+  position: relative !important;
 }
 
 .fc-timegrid-container {
@@ -230,6 +230,9 @@ html, body, #root {
 .fc-col-header-cell {
   padding: 0;
   background: #fff;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .fc-col-header-cell.fc-day-today {
@@ -309,4 +312,20 @@ html, body, #root {
 .fc-timegrid-axis-cushion {
   color: #6B7280;
   font-weight: 500;
+}
+
+.fc-timegrid-axis {
+  position: sticky;
+  left: 0;
+  background: white;
+  z-index: 2;
+}
+
+.fc-timegrid-divider {
+  display: none !important;
+}
+
+.fc-timegrid-cols {
+  position: relative;
+  z-index: 1;
 }
