@@ -258,8 +258,8 @@ const MainLayout: React.FC = () => {
       </motion.aside>
       
       {/* Main content */}
-      <main className="lg:pl-64">
-        <div className="max-w-7xl px-4 py-6 sm:px-6 md:px-8">
+      <main className="lg:pl-64 flex-1 min-h-0 flex flex-col">
+  <div className="flex-1 min-h-0 max-w-7xl px-4 py-6 sm:px-6 md:px-8 flex flex-col">
           <Outlet />
         </div>
       </main>
