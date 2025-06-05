@@ -51,7 +51,7 @@ const AuthenticCalendar: React.FC = () => {
         </div>
 
         {/* Right Column: Calendar */}
-        <div className="col-span-3 flex flex-col overflow-hidden rounded-lg border border-gray-200 bg-white">
+        <div className="col-span-3 flex flex-col overflow-y-auto rounded-lg border border-gray-200 bg-white">
           {/* Calendar Header */}
           <div className="flex items-center justify-between border-b border-gray-200 px-4 py-3">
             <div className="flex items-center space-x-4">
