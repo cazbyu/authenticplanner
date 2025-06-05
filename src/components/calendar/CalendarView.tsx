@@ -25,7 +25,7 @@ interface CalendarViewProps {
 
 const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// This custom header ONLY for week/day, not month!
+// Custom header for week/day views ONLY
 const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
   html: `
     <div class="day-name">${weekdayShort[arg.date.getDay()]}</div>
@@ -33,9 +33,7 @@ const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
   `,
 });
 
-const CalendarView: React.FC<CalendarViewProps> = ({
-  view, currentDate, onDateChange
-}) => {
+const CalendarView: React.FC<CalendarViewProps> = ({ view, currentDate, onDateChange }) => {
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -73,6 +71,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
     fetchTasks();
   }, []);
 
+  // Respond to prop changes
   useEffect(() => {
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
@@ -118,8 +117,12 @@ const CalendarView: React.FC<CalendarViewProps> = ({
         .fc-theme-standard td, .fc-theme-standard th {
           border-color: #e5e7eb;
         }
-        .fc-theme-standard th { padding: 0; }
-        .fc-addEvent-button { display: none !important; }
+        .fc-theme-standard th {
+          padding: 0;
+        }
+        .fc-addEvent-button {
+          display: none !important;
+        }
         .fc-timegrid-slot {
           height: 48px !important;
           border-bottom: 1px solid #f3f4f6 !important;
@@ -129,12 +132,25 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           color: #6B7280;
           padding-right: 1rem;
         }
-        .fc-timegrid-axis { padding-right: 0.5rem; }
-        .fc-timegrid-now-indicator-line { border-color: #EF4444; }
-        .fc-timegrid-now-indicator-arrow { border-color: #EF4444; }
-        .fc-col-header-cell { padding: 0; background: #fff; }
-        .fc-col-header-cell.fc-day-today { background: #3B82F6 !important; }
-        .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: white; }
+        .fc-timegrid-axis {
+          padding-right: 0.5rem;
+        }
+        .fc-timegrid-now-indicator-line {
+          border-color: #EF4444;
+        }
+        .fc-timegrid-now-indicator-arrow {
+          border-color: #EF4444;
+        }
+        .fc-col-header-cell {
+          padding: 0;
+          background: #fff;
+        }
+        .fc-col-header-cell.fc-day-today {
+          background: #3B82F6 !important;
+        }
+        .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+          color: white;
+        }
         .fc-col-header-cell-cushion {
           display: flex;
           flex-direction: column;
@@ -145,18 +161,37 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           text-transform: uppercase;
           font-size: 0.75rem;
         }
-        .fc-daygrid-day-frame { min-height: 100px; }
-        .fc-daygrid-day-top { justify-content: center; padding: 0; flex-direction: row; }
+        .fc-daygrid-day-frame {
+          min-height: 100px;
+        }
+        .fc-daygrid-day-top {
+          justify-content: center;
+          padding: 0;
+          flex-direction: row;
+        }
         .fc-daygrid-day-number {
-          width: 24px; height: 24px; display: flex; align-items: center; justify-content: center;
-          margin: 0 auto; padding: 0 !important; font-size: 0.875rem; color: #374151;
+          width: 24px;
+          height: 24px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          margin: 0 auto;
+          padding: 0 !important;
+          font-size: 0.875rem;
+          color: #374151;
         }
         .fc-day-today .fc-daygrid-day-number {
-          background: #3B82F6; color: white; border-radius: 9999px;
+          background: #3B82F6;
+          color: white;
+          border-radius: 9999px;
         }
-        .fc-timegrid-col-frame { background: white; }
+        .fc-timegrid-col-frame {
+          background: white;
+        }
         .fc-direction-ltr .fc-timegrid-now-indicator-arrow {
-          border-width: 5px 0 5px 6px; border-top-color: transparent; border-bottom-color: transparent;
+          border-width: 5px 0 5px 6px;
+          border-top-color: transparent;
+          border-bottom-color: transparent;
         }
       `}
       </style>
@@ -191,6 +226,7 @@ const CalendarView: React.FC<CalendarViewProps> = ({
           timeGridDay: { firstDay: 0 },
         }}
         datesSet={handleDatesSet}
+        // Only show custom header in week/day view; let month use default
         dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
       />
     </div>
