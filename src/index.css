@@ -179,15 +179,14 @@ html, body, #root {
 }
 
 .fc-scroller-liquid-absolute {
-  position: static !important;
+  position: absolute !important;
 }
 
 .fc-timegrid-container {
-  height: auto !important;
-  min-height: 0;
+  height: 100% !important;
   overflow-y: auto !important;
 }
 
 .fc-timegrid-body {
-  overflow: visible !important;
+  overflow-y: auto !important;
 }
