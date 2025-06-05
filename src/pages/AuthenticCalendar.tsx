@@ -103,7 +103,7 @@ const AuthenticCalendar: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-auto">
             <CalendarView
               ref={calendarRef}
               view={view}
