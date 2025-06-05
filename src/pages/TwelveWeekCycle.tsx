@@ -260,7 +260,7 @@ const TwelveWeekCycle: React.FC = () => {
           <div className="w-full max-w-2xl">
             <TaskForm
               onSave={handleTaskSave}
-              onDelete={() => setShowTaskForm(false)}
+              onCancel={() => setShowTaskForm(false)}
             />
           </div>
         </div>

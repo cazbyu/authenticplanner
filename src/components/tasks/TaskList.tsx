@@ -15,6 +15,7 @@ export default function TaskList() {
         setLoading(false);
         return;
       }
+      const userId = user.id;
       // Fetch tasks, joining roles/domains
       const { data, error } = await supabase
   .from("0007-ap-tasks")
