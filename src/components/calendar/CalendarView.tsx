@@ -23,7 +23,6 @@ interface CalendarViewProps {
 
 const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-// This custom header ONLY for week/day, not month!
 const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
   html: `
     <div class="day-name">${weekdayShort[arg.date.getDay()]}</div>
@@ -45,7 +44,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const calendarRef = useRef<FullCalendar | null>(null);
     const scrollContainerRef = useRef<HTMLDivElement | null>(null);
 
-    // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
 
     useEffect(() => {
@@ -81,18 +79,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       fetchTasks();
     }, []);
 
-    // Scroll to business hours on initial load
-    useEffect(() => {
-      if (view !== 'dayGridMonth' && fullCalendarRef?.current) {
-        const scrollContainer = fullCalendarRef.current.getApi().el.querySelector('.fc-timegrid-body');
-        if (scrollContainer) {
-          const scrollTo = (7 * 48); // 7am (48px per hour)
-          scrollContainer.scrollTop = scrollTo;
-        }
-      }
-    }, [view, fullCalendarRef]);
-
-    // Respond to prop changes
     useEffect(() => {
       if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
         const calendarApi = fullCalendarRef.current.getApi();
@@ -118,81 +104,86 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     }
 
     return (
-      <div className="h-full min-h-0 flex flex-col flex-1" ref={scrollContainerRef}>
+      <div className="h-full flex flex-col" ref={scrollContainerRef}>
         <style>
           {`
           .fc {
             height: 100% !important;
             font-family: inherit;
+            display: flex;
+            flex-direction: column;
           }
-          .fc-scroller, .fc-scroller.fc-scroller-liquid {
-            overflow-y: auto !important;
-            overscroll-behavior: contain !important;
-            scroll-behavior: smooth !important;
+          .fc-view-harness {
+            flex: 1;
+            min-height: 0;
           }
-          .fc-timegrid .fc-scroller-liquid {
+          .fc-scrollgrid {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+          }
+          .fc-scrollgrid-section-header {
+            position: sticky;
+            top: 0;
+            z-index: 3;
+            background: white;
+          }
+          .fc-scrollgrid-section-body {
+            flex: 1;
+            min-height: 0;
+          }
+          .fc-scroller {
+            height: 100% !important;
             overflow-y: auto !important;
-            overscroll-behavior: contain !important;
-            scroll-behavior: smooth !important;
+            overscroll-behavior: contain;
+          }
+          .fc-timegrid-body {
+            overflow-x: auto !important;
+            overflow-y: auto !important;
+          }
+          .fc-timegrid-axis-frame {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: white;
+          }
+          .fc-timegrid-axis-cushion {
+            padding: 8px;
+            font-size: 0.875rem;
+            color: #6B7280;
+          }
+          .fc-timegrid-slots {
+            position: relative;
+            z-index: 1;
+          }
+          .fc-timegrid-slot {
+            height: 48px !important;
+            border-bottom: 1px solid #f3f4f6;
+          }
+          .fc-timegrid-col-frame {
+            min-height: 100%;
           }
           .fc-theme-standard td, .fc-theme-standard th {
             border-color: #e5e7eb;
           }
-          .fc-theme-standard th {
-            padding: 0;
-            position: sticky;
-            top: 0;
-            z-index: 2;
-            background: white;
-          }
-          .fc-timegrid-axis {
-            position: sticky;
-            left: 0;
-            z-index: 3;
-            background: white;
-          }
-          .fc-timegrid-slot {
-            height: 48px !important;
-            border-bottom: 1px solid #f3f4f6 !important;
-          }
-          .fc-timegrid-slot-label {
-            font-size: 0.75rem;
-            color: #6B7280;
-            padding-right: 1rem;
-            position: sticky;
-            left: 0;
-            background: white;
-            z-index: 1;
-          }
-          .fc-timegrid-now-indicator-line {
-            border-color: #EF4444;
-            z-index: 4;
-          }
-          .fc-timegrid-now-indicator-arrow {
-            border-color: #EF4444;
-            z-index: 4;
-          }
           .fc-col-header-cell {
-            padding: 0;
-            background: #fff;
-          }
-          .fc-col-header-cell.fc-day-today {
-            background: transparent !important;
+            padding: 8px 0;
+            background: white;
           }
           .fc-col-header-cell-cushion {
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 8px 0;
             color: #4B5563;
             font-weight: 500;
+            padding: 4px;
           }
-          .fc-col-header-cell-cushion .day-name {
+          .day-name {
             font-size: 11px;
             text-transform: uppercase;
             margin-bottom: 4px;
           }
-          .fc-col-header-cell-cushion .day-number {
+          .day-number {
             font-size: 20px;
             font-weight: 400;
             width: 32px;
@@ -202,37 +193,23 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             justify-content: center;
             border-radius: 50%;
           }
-          .fc-col-header-cell-cushion .day-number.today {
+          .day-number.today {
             background: #3B82F6;
             color: white;
           }
-          .fc-daygrid-day-frame {
-            min-height: 100px;
+          .fc-day-today {
+            background: transparent !important;
           }
-          .fc-daygrid-day-top {
-            justify-content: center;
-            padding-top: 4px;
+          .fc-timegrid-now-indicator-line {
+            border-color: #EF4444;
+            z-index: 4;
           }
-          .fc-daygrid-day-number {
-            padding: 4px 8px !important;
-            color: #4B5563;
+          .fc-timegrid-now-indicator-arrow {
+            display: none;
           }
-          .fc-day-today .fc-daygrid-day-number {
-            background: #3B82F6;
-            color: white;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto;
-          }
-          .fc-timegrid-col-frame {
-            background: white;
-          }
-          .fc-timegrid-event {
+          .fc-event {
             border-radius: 4px;
+            margin: 1px;
           }
           .fc-event-main {
             padding: 2px 4px;
@@ -243,17 +220,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-event-title {
             font-size: 13px;
           }
-          .fc-timegrid-event-harness {
-            z-index: 1;
-          }
-          .fc-timegrid-col-events {
-            z-index: 1;
-          }
-          .fc-timegrid-now-indicator-container {
-            z-index: 4;
-          }
           `}
         </style>
+
         <FullCalendar
           ref={fullCalendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -283,17 +252,17 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             meridiem: 'short',
           }}
           views={{
-            dayGridMonth: { 
+            dayGridMonth: {
               firstDay: 0,
               fixedWeekCount: false,
               showNonCurrentDates: true
             },
-            timeGridWeek: { 
+            timeGridWeek: {
               firstDay: 0,
               slotDuration: '00:30:00',
               slotLabelInterval: '01:00'
             },
-            timeGridDay: { 
+            timeGridDay: {
               firstDay: 0,
               slotDuration: '00:30:00',
               slotLabelInterval: '01:00'
