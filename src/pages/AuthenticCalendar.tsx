@@ -9,7 +9,7 @@ const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>(
-    'dayGridMonth'
+    'timeGridDay'
   );
   const calendarRef = useRef<FullCalendar | null>(null);
 
