@@ -167,23 +167,24 @@ html, body, #root {
 /* FullCalendar overrides */
 .fc {
   height: 100% !important;
+  font-family: inherit;
 }
 
 .fc-view-harness {
   height: 100% !important;
+  flex: 1;
 }
 
 .fc-scroller {
-  height: 100% !important;
+  height: auto !important;
 }
 
 .fc-scroller-liquid-absolute {
-  position: absolute !important;
+  position: static !important;
 }
 
 .fc-timegrid-container {
-  height: 100% !important;
-  overflow-y: auto !important;
+  height: auto !important;
 }
 
 .fc-timegrid-body {
@@ -293,4 +294,8 @@ html, body, #root {
 
 .fc-header-toolbar {
   display: none !important;
+}
+
+.fc-scrollgrid {
+  border: none !important;
 }

@@ -103,7 +103,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     }
 
     return (
-      <div className="h-full">
+      <div className="h-full flex flex-col">
         <FullCalendar
           ref={fullCalendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -146,7 +146,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             timeGridDay: {
               firstDay: 0,
               slotDuration: '00:30:00',
-              slotLabel: '01:00'
+              slotLabelInterval: '01:00'
             }
           }}
           datesSet={handleDatesSet}
