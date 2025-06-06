@@ -5,6 +5,10 @@ import { Toaster } from 'sonner';
 import App from './App';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
+import '@fullcalendar/core/index.css';
+import '@fullcalendar/daygrid/index.css';
+import '@fullcalendar/timegrid/index.css';
+import '@fullcalendar/list/index.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
