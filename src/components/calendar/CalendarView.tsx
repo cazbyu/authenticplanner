@@ -102,8 +102,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       );
     }
 
+    // Container styles ensure height & scroll work as intended
     return (
-      <div className="h-full flex flex-col">
+      <div className="flex flex-col flex-1 min-h-0 h-full" style={{ minHeight: 0 }}>
         <FullCalendar
           ref={fullCalendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
@@ -119,9 +120,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           weekends={true}
           events={events}
           eventClick={handleEventClick}
-          height="100%"
-          dayMinTime="00:00:00"
-          dayMaxTime="24:00:00"
+          // ------ CRUCIAL: Height and scroll fixes ------
+          height="parent"
+          contentHeight="auto"
+          expandRows={true}
+          slotMinTime="06:00:00"
+          slotMaxTime="22:00:00"
           allDaySlot={false}
           scrollTime="07:00:00"
           slotDuration="00:30:00"
