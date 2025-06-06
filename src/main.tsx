@@ -5,9 +5,9 @@ import { Toaster } from 'sonner';
 import App from './App';
 import './index.css';
 import { AuthProvider } from './contexts/AuthContext';
-import '@fullcalendar/daygrid/index.css';
-import '@fullcalendar/timegrid/index.css';
-import '@fullcalendar/list/index.css';
+import '@fullcalendar/daygrid/dist/main.css';
+import '@fullcalendar/timegrid/dist/main.css';
+import '@fullcalendar/list/dist/main.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
