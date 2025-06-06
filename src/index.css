@@ -156,7 +156,7 @@ html, body, #root {
   display: flex;
   flex-direction: column;
   height: calc(100vh - 4rem);
-  overflow-y: auto;
+  overflow: hidden;
 }
 
 .calendar-container {
@@ -164,6 +164,7 @@ html, body, #root {
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 
 /* FullCalendar overrides */
@@ -181,7 +182,6 @@ html, body, #root {
 /* Ensure calendar scrolls within its container */
 .fc-scroller {
   height: 100% !important;
-  overflow-y: auto !important;
 }
 
 .fc-scroller-liquid-absolute {
