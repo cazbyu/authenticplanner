@@ -181,6 +181,7 @@ html, body, #root {
 /* Ensure calendar scrolls within its container */
 .fc-scroller {
   height: 100% !important;
+  overflow-y: auto !important;
 }
 
 .fc-scroller-liquid-absolute {
@@ -188,7 +189,8 @@ html, body, #root {
 }
 
 .fc-timegrid-container {
-  height: 100% !important;
+  height: auto !important;
+  min-height: 800px !important;
 }
 
 .fc-timegrid-body {
@@ -212,16 +214,17 @@ html, body, #root {
   font-size: 0.75rem;
   color: #6B7280;
   padding-right: 1rem;
-  width: 60px !important;
+  width: 80px !important;
 }
 
 .fc-timegrid-axis {
   padding-right: 0.5rem;
-  width: 60px !important;
+  width: 80px !important;
   position: sticky;
   left: 0;
   background: white;
   z-index: 2;
+  border-right: 1px solid #e5e7eb !important;
 }
 
 .fc-timegrid-now-indicator-line {
@@ -321,7 +324,7 @@ html, body, #root {
 .fc-timegrid-axis-cushion {
   color: #6B7280;
   font-weight: 500;
-  padding-left: 8px !important;
+  padding-left: 12px !important;
   text-align: left !important;
 }
 
@@ -343,5 +346,9 @@ html, body, #root {
 
 .fc-timegrid-slot-label-cushion {
   text-align: left !important;
-  padding-left: 8px !important;
+  padding-left: 12px !important;
+}
+
+.fc-timegrid-slot-label {
+  vertical-align: middle !important;
 }

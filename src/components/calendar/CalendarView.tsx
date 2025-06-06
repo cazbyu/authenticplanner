@@ -130,7 +130,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             hour: 'numeric',
             minute: '2-digit',
             omitZeroMinute: true,
-            meridiem: 'short',
+            meridiem: 'short'
           }}
           views={{
             dayGridMonth: {
