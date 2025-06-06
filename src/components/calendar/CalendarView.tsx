@@ -21,7 +21,7 @@ interface CalendarViewProps {
   onDateChange: (date: Date) => void;
 }
 
-const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const weekdayShort = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
   html: `

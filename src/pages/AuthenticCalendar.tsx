@@ -8,7 +8,7 @@ import type { FullCalendar } from '@fullcalendar/core';
 const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridDay');
+  const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
   const calendarRef = useRef<FullCalendar | null>(null);
 
   const handleDateChange = (newStart: Date) => {
@@ -32,13 +32,10 @@ const AuthenticCalendar: React.FC = () => {
       {/* Main content */}
       <div className="h-full grid grid-cols-4 gap-6">
         {/* Left Column */}
-        <div className="flex flex-col space-y-6 overflow-auto">
+        <div className="flex flex-col space-y-6">
           <div className="flex-1 rounded-lg border border-gray-200 bg-white p-4">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Priorities</h2>
-            </div>
-            <div className="space-y-2">
-              {/* Priority cards */}
             </div>
           </div>
           <div className="flex-1 rounded-lg border border-gray-200 bg-white p-4">
@@ -70,12 +67,7 @@ const AuthenticCalendar: React.FC = () => {
                 </button>
               </div>
               <span className="text-lg font-medium">
-                {view === 'dayGridMonth'
-                  ? format(currentDate, 'MMMM yyyy')
-                  : `${format(currentDate, 'd')} – ${format(
-                      addDays(currentDate, 6),
-                      'd MMM, yyyy'
-                    )}`}
+                {format(currentDate, 'd')} – {format(addDays(currentDate, 6), 'd MMM, yyyy')}
               </span>
             </div>
 
