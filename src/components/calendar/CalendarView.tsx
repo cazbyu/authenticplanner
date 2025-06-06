@@ -102,7 +102,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       );
     }
 
-    // Container styles ensure height & scroll work as intended
     return (
       <div className="flex flex-col flex-1 min-h-0 h-full" style={{ minHeight: 0 }}>
         <FullCalendar
@@ -120,7 +119,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           weekends={true}
           events={events}
           eventClick={handleEventClick}
-          // ------ CRUCIAL: Height and scroll fixes ------
           height="parent"
           contentHeight="auto"
           expandRows={true}
