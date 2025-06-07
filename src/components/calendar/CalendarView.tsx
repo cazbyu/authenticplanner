@@ -105,26 +105,26 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       );
     }
 
-    // "100%" is ideal for scroll (if parent has h-full/min-h-0/flex-1), fallback to 900px if parent not set up right
-    const calendarHeight = '100%';
+    // Use a fixed height instead of 100% to prevent bouncing
+    const calendarHeight = 'calc(100vh - 200px)';
 
     return (
       <div className="h-full min-h-0 flex flex-col flex-1">
         <style>
           {`
           .fc {
-            height: 100% !important;
+            height: ${calendarHeight} !important;
             font-family: inherit;
           }
           .fc-scroller, .fc-scroller.fc-scroller-liquid {
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
-            scroll-behavior: auto !important;
+            scroll-behavior: smooth !important;
           }
           .fc-timegrid .fc-scroller-liquid {
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
-            scroll-behavior: auto !important;
+            scroll-behavior: smooth !important;
           }
           .fc-theme-standard td, .fc-theme-standard th {
             border-color: #e5e7eb;
