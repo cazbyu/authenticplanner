@@ -140,9 +140,10 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             border-bottom: 1px solid #f3f4f6 !important;
           }
           .fc-timegrid-slot-label {
-            font-size: 0.75rem;
-            color: #6B7280;
+            font-size: 0.625rem !important;
+            color: #9CA3AF !important;
             padding-right: 1rem;
+            font-weight: 400 !important;
           }
           .fc-timegrid-axis {
             padding-right: 0.5rem;
@@ -168,11 +169,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             font-size: 0.75rem;
           }
           .day-name {
-            font-size: 0.75rem;
-            font-weight: 500;
+            font-size: 0.625rem !important;
+            font-weight: 400 !important;
             text-transform: uppercase;
-            color: #6B7280;
+            color: #9CA3AF !important;
             margin-bottom: 4px;
+            letter-spacing: 0.05em;
           }
           .day-number {
             font-size: 1.125rem;
