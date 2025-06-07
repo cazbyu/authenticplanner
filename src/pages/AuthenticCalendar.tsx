@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
 import type { FullCalendar } from '@fullcalendar/core';
@@ -34,6 +34,14 @@ const AuthenticCalendar: React.FC = () => {
     }
   };
 
+  const handleToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
+    if (calendarRef.current) {
+      calendarRef.current.getApi().gotoDate(today);
+    }
+  };
+
   const handleViewChange = (newView: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth') => {
     setIsViewChanging(true);
     setView(newView);
@@ -52,10 +60,10 @@ const AuthenticCalendar: React.FC = () => {
       case 'timeGridDay':
         return format(currentDate, 'EEEE, MMMM d, yyyy'); // e.g. "Monday, January 6, 2025"
       case 'timeGridWeek':
-        // For week view, show Sun - Sat format
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }); // Start on Sunday
-        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 }); // End on Saturday
-        return `${format(weekStart, 'd')} – ${format(weekEnd, 'd MMM, yyyy')}`; // e.g. "1 – 7 Jun, 2025"
+        return `${format(currentDate, 'd')} – ${format(
+          addDays(currentDate, 6),
+          'd MMM, yyyy'
+        )}`; // e.g. "6 – 12 Jan, 2025"
       case 'dayGridMonth':
         return format(currentDate, 'MMMM yyyy'); // e.g. "January 2025"
       default:
@@ -108,6 +116,12 @@ const AuthenticCalendar: React.FC = () => {
               <span className="text-lg font-medium">
                 {getDateDisplayText()}
               </span>
+              <button
+                onClick={handleToday}
+                className="px-3 py-1 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-md"
+              >
+                Today
+              </button>
             </div>
 
             <div className="flex items-center space-x-4">

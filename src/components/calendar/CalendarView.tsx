@@ -209,7 +209,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           initialDate={currentDate}
           headerToolbar={false}
           nowIndicator={true}
-          firstDay={0} // Start week on Sunday
+          firstDay={0}
           editable={true}
           selectable={true}
           selectMirror={true}
@@ -229,7 +229,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           }}
           views={{
             dayGridMonth: { firstDay: 0, fixedWeekCount: false, showNonCurrentDates: true },
-            timeGridWeek: { firstDay: 0 }, // Start week on Sunday
+            timeGridWeek: { firstDay: 0 },
             timeGridDay: { firstDay: 0 },
           }}
           datesSet={handleDatesSet}
