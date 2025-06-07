@@ -43,6 +43,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const calendarRef = useRef<FullCalendar | null>(null);
+    const [initialScrollSet, setInitialScrollSet] = useState(false);
 
     // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
@@ -80,12 +81,34 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       fetchTasks();
     }, []);
 
+    // Set initial scroll position after calendar loads
+    useEffect(() => {
+      if (!loading && fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current && !initialScrollSet) {
+        const calendarApi = fullCalendarRef.current.getApi();
+        
+        // Set scroll to 8 AM for day/week views to prevent autoscroll
+        if (view === 'timeGridDay' || view === 'timeGridWeek') {
+          setTimeout(() => {
+            calendarApi.scrollToTime('08:00:00');
+            setInitialScrollSet(true);
+          }, 100);
+        }
+      }
+    }, [loading, view, fullCalendarRef, initialScrollSet]);
+
     // Respond to prop changes
     useEffect(() => {
       if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
         const calendarApi = fullCalendarRef.current.getApi();
         calendarApi.changeView(view);
         calendarApi.gotoDate(currentDate);
+        
+        // Reset scroll position when view or date changes
+        if (view === 'timeGridDay' || view === 'timeGridWeek') {
+          setTimeout(() => {
+            calendarApi.scrollToTime('08:00:00');
+          }, 50);
+        }
       }
     }, [view, currentDate, fullCalendarRef]);
 
@@ -245,6 +268,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={false}
+          scrollTime="08:00:00"
           slotLabelFormat={{
             hour: 'numeric',
             minute: '2-digit',
