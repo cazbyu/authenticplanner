@@ -36,6 +36,16 @@ const AuthenticCalendar: React.FC = () => {
     }
   };
 
+  const handleViewChange = (newView: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth') => {
+    setView(newView);
+    // After view changes, ensure we stay on the current date
+    if (calendarRef.current) {
+      setTimeout(() => {
+        calendarRef.current?.getApi().gotoDate(currentDate);
+      }, 0);
+    }
+  };
+
   const getDateDisplayText = () => {
     switch (view) {
       case 'timeGridDay':
@@ -108,7 +118,7 @@ const AuthenticCalendar: React.FC = () => {
             <div className="flex items-center space-x-4">
               <select
                 value={view}
-                onChange={(e) => setView(e.target.value as typeof view)}
+                onChange={(e) => handleViewChange(e.target.value as typeof view)}
                 className="rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700"
               >
                 <option value="timeGridDay">Day</option>
