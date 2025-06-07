@@ -43,7 +43,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const calendarRef = useRef<FullCalendar | null>(null);
-    const [initialScrollSet, setInitialScrollSet] = useState(false);
+    const [calendarReady, setCalendarReady] = useState(false);
 
     // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
@@ -81,39 +81,63 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       fetchTasks();
     }, []);
 
-    // Set initial scroll position after calendar loads
-    useEffect(() => {
-      if (!loading && fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current && !initialScrollSet) {
+    // Handle calendar ready state and set initial scroll
+    const handleCalendarReady = () => {
+      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
         const calendarApi = fullCalendarRef.current.getApi();
         
-        // Set scroll to 8 AM for day/week views to prevent autoscroll
+        // Immediately set scroll to 8am without animation for day/week views
         if (view === 'timeGridDay' || view === 'timeGridWeek') {
-          setTimeout(() => {
-            calendarApi.scrollToTime('08:00:00');
-            setInitialScrollSet(true);
-          }, 100);
+          // Use requestAnimationFrame to ensure DOM is ready
+          requestAnimationFrame(() => {
+            const scrollerEl = calendarApi.el.querySelector('.fc-scroller');
+            if (scrollerEl) {
+              // Calculate 8am position (8 hours * 48px per hour slot)
+              const scrollTop = 8 * 48;
+              scrollerEl.scrollTop = scrollTop;
+            }
+          });
         }
+        setCalendarReady(true);
       }
-    }, [loading, view, fullCalendarRef, initialScrollSet]);
+    };
 
     // Respond to prop changes
     useEffect(() => {
-      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
+      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current && calendarReady) {
         const calendarApi = fullCalendarRef.current.getApi();
         calendarApi.changeView(view);
         calendarApi.gotoDate(currentDate);
         
-        // Reset scroll position when view or date changes
+        // Set scroll position immediately for day/week views without animation
         if (view === 'timeGridDay' || view === 'timeGridWeek') {
-          setTimeout(() => {
-            calendarApi.scrollToTime('08:00:00');
-          }, 50);
+          requestAnimationFrame(() => {
+            const scrollerEl = calendarApi.el.querySelector('.fc-scroller');
+            if (scrollerEl) {
+              const scrollTop = 8 * 48; // 8am position
+              scrollerEl.scrollTop = scrollTop;
+            }
+          });
         }
       }
-    }, [view, currentDate, fullCalendarRef]);
+    }, [view, currentDate, fullCalendarRef, calendarReady]);
 
     const handleDatesSet = (arg: DatesSetArg) => {
       onDateChange(arg.view.currentStart);
+      
+      // Set scroll position after date change
+      if ((view === 'timeGridDay' || view === 'timeGridWeek') && calendarReady) {
+        setTimeout(() => {
+          if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
+            const calendarApi = fullCalendarRef.current.getApi();
+            const scrollerEl = calendarApi.el.querySelector('.fc-scroller');
+            if (scrollerEl) {
+              const scrollTop = 8 * 48; // 8am position
+              scrollerEl.scrollTop = scrollTop;
+            }
+          }
+        }, 10);
+      }
     };
 
     const handleEventClick = (info: any) => {
@@ -142,12 +166,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-scroller, .fc-scroller.fc-scroller-liquid {
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
-            scroll-behavior: smooth !important;
+            scroll-behavior: auto !important;
           }
           .fc-timegrid .fc-scroller-liquid {
             overflow-y: auto !important;
             overscroll-behavior: contain !important;
-            scroll-behavior: smooth !important;
+            scroll-behavior: auto !important;
           }
           .fc-theme-standard td, .fc-theme-standard th {
             border-color: #e5e7eb;
@@ -269,6 +293,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           dayMaxTime="24:00:00"
           allDaySlot={false}
           scrollTime="08:00:00"
+          scrollTimeReset={false}
           slotLabelFormat={{
             hour: 'numeric',
             minute: '2-digit',
@@ -281,6 +306,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             timeGridDay: { firstDay: 0 },
           }}
           datesSet={handleDatesSet}
+          viewDidMount={handleCalendarReady}
           // Only show custom header in week/day view; let month use default
           dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
         />
