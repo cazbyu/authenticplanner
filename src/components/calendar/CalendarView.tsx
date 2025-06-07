@@ -148,16 +148,50 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-timegrid-now-indicator-arrow {
             border-color: #EF4444;
           }
+          
+          /* Header styling */
           .fc-col-header-cell {
             padding: 0;
             background: #fff;
+            border-top: none !important; /* Remove top gray grid line */
           }
-          .fc-col-header-cell.fc-day-today {
+          
+          /* Reduce vertical line thickness between days */
+          .fc-timegrid-col {
+            border-right: 0.1px solid #e5e7eb !important; /* 10% of original thickness */
+          }
+          .fc-daygrid-day {
+            border-right: 0.1px solid #e5e7eb !important; /* 10% of original thickness */
+          }
+          
+          /* Today highlighting for Week and Day views only */
+          .fc-timeGridWeek-view .fc-col-header-cell.fc-day-today,
+          .fc-timeGridDay-view .fc-col-header-cell.fc-day-today {
+            background: #fff !important; /* Keep background white */
+          }
+          
+          /* Circle the current day number in Week and Day views */
+          .fc-timeGridWeek-view .fc-col-header-cell.fc-day-today .day-number,
+          .fc-timeGridDay-view .fc-col-header-cell.fc-day-today .day-number {
+            background: #3B82F6 !important;
+            color: white !important;
+            border-radius: 50% !important;
+            width: 24px !important;
+            height: 24px !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            margin: 0 auto !important;
+          }
+          
+          /* Keep Month view today highlighting as is */
+          .fc-dayGridMonth-view .fc-col-header-cell.fc-day-today {
             background: #3B82F6 !important;
           }
-          .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+          .fc-dayGridMonth-view .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
             color: white;
           }
+          
           .fc-col-header-cell-cushion {
             display: flex;
             flex-direction: column;
@@ -166,8 +200,23 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             color: #4B5563;
             font-weight: 500;
             text-transform: uppercase;
-            font-size: 0.75rem;
+            font-size: 0.65rem; /* Reduced font size for weekdays */
           }
+          
+          /* Custom day header styling for Week and Day views */
+          .day-name {
+            font-size: 0.65rem; /* Reduced font size */
+            font-weight: 500;
+            text-transform: uppercase;
+            color: #4B5563;
+            margin-bottom: 2px;
+          }
+          .day-number {
+            font-size: 0.875rem;
+            font-weight: 600;
+            color: #374151;
+          }
+          
           .fc-daygrid-day-frame {
             min-height: 100px;
           }
