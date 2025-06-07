@@ -70,7 +70,7 @@ const AuthenticCalendar: React.FC = () => {
 
   return (
     <div className="h-screen flex flex-col bg-white">
-      {/* Google Calendar Style Header */}
+      {/* Google Calendar Style Header - This is the ONLY header */}
       <header className="flex items-center justify-between px-6 py-3 border-b border-gray-200 bg-white">
         {/* Left Section: Menu, Logo, Date Navigation */}
         <div className="flex items-center space-x-6">
@@ -135,7 +135,7 @@ const AuthenticCalendar: React.FC = () => {
             New Task
           </button>
 
-          {/* Profile */}
+          {/* Profile/Floating Dresser Icon */}
           <div className="relative">
             <button
               onClick={() => {/* Add profile dropdown logic */}}
