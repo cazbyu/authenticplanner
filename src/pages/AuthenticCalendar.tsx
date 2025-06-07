@@ -7,13 +7,13 @@ import type { FullCalendar } from '@fullcalendar/core';
 
 const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(new Date()); // Now defaults to today
   const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>(
-    'dayGridMonth'
+    'timeGridDay' // Changed default to Day view to showcase today's date
   );
   const calendarRef = useRef<FullCalendar | null>(null);
 
-  // Called whenever FullCalendar’s visible date range changes
+  // Called whenever FullCalendar's visible date range changes
   const handleDateChange = (newStart: Date) => {
     setCurrentDate(newStart);
   };
@@ -27,6 +27,28 @@ const AuthenticCalendar: React.FC = () => {
   const handleNext = () => {
     if (calendarRef.current) {
       calendarRef.current.getApi().next();
+    }
+  };
+
+  const handleToday = () => {
+    if (calendarRef.current) {
+      calendarRef.current.getApi().today();
+    }
+  };
+
+  const getDateDisplayText = () => {
+    switch (view) {
+      case 'timeGridDay':
+        return format(currentDate, 'EEEE, MMMM d, yyyy'); // e.g. "Monday, January 6, 2025"
+      case 'timeGridWeek':
+        return `${format(currentDate, 'd')} – ${format(
+          addDays(currentDate, 6),
+          'd MMM, yyyy'
+        )}`; // e.g. "6 – 12 Jan, 2025"
+      case 'dayGridMonth':
+        return format(currentDate, 'MMMM yyyy'); // e.g. "January 2025"
+      default:
+        return format(currentDate, 'MMMM yyyy');
     }
   };
 
@@ -73,13 +95,14 @@ const AuthenticCalendar: React.FC = () => {
                 </button>
               </div>
               <span className="text-lg font-medium">
-                {view === 'dayGridMonth'
-                  ? format(currentDate, 'MMMM yyyy') // e.g. “June 2025”
-                  : `${format(currentDate, 'd')} – ${format(
-                      addDays(currentDate, 6),
-                      'd MMM, yyyy'
-                    )}`} {/* e.g. “4 – 10 Jun, 2025” */}
+                {getDateDisplayText()}
               </span>
+              <button
+                onClick={handleToday}
+                className="px-3 py-1 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-md"
+              >
+                Today
+              </button>
             </div>
 
             <div className="flex items-center space-x-4">
