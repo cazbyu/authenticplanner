@@ -38,6 +38,12 @@ const customDayHeaderContent = (arg: DateHeaderContentArg) => {
   };
 };
 
+// Helper function to convert UTC time to local time for display
+const convertUTCToLocal = (utcTimeString: string): string => {
+  const utcDate = new Date(utcTimeString);
+  return utcDate.toISOString(); // FullCalendar will handle local display
+};
+
 const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
   ({ view, currentDate, onDateChange }, ref) => {
     const [events, setEvents] = useState<any[]>([]);
@@ -55,28 +61,42 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           setLoading(false);
           return;
         }
-        const { data: tasks } = await supabase
-          .from('0007-ap-tasks')
-          .select('id, title, start_time, end_time, is_authentic_deposit, is_twelve_week_goal')
-          .eq('user_id', user.id);
+        
+        try {
+          const { data: tasks, error } = await supabase
+            .from('0007-ap-tasks')
+            .select('id, title, start_time, end_time, is_authentic_deposit, is_twelve_week_goal')
+            .eq('user_id', user.id)
+            .not('start_time', 'is', null); // Only get tasks with start times
 
-        if (tasks) {
-          const calendarEvents = tasks.map((task: Task) => ({
-            id: task.id,
-            title: task.title,
-            start: task.start_time,
-            end: task.end_time || undefined,
-            backgroundColor: task.is_authentic_deposit
-              ? '#10B981'
-              : task.is_twelve_week_goal
-              ? '#6366F1'
-              : '#3B82F6',
-            borderColor: 'transparent',
-            textColor: 'white',
-          }));
-          setEvents(calendarEvents);
+          if (error) {
+            console.error('Error fetching tasks:', error);
+            setLoading(false);
+            return;
+          }
+
+          if (tasks) {
+            const calendarEvents = tasks.map((task: Task) => ({
+              id: task.id,
+              title: task.title,
+              // FullCalendar automatically converts UTC times to local time for display
+              start: task.start_time, // This is stored as UTC in database
+              end: task.end_time || undefined, // This is also UTC
+              backgroundColor: task.is_authentic_deposit
+                ? '#10B981'
+                : task.is_twelve_week_goal
+                ? '#6366F1'
+                : '#3B82F6',
+              borderColor: 'transparent',
+              textColor: 'white',
+            }));
+            setEvents(calendarEvents);
+          }
+        } catch (err) {
+          console.error('Unexpected error fetching tasks:', err);
+        } finally {
+          setLoading(false);
         }
-        setLoading(false);
       };
       fetchTasks();
     }, []);

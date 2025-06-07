@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
+import { toast } from "sonner";
 
 interface Role {
   id: string;
@@ -27,9 +28,11 @@ interface TaskFormValues {
 
 interface TaskFormProps {
   onClose?: () => void;
+  availableRoles?: Role[];
+  availableDomains?: Domain[];
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
+const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableDomains }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -63,32 +66,46 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
     const fetchLists = async () => {
       setLoading(true);
 
-      const [roleRes, domainRes] = await Promise.all([
-        supabase
-          .from("0007-ap-roles")
-          .select("id, label")
-          .eq("user_id", userId)
-          .eq("is_active", true),
-        supabase.from("0007-ap-domains").select("id, name"),
-      ]);
+      try {
+        // Use provided roles/domains if available, otherwise fetch from database
+        if (availableRoles && availableDomains) {
+          setRoles(availableRoles);
+          setDomains(availableDomains);
+          setLoading(false);
+          return;
+        }
 
-      if (roleRes.error || domainRes.error) {
+        const [roleRes, domainRes] = await Promise.all([
+          supabase
+            .from("0007-ap-roles")
+            .select("id, label")
+            .eq("user_id", userId)
+            .eq("is_active", true),
+          supabase.from("0007-ap-domains").select("id, name"),
+        ]);
+
+        if (roleRes.error || domainRes.error) {
+          setError("Failed to load roles/domains.");
+        } else {
+          setRoles(roleRes.data || []);
+          setDomains(domainRes.data || []);
+        }
+      } catch (err) {
+        console.error('Error fetching roles/domains:', err);
         setError("Failed to load roles/domains.");
-      } else {
-        setRoles(roleRes.data || []);
-        setDomains(domainRes.data || []);
+      } finally {
+        setLoading(false);
       }
-
-      setLoading(false);
     };
 
     fetchLists();
-  }, [userId]);
+  }, [userId, availableRoles, availableDomains]);
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    const { name, value, type, checked } = e.target;
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
     setForm((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -108,6 +125,17 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
     });
   };
 
+  // Helper function to convert local datetime to UTC ISO string
+  const convertToUTC = (dateStr: string, timeStr: string): string | null => {
+    if (!dateStr || !timeStr) return null;
+    
+    // Create a local date object from the date and time inputs
+    const localDateTime = new Date(`${dateStr}T${timeStr}:00`);
+    
+    // Convert to UTC ISO string
+    return localDateTime.toISOString();
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId) return;
@@ -120,18 +148,15 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
     setSubmitting(true);
     setError(null);
 
-    // Create start_time timestamp if date and start time are provided
-    const startTime = form.dueDate && form.startTime
-      ? new Date(`${form.dueDate}T${form.startTime}:00Z`).toISOString()
-      : null;
+    try {
+      // Convert local times to UTC for storage
+      const startTimeUTC = convertToUTC(form.dueDate, form.startTime);
+      const endTimeUTC = form.endTime ? convertToUTC(form.dueDate, form.endTime) : null;
 
-    // Only include end_time if provided
-    const endTime = form.endTime || null;
-
-    const { data: taskRow, error: taskErr } = await supabase
-      .from("0007-ap-tasks")
-      .insert(
-        [
+      // Insert task with .select() to get the inserted row back
+      const { data: taskRow, error: taskErr } = await supabase
+        .from("0007-ap-tasks")
+        .insert([
           {
             user_id: userId,
             title: form.title.trim(),
@@ -140,78 +165,102 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
             is_urgent: form.isUrgent,
             is_important: form.isImportant,
             due_date: form.dueDate || null,
-            start_time: startTime,
-            end_time: endTime,
+            start_time: startTimeUTC,
+            end_time: endTimeUTC,
             notes: form.notes.trim() || null,
             percent_complete: 0,
+            status: 'pending'
           },
-        ],
-        { returning: "representation" }
-      )
-      .single();
+        ])
+        .select() // This ensures we get the inserted row back
+        .single();
 
-    if (taskErr || !taskRow) {
-      setError("Failed to create task.");
+      if (taskErr) {
+        console.error('Task creation error:', taskErr);
+        setError(`Failed to create task: ${taskErr.message}`);
+        return;
+      }
+
+      if (!taskRow) {
+        setError("Failed to create task: No data returned");
+        return;
+      }
+
+      // Create role and domain relationships
+      const linkPromises: Promise<any>[] = [];
+
+      if (form.selectedRoleIds.length) {
+        const roleInserts = form.selectedRoleIds.map((rid) => ({
+          task_id: taskRow.id,
+          role_id: rid,
+        }));
+        
+        linkPromises.push(
+          supabase
+            .from("0007-ap-task_roles")
+            .insert(roleInserts)
+            .select()
+        );
+      }
+
+      if (form.selectedDomainIds.length) {
+        const domainInserts = form.selectedDomainIds.map((did) => ({
+          task_id: taskRow.id,
+          domain_id: did,
+        }));
+        
+        linkPromises.push(
+          supabase
+            .from("0007-ap-task_domains")
+            .insert(domainInserts)
+            .select()
+        );
+      }
+
+      // Wait for all relationship inserts to complete
+      const results = await Promise.all(linkPromises);
+      
+      // Check if any relationship inserts failed
+      const hasErrors = results.some(result => result.error);
+      if (hasErrors) {
+        console.warn('Some relationship inserts failed, but task was created');
+      }
+
+      // Reset form
+      setForm({
+        title: "",
+        isAuthenticDeposit: false,
+        isTwelveWeekGoal: false,
+        isUrgent: false,
+        isImportant: false,
+        dueDate: "",
+        startTime: "",
+        endTime: "",
+        notes: "",
+        selectedRoleIds: [],
+        selectedDomainIds: [],
+      });
+
+      toast.success("Task created successfully!");
+
+      if (onClose) {
+        onClose();
+      }
+
+    } catch (err) {
+      console.error('Unexpected error creating task:', err);
+      setError("An unexpected error occurred while creating the task.");
+    } finally {
       setSubmitting(false);
-      return;
-    }
-
-    const linkPromises: Promise<unknown>[] = [];
-
-    if (form.selectedRoleIds.length) {
-      linkPromises.push(
-        supabase
-          .from("0007-ap-task_roles")
-          .insert(
-            form.selectedRoleIds.map((rid) => ({
-              task_id: taskRow.id,
-              role_id: rid,
-            }))
-          )
-      );
-    }
-
-    if (form.selectedDomainIds.length) {
-      linkPromises.push(
-        supabase
-          .from("0007-ap-task_domains")
-          .insert(
-            form.selectedDomainIds.map((did) => ({
-              task_id: taskRow.id,
-              domain_id: did,
-            }))
-          )
-      );
-    }
-
-    await Promise.all(linkPromises);
-
-    setForm({
-      title: "",
-      isAuthenticDeposit: false,
-      isTwelveWeekGoal: false,
-      isUrgent: false,
-      isImportant: false,
-      dueDate: "",
-      startTime: "",
-      endTime: "",
-      notes: "",
-      selectedRoleIds: [],
-      selectedDomainIds: [],
-    });
-    setSubmitting(false);
-
-    if (onClose) {
-      onClose();
     }
   };
 
   if (loading) return <div>Loading…</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
 
   return (
     <div className="max-w-lg mx-auto bg-white rounded-xl shadow-lg p-6 max-h-[85vh] overflow-y-auto space-y-6">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center">
+        <h2 className="text-xl font-semibold text-gray-900">Create New Task</h2>
         {onClose && (
           <button
             type="button"
@@ -223,6 +272,12 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
           </button>
         )}
       </div>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-3">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
@@ -268,7 +323,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium mb-1">Time (optional)</label>
+          <label className="block text-sm font-medium mb-1">Time (local time)</label>
           <div className="grid grid-cols-2 gap-4">
             <input
               name="startTime"
@@ -287,6 +342,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
               placeholder="End time"
             />
           </div>
+          <p className="text-xs text-gray-500 mt-1">
+            Times will be converted to UTC for storage
+          </p>
         </div>
 
         <div>
@@ -337,7 +395,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
           disabled={submitting}
           className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
         >
-          {submitting ? "Saving…" : "Save Task"}
+          {submitting ? "Creating Task..." : "Create Task"}
         </button>
       </form>
     </div>
