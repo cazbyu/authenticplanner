@@ -1,12 +1,13 @@
 // src/components/calendar/CalendarView.tsx
 
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
-import FullCalendar, { DatesSetArg, DateHeaderContentArg } from '@fullcalendar/react';
+import FullCalendar, { DatesSetArg, DateHeaderContentArg, EventClickArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import { supabase } from '../../supabaseClient';
+import TaskEditModal from './TaskEditModal';
 
 interface Task {
   id: string;
@@ -43,6 +44,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
   ({ view, currentDate, onDateChange, refreshTrigger = 0 }, ref) => {
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [calendarReady, setCalendarReady] = useState(false);
 
@@ -156,8 +158,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     };
 
-    const handleEventClick = (info: any) => {
-      console.log('Event clicked:', info.event);
+    const handleEventClick = (info: EventClickArg) => {
+      // Open edit modal for the clicked task
+      setEditingTaskId(info.event.id);
+    };
+
+    const handleTaskUpdated = () => {
+      setEditingTaskId(null);
+      // Refresh the calendar by incrementing the refresh trigger
+      fetchTasks();
     };
 
     if (loading) {
@@ -287,6 +296,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             border-top-color: transparent;
             border-bottom-color: transparent;
           }
+          .fc-event {
+            cursor: pointer;
+          }
+          .fc-event:hover {
+            opacity: 0.8;
+          }
         `}
         </style>
         <FullCalendar
@@ -326,6 +341,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           // Only show custom header in week/day view; let month use default
           dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
         />
+        
+        {/* Edit Modal */}
+        {editingTaskId && (
+          <TaskEditModal
+            taskId={editingTaskId}
+            onClose={() => setEditingTaskId(null)}
+            onTaskUpdated={handleTaskUpdated}
+          />
+        )}
       </div>
     );
   }
