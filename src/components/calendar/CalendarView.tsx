@@ -26,12 +26,17 @@ interface CalendarViewProps {
 const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // This custom header ONLY for week/day, not month!
-const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
-  html: `
-    <div class="day-name">${weekdayShort[arg.date.getDay()]}</div>
-    <div class="day-number">${arg.date.getDate()}</div>
-  `,
-});
+const customDayHeaderContent = (arg: DateHeaderContentArg) => {
+  const today = new Date();
+  const isToday = arg.date.toDateString() === today.toDateString();
+  
+  return {
+    html: `
+      <div class="day-name">${weekdayShort[arg.date.getDay()]}</div>
+      <div class="day-number ${isToday ? 'is-today' : ''}">${arg.date.getDate()}</div>
+    `,
+  };
+};
 
 const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
   ({ view, currentDate, onDateChange }, ref) => {
@@ -152,12 +157,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             padding: 0;
             background: #fff;
           }
-          .fc-col-header-cell.fc-day-today {
-            background: #3B82F6 !important;
-          }
-          .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
-            color: white;
-          }
           .fc-col-header-cell-cushion {
             display: flex;
             flex-direction: column;
@@ -168,6 +167,28 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             text-transform: uppercase;
             font-size: 0.75rem;
           }
+          .day-name {
+            font-size: 0.75rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            color: #6B7280;
+            margin-bottom: 4px;
+          }
+          .day-number {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: #374151;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+          }
+          .day-number.is-today {
+            background-color: #3B82F6;
+            color: white;
+          }
           .fc-daygrid-day-frame {
             min-height: 100px;
           }
@@ -177,20 +198,21 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             flex-direction: row;
           }
           .fc-daygrid-day-number {
-            width: 24px;
-            height: 24px;
+            width: 32px;
+            height: 32px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto;
             padding: 0 !important;
-            font-size: 0.875rem;
+            font-size: 1.125rem;
+            font-weight: 600;
             color: #374151;
+            border-radius: 50%;
           }
           .fc-day-today .fc-daygrid-day-number {
             background: #3B82F6;
             color: white;
-            border-radius: 9999px;
           }
           .fc-timegrid-col-frame {
             background: white;
