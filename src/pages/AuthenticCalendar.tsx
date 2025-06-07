@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Plus, ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, addDays } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
 import type { FullCalendar } from '@fullcalendar/core';
@@ -52,10 +52,10 @@ const AuthenticCalendar: React.FC = () => {
       case 'timeGridDay':
         return format(currentDate, 'EEEE, MMMM d, yyyy'); // e.g. "Monday, January 6, 2025"
       case 'timeGridWeek':
-        return `${format(currentDate, 'd')} – ${format(
-          addDays(currentDate, 6),
-          'd MMM, yyyy'
-        )}`; // e.g. "6 – 12 Jan, 2025"
+        // Calculate the actual start and end of the week containing currentDate
+        const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 }); // Sunday = 0
+        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
+        return `${format(weekStart, 'd')} – ${format(weekEnd, 'd MMM, yyyy')}`; // e.g. "1 – 7 Jun, 2025"
       case 'dayGridMonth':
         return format(currentDate, 'MMMM yyyy'); // e.g. "January 2025"
       default:
