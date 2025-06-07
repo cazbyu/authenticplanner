@@ -12,10 +12,14 @@ const AuthenticCalendar: React.FC = () => {
     'timeGridDay' // Changed default to Day view to showcase today's date
   );
   const calendarRef = useRef<FullCalendar | null>(null);
+  const [isViewChanging, setIsViewChanging] = useState(false);
 
   // Called whenever FullCalendar's visible date range changes
   const handleDateChange = (newStart: Date) => {
-    setCurrentDate(newStart);
+    // Only update currentDate if we're not in the middle of a view change
+    if (!isViewChanging) {
+      setCurrentDate(newStart);
+    }
   };
 
   const handlePrevious = () => {
@@ -31,19 +35,24 @@ const AuthenticCalendar: React.FC = () => {
   };
 
   const handleToday = () => {
+    const today = new Date();
+    setCurrentDate(today);
     if (calendarRef.current) {
-      calendarRef.current.getApi().today();
+      calendarRef.current.getApi().gotoDate(today);
     }
   };
 
   const handleViewChange = (newView: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth') => {
+    setIsViewChanging(true);
     setView(newView);
-    // After view changes, ensure we stay on the current date
-    if (calendarRef.current) {
-      setTimeout(() => {
-        calendarRef.current?.getApi().gotoDate(currentDate);
-      }, 0);
-    }
+    
+    // Use a longer timeout to ensure the view change completes
+    setTimeout(() => {
+      if (calendarRef.current) {
+        calendarRef.current.getApi().gotoDate(currentDate);
+      }
+      setIsViewChanging(false);
+    }, 100);
   };
 
   const getDateDisplayText = () => {
