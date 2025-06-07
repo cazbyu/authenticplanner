@@ -21,6 +21,7 @@ interface CalendarViewProps {
   view: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth';
   currentDate: Date;
   onDateChange: (date: Date) => void;
+  refreshTrigger?: number;
 }
 
 const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -38,14 +39,8 @@ const customDayHeaderContent = (arg: DateHeaderContentArg) => {
   };
 };
 
-// Helper function to convert UTC time to local time for display
-const convertUTCToLocal = (utcTimeString: string): string => {
-  const utcDate = new Date(utcTimeString);
-  return utcDate.toISOString(); // FullCalendar will handle local display
-};
-
 const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
-  ({ view, currentDate, onDateChange }, ref) => {
+  ({ view, currentDate, onDateChange, refreshTrigger = 0 }, ref) => {
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const calendarRef = useRef<FullCalendar | null>(null);
@@ -54,52 +49,53 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
 
-    useEffect(() => {
-      const fetchTasks = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
+    const fetchTasks = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        const { data: tasks, error } = await supabase
+          .from('0007-ap-tasks')
+          .select('id, title, start_time, end_time, is_authentic_deposit, is_twelve_week_goal')
+          .eq('user_id', user.id)
+          .not('start_time', 'is', null); // Only get tasks with start times
+
+        if (error) {
+          console.error('Error fetching tasks:', error);
           setLoading(false);
           return;
         }
-        
-        try {
-          const { data: tasks, error } = await supabase
-            .from('0007-ap-tasks')
-            .select('id, title, start_time, end_time, is_authentic_deposit, is_twelve_week_goal')
-            .eq('user_id', user.id)
-            .not('start_time', 'is', null); // Only get tasks with start times
 
-          if (error) {
-            console.error('Error fetching tasks:', error);
-            setLoading(false);
-            return;
-          }
-
-          if (tasks) {
-            const calendarEvents = tasks.map((task: Task) => ({
-              id: task.id,
-              title: task.title,
-              // FullCalendar automatically converts UTC times to local time for display
-              start: task.start_time, // This is stored as UTC in database
-              end: task.end_time || undefined, // This is also UTC
-              backgroundColor: task.is_authentic_deposit
-                ? '#10B981'
-                : task.is_twelve_week_goal
-                ? '#6366F1'
-                : '#3B82F6',
-              borderColor: 'transparent',
-              textColor: 'white',
-            }));
-            setEvents(calendarEvents);
-          }
-        } catch (err) {
-          console.error('Unexpected error fetching tasks:', err);
-        } finally {
-          setLoading(false);
+        if (tasks) {
+          const calendarEvents = tasks.map((task: Task) => ({
+            id: task.id,
+            title: task.title,
+            // FullCalendar automatically converts UTC times to local time for display
+            start: task.start_time, // This is stored as UTC in database
+            end: task.end_time || undefined, // This is also UTC
+            backgroundColor: task.is_authentic_deposit
+              ? '#10B981'
+              : task.is_twelve_week_goal
+              ? '#6366F1'
+              : '#3B82F6',
+            borderColor: 'transparent',
+            textColor: 'white',
+          }));
+          setEvents(calendarEvents);
         }
-      };
+      } catch (err) {
+        console.error('Unexpected error fetching tasks:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    useEffect(() => {
       fetchTasks();
-    }, []);
+    }, [refreshTrigger]); // Re-fetch when refreshTrigger changes
 
     // Handle calendar ready state and set initial scroll
     const handleCalendarReady = () => {

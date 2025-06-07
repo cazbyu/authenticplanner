@@ -30,9 +30,10 @@ interface TaskFormProps {
   onClose?: () => void;
   availableRoles?: Role[];
   availableDomains?: Domain[];
+  onTaskCreated?: () => void;
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableDomains }) => {
+const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableDomains, onTaskCreated }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -243,7 +244,10 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
 
       toast.success("Task created successfully!");
 
-      if (onClose) {
+      // Call the callback to refresh the calendar
+      if (onTaskCreated) {
+        onTaskCreated();
+      } else if (onClose) {
         onClose();
       }
 

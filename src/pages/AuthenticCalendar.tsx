@@ -13,6 +13,7 @@ const AuthenticCalendar: React.FC = () => {
   );
   const calendarRef = useRef<FullCalendar | null>(null);
   const [isViewChanging, setIsViewChanging] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // Called whenever FullCalendar's visible date range changes
   const handleDateChange = (newStart: Date) => {
@@ -45,6 +46,12 @@ const AuthenticCalendar: React.FC = () => {
       }
       setIsViewChanging(false);
     }, 100);
+  };
+
+  const handleTaskCreated = () => {
+    setShowTaskForm(false);
+    // Trigger calendar refresh by incrementing the refresh trigger
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const getDateDisplayText = () => {
@@ -137,6 +144,7 @@ const AuthenticCalendar: React.FC = () => {
               view={view}
               currentDate={currentDate}
               onDateChange={handleDateChange}
+              refreshTrigger={refreshTrigger}
             />
           </div>
         </div>
@@ -146,7 +154,10 @@ const AuthenticCalendar: React.FC = () => {
       {showTaskForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl">
-            <TaskForm onClose={() => setShowTaskForm(false)} />
+            <TaskForm 
+              onClose={() => setShowTaskForm(false)}
+              onTaskCreated={handleTaskCreated}
+            />
           </div>
         </div>
       )}
