@@ -34,14 +34,6 @@ const AuthenticCalendar: React.FC = () => {
     }
   };
 
-  const handleToday = () => {
-    const today = new Date();
-    setCurrentDate(today);
-    if (calendarRef.current) {
-      calendarRef.current.getApi().gotoDate(today);
-    }
-  };
-
   const handleViewChange = (newView: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth') => {
     setIsViewChanging(true);
     setView(newView);
@@ -116,12 +108,6 @@ const AuthenticCalendar: React.FC = () => {
               <span className="text-lg font-medium">
                 {getDateDisplayText()}
               </span>
-              <button
-                onClick={handleToday}
-                className="px-3 py-1 text-sm font-medium text-primary-600 hover:bg-primary-50 rounded-md"
-              >
-                Today
-              </button>
             </div>
 
             <div className="flex items-center space-x-4">
