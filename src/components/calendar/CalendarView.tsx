@@ -177,15 +177,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       );
     }
 
-    // Use a fixed height instead of 100% to prevent bouncing
-    const calendarHeight = 'calc(100vh - 200px)';
-
     return (
-      <div className="h-full min-h-0 flex flex-col flex-1">
+      <div className="h-full flex flex-col">
         <style>
           {`
           .fc {
-            height: ${calendarHeight} !important;
+            height: 100% !important;
             font-family: inherit;
           }
           .fc-scroller, .fc-scroller.fc-scroller-liquid {
@@ -319,7 +316,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           weekends={true}
           events={events}
           eventClick={handleEventClick}
-          height={calendarHeight}
+          height="100%"
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={false}
