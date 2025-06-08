@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import { toast } from "sonner";
-import { Calendar, Clock, Repeat, ChevronDown, X } from "lucide-react";
+import { Calendar, Clock, Repeat, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 interface Role {
   id: string;
@@ -51,8 +51,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
-  const [showTimePicker, setShowTimePicker] = useState(false);
   const [showCustomRecurrence, setShowCustomRecurrence] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const datePickerRef = useRef<HTMLDivElement>(null);
 
   const [form, setForm] = useState<TaskFormValues>({
     title: "",
@@ -123,6 +124,23 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
     fetchLists();
   }, [userId, availableRoles, availableDomains]);
 
+  // Close date picker when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+      }
+    };
+
+    if (showDatePicker) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showDatePicker]);
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -191,6 +209,59 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
     if (type === 'custom') {
       setShowCustomRecurrence(true);
     }
+  };
+
+  // Calendar navigation functions
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCalendarDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(newDate.getMonth() - 1);
+      } else {
+        newDate.setMonth(newDate.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const handleDateSelect = (day: number) => {
+    const selectedDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+    const dateString = selectedDate.toISOString().split('T')[0];
+    setForm(prev => ({ ...prev, dueDate: dateString }));
+    setShowDatePicker(false);
+  };
+
+  // Generate calendar days
+  const generateCalendarDays = () => {
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDate = new Date(firstDay);
+    startDate.setDate(startDate.getDate() - firstDay.getDay());
+
+    const days = [];
+    const today = new Date();
+    const selectedDate = new Date(form.dueDate);
+
+    for (let i = 0; i < 42; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(startDate.getDate() + i);
+      
+      const isCurrentMonth = currentDate.getMonth() === month;
+      const isToday = currentDate.toDateString() === today.toDateString();
+      const isSelected = currentDate.toDateString() === selectedDate.toDateString();
+      
+      days.push({
+        date: currentDate.getDate(),
+        isCurrentMonth,
+        isToday,
+        isSelected,
+        fullDate: currentDate
+      });
+    }
+
+    return days;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -319,6 +390,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
   if (loading) return <div className="text-sm">Loading…</div>;
 
   const timeOptions = generateTimeOptions();
+  const calendarDays = generateCalendarDays();
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
   return (
     <div className="max-w-lg mx-auto bg-white rounded-lg shadow-xl p-5 max-h-[90vh] overflow-y-auto">
@@ -381,11 +457,17 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
 
         {/* Date/Time Section - Inline and compact */}
         <div className="flex items-center gap-2 py-2">
-          {/* Date Picker */}
-          <div className="relative">
+          {/* Google Calendar Style Date Picker */}
+          <div className="relative" ref={datePickerRef}>
             <button
               type="button"
-              onClick={() => setShowDatePicker(!showDatePicker)}
+              onClick={() => {
+                setShowDatePicker(!showDatePicker);
+                // Set calendar to the currently selected date
+                if (form.dueDate) {
+                  setCalendarDate(new Date(form.dueDate));
+                }
+              }}
               className="flex items-center gap-2 px-3 py-1.5 text-xs border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
             >
               <Calendar className="h-3 w-3 text-gray-500" />
@@ -393,17 +475,79 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
               <ChevronDown className="h-3 w-3 text-gray-400" />
             </button>
             
+            {/* Google Calendar Style Mini Calendar */}
             {showDatePicker && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-2">
-                <input
-                  type="date"
-                  value={form.dueDate}
-                  onChange={(e) => {
-                    setForm(prev => ({ ...prev, dueDate: e.target.value }));
-                    setShowDatePicker(false);
-                  }}
-                  className="text-xs border border-gray-300 rounded px-2 py-1"
-                />
+              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 w-64">
+                {/* Calendar Header */}
+                <div className="flex items-center justify-between mb-3">
+                  <button
+                    type="button"
+                    onClick={() => navigateMonth('prev')}
+                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4 text-gray-600" />
+                  </button>
+                  
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {monthNames[calendarDate.getMonth()]} {calendarDate.getFullYear()}
+                  </h3>
+                  
+                  <button
+                    type="button"
+                    onClick={() => navigateMonth('next')}
+                    className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                  </button>
+                </div>
+
+                {/* Calendar Grid */}
+                <div className="grid grid-cols-7 gap-1">
+                  {/* Day headers */}
+                  {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                    <div key={day} className="text-xs font-medium text-gray-500 text-center py-1">
+                      {day}
+                    </div>
+                  ))}
+                  
+                  {/* Calendar days */}
+                  {calendarDays.map((day, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleDateSelect(day.date)}
+                      className={`
+                        text-xs p-1.5 rounded-full text-center transition-colors
+                        ${!day.isCurrentMonth 
+                          ? 'text-gray-300 hover:bg-gray-50' 
+                          : day.isSelected
+                          ? 'bg-blue-600 text-white'
+                          : day.isToday
+                          ? 'bg-blue-100 text-blue-600 font-medium hover:bg-blue-200'
+                          : 'text-gray-700 hover:bg-gray-100'
+                        }
+                      `}
+                    >
+                      {day.date}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Today button */}
+                <div className="mt-3 pt-2 border-t border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const today = new Date();
+                      const todayString = today.toISOString().split('T')[0];
+                      setForm(prev => ({ ...prev, dueDate: todayString }));
+                      setShowDatePicker(false);
+                    }}
+                    className="text-xs text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Today
+                  </button>
+                </div>
               </div>
             )}
           </div>
