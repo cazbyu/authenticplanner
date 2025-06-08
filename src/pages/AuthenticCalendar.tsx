@@ -446,8 +446,8 @@ const AuthenticCalendar: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Unscheduled Priorities Content - Now using the new component */}
-                  <div className="flex-1 overflow-hidden">
+                  {/* Unscheduled Priorities Content - FIXED: Removed overflow-hidden */}
+                  <div className="flex-1">
                     <UnscheduledPriorities refreshTrigger={refreshTrigger} />
                   </div>
                   
@@ -482,7 +482,7 @@ const AuthenticCalendar: React.FC = () => {
             </div>
           </>
         ) : (
-          /* Tasks Quadrant View */
+          /* Tasks Quadrant View */}
           <div className="flex-1 overflow-hidden">
             <TaskQuadrants refreshTrigger={refreshTrigger} />
           </div>
