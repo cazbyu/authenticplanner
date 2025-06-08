@@ -482,7 +482,6 @@ const AuthenticCalendar: React.FC = () => {
             </div>
           </>
         ) : (
-          {/* Tasks Quadrant View */}
           <div className="flex-1 overflow-hidden">
             <TaskQuadrants refreshTrigger={refreshTrigger} />
           </div>
