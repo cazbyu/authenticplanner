@@ -50,6 +50,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       end: Date;
       allDay: boolean;
     } | null>(null);
+    const [taskFormPosition, setTaskFormPosition] = useState<{ x: number; y: number } | null>(null);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [calendarReady, setCalendarReady] = useState(false);
 
@@ -163,14 +164,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     };
 
-    const handleEventClick = (info: EventClickArg) => {
-      // Open edit modal for the clicked task
-      setEditingTaskId(info.event.id);
-    };
-
     // Handle date/time selection (drag to create)
     const handleDateSelect = (selectInfo: DateSelectArg) => {
-      const { start, end, allDay } = selectInfo;
+      const { start, end, allDay, jsEvent } = selectInfo;
       
       // Store the selected time slot
       setSelectedTimeSlot({
@@ -178,6 +174,23 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         end: new Date(end),
         allDay
       });
+
+      // Calculate position for the task form (anchor to selection)
+      if (jsEvent && !allDay) {
+        // For time grid views, position the form near the selection
+        const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const formWidth = 500; // Approximate form width
+        
+        // Position to the right if there's space, otherwise to the left
+        const x = rect.right + formWidth < viewportWidth ? rect.right + 10 : rect.left - formWidth - 10;
+        const y = Math.max(rect.top, 100); // Ensure it's not too close to the top
+        
+        setTaskFormPosition({ x, y });
+      } else {
+        // For month view or when positioning fails, center the form
+        setTaskFormPosition(null);
+      }
       
       // Open the task form
       setShowTaskForm(true);
@@ -186,9 +199,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       selectInfo.view.calendar.unselect();
     };
 
+    const handleEventClick = (info: EventClickArg) => {
+      // Open edit modal for the clicked task
+      setEditingTaskId(info.event.id);
+    };
+
     const handleTaskCreated = () => {
       setShowTaskForm(false);
       setSelectedTimeSlot(null);
+      setTaskFormPosition(null);
       // Refresh the calendar by incrementing the refresh trigger
       fetchTasks();
     };
@@ -196,6 +215,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const handleTaskFormClose = () => {
       setShowTaskForm(false);
       setSelectedTimeSlot(null);
+      setTaskFormPosition(null);
     };
 
     const handleTaskUpdated = () => {
@@ -440,28 +460,47 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             opacity: 0.8;
           }
           
-          /* Selection styles for drag-to-create */
+          /* Google Calendar-style selection and hover effects */
           .fc-highlight {
-            background: rgba(59, 130, 246, 0.3) !important;
+            background: rgba(59, 130, 246, 0.2) !important;
             border: 1px solid #3B82F6 !important;
           }
           
-          /* Make time slots more interactive */
-          .fc-timegrid-slot {
+          /* Time slot hover effects - only for time grid views */
+          .fc-timegrid-view .fc-timegrid-slot {
             cursor: crosshair;
+            transition: background-color 0.1s ease;
           }
           
-          .fc-daygrid-day {
+          .fc-timegrid-view .fc-timegrid-slot:hover {
+            background-color: rgba(59, 130, 246, 0.08) !important;
+          }
+          
+          /* Day grid hover effects - only for month view */
+          .fc-daygrid-view .fc-daygrid-day {
             cursor: crosshair;
+            transition: background-color 0.1s ease;
           }
           
-          /* Improve selection feedback */
-          .fc-timegrid-slot:hover {
-            background-color: rgba(59, 130, 246, 0.1);
+          .fc-daygrid-view .fc-daygrid-day:hover {
+            background-color: rgba(59, 130, 246, 0.05) !important;
           }
           
-          .fc-daygrid-day:hover {
-            background-color: rgba(59, 130, 246, 0.05);
+          /* Remove hover effects when scrolling */
+          .fc-scroller::-webkit-scrollbar-thumb:hover ~ .fc-timegrid-slot:hover,
+          .fc-scroller::-webkit-scrollbar-thumb:hover ~ .fc-daygrid-day:hover {
+            background-color: transparent !important;
+          }
+          
+          /* Selection feedback improvements */
+          .fc-timegrid-view .fc-timegrid-slot.fc-highlight {
+            background-color: rgba(59, 130, 246, 0.15) !important;
+            border-left: 3px solid #3B82F6 !important;
+          }
+          
+          .fc-daygrid-view .fc-daygrid-day.fc-highlight {
+            background-color: rgba(59, 130, 246, 0.1) !important;
+            border: 2px solid #3B82F6 !important;
           }
         `}
         </style>
@@ -502,7 +541,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           viewDidMount={handleCalendarReady}
           // Only show custom header in week/day view; let month use default
           dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
-          // Selection configuration
+          // Selection configuration for Google Calendar-like behavior
           selectConstraint={{
             start: '00:00',
             end: '24:00',
@@ -512,19 +551,37 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           // Allow selection on touch devices
           longPressDelay={300}
           eventLongPressDelay={300}
+          // Snap to 15-minute intervals
+          slotDuration="00:15:00"
+          snapDuration="00:15:00"
         />
         
-        {/* Task Form Modal for drag-to-create */}
+        {/* Task Form Modal for drag-to-create - Positioned or centered */}
         {showTaskForm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="w-full max-w-2xl">
-              <TaskForm
-                onClose={handleTaskFormClose}
-                onTaskCreated={handleTaskCreated}
-                initialFormData={getInitialFormData()}
-              />
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 z-40 bg-black bg-opacity-25"
+              onClick={handleTaskFormClose}
+            />
+            
+            {/* Task Form - Positioned near selection or centered */}
+            <div 
+              className={`fixed z-50 ${taskFormPosition ? '' : 'inset-0 flex items-center justify-center'}`}
+              style={taskFormPosition ? {
+                left: `${Math.max(10, Math.min(taskFormPosition.x, window.innerWidth - 520))}px`,
+                top: `${Math.max(10, Math.min(taskFormPosition.y, window.innerHeight - 600))}px`,
+              } : undefined}
+            >
+              <div className={`${taskFormPosition ? 'w-[500px]' : 'w-full max-w-2xl mx-4'} bg-white rounded-lg shadow-xl`}>
+                <TaskForm
+                  onClose={handleTaskFormClose}
+                  onTaskCreated={handleTaskCreated}
+                  initialFormData={getInitialFormData()}
+                />
+              </div>
             </div>
-          </div>
+          </>
         )}
         
         {/* Edit Modal */}
