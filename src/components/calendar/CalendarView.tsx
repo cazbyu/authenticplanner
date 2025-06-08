@@ -287,84 +287,79 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             font-weight: 600 !important;
           }
           
-          /* ULTRA AGGRESSIVE Month View Event Styles - Force Tiny Text */
+          /* NUCLEAR OPTION - Force tiny text on ALL month view events */
           .fc-daygrid-view .fc-event,
-          .fc-daygrid-view .fc-event .fc-event-main,
-          .fc-daygrid-view .fc-event .fc-event-main-frame,
+          .fc-daygrid-view .fc-event *,
           .fc-daygrid-view .fc-daygrid-event,
-          .fc-daygrid-view .fc-daygrid-event-harness,
-          .fc-daygrid-view .fc-daygrid-event .fc-event-main {
-            font-size: 0.4375rem !important;
-            font-weight: 400 !important;
-            padding: 0px 1px !important;
-            margin: 0px !important;
-            border-radius: 2px !important;
-            line-height: 1.0 !important;
-            min-height: 10px !important;
-            height: 10px !important;
-            cursor: pointer;
-            overflow: hidden;
-            white-space: nowrap;
-            text-overflow: ellipsis;
-          }
-          
-          /* Force tiny text on ALL event title elements */
+          .fc-daygrid-view .fc-daygrid-event *,
+          .fc-daygrid-view .fc-event-main,
+          .fc-daygrid-view .fc-event-main *,
           .fc-daygrid-view .fc-event-title,
-          .fc-daygrid-view .fc-event .fc-event-title,
-          .fc-daygrid-view .fc-daygrid-event .fc-event-title,
-          .fc-daygrid-view .fc-event-title-container,
-          .fc-daygrid-view .fc-event-main .fc-event-title-container,
-          .fc-daygrid-view .fc-event-main .fc-event-title {
-            font-size: 0.4375rem !important;
+          .fc-daygrid-view .fc-event-time {
+            font-size: 0.3125rem !important;
             font-weight: 400 !important;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-            line-height: 1.0 !important;
-            padding: 0 !important;
-            margin: 0 !important;
+            line-height: 0.8 !important;
+            padding: 0px !important;
+            margin: 0px !important;
+            height: auto !important;
+            min-height: 8px !important;
+            max-height: 8px !important;
+            overflow: hidden !important;
+            white-space: nowrap !important;
+            text-overflow: ellipsis !important;
           }
           
-          /* Force tiny text on event times */
-          .fc-daygrid-view .fc-event-time,
-          .fc-daygrid-view .fc-event .fc-event-time,
-          .fc-daygrid-view .fc-daygrid-event .fc-event-time {
-            font-size: 0.375rem !important;
-            font-weight: 400 !important;
-            margin-right: 1px;
-            line-height: 1.0 !important;
+          /* Force event containers to be tiny */
+          .fc-daygrid-view .fc-event,
+          .fc-daygrid-view .fc-daygrid-event {
+            height: 8px !important;
+            min-height: 8px !important;
+            max-height: 8px !important;
+            border-radius: 1px !important;
+            margin: 0px !important;
+            padding: 0px 1px !important;
+            cursor: pointer;
           }
           
           /* Month View Day Cell Content */
           .fc-daygrid-view .fc-daygrid-day-events {
             margin-top: 1px;
-            min-height: 10px;
+            min-height: 8px;
           }
           
-          /* Month View "More" Link */
+          /* Month View "More" Link - Make it tiny */
           .fc-daygrid-view .fc-daygrid-more-link,
           .fc-daygrid-view .fc-more-link {
-            font-size: 0.375rem !important;
+            font-size: 0.25rem !important;
             color: #6B7280 !important;
-            padding: 0px 1px !important;
+            padding: 0px !important;
             margin: 0px !important;
-            line-height: 1.0 !important;
-            height: 10px !important;
+            line-height: 0.8 !important;
+            height: 8px !important;
+            min-height: 8px !important;
+            max-height: 8px !important;
           }
           
           /* Month View Header - Make smaller */
           .fc-daygrid-view .fc-col-header-cell-cushion {
-            padding: 3px 0 !important;
-            font-size: 0.4375rem !important;
+            padding: 2px 0 !important;
+            font-size: 0.3125rem !important;
             font-weight: 500 !important;
             color: #6B7280 !important;
             text-transform: uppercase;
             letter-spacing: 0.025em;
+            line-height: 1.0 !important;
           }
           
-          /* Override any remaining large text in month view */
-          .fc-daygrid-view * {
-            font-size: inherit !important;
+          /* Override FullCalendar's inline styles with maximum specificity */
+          .fc-daygrid-view .fc-event[style],
+          .fc-daygrid-view .fc-daygrid-event[style],
+          .fc-daygrid-view .fc-event-main[style],
+          .fc-daygrid-view .fc-event-title[style],
+          .fc-daygrid-view .fc-event-time[style] {
+            font-size: 0.3125rem !important;
+            height: 8px !important;
+            line-height: 0.8 !important;
           }
           
           .fc-timegrid-col-frame {
