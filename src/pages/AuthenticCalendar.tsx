@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Menu, User, ChevronDoubleLeft, ChevronDoubleRight } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Menu, User, ChevronLeft as ChevronDoubleLeft, ChevronRight as ChevronDoubleRight } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
