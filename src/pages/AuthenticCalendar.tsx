@@ -372,7 +372,7 @@ const AuthenticCalendar: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Unscheduled Priorities with collapse functionality */}
-        <div className={`${prioritiesCollapsed ? 'w-16' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200`}>
+        <div className={`${prioritiesCollapsed ? 'w-16' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200 flex-shrink-0`}>
           {prioritiesCollapsed ? (
             /* Collapsed Sidebar - Improved readability with proper case */
             <div className="h-full flex flex-col items-center py-4">
@@ -448,7 +448,7 @@ const AuthenticCalendar: React.FC = () => {
         </div>
 
         {/* Calendar Area - Takes up remaining space and expands when priorities collapsed */}
-        <div className="flex-1 flex flex-col overflow-hidden">
+        <div className="flex-1 flex flex-col overflow-hidden min-w-0">
           <CalendarView
             ref={calendarRef}
             view={view}
