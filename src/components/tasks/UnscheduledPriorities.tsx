@@ -334,31 +334,32 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     const isCollapsed = collapsedQuadrants[id];
     
     return (
-      <div className="mb-4">
-        <div className={`${bgColor} ${textColor} p-2 rounded-t-lg flex-shrink-0`}>
+      <div className="mb-3">
+        {/* Header - Always visible, compact when collapsed */}
+        <div 
+          className={`${bgColor} ${textColor} px-3 py-2 rounded-lg flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity`}
+          onClick={() => toggleQuadrant(id)}
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 min-w-0">
               {icon}
               <h4 className="font-medium text-xs truncate">{title}</h4>
               <span className="text-xs opacity-75 flex-shrink-0">({tasks.length})</span>
             </div>
-            <button
-              onClick={() => toggleQuadrant(id)}
-              className="p-1 hover:bg-black hover:bg-opacity-10 rounded transition-colors flex-shrink-0"
-              title={isCollapsed ? 'Expand' : 'Collapse'}
-            >
+            <div className="flex-shrink-0 ml-2">
               {isCollapsed ? (
                 <ChevronDown className="h-3 w-3" />
               ) : (
                 <ChevronUp className="h-3 w-3" />
               )}
-            </button>
+            </div>
           </div>
         </div>
         
+        {/* Content - Only visible when expanded */}
         {!isCollapsed && (
-          <div className="bg-gray-50 rounded-b-lg">
-            <div className="space-y-2 p-2">
+          <div className="mt-1 bg-gray-50 rounded-lg">
+            <div className="space-y-2 p-3">
               {tasks.length === 0 ? (
                 <p className="text-gray-500 text-xs italic text-center py-4">No unscheduled tasks in this category</p>
               ) : (
@@ -366,10 +367,6 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
               )}
             </div>
           </div>
-        )}
-        
-        {isCollapsed && (
-          <div className="h-1 bg-gray-50 rounded-b-lg flex-shrink-0"></div>
         )}
       </div>
     );
@@ -385,8 +382,8 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
 
   return (
     <div className="h-full flex flex-col">
-      {/* Quadrant sections in priority order */}
-      <div className="flex-1 overflow-y-auto space-y-0">
+      {/* Quadrant sections with consistent padding from left edge */}
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-0">
         {/* Urgent & Important - Red */}
         <QuadrantSection
           id="urgent-important"
