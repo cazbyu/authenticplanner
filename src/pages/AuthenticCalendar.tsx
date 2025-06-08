@@ -377,13 +377,14 @@ const AuthenticCalendar: React.FC = () => {
             </select>
           )}
 
-          {/* New Task Button - Smaller */}
+          {/* Circular New Task Button */}
           <button
             onClick={() => setShowTaskForm(true)}
-            className="flex items-center rounded-md bg-blue-600 px-4 py-1.5 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+            className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
+            title="Add new task"
+            aria-label="Add new task"
           >
-            <Plus className="mr-1.5 h-4 w-4" />
-            New Task
+            <Plus className="h-5 w-5" />
           </button>
 
           {/* Profile/Floating Dresser Icon - Opens right sidebar */}
