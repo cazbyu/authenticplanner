@@ -41,13 +41,20 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
   const [loading, setLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
-  // Initialize collapsed state immediately - no need for separate initialization state
-  const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>(() => ({
+  // Initialize collapsed state with a stable default - this is the key fix
+  const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>({
     'urgent-important': false,
     'not-urgent-important': false,
     'urgent-not-important': false,
     'not-urgent-not-important': false,
-  }));
+  });
+
+  // Force a re-render after component mounts to ensure state is properly initialized
+  const [mounted, setMounted] = useState(false);
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     fetchUnscheduledTasks();
@@ -146,11 +153,17 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     }
   };
 
+  // Simplified toggle function that always works
   const toggleQuadrant = (quadrantId: string) => {
-    setCollapsedQuadrants(prev => ({
-      ...prev,
-      [quadrantId]: !prev[quadrantId]
-    }));
+    console.log('Toggling quadrant:', quadrantId); // Debug log
+    setCollapsedQuadrants(prev => {
+      const newState = {
+        ...prev,
+        [quadrantId]: !prev[quadrantId]
+      };
+      console.log('New collapsed state:', newState); // Debug log
+      return newState;
+    });
   };
 
   const handleTaskEdit = (task: Task) => {
@@ -333,12 +346,19 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
   }> = ({ id, title, tasks, bgColor, borderColor, textColor, icon }) => {
     const isCollapsed = collapsedQuadrants[id];
     
+    // Simple click handler that always works
+    const handleHeaderClick = (e: React.MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleQuadrant(id);
+    };
+    
     return (
       <div className="mb-4">
         {/* Header - Always visible, compact when collapsed */}
         <button 
           className={`w-full ${bgColor} ${textColor} px-3 py-2 rounded-lg flex-shrink-0 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-          onClick={() => toggleQuadrant(id)}
+          onClick={handleHeaderClick}
           type="button"
         >
           <div className="flex items-center justify-between">
@@ -373,7 +393,8 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     );
   };
 
-  if (loading) {
+  // Don't render until component is mounted to avoid hydration issues
+  if (!mounted || loading) {
     return (
       <div className="flex h-32 items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
