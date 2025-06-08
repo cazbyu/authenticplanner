@@ -372,19 +372,25 @@ const AuthenticCalendar: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Unscheduled Priorities with collapse functionality */}
-        <div className={`${prioritiesCollapsed ? 'w-12' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200`}>
+        <div className={`${prioritiesCollapsed ? 'w-16' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200`}>
           {prioritiesCollapsed ? (
-            /* Collapsed Sidebar */
-            <div className="p-2 flex flex-col items-center">
+            /* Collapsed Sidebar - Improved readability */
+            <div className="h-full flex flex-col items-center py-4">
               <button
                 onClick={() => setPrioritiesCollapsed(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors mb-6"
                 title="Expand Unscheduled Priorities"
               >
                 <ChevronDoubleRight className="h-4 w-4 text-gray-600" />
               </button>
-              <div className="mt-4 writing-mode-vertical text-xs font-medium text-gray-600 transform rotate-90 whitespace-nowrap">
-                Unscheduled Priorities
+              
+              {/* Vertical Text - Much more readable */}
+              <div className="flex-1 flex items-center justify-center">
+                <div className="transform -rotate-90 whitespace-nowrap">
+                  <span className="text-sm font-medium text-gray-600 tracking-wider">
+                    UNSCHEDULED PRIORITIES
+                  </span>
+                </div>
               </div>
             </div>
           ) : (
