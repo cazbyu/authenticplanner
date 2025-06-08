@@ -263,8 +263,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
 
   return (
     <div className="max-w-lg mx-auto bg-white rounded-xl shadow-lg p-6 max-h-[85vh] overflow-y-auto space-y-6">
-      <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900">Create New Task</h2>
+      {/* Close button only - no heading */}
+      <div className="flex justify-end">
         {onClose && (
           <button
             type="button"
@@ -284,35 +284,60 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Task title input - no label, just placeholder */}
         <div>
-          <label className="block text-sm font-medium mb-1">Task Title</label>
           <input
             name="title"
             value={form.title}
             onChange={handleChange}
             className="w-full border rounded px-3 py-2"
-            placeholder="Enter task title"
+            placeholder="Add Task Title"
             required
           />
         </div>
 
+        {/* Urgent and Important checkboxes immediately below title */}
         <div className="grid grid-cols-2 gap-4">
-          {[
-            ["isAuthenticDeposit", "Authentic Deposit"],
-            ["isTwelveWeekGoal", "12-Week Goal"],
-            ["isUrgent", "Urgent"],
-            ["isImportant", "Important"],
-          ].map(([key, label]) => (
-            <label key={key} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                name={key as string}
-                checked={(form as any)[key as string]}
-                onChange={handleChange}
-              />
-              {label as string}
-            </label>
-          ))}
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="isUrgent"
+              checked={form.isUrgent}
+              onChange={handleChange}
+            />
+            Urgent
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="isImportant"
+              checked={form.isImportant}
+              onChange={handleChange}
+            />
+            Important
+          </label>
+        </div>
+
+        {/* Rest of the form fields in original order */}
+        <div className="grid grid-cols-2 gap-4">
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="isAuthenticDeposit"
+              checked={form.isAuthenticDeposit}
+              onChange={handleChange}
+            />
+            Authentic Deposit
+          </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="isTwelveWeekGoal"
+              checked={form.isTwelveWeekGoal}
+              onChange={handleChange}
+            />
+            12-Week Goal
+          </label>
         </div>
 
         <div>
