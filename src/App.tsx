@@ -45,7 +45,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login\" replace />;
   }
   
   return <>{children}</>;
@@ -60,7 +60,7 @@ const OnboardingCheck = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (user && !user.onboardingComplete) {
-    return <Navigate to="/onboarding/welcome" replace />;
+    return <Navigate to="/onboarding/welcome\" replace />;
   }
   
   return <>{children}</>;
@@ -124,7 +124,7 @@ function App() {
       </Route>
       
       {/* Redirect any other route to home (which is now calendar) */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Navigate to="/\" replace />} />
     </Routes>
   );
 }
