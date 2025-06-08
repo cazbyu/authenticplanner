@@ -34,8 +34,7 @@ const MainLayout: React.FC = () => {
   };
   
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: Home },
-    { name: 'Authentic Calendar', path: '/calendar', icon: Calendar },
+    { name: 'Authentic Calendar', path: '/', icon: Calendar },
     { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: Clock },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
@@ -92,8 +91,8 @@ const MainLayout: React.FC = () => {
     ? drawerItems.find(item => item.id === activeDrawer)?.component 
     : null;
 
-  // Check if we're on the calendar page
-  const isCalendarPage = location.pathname === '/calendar';
+  // Check if we're on the calendar page (which is now the main page)
+  const isCalendarPage = location.pathname === '/' || location.pathname === '/calendar';
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -190,7 +189,7 @@ const MainLayout: React.FC = () => {
             <div className="border-t border-gray-200 p-4">
               <div className="flex items-center space-x-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-600">
-                  {user?.name.charAt(0) || 'U'}
+                  {user?.name?.charAt(0) || 'U'}
                 </div>
                 <div className="flex-1 truncate">
                   <p className="text-sm font-medium text-gray-900">{user?.name}</p>

@@ -8,7 +8,6 @@ import MainLayout from './layouts/MainLayout';
 import OnboardingLayout from './layouts/OnboardingLayout';
 
 // Pages
-import Dashboard from './pages/Dashboard';
 import AuthenticCalendar from './pages/AuthenticCalendar';
 import CycleTracker from './pages/CycleTracker';
 import TwelveWeekCycle from './pages/TwelveWeekCycle';
@@ -108,24 +107,23 @@ function App() {
         <Route path="complete" element={<OnboardingComplete />} />
       </Route>
       
-      {/* Main app routes (no more OnboardingCheck around MainLayout) */}
+      {/* Main app routes - Default to Authentic Calendar */}
       <Route
         path="/"
         element={
           <ProtectedRoute>
-            {/* REMOVED: <OnboardingCheck> */}
             <MainLayout />
-            {/* REMOVED: </OnboardingCheck> */}
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        {/* Default route now goes to calendar */}
+        <Route index element={<AuthenticCalendar />} />
         <Route path="calendar" element={<AuthenticCalendar />} />
         <Route path="twelve-week-cycle" element={<TwelveWeekCycle />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       
-      {/* Redirect any other route to home */}
+      {/* Redirect any other route to home (which is now calendar) */}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
