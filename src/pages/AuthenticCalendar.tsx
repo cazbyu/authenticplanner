@@ -4,15 +4,25 @@ import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
 import { useAuth } from '../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
 import type { FullCalendar } from '@fullcalendar/core';
 import logo from '../assets/logo.svg';
+
+// Import drawer content components
+import RoleBank from '../components/roles/RoleBank';
+import StrategicGoals from '../pages/StrategicGoals';
+import Reflections from '../pages/Reflections';
+import Scorecard from '../pages/Scorecard';
+import Tasks from '../pages/Tasks';
 
 const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridDay');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [prioritiesCollapsed, setPrioritiesCollapsed] = useState(false);
+  const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [activeDrawer, setActiveDrawer] = useState<'roles' | 'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const calendarRef = useRef<FullCalendar | null>(null);
   const [isViewChanging, setIsViewChanging] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -54,6 +64,20 @@ const AuthenticCalendar: React.FC = () => {
     setRefreshTrigger(prev => prev + 1);
   };
 
+  const toggleMainSidebar = () => setMainSidebarOpen(!mainSidebarOpen);
+  const closeMainSidebar = () => setMainSidebarOpen(false);
+
+  const toggleDrawer = () => {
+    setDrawerOpen(!drawerOpen);
+    if (!drawerOpen) {
+      setActiveDrawer(null);
+    }
+  };
+
+  const selectDrawer = (drawer: typeof activeDrawer) => {
+    setActiveDrawer(drawer);
+  };
+
   const getDateDisplayText = () => {
     switch (view) {
       case 'timeGridDay':
@@ -69,17 +93,208 @@ const AuthenticCalendar: React.FC = () => {
     }
   };
 
+  const navItems = [
+    { name: 'Dashboard', path: '/', icon: 'Home' },
+    { name: 'Authentic Calendar', path: '/calendar', icon: 'Calendar' },
+    { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: 'Clock' },
+    { name: 'Settings', path: '/settings', icon: 'Settings' },
+  ];
+
+  const drawerItems = [
+    { 
+      id: 'roles',
+      title: 'Role Bank',
+      description: 'Manage your life roles and authentic deposits',
+      component: RoleBank
+    },
+    {
+      id: 'tasks',
+      title: 'Tasks',
+      description: 'View and manage your tasks',
+      component: Tasks
+    },
+    {
+      id: 'goals',
+      title: 'Strategic Goals',
+      description: 'Review your mission, vision, and goals',
+      component: StrategicGoals
+    },
+    {
+      id: 'reflections',
+      title: 'Reflections',
+      description: 'View your task-related notes and reflections',
+      component: Reflections
+    },
+    {
+      id: 'scorecard',
+      title: 'Scorecard',
+      description: 'Track your balance and progress',
+      component: Scorecard
+    }
+  ];
+
+  const sidebarVariants = {
+    open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
+    closed: { x: '-100%', transition: { type: 'spring', stiffness: 300, damping: 30 } },
+  };
+  
+  const drawerVariants = {
+    open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
+    closed: { x: '100%', transition: { type: 'spring', stiffness: 300, damping: 30 } },
+  };
+  
+  const overlayVariants = {
+    open: { opacity: 1, transition: { duration: 0.3 } },
+    closed: { opacity: 0, transition: { duration: 0.3 } },
+  };
+
+  const ActiveDrawerComponent = activeDrawer 
+    ? drawerItems.find(item => item.id === activeDrawer)?.component 
+    : null;
+
   return (
     <div className="h-screen flex flex-col bg-white">
+      {/* Mobile sidebar overlay */}
+      <AnimatePresence>
+        {(mainSidebarOpen || drawerOpen) && (
+          <motion.div 
+            className="fixed inset-0 z-40 bg-black bg-opacity-50"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={overlayVariants}
+            onClick={() => {
+              closeMainSidebar();
+              setDrawerOpen(false);
+              setActiveDrawer(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Main Navigation Sidebar */}
+      <motion.aside
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg"
+        initial="closed"
+        animate={mainSidebarOpen ? 'open' : 'closed'}
+        variants={sidebarVariants}
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex h-16 items-center justify-between px-4">
+            <div className="flex items-center space-x-2">
+              <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
+              <span className="text-lg font-bold text-primary-600">Authentic Planner</span>
+            </div>
+            <button 
+              onClick={closeMainSidebar}
+              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
+              aria-label="Close menu"
+            >
+              ✕
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto px-3 py-4">
+            <nav className="space-y-1">
+              {navItems.map((item) => {
+                const isActive = item.path === '/calendar';
+                
+                return (
+                  <a
+                    key={item.path}
+                    href={item.path}
+                    className={`group flex items-center rounded-md px-3 py-2 text-sm font-medium ${
+                      isActive
+                        ? 'bg-primary-50 text-primary-600'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    onClick={closeMainSidebar}
+                  >
+                    <span className={`mr-3 h-5 w-5 ${isActive ? 'text-primary-500' : 'text-gray-500'}`}>
+                      📅
+                    </span>
+                    {item.name}
+                  </a>
+                );
+              })}
+            </nav>
+          </div>
+          
+          {/* User section */}
+          <div className="border-t border-gray-200 p-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+                {user?.name?.charAt(0) || 'U'}
+              </div>
+              <div className="flex-1 truncate">
+                <p className="text-sm font-medium text-gray-900">{user?.name || 'Demo User'}</p>
+                <p className="truncate text-xs text-gray-500">{user?.email || 'demo@example.com'}</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={logout}
+              className="mt-4 flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+            >
+              <span className="mr-3 h-5 w-5">🚪</span>
+              Sign out
+            </button>
+          </div>
+        </div>
+      </motion.aside>
+
+      {/* Floating Dresser */}
+      <motion.aside
+        className="fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-lg"
+        initial="closed"
+        animate={drawerOpen ? 'open' : 'closed'}
+        variants={drawerVariants}
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
+            <h2 className="text-lg font-semibold text-gray-900">
+              {activeDrawer ? drawerItems.find(item => item.id === activeDrawer)?.title : 'Floating Dresser'}
+            </h2>
+            <button
+              onClick={toggleDrawer}
+              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
+            >
+              <ChevronRight className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="flex-1 overflow-y-auto">
+            {ActiveDrawerComponent ? (
+              <div className="p-4">
+                <ActiveDrawerComponent />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 gap-4 p-4">
+                {drawerItems.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => selectDrawer(item.id as typeof activeDrawer)}
+                    className="flex flex-col items-start rounded-lg border border-gray-200 p-4 text-left transition-colors hover:bg-gray-50"
+                  >
+                    <h3 className="font-medium text-gray-900">{item.title}</h3>
+                    <p className="mt-1 text-sm text-gray-500">{item.description}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </motion.aside>
+
       {/* Google Calendar Style Header - Compact and minimal */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white min-h-[56px]">
         {/* Left Section: Menu, Logo, Date Navigation */}
         <div className="flex items-center space-x-4">
-          {/* Hamburger Menu */}
+          {/* Hamburger Menu - Opens main navigation sidebar */}
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={toggleMainSidebar}
             className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-            aria-label="Toggle menu"
+            aria-label="Toggle main menu"
           >
             <Menu className="h-5 w-5 text-gray-600" />
           </button>
@@ -137,11 +352,12 @@ const AuthenticCalendar: React.FC = () => {
             New Task
           </button>
 
-          {/* Profile/Floating Dresser Icon - Smaller */}
+          {/* Profile/Floating Dresser Icon - Opens right sidebar */}
           <div className="relative">
             <button
-              onClick={() => {/* Add profile dropdown logic */}}
+              onClick={toggleDrawer}
               className="flex items-center space-x-2 p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+              aria-label="Toggle floating dresser"
             >
               <div className="h-7 w-7 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-xs font-medium text-blue-600">
@@ -156,78 +372,76 @@ const AuthenticCalendar: React.FC = () => {
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Priorities with collapse functionality */}
-        {sidebarOpen && (
-          <div className={`${sidebarCollapsed ? 'w-12' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200`}>
-            {sidebarCollapsed ? (
-              /* Collapsed Sidebar */
-              <div className="p-2 flex flex-col items-center">
-                <button
-                  onClick={() => setSidebarCollapsed(false)}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  title="Expand Priorities"
-                >
-                  <ChevronDoubleRight className="h-4 w-4 text-gray-600" />
-                </button>
-                <div className="mt-4 writing-mode-vertical text-xs font-medium text-gray-600 transform rotate-90 whitespace-nowrap">
-                  Priorities
+        <div className={`${prioritiesCollapsed ? 'w-12' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200`}>
+          {prioritiesCollapsed ? (
+            /* Collapsed Sidebar */
+            <div className="p-2 flex flex-col items-center">
+              <button
+                onClick={() => setPrioritiesCollapsed(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                title="Expand Priorities"
+              >
+                <ChevronDoubleRight className="h-4 w-4 text-gray-600" />
+              </button>
+              <div className="mt-4 writing-mode-vertical text-xs font-medium text-gray-600 transform rotate-90 whitespace-nowrap">
+                Priorities
+              </div>
+            </div>
+          ) : (
+            /* Expanded Sidebar */
+            <>
+              {/* Priorities Header with Collapse Button */}
+              <div className="p-4 border-b border-gray-200">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-medium text-gray-900">Priorities</h3>
+                  <button
+                    onClick={() => setPrioritiesCollapsed(true)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="Collapse Priorities"
+                  >
+                    <ChevronDoubleLeft className="h-4 w-4 text-gray-600" />
+                  </button>
                 </div>
               </div>
-            ) : (
-              /* Expanded Sidebar */
-              <>
-                {/* Priorities Header with Collapse Button */}
-                <div className="p-4 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-medium text-gray-900">Priorities</h3>
-                    <button
-                      onClick={() => setSidebarCollapsed(true)}
-                      className="p-1 hover:bg-gray-100 rounded transition-colors"
-                      title="Collapse Priorities"
-                    >
-                      <ChevronDoubleLeft className="h-4 w-4 text-gray-600" />
-                    </button>
+
+              {/* Priorities Content */}
+              <div className="p-4 flex-1">
+                <div className="space-y-3">
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="font-medium text-gray-900 text-sm">Complete quarterly review</div>
+                    <div className="text-gray-500 text-xs mt-1">Due today</div>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="font-medium text-gray-900 text-sm">Team meeting preparation</div>
+                    <div className="text-gray-500 text-xs mt-1">Due tomorrow</div>
+                  </div>
+                  <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="font-medium text-gray-900 text-sm">Review project proposals</div>
+                    <div className="text-gray-500 text-xs mt-1">Due this week</div>
                   </div>
                 </div>
-
-                {/* Priorities Content */}
-                <div className="p-4 flex-1">
-                  <div className="space-y-3">
-                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="font-medium text-gray-900 text-sm">Complete quarterly review</div>
-                      <div className="text-gray-500 text-xs mt-1">Due today</div>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="font-medium text-gray-900 text-sm">Team meeting preparation</div>
-                      <div className="text-gray-500 text-xs mt-1">Due tomorrow</div>
-                    </div>
-                    <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                      <div className="font-medium text-gray-900 text-sm">Review project proposals</div>
-                      <div className="text-gray-500 text-xs mt-1">Due this week</div>
-                    </div>
+              </div>
+              
+              {/* Notes Section (collapsible/secondary) */}
+              <div className="border-t border-gray-200 p-4">
+                <details className="group">
+                  <summary className="text-sm font-medium text-gray-900 cursor-pointer list-none flex items-center justify-between">
+                    Notes
+                    <span className="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
+                  </summary>
+                  <div className="mt-3">
+                    <textarea
+                      className="w-full h-24 resize-none rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      placeholder="Add your notes here..."
+                    />
                   </div>
-                </div>
-                
-                {/* Notes Section (collapsible/secondary) */}
-                <div className="border-t border-gray-200 p-4">
-                  <details className="group">
-                    <summary className="text-sm font-medium text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                      Notes
-                      <span className="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
-                    </summary>
-                    <div className="mt-3">
-                      <textarea
-                        className="w-full h-24 resize-none rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                        placeholder="Add your notes here..."
-                      />
-                    </div>
-                  </details>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                </details>
+              </div>
+            </>
+          )}
+        </div>
 
-        {/* Calendar Area - Takes up remaining space */}
+        {/* Calendar Area - Takes up remaining space and expands when priorities collapsed */}
         <div className="flex-1 flex flex-col overflow-hidden">
           <CalendarView
             ref={calendarRef}
