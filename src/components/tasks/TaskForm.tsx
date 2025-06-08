@@ -41,9 +41,16 @@ interface TaskFormProps {
   availableRoles?: Role[];
   availableDomains?: Domain[];
   onTaskCreated?: () => void;
+  initialFormData?: Partial<TaskFormValues>;
 }
 
-const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableDomains, onTaskCreated }) => {
+const TaskForm: React.FC<TaskFormProps> = ({ 
+  onClose, 
+  availableRoles, 
+  availableDomains, 
+  onTaskCreated,
+  initialFormData = {}
+}) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
@@ -77,7 +84,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
       endType: 'never',
       endDate: '',
       occurrences: 10
-    }
+    },
+    ...initialFormData // Apply initial form data from props
   });
 
   useEffect(() => {

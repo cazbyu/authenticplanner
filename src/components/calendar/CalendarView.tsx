@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
-import FullCalendar, { DatesSetArg, DateHeaderContentArg, EventClickArg } from '@fullcalendar/react';
+import FullCalendar, { DatesSetArg, DateHeaderContentArg, EventClickArg, DateSelectArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
 import { supabase } from '../../supabaseClient';
 import TaskEditModal from './TaskEditModal';
+import TaskForm from '../tasks/TaskForm';
 
 interface Task {
   id: string;
@@ -43,6 +44,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+    const [showTaskForm, setShowTaskForm] = useState(false);
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
+      start: Date;
+      end: Date;
+      allDay: boolean;
+    } | null>(null);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [calendarReady, setCalendarReady] = useState(false);
 
@@ -161,10 +168,66 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setEditingTaskId(info.event.id);
     };
 
+    // Handle date/time selection (drag to create)
+    const handleDateSelect = (selectInfo: DateSelectArg) => {
+      const { start, end, allDay } = selectInfo;
+      
+      // Store the selected time slot
+      setSelectedTimeSlot({
+        start: new Date(start),
+        end: new Date(end),
+        allDay
+      });
+      
+      // Open the task form
+      setShowTaskForm(true);
+      
+      // Clear the selection visually
+      selectInfo.view.calendar.unselect();
+    };
+
+    const handleTaskCreated = () => {
+      setShowTaskForm(false);
+      setSelectedTimeSlot(null);
+      // Refresh the calendar by incrementing the refresh trigger
+      fetchTasks();
+    };
+
+    const handleTaskFormClose = () => {
+      setShowTaskForm(false);
+      setSelectedTimeSlot(null);
+    };
+
     const handleTaskUpdated = () => {
       setEditingTaskId(null);
       // Refresh the calendar by incrementing the refresh trigger
       fetchTasks();
+    };
+
+    // Convert selected time slot to form-compatible format
+    const getInitialFormData = () => {
+      if (!selectedTimeSlot) return {};
+
+      const { start, end, allDay } = selectedTimeSlot;
+      
+      if (allDay) {
+        // For all-day events (month view), just set the date
+        return {
+          dueDate: start.toISOString().split('T')[0],
+          schedulingType: 'unscheduled' as const,
+        };
+      } else {
+        // For timed events (day/week view), set date and times
+        const startTime = start.toTimeString().slice(0, 5); // HH:MM format
+        const endTime = end.toTimeString().slice(0, 5); // HH:MM format
+        
+        return {
+          dueDate: start.toISOString().split('T')[0],
+          startTime,
+          endTime,
+          schedulingType: 'scheduled' as const,
+        };
+      }
     };
 
     if (loading) {
@@ -376,6 +439,30 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-event:hover {
             opacity: 0.8;
           }
+          
+          /* Selection styles for drag-to-create */
+          .fc-highlight {
+            background: rgba(59, 130, 246, 0.3) !important;
+            border: 1px solid #3B82F6 !important;
+          }
+          
+          /* Make time slots more interactive */
+          .fc-timegrid-slot {
+            cursor: crosshair;
+          }
+          
+          .fc-daygrid-day {
+            cursor: crosshair;
+          }
+          
+          /* Improve selection feedback */
+          .fc-timegrid-slot:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+          }
+          
+          .fc-daygrid-day:hover {
+            background-color: rgba(59, 130, 246, 0.05);
+          }
         `}
         </style>
         <FullCalendar
@@ -393,6 +480,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           weekends={true}
           events={events}
           eventClick={handleEventClick}
+          select={handleDateSelect}
           height="100%"
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
@@ -414,7 +502,30 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           viewDidMount={handleCalendarReady}
           // Only show custom header in week/day view; let month use default
           dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
+          // Selection configuration
+          selectConstraint={{
+            start: '00:00',
+            end: '24:00',
+          }}
+          selectOverlap={false}
+          selectMinDistance={5} // Minimum pixels to drag before selection starts
+          // Allow selection on touch devices
+          longPressDelay={300}
+          eventLongPressDelay={300}
         />
+        
+        {/* Task Form Modal for drag-to-create */}
+        {showTaskForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl">
+              <TaskForm
+                onClose={handleTaskFormClose}
+                onTaskCreated={handleTaskCreated}
+                initialFormData={getInitialFormData()}
+              />
+            </div>
+          </div>
+        )}
         
         {/* Edit Modal */}
         {editingTaskId && (
