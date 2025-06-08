@@ -334,7 +334,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     const isCollapsed = collapsedQuadrants[id];
     
     return (
-      <div className="mb-3">
+      <div className="mb-4">
         {/* Header - Always visible, compact when collapsed */}
         <div 
           className={`${bgColor} ${textColor} px-3 py-2 rounded-lg flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity`}
@@ -382,8 +382,8 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
 
   return (
     <div className="h-full flex flex-col">
-      {/* Quadrant sections with consistent padding from left edge */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-0">
+      {/* Quadrant sections with consistent padding from left edge and uniform spacing */}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
         {/* Urgent & Important - Red */}
         <QuadrantSection
           id="urgent-important"
