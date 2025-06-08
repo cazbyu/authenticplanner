@@ -24,6 +24,12 @@ interface CalendarViewProps {
   refreshTrigger?: number;
 }
 
+interface TimeSlotSelection {
+  start: Date;
+  end: Date;
+  element: HTMLElement;
+}
+
 const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // This custom header ONLY for week/day, not month!
@@ -45,14 +51,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [loading, setLoading] = useState(true);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
     const [showTaskForm, setShowTaskForm] = useState(false);
-    const [selectedTimeSlot, setSelectedTimeSlot] = useState<{
-      start: Date;
-      end: Date;
-      allDay: boolean;
-    } | null>(null);
+    const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlotSelection | null>(null);
     const [taskFormPosition, setTaskFormPosition] = useState<{ x: number; y: number } | null>(null);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [calendarReady, setCalendarReady] = useState(false);
+    
+    // Time slot selection state
+    const [isSelecting, setIsSelecting] = useState(false);
+    const [selectionStart, setSelectionStart] = useState<{ time: Date; element: HTMLElement } | null>(null);
+    const [currentSelection, setCurrentSelection] = useState<TimeSlotSelection | null>(null);
 
     // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
@@ -123,6 +130,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           });
         }
         setCalendarReady(true);
+        
+        // Set up time slot interaction after calendar is ready
+        setupTimeSlotInteraction();
       }
     };
 
@@ -143,6 +153,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             }
           });
         }
+        
+        // Re-setup interaction when view changes
+        setupTimeSlotInteraction();
       }
     }, [view, currentDate, fullCalendarRef, calendarReady]);
 
@@ -162,9 +175,238 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           }
         }, 10);
       }
+      
+      // Re-setup interaction when dates change
+      setTimeout(() => setupTimeSlotInteraction(), 100);
     };
 
-    // Handle date/time selection (drag to create)
+    // Setup time slot interaction for Google Calendar-like behavior
+    const setupTimeSlotInteraction = () => {
+      if (!fullCalendarRef || !('current' in fullCalendarRef) || !fullCalendarRef.current) return;
+      
+      const calendarEl = fullCalendarRef.current.el;
+      if (!calendarEl) return;
+
+      // Only apply to time grid views (day/week)
+      if (view !== 'timeGridDay' && view !== 'timeGridWeek') return;
+
+      // Remove existing listeners
+      const existingSlots = calendarEl.querySelectorAll('.fc-timegrid-slot[data-time]');
+      existingSlots.forEach(slot => {
+        const newSlot = slot.cloneNode(true);
+        slot.parentNode?.replaceChild(newSlot, slot);
+      });
+
+      // Add interaction to time slots
+      const timeSlots = calendarEl.querySelectorAll('.fc-timegrid-slot[data-time]');
+      
+      timeSlots.forEach((slot: Element) => {
+        const slotEl = slot as HTMLElement;
+        
+        // Add hover effects
+        slotEl.addEventListener('mouseenter', handleSlotHover);
+        slotEl.addEventListener('mouseleave', handleSlotLeave);
+        
+        // Add click/drag interaction
+        slotEl.addEventListener('mousedown', handleSlotMouseDown);
+      });
+
+      // Add global mouse events for dragging
+      document.addEventListener('mousemove', handleGlobalMouseMove);
+      document.addEventListener('mouseup', handleGlobalMouseUp);
+    };
+
+    const handleSlotHover = (e: Event) => {
+      const slot = e.target as HTMLElement;
+      if (!slot.classList.contains('fc-timegrid-slot')) return;
+      
+      // Add hover styles
+      slot.style.cursor = 'crosshair';
+      slot.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+    };
+
+    const handleSlotLeave = (e: Event) => {
+      const slot = e.target as HTMLElement;
+      if (!slot.classList.contains('fc-timegrid-slot')) return;
+      
+      // Remove hover styles if not selected
+      if (!currentSelection || !isElementInSelection(slot, currentSelection)) {
+        slot.style.cursor = '';
+        slot.style.backgroundColor = '';
+      }
+    };
+
+    const handleSlotMouseDown = (e: MouseEvent) => {
+      e.preventDefault();
+      const slot = e.target as HTMLElement;
+      if (!slot.classList.contains('fc-timegrid-slot')) return;
+
+      const timeStr = slot.getAttribute('data-time');
+      if (!timeStr) return;
+
+      // Parse the time from the slot
+      const slotTime = parseSlotTime(slot);
+      if (!slotTime) return;
+
+      setIsSelecting(true);
+      setSelectionStart({ time: slotTime, element: slot });
+      
+      // Create initial 1-hour selection
+      const endTime = new Date(slotTime.getTime() + 60 * 60 * 1000); // 1 hour later
+      const selection: TimeSlotSelection = {
+        start: slotTime,
+        end: endTime,
+        element: slot
+      };
+      
+      setCurrentSelection(selection);
+      highlightSelection(selection);
+    };
+
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (!isSelecting || !selectionStart) return;
+
+      const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
+      if (!elementUnderMouse || !elementUnderMouse.classList.contains('fc-timegrid-slot')) return;
+
+      const currentSlot = elementUnderMouse as HTMLElement;
+      const currentTime = parseSlotTime(currentSlot);
+      if (!currentTime) return;
+
+      // Update selection based on drag direction
+      const startTime = selectionStart.time;
+      let newStart: Date, newEnd: Date;
+
+      if (currentTime >= startTime) {
+        // Dragging down
+        newStart = startTime;
+        newEnd = new Date(currentTime.getTime() + 15 * 60 * 1000); // Add 15 minutes to include the slot
+      } else {
+        // Dragging up
+        newStart = currentTime;
+        newEnd = new Date(startTime.getTime() + 15 * 60 * 1000);
+      }
+
+      const selection: TimeSlotSelection = {
+        start: newStart,
+        end: newEnd,
+        element: selectionStart.element
+      };
+
+      setCurrentSelection(selection);
+      highlightSelection(selection);
+    };
+
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (!isSelecting || !currentSelection) return;
+
+      setIsSelecting(false);
+      setSelectionStart(null);
+
+      // Open task form with the selection
+      openTaskFormForSelection(currentSelection, e);
+    };
+
+    const parseSlotTime = (slot: HTMLElement): Date | null => {
+      const timeStr = slot.getAttribute('data-time');
+      if (!timeStr) return null;
+
+      // Get the date from the column
+      const dayEl = slot.closest('.fc-day');
+      const dateStr = dayEl?.getAttribute('data-date');
+      if (!dateStr) return null;
+
+      // Parse time (format: "08:00:00")
+      const [hours, minutes] = timeStr.split(':').map(Number);
+      const date = new Date(dateStr);
+      date.setHours(hours, minutes, 0, 0);
+      
+      return date;
+    };
+
+    const highlightSelection = (selection: TimeSlotSelection) => {
+      if (!fullCalendarRef || !('current' in fullCalendarRef) || !fullCalendarRef.current) return;
+
+      const calendarEl = fullCalendarRef.current.el;
+      
+      // Clear previous highlights
+      const previousHighlights = calendarEl.querySelectorAll('.fc-timegrid-slot.time-slot-selected');
+      previousHighlights.forEach(slot => {
+        (slot as HTMLElement).classList.remove('time-slot-selected');
+        (slot as HTMLElement).style.backgroundColor = '';
+        (slot as HTMLElement).style.borderLeft = '';
+      });
+
+      // Highlight selected slots
+      const timeSlots = calendarEl.querySelectorAll('.fc-timegrid-slot[data-time]');
+      timeSlots.forEach((slot: Element) => {
+        const slotEl = slot as HTMLElement;
+        const slotTime = parseSlotTime(slotEl);
+        if (!slotTime) return;
+
+        if (slotTime >= selection.start && slotTime < selection.end) {
+          slotEl.classList.add('time-slot-selected');
+          slotEl.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
+          slotEl.style.borderLeft = '3px solid #3B82F6';
+        }
+      });
+    };
+
+    const isElementInSelection = (element: HTMLElement, selection: TimeSlotSelection): boolean => {
+      const slotTime = parseSlotTime(element);
+      if (!slotTime) return false;
+      return slotTime >= selection.start && slotTime < selection.end;
+    };
+
+    const openTaskFormForSelection = (selection: TimeSlotSelection, mouseEvent: MouseEvent) => {
+      // Calculate form position near the selection
+      const rect = selection.element.getBoundingClientRect();
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      const formWidth = 500;
+      const formHeight = 600;
+
+      let x = rect.right + 10; // Default to right of selection
+      let y = Math.max(rect.top, 100);
+
+      // If form would go off right edge, position to left
+      if (x + formWidth > viewportWidth - 20) {
+        x = rect.left - formWidth - 10;
+      }
+
+      // If still off screen, center horizontally
+      if (x < 20) {
+        x = (viewportWidth - formWidth) / 2;
+      }
+
+      // Ensure form doesn't go off bottom
+      if (y + formHeight > viewportHeight - 20) {
+        y = viewportHeight - formHeight - 20;
+      }
+
+      // Ensure form doesn't go off top
+      y = Math.max(y, 20);
+
+      setTaskFormPosition({ x, y });
+      setSelectedTimeSlot(selection);
+      setShowTaskForm(true);
+
+      // Clear visual selection after a brief delay
+      setTimeout(() => {
+        setCurrentSelection(null);
+        if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
+          const calendarEl = fullCalendarRef.current.el;
+          const highlights = calendarEl.querySelectorAll('.fc-timegrid-slot.time-slot-selected');
+          highlights.forEach(slot => {
+            (slot as HTMLElement).classList.remove('time-slot-selected');
+            (slot as HTMLElement).style.backgroundColor = '';
+            (slot as HTMLElement).style.borderLeft = '';
+          });
+        }
+      }, 100);
+    };
+
+    // Handle date/time selection (drag to create) - fallback for FullCalendar's built-in selection
     const handleDateSelect = (selectInfo: DateSelectArg) => {
       const { start, end, allDay, jsEvent } = selectInfo;
       
@@ -172,7 +414,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setSelectedTimeSlot({
         start: new Date(start),
         end: new Date(end),
-        allDay
+        element: jsEvent?.target as HTMLElement || document.body
       });
 
       // Calculate position for the task form (anchor to selection)
@@ -180,11 +422,11 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         // For time grid views, position the form near the selection
         const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
         const viewportWidth = window.innerWidth;
-        const formWidth = 500; // Approximate form width
+        const formWidth = 500;
         
         // Position to the right if there's space, otherwise to the left
         const x = rect.right + formWidth < viewportWidth ? rect.right + 10 : rect.left - formWidth - 10;
-        const y = Math.max(rect.top, 100); // Ensure it's not too close to the top
+        const y = Math.max(rect.top, 100);
         
         setTaskFormPosition({ x, y });
       } else {
@@ -208,6 +450,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setShowTaskForm(false);
       setSelectedTimeSlot(null);
       setTaskFormPosition(null);
+      setCurrentSelection(null);
       // Refresh the calendar by incrementing the refresh trigger
       fetchTasks();
     };
@@ -216,6 +459,18 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setShowTaskForm(false);
       setSelectedTimeSlot(null);
       setTaskFormPosition(null);
+      setCurrentSelection(null);
+      
+      // Clear any remaining highlights
+      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
+        const calendarEl = fullCalendarRef.current.el;
+        const highlights = calendarEl.querySelectorAll('.fc-timegrid-slot.time-slot-selected');
+        highlights.forEach(slot => {
+          (slot as HTMLElement).classList.remove('time-slot-selected');
+          (slot as HTMLElement).style.backgroundColor = '';
+          (slot as HTMLElement).style.borderLeft = '';
+        });
+      }
     };
 
     const handleTaskUpdated = () => {
@@ -228,27 +483,27 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const getInitialFormData = () => {
       if (!selectedTimeSlot) return {};
 
-      const { start, end, allDay } = selectedTimeSlot;
+      const { start, end } = selectedTimeSlot;
       
-      if (allDay) {
-        // For all-day events (month view), just set the date
-        return {
-          dueDate: start.toISOString().split('T')[0],
-          schedulingType: 'unscheduled' as const,
-        };
-      } else {
-        // For timed events (day/week view), set date and times
-        const startTime = start.toTimeString().slice(0, 5); // HH:MM format
-        const endTime = end.toTimeString().slice(0, 5); // HH:MM format
-        
-        return {
-          dueDate: start.toISOString().split('T')[0],
-          startTime,
-          endTime,
-          schedulingType: 'scheduled' as const,
-        };
-      }
+      // For timed events, set date and times
+      const startTime = start.toTimeString().slice(0, 5); // HH:MM format
+      const endTime = end.toTimeString().slice(0, 5); // HH:MM format
+      
+      return {
+        dueDate: start.toISOString().split('T')[0],
+        startTime,
+        endTime,
+        schedulingType: 'scheduled' as const,
+      };
     };
+
+    // Cleanup event listeners on unmount
+    useEffect(() => {
+      return () => {
+        document.removeEventListener('mousemove', handleGlobalMouseMove);
+        document.removeEventListener('mouseup', handleGlobalMouseUp);
+      };
+    }, []);
 
     if (loading) {
       return (
@@ -288,6 +543,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-timegrid-slot {
             height: 48px !important;
             border-bottom: 1px solid #f3f4f6 !important;
+            position: relative;
           }
           .fc-timegrid-slot-label {
             font-size: 0.625rem !important;
@@ -467,13 +723,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           }
           
           /* Time slot hover effects - only for time grid views */
-          .fc-timegrid-view .fc-timegrid-slot {
-            cursor: crosshair;
+          .fc-timegrid-view .fc-timegrid-slot[data-time] {
+            cursor: crosshair !important;
             transition: background-color 0.1s ease;
           }
           
-          .fc-timegrid-view .fc-timegrid-slot:hover {
-            background-color: rgba(59, 130, 246, 0.08) !important;
+          .fc-timegrid-view .fc-timegrid-slot[data-time]:hover {
+            background-color: rgba(59, 130, 246, 0.1) !important;
+          }
+          
+          /* Selected time slot styling */
+          .fc-timegrid-slot.time-slot-selected {
+            background-color: rgba(59, 130, 246, 0.2) !important;
+            border-left: 3px solid #3B82F6 !important;
           }
           
           /* Day grid hover effects - only for month view */
@@ -484,12 +746,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           
           .fc-daygrid-view .fc-daygrid-day:hover {
             background-color: rgba(59, 130, 246, 0.05) !important;
-          }
-          
-          /* Remove hover effects when scrolling */
-          .fc-scroller::-webkit-scrollbar-thumb:hover ~ .fc-timegrid-slot:hover,
-          .fc-scroller::-webkit-scrollbar-thumb:hover ~ .fc-daygrid-day:hover {
-            background-color: transparent !important;
           }
           
           /* Selection feedback improvements */
@@ -569,8 +825,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             <div 
               className={`fixed z-50 ${taskFormPosition ? '' : 'inset-0 flex items-center justify-center'}`}
               style={taskFormPosition ? {
-                left: `${Math.max(10, Math.min(taskFormPosition.x, window.innerWidth - 520))}px`,
-                top: `${Math.max(10, Math.min(taskFormPosition.y, window.innerHeight - 600))}px`,
+                left: `${taskFormPosition.x}px`,
+                top: `${taskFormPosition.y}px`,
               } : undefined}
             >
               <div className={`${taskFormPosition ? 'w-[500px]' : 'w-full max-w-2xl mx-4'} bg-white rounded-lg shadow-xl`}>
