@@ -40,8 +40,9 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [loading, setLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   
-  // State for collapsing quadrants
+  // State for collapsing quadrants - Initialize with all expanded
   const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>({
     'urgent-important': false,
     'not-urgent-important': false,
@@ -49,9 +50,22 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     'not-urgent-not-important': false,
   });
 
+  // Force re-initialization when component mounts
   useEffect(() => {
-    fetchUnscheduledTasks();
-  }, [refreshTrigger]);
+    setCollapsedQuadrants({
+      'urgent-important': false,
+      'not-urgent-important': false,
+      'urgent-not-important': false,
+      'not-urgent-not-important': false,
+    });
+    setIsInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (isInitialized) {
+      fetchUnscheduledTasks();
+    }
+  }, [refreshTrigger, isInitialized]);
 
   const fetchUnscheduledTasks = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -146,11 +160,22 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     }
   };
 
-  const toggleQuadrant = (quadrantId: string) => {
-    setCollapsedQuadrants(prev => ({
-      ...prev,
-      [quadrantId]: !prev[quadrantId]
-    }));
+  const toggleQuadrant = (quadrantId: string, event?: React.MouseEvent) => {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
+    console.log('Toggling quadrant:', quadrantId, 'Current state:', collapsedQuadrants[quadrantId]);
+    
+    setCollapsedQuadrants(prev => {
+      const newState = {
+        ...prev,
+        [quadrantId]: !prev[quadrantId]
+      };
+      console.log('New collapsed state:', newState);
+      return newState;
+    });
   };
 
   const handleTaskEdit = (task: Task) => {
@@ -336,9 +361,10 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     return (
       <div className="mb-4">
         {/* Header - Always visible, compact when collapsed */}
-        <div 
-          className={`${bgColor} ${textColor} px-3 py-2 rounded-lg flex-shrink-0 cursor-pointer hover:opacity-90 transition-opacity`}
-          onClick={() => toggleQuadrant(id)}
+        <button 
+          className={`w-full ${bgColor} ${textColor} px-3 py-2 rounded-lg flex-shrink-0 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+          onClick={(e) => toggleQuadrant(id, e)}
+          type="button"
         >
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2 min-w-0">
@@ -354,7 +380,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
               )}
             </div>
           </div>
-        </div>
+        </button>
         
         {/* Content - Only visible when expanded */}
         {!isCollapsed && (
@@ -372,7 +398,8 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     );
   };
 
-  if (loading) {
+  // Don't render anything until initialized
+  if (!isInitialized || loading) {
     return (
       <div className="flex h-32 items-center justify-center">
         <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
