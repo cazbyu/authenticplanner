@@ -1,5 +1,3 @@
-// src/components/calendar/CalendarView.tsx
-
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
 import FullCalendar, { DatesSetArg, DateHeaderContentArg, EventClickArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
@@ -260,31 +258,83 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             background-color: #3B82F6;
             color: white;
           }
-          .fc-daygrid-day-frame {
+          
+          /* Month View Specific Styles - Much Smaller Fonts Like Google Calendar */
+          .fc-daygrid-view .fc-daygrid-day-frame {
             min-height: 100px;
           }
-          .fc-daygrid-day-top {
+          .fc-daygrid-view .fc-daygrid-day-top {
             justify-content: center;
-            padding: 0;
+            padding: 4px 0 2px 0;
             flex-direction: row;
           }
-          .fc-daygrid-day-number {
-            width: 32px;
-            height: 32px;
+          .fc-daygrid-view .fc-daygrid-day-number {
+            width: 24px;
+            height: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0 auto;
             padding: 0 !important;
-            font-size: 1.125rem;
-            font-weight: 600;
+            font-size: 0.875rem !important;
+            font-weight: 500 !important;
             color: #374151;
             border-radius: 50%;
           }
-          .fc-day-today .fc-daygrid-day-number {
+          .fc-daygrid-view .fc-day-today .fc-daygrid-day-number {
             background: #3B82F6;
             color: white;
+            font-weight: 600 !important;
           }
+          
+          /* Month View Event Styles - Much Smaller Like Google Calendar */
+          .fc-daygrid-view .fc-event {
+            font-size: 0.6875rem !important;
+            font-weight: 400 !important;
+            padding: 1px 3px !important;
+            margin: 1px 2px !important;
+            border-radius: 3px !important;
+            line-height: 1.2 !important;
+            min-height: 16px !important;
+            cursor: pointer;
+          }
+          .fc-daygrid-view .fc-event-title {
+            font-size: 0.6875rem !important;
+            font-weight: 400 !important;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+          }
+          .fc-daygrid-view .fc-event-time {
+            font-size: 0.625rem !important;
+            font-weight: 400 !important;
+            margin-right: 2px;
+          }
+          
+          /* Month View Day Cell Content */
+          .fc-daygrid-view .fc-daygrid-day-events {
+            margin-top: 2px;
+            min-height: 16px;
+          }
+          
+          /* Month View "More" Link */
+          .fc-daygrid-view .fc-daygrid-more-link {
+            font-size: 0.625rem !important;
+            color: #6B7280 !important;
+            padding: 1px 3px !important;
+            margin: 1px 2px !important;
+          }
+          
+          /* Month View Header */
+          .fc-daygrid-view .fc-col-header-cell-cushion {
+            padding: 6px 0 !important;
+            font-size: 0.6875rem !important;
+            font-weight: 500 !important;
+            color: #6B7280 !important;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+          }
+          
           .fc-timegrid-col-frame {
             background: white;
           }
