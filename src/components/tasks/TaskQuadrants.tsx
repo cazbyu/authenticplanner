@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, isValid, parseISO } from 'date-fns';
+import EditTask from './EditTask';
 
 interface Task {
   id: string;
@@ -38,6 +39,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [loading, setLoading] = useState(true);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   
   // State for collapsing quadrants
   const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>({
@@ -107,7 +109,12 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     }
   };
 
-  const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
+  const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel', event?: React.MouseEvent) => {
+    // Prevent event bubbling to avoid triggering edit modal
+    if (event) {
+      event.stopPropagation();
+    }
+
     const updates: any = {
       status: action === 'complete' ? 'completed' : action === 'cancel' ? 'cancelled' : 'delegated',
     };
@@ -132,6 +139,26 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
       ...prev,
       [quadrantId]: !prev[quadrantId]
     }));
+  };
+
+  const handleTaskEdit = (task: Task) => {
+    setEditingTask(task);
+  };
+
+  const handleTaskUpdated = () => {
+    setEditingTask(null);
+    fetchTaskData(); // Refresh the task list
+  };
+
+  const handleEditCancel = () => {
+    setEditingTask(null);
+  };
+
+  // Helper function to detect if device is mobile/tablet
+  const isMobileDevice = () => {
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           ('ontouchstart' in window) || 
+           (navigator.maxTouchPoints > 0);
   };
 
   // Helper function to safely format dates and times
@@ -175,9 +202,33 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
 
   const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
     const dateTimeDisplay = formatTaskDateTime(task.due_date, task.start_time);
+    const isMobile = isMobileDevice();
+    
+    const handleCardClick = (event: React.MouseEvent) => {
+      // Only handle single clicks on mobile/tablet
+      if (isMobile) {
+        event.preventDefault();
+        event.stopPropagation();
+        handleTaskEdit(task);
+      }
+    };
+
+    const handleCardDoubleClick = (event: React.MouseEvent) => {
+      // Only handle double clicks on desktop
+      if (!isMobile) {
+        event.preventDefault();
+        event.stopPropagation();
+        handleTaskEdit(task);
+      }
+    };
     
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
+      <div 
+        className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer select-none"
+        onClick={handleCardClick}
+        onDoubleClick={handleCardDoubleClick}
+        title={isMobile ? "Tap to edit" : "Double-click to edit"}
+      >
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
             <h4 className="font-medium text-gray-900 text-sm leading-tight truncate">{task.title}</h4>
@@ -200,21 +251,21 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
           </div>
           <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
             <button
-              onClick={() => handleTaskAction(task.id, 'complete')}
+              onClick={(e) => handleTaskAction(task.id, 'complete', e)}
               className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
               title="Complete"
             >
               <Check className="h-3 w-3" />
             </button>
             <button
-              onClick={() => handleTaskAction(task.id, 'delegate')}
+              onClick={(e) => handleTaskAction(task.id, 'delegate', e)}
               className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
               title="Delegate"
             >
               <UserPlus className="h-3 w-3" />
             </button>
             <button
-              onClick={() => handleTaskAction(task.id, 'cancel')}
+              onClick={(e) => handleTaskAction(task.id, 'cancel', e)}
               className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
               title="Cancel"
             >
@@ -327,7 +378,9 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 p-6 pb-4">
         <h2 className="text-2xl font-bold text-gray-900">Task Priorities</h2>
-        <p className="text-gray-600 mt-1">Organize your tasks by urgency and importance</p>
+        <p className="text-gray-600 mt-1">
+          Organize your tasks by urgency and importance • {isMobileDevice() ? 'Tap' : 'Double-click'} to edit
+        </p>
       </div>
 
       {/* Desktop: 2x2 Grid with proper scrolling */}
@@ -413,6 +466,19 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
           />
         </div>
       </div>
+
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <EditTask
+              task={editingTask}
+              onTaskUpdated={handleTaskUpdated}
+              onCancel={handleEditCancel}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };
