@@ -287,54 +287,84 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             font-weight: 600 !important;
           }
           
-          /* Month View Event Styles - EXTREMELY Small Like Google Calendar */
-          .fc-daygrid-view .fc-event {
-            font-size: 0.5rem !important;
+          /* ULTRA AGGRESSIVE Month View Event Styles - Force Tiny Text */
+          .fc-daygrid-view .fc-event,
+          .fc-daygrid-view .fc-event .fc-event-main,
+          .fc-daygrid-view .fc-event .fc-event-main-frame,
+          .fc-daygrid-view .fc-daygrid-event,
+          .fc-daygrid-view .fc-daygrid-event-harness,
+          .fc-daygrid-view .fc-daygrid-event .fc-event-main {
+            font-size: 0.4375rem !important;
             font-weight: 400 !important;
-            padding: 0px 2px !important;
-            margin: 0px 1px !important;
+            padding: 0px 1px !important;
+            margin: 0px !important;
             border-radius: 2px !important;
-            line-height: 1.1 !important;
-            min-height: 12px !important;
+            line-height: 1.0 !important;
+            min-height: 10px !important;
+            height: 10px !important;
             cursor: pointer;
             overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
           }
-          .fc-daygrid-view .fc-event-title {
-            font-size: 0.5rem !important;
+          
+          /* Force tiny text on ALL event title elements */
+          .fc-daygrid-view .fc-event-title,
+          .fc-daygrid-view .fc-event .fc-event-title,
+          .fc-daygrid-view .fc-daygrid-event .fc-event-title,
+          .fc-daygrid-view .fc-event-title-container,
+          .fc-daygrid-view .fc-event-main .fc-event-title-container,
+          .fc-daygrid-view .fc-event-main .fc-event-title {
+            font-size: 0.4375rem !important;
             font-weight: 400 !important;
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            line-height: 1.0 !important;
+            padding: 0 !important;
+            margin: 0 !important;
           }
-          .fc-daygrid-view .fc-event-time {
-            font-size: 0.4375rem !important;
+          
+          /* Force tiny text on event times */
+          .fc-daygrid-view .fc-event-time,
+          .fc-daygrid-view .fc-event .fc-event-time,
+          .fc-daygrid-view .fc-daygrid-event .fc-event-time {
+            font-size: 0.375rem !important;
             font-weight: 400 !important;
             margin-right: 1px;
+            line-height: 1.0 !important;
           }
           
           /* Month View Day Cell Content */
           .fc-daygrid-view .fc-daygrid-day-events {
             margin-top: 1px;
-            min-height: 12px;
+            min-height: 10px;
           }
           
           /* Month View "More" Link */
-          .fc-daygrid-view .fc-daygrid-more-link {
-            font-size: 0.4375rem !important;
+          .fc-daygrid-view .fc-daygrid-more-link,
+          .fc-daygrid-view .fc-more-link {
+            font-size: 0.375rem !important;
             color: #6B7280 !important;
-            padding: 0px 2px !important;
-            margin: 0px 1px !important;
-            line-height: 1.1 !important;
+            padding: 0px 1px !important;
+            margin: 0px !important;
+            line-height: 1.0 !important;
+            height: 10px !important;
           }
           
-          /* Month View Header */
+          /* Month View Header - Make smaller */
           .fc-daygrid-view .fc-col-header-cell-cushion {
-            padding: 4px 0 !important;
-            font-size: 0.5rem !important;
+            padding: 3px 0 !important;
+            font-size: 0.4375rem !important;
             font-weight: 500 !important;
             color: #6B7280 !important;
             text-transform: uppercase;
             letter-spacing: 0.025em;
+          }
+          
+          /* Override any remaining large text in month view */
+          .fc-daygrid-view * {
+            font-size: inherit !important;
           }
           
           .fc-timegrid-col-frame {
