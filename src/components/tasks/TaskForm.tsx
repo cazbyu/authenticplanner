@@ -52,6 +52,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
   const [error, setError] = useState<string | null>(null);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCustomRecurrence, setShowCustomRecurrence] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const datePickerRef = useRef<HTMLDivElement>(null);
 
@@ -146,6 +147,12 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
   ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
+    
+    // Special handling for Authentic Deposit checkbox
+    if (name === 'isAuthenticDeposit' && type === 'checkbox' && checked) {
+      setShowRoleModal(true);
+    }
+    
     setForm((prev) => ({
       ...prev,
       [name]: type === "checkbox" ? checked : value,
@@ -163,6 +170,19 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
         : [...prev[field], id];
       return { ...prev, [field]: updated };
     });
+  };
+
+  const handleRoleSelection = (roleId: string) => {
+    // Auto-select the role in the main form
+    setForm(prev => ({
+      ...prev,
+      selectedRoleIds: prev.selectedRoleIds.includes(roleId) 
+        ? prev.selectedRoleIds 
+        : [...prev.selectedRoleIds, roleId]
+    }));
+    
+    // Close the modal
+    setShowRoleModal(false);
   };
 
   const convertToUTC = (dateStr: string, timeStr: string): string | null => {
@@ -431,9 +451,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
           />
         </div>
 
-        {/* Urgent and Important checkboxes immediately below title */}
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex items-center gap-2 text-xs">
+        {/* All four checkboxes in a single row */}
+        <div className="grid grid-cols-4 gap-2">
+          <label className="flex items-center gap-1 text-xs">
             <input
               type="checkbox"
               name="isUrgent"
@@ -443,7 +463,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
             />
             Urgent
           </label>
-          <label className="flex items-center gap-2 text-xs">
+          <label className="flex items-center gap-1 text-xs">
             <input
               type="checkbox"
               name="isImportant"
@@ -452,6 +472,26 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
               className="h-3 w-3"
             />
             Important
+          </label>
+          <label className="flex items-center gap-1 text-xs">
+            <input
+              type="checkbox"
+              name="isAuthenticDeposit"
+              checked={form.isAuthenticDeposit}
+              onChange={handleChange}
+              className="h-3 w-3"
+            />
+            Authentic Deposit
+          </label>
+          <label className="flex items-center gap-1 text-xs">
+            <input
+              type="checkbox"
+              name="isTwelveWeekGoal"
+              checked={form.isTwelveWeekGoal}
+              onChange={handleChange}
+              className="h-3 w-3"
+            />
+            12-Week Goal
           </label>
         </div>
 
@@ -784,30 +824,53 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
           </div>
         )}
 
-        {/* Rest of the form fields - reduced spacing and font sizes */}
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex items-center gap-2 text-xs">
-            <input
-              type="checkbox"
-              name="isAuthenticDeposit"
-              checked={form.isAuthenticDeposit}
-              onChange={handleChange}
-              className="h-3 w-3"
-            />
-            Authentic Deposit
-          </label>
-          <label className="flex items-center gap-2 text-xs">
-            <input
-              type="checkbox"
-              name="isTwelveWeekGoal"
-              checked={form.isTwelveWeekGoal}
-              onChange={handleChange}
-              className="h-3 w-3"
-            />
-            12-Week Goal
-          </label>
-        </div>
+        {/* Authentic Deposit Role Selection Modal */}
+        {showRoleModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">
+                  Which of your active Roles does this Deposit invest in?
+                </h3>
+                <button
+                  type="button"
+                  onClick={() => setShowRoleModal(false)}
+                  className="text-gray-400 hover:text-gray-600"
+                  aria-label="Close modal"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-2">
+                {roles.map((role) => (
+                  <button
+                    key={role.id}
+                    type="button"
+                    onClick={() => handleRoleSelection(role.id)}
+                    className={`
+                      w-full text-left px-4 py-3 rounded-lg border transition-colors
+                      ${form.selectedRoleIds.includes(role.id)
+                        ? 'bg-blue-50 border-blue-200 text-blue-700'
+                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
+                      }
+                    `}
+                  >
+                    <span className="font-medium">{role.label}</span>
+                  </button>
+                ))}
+              </div>
+              
+              {roles.length === 0 && (
+                <p className="text-sm text-gray-500 text-center py-4">
+                  No active roles found. Please add roles in Settings first.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
 
+        {/* Rest of the form fields - reduced spacing and font sizes */}
         <div>
           <h3 className="text-xs font-medium mb-2">Roles</h3>
           <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-32 overflow-y-auto">
