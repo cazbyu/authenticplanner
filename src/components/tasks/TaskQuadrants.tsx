@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Check, UserPlus, X, Clock, AlertTriangle } from 'lucide-react';
+import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, isValid, parseISO } from 'date-fns';
 
 interface Task {
@@ -38,6 +38,14 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [loading, setLoading] = useState(true);
+  
+  // State for collapsing quadrants
+  const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>({
+    'urgent-important': false,
+    'not-urgent-important': false,
+    'urgent-not-important': false,
+    'not-urgent-not-important': false,
+  });
 
   useEffect(() => {
     fetchTaskData();
@@ -119,6 +127,13 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     }
   };
 
+  const toggleQuadrant = (quadrantId: string) => {
+    setCollapsedQuadrants(prev => ({
+      ...prev,
+      [quadrantId]: !prev[quadrantId]
+    }));
+  };
+
   // Helper function to safely format dates and times
   const formatTaskDateTime = (dateStr: string | null, timeStr: string | null) => {
     if (!dateStr) return null;
@@ -162,28 +177,28 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     const dateTimeDisplay = formatTaskDateTime(task.due_date, task.start_time);
     
     return (
-      <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+      <div className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow">
         <div className="flex items-start justify-between mb-2">
-          <div className="flex-1">
-            <h4 className="font-medium text-gray-900 text-sm leading-tight">{task.title}</h4>
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-gray-900 text-sm leading-tight truncate">{task.title}</h4>
             {dateTimeDisplay ? (
               <div className="flex items-center mt-1 text-xs text-gray-500">
-                <Clock className="h-3 w-3 mr-1" />
-                {dateTimeDisplay}
+                <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                <span className="truncate">{dateTimeDisplay}</span>
               </div>
             ) : task.due_date || task.start_time ? (
               <div className="flex items-center mt-1 text-xs text-gray-500">
-                <Clock className="h-3 w-3 mr-1" />
-                Unscheduled
+                <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                <span>Unscheduled</span>
               </div>
             ) : (
               <div className="flex items-center mt-1 text-xs text-gray-400">
-                <Clock className="h-3 w-3 mr-1" />
-                No date set
+                <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                <span>No date set</span>
               </div>
             )}
           </div>
-          <div className="flex items-center space-x-1 ml-2">
+          <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
             <button
               onClick={() => handleTaskAction(task.id, 'complete')}
               className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
@@ -211,12 +226,12 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
         {/* Task badges */}
         <div className="flex flex-wrap gap-1 mb-2">
           {task.is_authentic_deposit && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
               Authentic Deposit
             </span>
           )}
           {task.is_twelve_week_goal && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
               12-Week Goal
             </span>
           )}
@@ -224,51 +239,81 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
 
         {/* Roles and domains */}
         <div className="flex flex-wrap gap-1">
-          {task.task_roles?.map(({ role_id }) => (
+          {task.task_roles?.slice(0, 2).map(({ role_id }) => (
             roles[role_id] && (
-              <span key={role_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
+              <span key={role_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700 truncate max-w-20">
                 {roles[role_id].label}
               </span>
             )
           ))}
-          {task.task_domains?.map(({ domain_id }) => (
+          {task.task_domains?.slice(0, 2).map(({ domain_id }) => (
             domains[domain_id] && (
-              <span key={domain_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
+              <span key={domain_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 truncate max-w-20">
                 {domains[domain_id].name}
               </span>
             )
           ))}
+          {(task.task_roles?.length > 2 || task.task_domains?.length > 2) && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
+              +{(task.task_roles?.length || 0) + (task.task_domains?.length || 0) - 4}
+            </span>
+          )}
         </div>
       </div>
     );
   };
 
   const QuadrantSection: React.FC<{ 
+    id: string;
     title: string; 
     tasks: Task[]; 
     bgColor: string;
     textColor: string;
     icon: React.ReactNode;
-  }> = ({ title, tasks, bgColor, textColor, icon }) => (
-    <div className="flex flex-col h-full">
-      <div className={`${bgColor} ${textColor} p-4 rounded-t-lg`}>
-        <div className="flex items-center space-x-2">
-          {icon}
-          <h3 className="font-semibold text-sm">{title}</h3>
-          <span className="text-xs opacity-75">({tasks.length})</span>
+  }> = ({ id, title, tasks, bgColor, textColor, icon }) => {
+    const isCollapsed = collapsedQuadrants[id];
+    
+    return (
+      <div className="flex flex-col h-full min-h-0">
+        <div className={`${bgColor} ${textColor} p-3 rounded-t-lg flex-shrink-0`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 min-w-0">
+              {icon}
+              <h3 className="font-semibold text-sm truncate">{title}</h3>
+              <span className="text-xs opacity-75 flex-shrink-0">({tasks.length})</span>
+            </div>
+            <button
+              onClick={() => toggleQuadrant(id)}
+              className="p-1 hover:bg-black hover:bg-opacity-10 rounded transition-colors flex-shrink-0"
+              title={isCollapsed ? 'Expand' : 'Collapse'}
+            >
+              {isCollapsed ? (
+                <ChevronDown className="h-4 w-4" />
+              ) : (
+                <ChevronUp className="h-4 w-4" />
+              )}
+            </button>
+          </div>
         </div>
+        
+        {!isCollapsed && (
+          <div className="flex-1 p-3 bg-gray-50 rounded-b-lg overflow-y-auto min-h-0">
+            <div className="space-y-2">
+              {tasks.length === 0 ? (
+                <p className="text-gray-500 text-sm italic text-center py-8">No tasks in this category</p>
+              ) : (
+                tasks.map(task => <TaskCard key={task.id} task={task} />)
+              )}
+            </div>
+          </div>
+        )}
+        
+        {isCollapsed && (
+          <div className="h-2 bg-gray-50 rounded-b-lg flex-shrink-0"></div>
+        )}
       </div>
-      <div className="flex-1 p-4 bg-gray-50 rounded-b-lg overflow-y-auto">
-        <div className="space-y-3">
-          {tasks.length === 0 ? (
-            <p className="text-gray-500 text-sm italic text-center py-8">No tasks in this category</p>
-          ) : (
-            tasks.map(task => <TaskCard key={task.id} task={task} />)
-          )}
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   if (loading) {
     return (
@@ -279,84 +324,94 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   }
 
   return (
-    <div className="h-full p-6">
-      <div className="mb-6">
+    <div className="h-full flex flex-col">
+      <div className="flex-shrink-0 p-6 pb-4">
         <h2 className="text-2xl font-bold text-gray-900">Task Priorities</h2>
         <p className="text-gray-600 mt-1">Organize your tasks by urgency and importance</p>
       </div>
 
-      {/* Desktop: 2x2 Grid */}
-      <div className="hidden md:grid md:grid-cols-2 gap-6 h-full max-h-[calc(100vh-200px)]">
-        {/* Urgent & Important */}
-        <QuadrantSection
-          title="Urgent & Important"
-          tasks={urgentImportant}
-          bgColor="bg-red-500"
-          textColor="text-white"
-          icon={<AlertTriangle className="h-4 w-4" />}
-        />
+      {/* Desktop: 2x2 Grid with proper scrolling */}
+      <div className="flex-1 min-h-0 px-6 pb-6">
+        <div className="hidden md:grid md:grid-cols-2 gap-4 h-full">
+          {/* Urgent & Important */}
+          <QuadrantSection
+            id="urgent-important"
+            title="Urgent & Important"
+            tasks={urgentImportant}
+            bgColor="bg-red-500"
+            textColor="text-white"
+            icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+          />
 
-        {/* Not Urgent & Important */}
-        <QuadrantSection
-          title="Not Urgent & Important"
-          tasks={notUrgentImportant}
-          bgColor="bg-green-500"
-          textColor="text-white"
-          icon={<Check className="h-4 w-4" />}
-        />
+          {/* Not Urgent & Important */}
+          <QuadrantSection
+            id="not-urgent-important"
+            title="Not Urgent & Important"
+            tasks={notUrgentImportant}
+            bgColor="bg-green-500"
+            textColor="text-white"
+            icon={<Check className="h-4 w-4 flex-shrink-0" />}
+          />
 
-        {/* Urgent & Not Important */}
-        <QuadrantSection
-          title="Urgent & Not Important"
-          tasks={urgentNotImportant}
-          bgColor="bg-yellow-500"
-          textColor="text-white"
-          icon={<Clock className="h-4 w-4" />}
-        />
+          {/* Urgent & Not Important */}
+          <QuadrantSection
+            id="urgent-not-important"
+            title="Urgent & Not Important"
+            tasks={urgentNotImportant}
+            bgColor="bg-yellow-500"
+            textColor="text-white"
+            icon={<Clock className="h-4 w-4 flex-shrink-0" />}
+          />
 
-        {/* Not Urgent & Not Important */}
-        <QuadrantSection
-          title="Not Urgent & Not Important"
-          tasks={notUrgentNotImportant}
-          bgColor="bg-gray-500"
-          textColor="text-white"
-          icon={<X className="h-4 w-4" />}
-        />
-      </div>
+          {/* Not Urgent & Not Important */}
+          <QuadrantSection
+            id="not-urgent-not-important"
+            title="Not Urgent & Not Important"
+            tasks={notUrgentNotImportant}
+            bgColor="bg-gray-500"
+            textColor="text-white"
+            icon={<X className="h-4 w-4 flex-shrink-0" />}
+          />
+        </div>
 
-      {/* Mobile: Stacked Layout */}
-      <div className="md:hidden space-y-6">
-        <QuadrantSection
-          title="Urgent & Important"
-          tasks={urgentImportant}
-          bgColor="bg-red-500"
-          textColor="text-white"
-          icon={<AlertTriangle className="h-4 w-4" />}
-        />
+        {/* Mobile: Stacked Layout with scrolling */}
+        <div className="md:hidden space-y-4 h-full overflow-y-auto">
+          <QuadrantSection
+            id="urgent-important"
+            title="Urgent & Important"
+            tasks={urgentImportant}
+            bgColor="bg-red-500"
+            textColor="text-white"
+            icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+          />
 
-        <QuadrantSection
-          title="Not Urgent & Important"
-          tasks={notUrgentImportant}
-          bgColor="bg-green-500"
-          textColor="text-white"
-          icon={<Check className="h-4 w-4" />}
-        />
+          <QuadrantSection
+            id="not-urgent-important"
+            title="Not Urgent & Important"
+            tasks={notUrgentImportant}
+            bgColor="bg-green-500"
+            textColor="text-white"
+            icon={<Check className="h-4 w-4 flex-shrink-0" />}
+          />
 
-        <QuadrantSection
-          title="Urgent & Not Important"
-          tasks={urgentNotImportant}
-          bgColor="bg-yellow-500"
-          textColor="text-white"
-          icon={<Clock className="h-4 w-4" />}
-        />
+          <QuadrantSection
+            id="urgent-not-important"
+            title="Urgent & Not Important"
+            tasks={urgentNotImportant}
+            bgColor="bg-yellow-500"
+            textColor="text-white"
+            icon={<Clock className="h-4 w-4 flex-shrink-0" />}
+          />
 
-        <QuadrantSection
-          title="Not Urgent & Not Important"
-          tasks={notUrgentNotImportant}
-          bgColor="bg-gray-500"
-          textColor="text-white"
-          icon={<X className="h-4 w-4" />}
-        />
+          <QuadrantSection
+            id="not-urgent-not-important"
+            title="Not Urgent & Not Important"
+            tasks={notUrgentNotImportant}
+            bgColor="bg-gray-500"
+            textColor="text-white"
+            icon={<X className="h-4 w-4 flex-shrink-0" />}
+          />
+        </div>
       </div>
     </div>
   );

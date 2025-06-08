@@ -290,7 +290,7 @@ const AuthenticCalendar: React.FC = () => {
 
       {/* Google Calendar Style Header - Compact and minimal */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white min-h-[56px]">
-        {/* Left Section: Menu, Logo, Date Navigation */}
+        {/* Left Section: Menu, Logo, Toggle */}
         <div className="flex items-center space-x-4">
           {/* Hamburger Menu - Opens main navigation sidebar */}
           <button
@@ -310,29 +310,29 @@ const AuthenticCalendar: React.FC = () => {
             </div>
           </div>
 
-          {/* Calendar/Tasks Toggle */}
+          {/* Calendar/Tasks Toggle - Icon Only */}
           <div className="flex items-center bg-gray-100 rounded-full p-1">
             <button
               onClick={() => setActiveView('calendar')}
-              className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
                 activeView === 'calendar'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
+              title="Calendar View"
             >
-              <CalendarIcon className="h-4 w-4 mr-1.5" />
-              Calendar
+              <CalendarIcon className="h-4 w-4" />
             </button>
             <button
               onClick={() => setActiveView('tasks')}
-              className={`flex items-center px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
                 activeView === 'tasks'
                   ? 'bg-white text-gray-900 shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
+              title="Tasks View"
             >
-              <CheckSquare className="h-4 w-4 mr-1.5" />
-              Tasks
+              <CheckSquare className="h-4 w-4" />
             </button>
           </div>
 
