@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 
 interface Task {
   id: string;
@@ -119,87 +119,129 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     }
   };
 
+  // Helper function to safely format dates and times
+  const formatTaskDateTime = (dateStr: string | null, timeStr: string | null) => {
+    if (!dateStr) return null;
+
+    try {
+      const date = parseISO(dateStr);
+      if (!isValid(date)) return null;
+
+      const dateFormatted = format(date, 'MMM d');
+      
+      if (!timeStr) return dateFormatted;
+
+      // Handle time formatting - timeStr could be in HH:MM:SS or HH:MM format
+      let timeFormatted = '';
+      try {
+        // Create a date object for time formatting
+        const timeDate = new Date(`2000-01-01T${timeStr}`);
+        if (isValid(timeDate)) {
+          timeFormatted = format(timeDate, 'h:mm a');
+          return `${dateFormatted} at ${timeFormatted}`;
+        }
+      } catch (timeError) {
+        // If time formatting fails, just return the date
+        console.warn('Time formatting error:', timeError);
+      }
+
+      return dateFormatted;
+    } catch (error) {
+      console.warn('Date formatting error:', error);
+      return null;
+    }
+  };
+
   // Categorize tasks into quadrants
   const urgentImportant = tasks.filter(task => task.is_urgent && task.is_important);
   const notUrgentImportant = tasks.filter(task => !task.is_urgent && task.is_important);
   const urgentNotImportant = tasks.filter(task => task.is_urgent && !task.is_important);
   const notUrgentNotImportant = tasks.filter(task => !task.is_urgent && !task.is_important);
 
-  const TaskCard: React.FC<{ task: Task }> = ({ task }) => (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-2">
-        <div className="flex-1">
-          <h4 className="font-medium text-gray-900 text-sm leading-tight">{task.title}</h4>
-          {task.due_date && (
-            <div className="flex items-center mt-1 text-xs text-gray-500">
-              <Clock className="h-3 w-3 mr-1" />
-              {format(new Date(task.due_date), 'MMM d')}
-              {task.start_time && (
-                <span className="ml-1">
-                  at {format(new Date(`2000-01-01T${task.start_time}`), 'h:mm a')}
-                </span>
-              )}
-            </div>
+  const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
+    const dateTimeDisplay = formatTaskDateTime(task.due_date, task.start_time);
+    
+    return (
+      <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+        <div className="flex items-start justify-between mb-2">
+          <div className="flex-1">
+            <h4 className="font-medium text-gray-900 text-sm leading-tight">{task.title}</h4>
+            {dateTimeDisplay ? (
+              <div className="flex items-center mt-1 text-xs text-gray-500">
+                <Clock className="h-3 w-3 mr-1" />
+                {dateTimeDisplay}
+              </div>
+            ) : task.due_date || task.start_time ? (
+              <div className="flex items-center mt-1 text-xs text-gray-500">
+                <Clock className="h-3 w-3 mr-1" />
+                Unscheduled
+              </div>
+            ) : (
+              <div className="flex items-center mt-1 text-xs text-gray-400">
+                <Clock className="h-3 w-3 mr-1" />
+                No date set
+              </div>
+            )}
+          </div>
+          <div className="flex items-center space-x-1 ml-2">
+            <button
+              onClick={() => handleTaskAction(task.id, 'complete')}
+              className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
+              title="Complete"
+            >
+              <Check className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => handleTaskAction(task.id, 'delegate')}
+              className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+              title="Delegate"
+            >
+              <UserPlus className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => handleTaskAction(task.id, 'cancel')}
+              className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+              title="Cancel"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Task badges */}
+        <div className="flex flex-wrap gap-1 mb-2">
+          {task.is_authentic_deposit && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Authentic Deposit
+            </span>
+          )}
+          {task.is_twelve_week_goal && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              12-Week Goal
+            </span>
           )}
         </div>
-        <div className="flex items-center space-x-1 ml-2">
-          <button
-            onClick={() => handleTaskAction(task.id, 'complete')}
-            className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
-            title="Complete"
-          >
-            <Check className="h-3 w-3" />
-          </button>
-          <button
-            onClick={() => handleTaskAction(task.id, 'delegate')}
-            className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
-            title="Delegate"
-          >
-            <UserPlus className="h-3 w-3" />
-          </button>
-          <button
-            onClick={() => handleTaskAction(task.id, 'cancel')}
-            className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
-            title="Cancel"
-          >
-            <X className="h-3 w-3" />
-          </button>
+
+        {/* Roles and domains */}
+        <div className="flex flex-wrap gap-1">
+          {task.task_roles?.map(({ role_id }) => (
+            roles[role_id] && (
+              <span key={role_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
+                {roles[role_id].label}
+              </span>
+            )
+          ))}
+          {task.task_domains?.map(({ domain_id }) => (
+            domains[domain_id] && (
+              <span key={domain_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
+                {domains[domain_id].name}
+              </span>
+            )
+          ))}
         </div>
       </div>
-      
-      {/* Task badges */}
-      <div className="flex flex-wrap gap-1 mb-2">
-        {task.is_authentic_deposit && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Authentic Deposit
-          </span>
-        )}
-        {task.is_twelve_week_goal && (
-          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-            12-Week Goal
-          </span>
-        )}
-      </div>
-
-      {/* Roles and domains */}
-      <div className="flex flex-wrap gap-1">
-        {task.task_roles?.map(({ role_id }) => (
-          roles[role_id] && (
-            <span key={role_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
-              {roles[role_id].label}
-            </span>
-          )
-        ))}
-        {task.task_domains?.map(({ domain_id }) => (
-          domains[domain_id] && (
-            <span key={domain_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
-              {domains[domain_id].name}
-            </span>
-          )
-        ))}
-      </div>
-    </div>
-  );
+    );
+  };
 
   const QuadrantSection: React.FC<{ 
     title: string; 
