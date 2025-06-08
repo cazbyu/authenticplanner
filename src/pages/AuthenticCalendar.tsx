@@ -4,6 +4,7 @@ import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
 import TaskQuadrants from '../components/tasks/TaskQuadrants';
+import UnscheduledPriorities from '../components/tasks/UnscheduledPriorities';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { FullCalendar } from '@fullcalendar/core';
@@ -96,8 +97,7 @@ const AuthenticCalendar: React.FC = () => {
   };
 
   const navItems = [
-    { name: 'Dashboard', path: '/', icon: 'Home' },
-    { name: 'Authentic Calendar', path: '/calendar', icon: 'Calendar' },
+    { name: 'Authentic Calendar', path: '/', icon: 'Calendar' },
     { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: 'Clock' },
     { name: 'Settings', path: '/settings', icon: 'Settings' },
   ];
@@ -446,22 +446,9 @@ const AuthenticCalendar: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Unscheduled Priorities Content */}
-                  <div className="p-4 flex-1">
-                    <div className="space-y-3">
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="font-medium text-gray-900 text-sm">Complete quarterly review</div>
-                        <div className="text-gray-500 text-xs mt-1">Due today</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="font-medium text-gray-900 text-sm">Team meeting preparation</div>
-                        <div className="text-gray-500 text-xs mt-1">Due tomorrow</div>
-                      </div>
-                      <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                        <div className="font-medium text-gray-900 text-sm">Review project proposals</div>
-                        <div className="text-gray-500 text-xs mt-1">Due this week</div>
-                      </div>
-                    </div>
+                  {/* Unscheduled Priorities Content - Now using the new component */}
+                  <div className="flex-1 overflow-hidden">
+                    <UnscheduledPriorities refreshTrigger={refreshTrigger} />
                   </div>
                   
                   {/* Notes Section (collapsible/secondary) */}
