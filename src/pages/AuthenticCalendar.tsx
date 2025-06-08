@@ -371,7 +371,7 @@ const AuthenticCalendar: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Priorities with collapse functionality */}
+        {/* Left Sidebar - Unscheduled Priorities with collapse functionality */}
         <div className={`${prioritiesCollapsed ? 'w-12' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200`}>
           {prioritiesCollapsed ? (
             /* Collapsed Sidebar */
@@ -379,32 +379,32 @@ const AuthenticCalendar: React.FC = () => {
               <button
                 onClick={() => setPrioritiesCollapsed(false)}
                 className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                title="Expand Priorities"
+                title="Expand Unscheduled Priorities"
               >
                 <ChevronDoubleRight className="h-4 w-4 text-gray-600" />
               </button>
               <div className="mt-4 writing-mode-vertical text-xs font-medium text-gray-600 transform rotate-90 whitespace-nowrap">
-                Priorities
+                Unscheduled Priorities
               </div>
             </div>
           ) : (
             /* Expanded Sidebar */
             <>
-              {/* Priorities Header with Collapse Button */}
+              {/* Unscheduled Priorities Header with Collapse Button */}
               <div className="p-4 border-b border-gray-200">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-medium text-gray-900">Priorities</h3>
+                  <h3 className="text-sm font-medium text-gray-900">Unscheduled Priorities</h3>
                   <button
                     onClick={() => setPrioritiesCollapsed(true)}
                     className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    title="Collapse Priorities"
+                    title="Collapse Unscheduled Priorities"
                   >
                     <ChevronDoubleLeft className="h-4 w-4 text-gray-600" />
                   </button>
                 </div>
               </div>
 
-              {/* Priorities Content */}
+              {/* Unscheduled Priorities Content */}
               <div className="p-4 flex-1">
                 <div className="space-y-3">
                   <div className="p-3 bg-gray-50 rounded-lg border border-gray-200">
