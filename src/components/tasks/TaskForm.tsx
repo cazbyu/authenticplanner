@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { supabase } from "../../supabaseClient";
 import { toast } from "sonner";
-import { Calendar, Clock, Repeat, ChevronDown, X, ChevronLeft, ChevronRight } from "lucide-react";
+import { Calendar, Clock, Repeat, ChevronDown, X, ChevronLeft, ChevronRight, Check } from "lucide-react";
 
 interface Role {
   id: string;
@@ -173,16 +173,13 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
   };
 
   const handleRoleSelection = (roleId: string) => {
-    // Auto-select the role in the main form
+    // Toggle the role selection (allow multiple selections)
     setForm(prev => ({
       ...prev,
       selectedRoleIds: prev.selectedRoleIds.includes(roleId) 
-        ? prev.selectedRoleIds 
+        ? prev.selectedRoleIds.filter(id => id !== roleId)
         : [...prev.selectedRoleIds, roleId]
     }));
-    
-    // Close the modal
-    setShowRoleModal(false);
   };
 
   const convertToUTC = (dateStr: string, timeStr: string): string | null => {
@@ -824,13 +821,13 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
           </div>
         )}
 
-        {/* Authentic Deposit Role Selection Modal */}
+        {/* Authentic Deposit Role Selection Modal - 50% smaller with checkmarks in 2 columns */}
         {showRoleModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium text-gray-900">
-                  Which of your active Roles does this Deposit invest in?
+            <div className="bg-white rounded-lg p-4 max-w-xs w-full mx-4">
+              <div className="flex justify-between items-center mb-3">
+                <h3 className="text-sm font-medium text-gray-900">
+                  Which Roles does this Deposit invest in?
                 </h3>
                 <button
                   type="button"
@@ -838,34 +835,47 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
                   className="text-gray-400 hover:text-gray-600"
                   aria-label="Close modal"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
               
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 {roles.map((role) => (
                   <button
                     key={role.id}
                     type="button"
                     onClick={() => handleRoleSelection(role.id)}
                     className={`
-                      w-full text-left px-4 py-3 rounded-lg border transition-colors
+                      flex items-center justify-between px-2 py-2 rounded-md border text-left transition-colors text-xs
                       ${form.selectedRoleIds.includes(role.id)
                         ? 'bg-blue-50 border-blue-200 text-blue-700'
                         : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
                       }
                     `}
                   >
-                    <span className="font-medium">{role.label}</span>
+                    <span className="font-medium truncate pr-1">{role.label}</span>
+                    {form.selectedRoleIds.includes(role.id) && (
+                      <Check className="h-3 w-3 text-blue-600 flex-shrink-0" />
+                    )}
                   </button>
                 ))}
               </div>
               
               {roles.length === 0 && (
-                <p className="text-sm text-gray-500 text-center py-4">
+                <p className="text-xs text-gray-500 text-center py-3">
                   No active roles found. Please add roles in Settings first.
                 </p>
               )}
+
+              <div className="mt-3 pt-2 border-t border-gray-100">
+                <button
+                  type="button"
+                  onClick={() => setShowRoleModal(false)}
+                  className="w-full px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                >
+                  Done
+                </button>
+              </div>
             </div>
           </div>
         )}
