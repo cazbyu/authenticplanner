@@ -188,6 +188,23 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
     }));
   };
 
+  // Convert time string to PostgreSQL TIME format (HH:MM:SS)
+  const convertToTimeFormat = (timeStr: string): string | null => {
+    if (!timeStr) return null;
+    
+    // If it's already in HH:MM format, add seconds
+    if (timeStr.match(/^\d{2}:\d{2}$/)) {
+      return `${timeStr}:00`;
+    }
+    
+    // If it's in HH:MM:SS format, return as is
+    if (timeStr.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      return timeStr;
+    }
+    
+    return null;
+  };
+
   const convertToUTC = (dateStr: string, timeStr: string): string | null => {
     if (!dateStr || !timeStr) return null;
     const localDateTime = new Date(`${dateStr}T${timeStr}:00`);
@@ -300,8 +317,12 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
     setError(null);
 
     try {
+      // Convert times to PostgreSQL TIME format (HH:MM:SS) instead of full ISO datetime
+      const startTimeFormatted = convertToTimeFormat(form.startTime);
+      const endTimeFormatted = convertToTimeFormat(form.endTime);
+      
+      // For start_time, we still need the full datetime for calendar display
       const startTimeUTC = convertToUTC(form.dueDate, form.startTime);
-      const endTimeUTC = form.endTime ? convertToUTC(form.dueDate, form.endTime) : null;
 
       const { data: taskRow, error: taskErr } = await supabase
         .from("0007-ap-tasks")
@@ -314,8 +335,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, availableRoles, availableD
             is_urgent: form.isUrgent,
             is_important: form.isImportant,
             due_date: form.dueDate || null,
-            start_time: startTimeUTC,
-            end_time: endTimeUTC,
+            start_time: startTimeUTC, // Full datetime for calendar
+            end_time: endTimeFormatted, // Just time format for PostgreSQL TIME field
             notes: form.notes.trim() || null,
             percent_complete: 0,
             status: 'pending'

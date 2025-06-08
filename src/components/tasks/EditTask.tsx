@@ -138,7 +138,15 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
         };
 
         const startDateTime = convertUTCToLocal(taskData.start_time);
-        const endTime = taskData.end_time ? new Date(taskData.end_time).toTimeString().slice(0, 5) : '';
+        
+        // Convert end_time from PostgreSQL TIME format to HH:MM
+        let endTime = '';
+        if (taskData.end_time) {
+          // If it's already in HH:MM:SS format, just take HH:MM
+          if (typeof taskData.end_time === 'string' && taskData.end_time.includes(':')) {
+            endTime = taskData.end_time.slice(0, 5); // Take HH:MM from HH:MM:SS
+          }
+        }
 
         // Determine scheduling type based on existing data
         let schedulingType: TaskFormValues['schedulingType'] = 'unscheduled';
@@ -241,6 +249,23 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
         ? prev.selectedRoleIds.filter(id => id !== roleId)
         : [...prev.selectedRoleIds, roleId]
     }));
+  };
+
+  // Convert time string to PostgreSQL TIME format (HH:MM:SS)
+  const convertToTimeFormat = (timeStr: string): string | null => {
+    if (!timeStr) return null;
+    
+    // If it's already in HH:MM format, add seconds
+    if (timeStr.match(/^\d{2}:\d{2}$/)) {
+      return `${timeStr}:00`;
+    }
+    
+    // If it's in HH:MM:SS format, return as is
+    if (timeStr.match(/^\d{2}:\d{2}:\d{2}$/)) {
+      return timeStr;
+    }
+    
+    return null;
   };
 
   const convertToUTC = (dateStr: string, timeStr: string): string | null => {
@@ -355,8 +380,12 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
     setError(null);
 
     try {
+      // Convert times to PostgreSQL TIME format (HH:MM:SS) instead of full ISO datetime
+      const startTimeFormatted = convertToTimeFormat(form.startTime);
+      const endTimeFormatted = convertToTimeFormat(form.endTime);
+      
+      // For start_time, we still need the full datetime for calendar display
       const startTimeUTC = convertToUTC(form.dueDate, form.startTime);
-      const endTimeUTC = form.endTime ? convertToUTC(form.dueDate, form.endTime) : null;
 
       const { error: taskErr } = await supabase
         .from("0007-ap-tasks")
@@ -367,8 +396,8 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
           is_urgent: form.isUrgent,
           is_important: form.isImportant,
           due_date: form.dueDate || null,
-          start_time: startTimeUTC,
-          end_time: endTimeUTC,
+          start_time: startTimeUTC, // Full datetime for calendar
+          end_time: endTimeFormatted, // Just time format for PostgreSQL TIME field
           notes: form.notes.trim() || null,
           updated_at: new Date().toISOString(),
         })
