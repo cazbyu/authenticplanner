@@ -33,56 +33,28 @@ interface UnscheduledPrioritiesProps {
   refreshTrigger?: number;
 }
 
-const getInitialCollapsedQuadrants = () => {
-  if (typeof window !== 'undefined') {
-    try {
-      const stored = localStorage.getItem('collapsed_quadrants');
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (err) {
-      console.warn('Failed to parse collapsed_quadrants from localStorage', err);
-    }
-  }
-  return {
-    'urgent-important': false,
-    'not-urgent-important': false,
-    'urgent-not-important': false,
-    'not-urgent-not-important': false,
-  };
-};
-
 const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTrigger = 0 }) => {
   const [tasks, setTasks] = useState<PriorityTask[]>([]);
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [loading, setLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<PriorityTask | null>(null);
-  const [collapsedQuadrants, setCollapsedQuadrants] = useState(getInitialCollapsedQuadrants);
-
-  // Save collapsed state whenever it changes
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        localStorage.setItem('collapsed_quadrants', JSON.stringify(collapsedQuadrants));
-      } catch (err) {
-        console.warn('Failed to save collapsed_quadrants to localStorage', err);
-      }
-    }
-  }, [collapsedQuadrants]);
+  
+  // Simplified collapsed state - no complex initialization
+  const [collapsedQuadrants, setCollapsedQuadrants] = useState({
+    'urgent-important': false,
+    'not-urgent-important': false,
+    'urgent-not-important': false,
+    'not-urgent-not-important': false,
+  });
 
   useEffect(() => {
     fetchUnscheduledTasks();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshTrigger]);
 
   const fetchUnscheduledTasks = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.warn('No authenticated user found when fetching unscheduled tasks');
-      setLoading(false);
-      return;
-    }
+    if (!user) return;
 
     setLoading(true);
 
@@ -138,7 +110,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
           // Both have no date, sort by title
           return a.title.localeCompare(b.title);
         });
-
+        
         setTasks(sortedTasks);
       }
     } catch (error) {
@@ -157,7 +129,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     const updates: any = {
       status: action === 'complete' ? 'completed' : action === 'cancel' ? 'cancelled' : 'delegated',
     };
-
+    
     if (action === 'complete') {
       updates.completed_at = new Date().toISOString();
     }
@@ -196,11 +168,9 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
 
   // Helper function to detect if device is mobile/tablet
   const isMobileDevice = () => {
-    return (
-      /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
-      ('ontouchstart' in window) ||
-      (navigator.maxTouchPoints > 0)
-    );
+    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || 
+           ('ontouchstart' in window) || 
+           (navigator.maxTouchPoints > 0);
   };
 
   // Helper function to safely format dates
@@ -218,7 +188,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
   };
 
   // Categorize tasks into quadrants and sort by date within each
-  const categorizeAndSortTasks = (taskList: Task[]) => {
+  const categorizeAndSortTasks = (taskList: PriorityTask[]) => {
     const categories = {
       urgentImportant: taskList.filter(task => task.is_urgent && task.is_important),
       notUrgentImportant: taskList.filter(task => !task.is_urgent && task.is_important),
@@ -243,10 +213,10 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
 
   const { urgentImportant, notUrgentImportant, urgentNotImportant, notUrgentNotImportant } = categorizeAndSortTasks(tasks);
 
-  const TaskCard: React.FC<{ task: Task; quadrantColor: string }> = ({ task, quadrantColor }) => {
+  const TaskCard: React.FC<{ task: PriorityTask; quadrantColor: string }> = ({ task, quadrantColor }) => {
     const dateDisplay = formatTaskDate(task.due_date);
     const isMobile = isMobileDevice();
-
+    
     const handleCardClick = (event: React.MouseEvent) => {
       // Only handle single clicks on mobile/tablet
       if (isMobile) {
@@ -264,9 +234,9 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
         handleTaskEdit(task);
       }
     };
-
+    
     return (
-      <div
+      <div 
         className={`bg-white border-l-4 ${quadrantColor} border-r border-t border-b border-gray-200 rounded-r-lg p-3 hover:shadow-md transition-all cursor-pointer select-none`}
         onClick={handleCardClick}
         onDoubleClick={handleCardDoubleClick}
@@ -311,88 +281,92 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
             </button>
           </div>
         </div>
-
-        {/* Task metadata */}
-        <div className="flex flex-wrap gap-1 mt-2">
+        
+        {/* Task badges */}
+        <div className="flex flex-wrap gap-1 mb-2">
           {task.is_authentic_deposit && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
-              Authentic Deposit
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Deposit
             </span>
           )}
           {task.is_twelve_week_goal && (
-            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
-              12-Week Goal
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+              12-Week
             </span>
           )}
-          {task.task_roles?.map((taskRole) => {
-            const role = roles[taskRole.role_id];
-            return role ? (
-              <span key={taskRole.role_id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
-                {role.label}
-              </span>
-            ) : null;
-          })}
-          {task.task_domains?.map((taskDomain) => {
-            const domain = domains[taskDomain.domain_id];
-            return domain ? (
-              <span key={taskDomain.domain_id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
-                {domain.name}
-              </span>
-            ) : null;
-          })}
         </div>
 
-        {task.notes && (
-          <div className="mt-2 text-xs text-gray-600 line-clamp-2">
-            {task.notes}
-          </div>
-        )}
+        {/* Roles and domains - compact display */}
+        <div className="flex flex-wrap gap-1">
+          {task.task_roles?.slice(0, 1).map(({ role_id }) => (
+            roles[role_id] && (
+              <span key={role_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700 truncate max-w-16">
+                {roles[role_id].label}
+              </span>
+            )
+          ))}
+          {task.task_domains?.slice(0, 1).map(({ domain_id }) => (
+            domains[domain_id] && (
+              <span key={domain_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 truncate max-w-16">
+                {domains[domain_id].name}
+              </span>
+            )
+          ))}
+          {(task.task_roles?.length > 1 || task.task_domains?.length > 1) && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
+              +{(task.task_roles?.length || 0) + (task.task_domains?.length || 0) - 2}
+            </span>
+          )}
+        </div>
       </div>
     );
   };
 
-  const QuadrantSection: React.FC<{
-    title: string;
-    tasks: Task[];
-    quadrantId: string;
-    quadrantColor: string;
+  const QuadrantSection: React.FC<{ 
+    id: string;
+    title: string; 
+    tasks: PriorityTask[]; 
+    bgColor: string;
+    borderColor: string;
+    textColor: string;
     icon: React.ReactNode;
-  }> = ({ title, tasks, quadrantId, quadrantColor, icon }) => {
-    const isCollapsed = collapsedQuadrants[quadrantId];
-
+  }> = ({ id, title, tasks, bgColor, borderColor, textColor, icon }) => {
+    const isCollapsed = collapsedQuadrants[id];
+    
     return (
-      <div className="bg-gray-50 rounded-lg border border-gray-200">
-        <div
-          className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 transition-colors"
-          onClick={() => toggleQuadrant(quadrantId)}
+      <div className="mb-4">
+        {/* Header - Always visible, compact when collapsed */}
+        <button 
+          className={`w-full ${bgColor} ${textColor} px-3 py-2 rounded-lg flex-shrink-0 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+          onClick={() => toggleQuadrant(id)}
+          type="button"
         >
-          <div className="flex items-center space-x-3">
-            <div className={`p-2 rounded-lg ${quadrantColor.replace('border-l-', 'bg-').replace('-500', '-100')}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2 min-w-0">
               {icon}
+              <h4 className="font-medium text-xs truncate">{title}</h4>
+              <span className="text-xs opacity-75 flex-shrink-0">({tasks.length})</span>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900">{title}</h3>
-              <p className="text-sm text-gray-600">{tasks.length} task{tasks.length !== 1 ? 's' : ''}</p>
+            <div className="flex-shrink-0 ml-2">
+              {isCollapsed ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronUp className="h-3 w-3" />
+              )}
             </div>
           </div>
-          {isCollapsed ? (
-            <ChevronDown className="h-5 w-5 text-gray-400" />
-          ) : (
-            <ChevronUp className="h-5 w-5 text-gray-400" />
-          )}
-        </div>
-
+        </button>
+        
+        {/* Content - Only visible when expanded */}
         {!isCollapsed && (
-          <div className="px-4 pb-4 space-y-3">
-            {tasks.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>No unscheduled tasks in this quadrant</p>
-              </div>
-            ) : (
-              tasks.map((task) => (
-                <TaskCard key={task.id} task={task} quadrantColor={quadrantColor} />
-              ))
-            )}
+          <div className="mt-1 bg-gray-50 rounded-lg">
+            <div className="space-y-2 p-3">
+              {tasks.length === 0 ? (
+                <p className="text-gray-500 text-xs italic text-center py-4">No unscheduled tasks in this category</p>
+              ) : (
+                tasks.map(task => <TaskCard key={task.id} task={task} quadrantColor={borderColor} />)
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -401,61 +375,72 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex h-32 items-center justify-center">
+        <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Unscheduled Priorities</h2>
-          <p className="text-gray-600 mt-1">Tasks organized by urgency and importance</p>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="h-full flex flex-col">
+      {/* Quadrant sections with consistent padding from left edge and uniform spacing */}
+      <div className="flex-1 overflow-y-auto px-4 py-4">
+        {/* Urgent & Important - Red */}
         <QuadrantSection
+          id="urgent-important"
           title="Urgent & Important"
           tasks={urgentImportant}
-          quadrantId="urgent-important"
-          quadrantColor="border-l-red-500"
-          icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
+          bgColor="bg-red-500"
+          borderColor="border-l-red-500"
+          textColor="text-white"
+          icon={<AlertTriangle className="h-3 w-3 flex-shrink-0" />}
         />
 
+        {/* Not Urgent & Important - Green */}
         <QuadrantSection
+          id="not-urgent-important"
           title="Not Urgent & Important"
           tasks={notUrgentImportant}
-          quadrantId="not-urgent-important"
-          quadrantColor="border-l-blue-500"
-          icon={<Clock className="h-5 w-5 text-blue-600" />}
+          bgColor="bg-green-500"
+          borderColor="border-l-green-500"
+          textColor="text-white"
+          icon={<Check className="h-3 w-3 flex-shrink-0" />}
         />
 
+        {/* Urgent & Not Important - Orange */}
         <QuadrantSection
+          id="urgent-not-important"
           title="Urgent & Not Important"
           tasks={urgentNotImportant}
-          quadrantId="urgent-not-important"
-          quadrantColor="border-l-yellow-500"
-          icon={<UserPlus className="h-5 w-5 text-yellow-600" />}
+          bgColor="bg-orange-500"
+          borderColor="border-l-orange-500"
+          textColor="text-white"
+          icon={<Clock className="h-3 w-3 flex-shrink-0" />}
         />
 
+        {/* Not Urgent & Not Important - Gray */}
         <QuadrantSection
+          id="not-urgent-not-important"
           title="Not Urgent & Not Important"
           tasks={notUrgentNotImportant}
-          quadrantId="not-urgent-not-important"
-          quadrantColor="border-l-gray-500"
-          icon={<X className="h-5 w-5 text-gray-600" />}
+          bgColor="bg-gray-500"
+          borderColor="border-l-gray-500"
+          textColor="text-white"
+          icon={<X className="h-3 w-3 flex-shrink-0" />}
         />
       </div>
 
+      {/* Edit Task Modal */}
       {editingTask && (
-        <EditTask
-          task={editingTask}
-          onTaskUpdated={handleTaskUpdated}
-          onCancel={handleEditCancel}
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <EditTask
+              task={editingTask}
+              onTaskUpdated={handleTaskUpdated}
+              onCancel={handleEditCancel}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
