@@ -62,6 +62,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [hoveredSlot, setHoveredSlot] = useState<HTMLElement | null>(null);
     const hoveredSlotRef = useRef<HTMLElement | null>(null);
     const scrollerRef = useRef<HTMLElement | null>(null);
+    const dragStartedRef = useRef(false);
+    const clickOpenTimeoutRef = useRef<number | null>(null);
 
     // Keep hoveredSlot ref in sync
     useEffect(() => {
@@ -301,6 +303,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       
       setCurrentSelection(selection);
       highlightSelection(selection);
+
+      dragStartedRef.current = false;
+      if (clickOpenTimeoutRef.current) {
+        clearTimeout(clickOpenTimeoutRef.current);
+        clickOpenTimeoutRef.current = null;
+      }
     };
 
     const handleScrollerScroll = useCallback(() => {
@@ -314,6 +322,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (!isSelecting || !selectionStart) return;
+
+      dragStartedRef.current = true;
 
       const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
       if (!elementUnderMouse || !elementUnderMouse.classList.contains('fc-timegrid-slot')) return;
@@ -352,8 +362,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setIsSelecting(false);
       setSelectionStart(null);
 
-      // Open task form with the selection
-      openTaskFormForSelection(currentSelection, e);
+      if (dragStartedRef.current) {
+        openTaskFormForSelection(currentSelection, e);
+      } else {
+        clickOpenTimeoutRef.current = window.setTimeout(() => {
+          openTaskFormForSelection(currentSelection, e);
+        }, 150);
+      }
     };
 
     const parseSlotTime = (slot: HTMLElement): Date | null => {
