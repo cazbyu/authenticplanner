@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, forwardRef } from 'react';
 import FullCalendar, { DatesSetArg, DateHeaderContentArg, EventClickArg, DateSelectArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -60,6 +60,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [selectionStart, setSelectionStart] = useState<{ time: Date; element: HTMLElement } | null>(null);
     const [currentSelection, setCurrentSelection] = useState<TimeSlotSelection | null>(null);
     const [hoveredSlot, setHoveredSlot] = useState<HTMLElement | null>(null);
+    const hoveredSlotRef = useRef<HTMLElement | null>(null);
+    const scrollerRef = useRef<HTMLElement | null>(null);
+
+    // Keep hoveredSlot ref in sync
+    useEffect(() => {
+      hoveredSlotRef.current = hoveredSlot;
+    }, [hoveredSlot]);
 
     // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
@@ -183,12 +190,28 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     // Setup time slot interaction for Google Calendar-like behavior
     const setupTimeSlotInteraction = () => {
       if (!fullCalendarRef || !('current' in fullCalendarRef) || !fullCalendarRef.current) return;
-      
+
       const calendarEl = fullCalendarRef.current.el;
       if (!calendarEl) return;
 
       // Only apply to time grid views (day/week)
-      if (view !== 'timeGridDay' && view !== 'timeGridWeek') return;
+      if (view !== 'timeGridDay' && view !== 'timeGridWeek') {
+        if (scrollerRef.current) {
+          scrollerRef.current.removeEventListener('scroll', handleScrollerScroll);
+          scrollerRef.current = null;
+        }
+        return;
+      }
+
+      // Setup scroller scroll handler
+      const scroller = calendarEl.querySelector('.fc-scroller');
+      if (scrollerRef.current && scrollerRef.current !== scroller) {
+        scrollerRef.current.removeEventListener('scroll', handleScrollerScroll);
+      }
+      if (scroller) {
+        scroller.addEventListener('scroll', handleScrollerScroll);
+        scrollerRef.current = scroller as HTMLElement;
+      }
 
       // Remove existing listeners by cloning nodes
       const existingSlots = calendarEl.querySelectorAll('.fc-timegrid-slot[data-time]');
@@ -279,6 +302,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setCurrentSelection(selection);
       highlightSelection(selection);
     };
+
+    const handleScrollerScroll = useCallback(() => {
+      const slot = hoveredSlotRef.current;
+      if (slot) {
+        slot.style.cursor = '';
+        slot.style.backgroundColor = '';
+        setHoveredSlot(null);
+      }
+    }, []);
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (!isSelecting || !selectionStart) return;
@@ -519,6 +551,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       return () => {
         document.removeEventListener('mousemove', handleGlobalMouseMove);
         document.removeEventListener('mouseup', handleGlobalMouseUp);
+        if (scrollerRef.current) {
+          scrollerRef.current.removeEventListener('scroll', handleScrollerScroll);
+        }
       };
     }, []);
 
