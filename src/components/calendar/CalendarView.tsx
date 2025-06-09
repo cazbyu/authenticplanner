@@ -269,20 +269,49 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       return null;
     };
 
+    // FIXED: Parse the exact date and time from the clicked slot
+    const parseClickedDateTime = (dateClickInfo: DateClickArg): { start: Date; end: Date } => {
+      const { date, allDay } = dateClickInfo;
+      
+      // Create a new date object to avoid mutating the original
+      const clickedDate = new Date(date.getTime());
+      
+      if (allDay || view === 'dayGridMonth') {
+        // For month view or all-day clicks, use the exact date at start of day
+        const start = new Date(clickedDate);
+        start.setHours(0, 0, 0, 0);
+        const end = new Date(start);
+        end.setHours(23, 59, 59, 999);
+        return { start, end };
+      } else {
+        // For time grid views, use the exact clicked time
+        const start = new Date(clickedDate);
+        const end = new Date(clickedDate);
+        end.setHours(end.getHours() + 1); // Default 1-hour duration
+        
+        console.log('Parsed clicked time:', {
+          original: date,
+          parsed: start,
+          formatted: start.toLocaleString()
+        });
+        
+        return { start, end };
+      }
+    };
+
     // Handle single date clicks (Google Calendar style)
     const handleDateClick = (dateClickInfo: DateClickArg) => {
       console.log('Date clicked:', dateClickInfo);
       
-      const { date, allDay, jsEvent } = dateClickInfo;
+      const { jsEvent } = dateClickInfo;
       
       // Remove any existing temporary event
       removeTemporaryEvent();
       
-      // Create a default time slot for the clicked date
-      const start = new Date(date);
-      const end = new Date(date);
+      // FIXED: Parse the exact clicked date/time
+      const { start, end } = parseClickedDateTime(dateClickInfo);
       
-      if (allDay || view === 'dayGridMonth') {
+      if (dateClickInfo.allDay || view === 'dayGridMonth') {
         // For month view, create an all-day task
         setSelectedTimeSlot({
           start,
@@ -300,9 +329,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           setTaskFormPosition(null);
         }
       } else {
-        // For time grid views, create a 1-hour slot starting at the clicked time
-        end.setHours(end.getHours() + 1);
-        
+        // For time grid views, create a timed slot
         // Create temporary event block on calendar
         createTemporaryEvent(start, end);
         
@@ -334,9 +361,17 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       // Remove any existing temporary event
       removeTemporaryEvent();
       
-      // Store the selected time slot
-      const startDate = new Date(start);
-      const endDate = new Date(end);
+      // FIXED: Use the exact selected dates without modification
+      const startDate = new Date(start.getTime());
+      const endDate = new Date(end.getTime());
+      
+      console.log('Selection parsed:', {
+        originalStart: start,
+        originalEnd: end,
+        parsedStart: startDate,
+        parsedEnd: endDate,
+        allDay
+      });
       
       setSelectedTimeSlot({
         start: startDate,
@@ -430,25 +465,42 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       fetchTasks();
     };
 
-    // Convert selected time slot to form-compatible format
+    // FIXED: Convert selected time slot to form-compatible format with correct timezone handling
     const getInitialFormData = () => {
       if (!selectedTimeSlot) return {};
 
       const { start, end, allDay } = selectedTimeSlot;
       
+      console.log('Converting to form data:', {
+        start: start.toLocaleString(),
+        end: end.toLocaleString(),
+        allDay
+      });
+      
       if (allDay) {
         // For all-day events (month view), just set the date
+        const dateString = start.toISOString().split('T')[0];
+        console.log('All-day form data:', { dueDate: dateString });
+        
         return {
-          dueDate: start.toISOString().split('T')[0],
+          dueDate: dateString,
           schedulingType: 'unscheduled' as const,
         };
       } else {
-        // For timed events, set date and times
+        // For timed events, set date and times using local time
+        const dateString = start.toISOString().split('T')[0];
         const startTime = start.toTimeString().slice(0, 5); // HH:MM format
         const endTime = end.toTimeString().slice(0, 5); // HH:MM format
         
+        console.log('Timed form data:', {
+          dueDate: dateString,
+          startTime,
+          endTime,
+          schedulingType: 'scheduled'
+        });
+        
         return {
-          dueDate: start.toISOString().split('T')[0],
+          dueDate: dateString,
           startTime,
           endTime,
           schedulingType: 'scheduled' as const,
