@@ -79,7 +79,11 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
 
   const fetchUnscheduledTasks = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      console.warn('No authenticated user found when fetching unscheduled tasks');
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
 
