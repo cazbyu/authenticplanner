@@ -212,6 +212,10 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         slotEl.addEventListener('mousedown', handleSlotMouseDown);
       });
 
+      // Remove old global handlers to prevent duplicates
+      document.removeEventListener('mousemove', handleGlobalMouseMove);
+      document.removeEventListener('mouseup', handleGlobalMouseUp);
+
       // Add global mouse events for dragging
       document.addEventListener('mousemove', handleGlobalMouseMove);
       document.addEventListener('mouseup', handleGlobalMouseUp);

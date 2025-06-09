@@ -41,13 +41,23 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
   const [loading, setLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
-  // Simplified collapsed state - no complex initialization
-  const [collapsedQuadrants, setCollapsedQuadrants] = useState({
-    'urgent-important': false,
-    'not-urgent-important': false,
-    'urgent-not-important': false,
-    'not-urgent-not-important': false,
+  // Persist collapsed state to localStorage so it survives refreshes
+  const [collapsedQuadrants, setCollapsedQuadrants] = useState(() => {
+    const stored = localStorage.getItem('collapsed_quadrants');
+    return stored
+      ? JSON.parse(stored)
+      : {
+          'urgent-important': false,
+          'not-urgent-important': false,
+          'urgent-not-important': false,
+          'not-urgent-not-important': false,
+        };
   });
+
+  // Save collapsed state whenever it changes
+  useEffect(() => {
+    localStorage.setItem('collapsed_quadrants', JSON.stringify(collapsedQuadrants));
+  }, [collapsedQuadrants]);
 
   useEffect(() => {
     fetchUnscheduledTasks();
