@@ -269,30 +269,35 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       return null;
     };
 
-    // FIXED: Parse the exact date and time from the clicked slot
+    // FIXED: Parse the exact date and time from the clicked slot with proper timezone handling
     const parseClickedDateTime = (dateClickInfo: DateClickArg): { start: Date; end: Date } => {
       const { date, allDay } = dateClickInfo;
       
-      // Create a new date object to avoid mutating the original
-      const clickedDate = new Date(date.getTime());
+      console.log('Raw click data:', {
+        originalDate: date,
+        allDay,
+        view,
+        dateString: date.toISOString(),
+        localString: date.toLocaleString()
+      });
       
       if (allDay || view === 'dayGridMonth') {
         // For month view or all-day clicks, use the exact date at start of day
-        const start = new Date(clickedDate);
-        start.setHours(0, 0, 0, 0);
-        const end = new Date(start);
-        end.setHours(23, 59, 59, 999);
+        const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+        const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+        
+        console.log('All-day parsed:', { start, end });
         return { start, end };
       } else {
-        // For time grid views, use the exact clicked time
-        const start = new Date(clickedDate);
-        const end = new Date(clickedDate);
-        end.setHours(end.getHours() + 1); // Default 1-hour duration
+        // For time grid views, preserve the exact clicked time in local timezone
+        const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), 0, 0);
+        const end = new Date(start.getTime() + (60 * 60 * 1000)); // Add 1 hour
         
-        console.log('Parsed clicked time:', {
-          original: date,
-          parsed: start,
-          formatted: start.toLocaleString()
+        console.log('Time grid parsed:', {
+          start: start.toLocaleString(),
+          end: end.toLocaleString(),
+          startISO: start.toISOString(),
+          endISO: end.toISOString()
         });
         
         return { start, end };
@@ -308,7 +313,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       // Remove any existing temporary event
       removeTemporaryEvent();
       
-      // FIXED: Parse the exact clicked date/time
+      // FIXED: Parse the exact clicked date/time with proper timezone handling
       const { start, end } = parseClickedDateTime(dateClickInfo);
       
       if (dateClickInfo.allDay || view === 'dayGridMonth') {
@@ -361,15 +366,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       // Remove any existing temporary event
       removeTemporaryEvent();
       
-      // FIXED: Use the exact selected dates without modification
-      const startDate = new Date(start.getTime());
-      const endDate = new Date(end.getTime());
+      // FIXED: Use the exact selected dates with proper timezone handling
+      const startDate = new Date(start.getFullYear(), start.getMonth(), start.getDate(), start.getHours(), start.getMinutes(), 0, 0);
+      const endDate = new Date(end.getFullYear(), end.getMonth(), end.getDate(), end.getHours(), end.getMinutes(), 0, 0);
       
       console.log('Selection parsed:', {
-        originalStart: start,
-        originalEnd: end,
-        parsedStart: startDate,
-        parsedEnd: endDate,
+        originalStart: start.toLocaleString(),
+        originalEnd: end.toLocaleString(),
+        parsedStart: startDate.toLocaleString(),
+        parsedEnd: endDate.toLocaleString(),
         allDay
       });
       
@@ -465,7 +470,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       fetchTasks();
     };
 
-    // FIXED: Convert selected time slot to form-compatible format with correct timezone handling
+    // FIXED: Convert selected time slot to form-compatible format with correct date/time handling
     const getInitialFormData = () => {
       if (!selectedTimeSlot) return {};
 
@@ -474,12 +479,18 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       console.log('Converting to form data:', {
         start: start.toLocaleString(),
         end: end.toLocaleString(),
-        allDay
+        allDay,
+        startISO: start.toISOString(),
+        endISO: end.toISOString()
       });
       
       if (allDay) {
-        // For all-day events (month view), just set the date
-        const dateString = start.toISOString().split('T')[0];
+        // For all-day events (month view), just set the date using local date components
+        const year = start.getFullYear();
+        const month = (start.getMonth() + 1).toString().padStart(2, '0');
+        const day = start.getDate().toString().padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+        
         console.log('All-day form data:', { dueDate: dateString });
         
         return {
@@ -487,10 +498,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           schedulingType: 'unscheduled' as const,
         };
       } else {
-        // For timed events, set date and times using local time
-        const dateString = start.toISOString().split('T')[0];
-        const startTime = start.toTimeString().slice(0, 5); // HH:MM format
-        const endTime = end.toTimeString().slice(0, 5); // HH:MM format
+        // For timed events, use local date/time components to avoid timezone issues
+        const year = start.getFullYear();
+        const month = (start.getMonth() + 1).toString().padStart(2, '0');
+        const day = start.getDate().toString().padStart(2, '0');
+        const dateString = `${year}-${month}-${day}`;
+        
+        const startHours = start.getHours().toString().padStart(2, '0');
+        const startMinutes = start.getMinutes().toString().padStart(2, '0');
+        const startTime = `${startHours}:${startMinutes}`;
+        
+        const endHours = end.getHours().toString().padStart(2, '0');
+        const endMinutes = end.getMinutes().toString().padStart(2, '0');
+        const endTime = `${endHours}:${endMinutes}`;
         
         console.log('Timed form data:', {
           dueDate: dateString,
