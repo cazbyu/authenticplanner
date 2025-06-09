@@ -3,10 +3,9 @@ import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, isValid, parseISO } from 'date-fns';
 import EditTask from './EditTask';
+import { Task } from '../../types';
 
-interface Task {
-  id: string;
-  title: string;
+interface PriorityTask extends Task {
   due_date: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -54,11 +53,11 @@ const getInitialCollapsedQuadrants = () => {
 };
 
 const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTrigger = 0 }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<PriorityTask[]>([]);
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [loading, setLoading] = useState(true);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<PriorityTask | null>(null);
   const [collapsedQuadrants, setCollapsedQuadrants] = useState(getInitialCollapsedQuadrants);
 
   // Save collapsed state whenever it changes
@@ -178,7 +177,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     }));
   };
 
-  const handleTaskEdit = (task: Task) => {
+  const handleTaskEdit = (task: PriorityTask) => {
     setEditingTask(task);
   };
 

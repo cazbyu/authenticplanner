@@ -3,10 +3,9 @@ import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, isValid, parseISO } from 'date-fns';
 import EditTask from './EditTask';
+import { Task } from '../../types';
 
-interface Task {
-  id: string;
-  title: string;
+interface QuadrantTask extends Task {
   due_date: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -35,11 +34,11 @@ interface TaskQuadrantsProps {
 }
 
 const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => {
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<QuadrantTask[]>([]);
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [loading, setLoading] = useState(true);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<QuadrantTask | null>(null);
   
   // State for collapsing quadrants
   const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>({
@@ -141,7 +140,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     }));
   };
 
-  const handleTaskEdit = (task: Task) => {
+  const handleTaskEdit = (task: QuadrantTask) => {
     setEditingTask(task);
   };
 
@@ -314,10 +313,10 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     );
   };
 
-  const QuadrantSection: React.FC<{ 
+  const QuadrantSection: React.FC<{
     id: string;
-    title: string; 
-    tasks: Task[]; 
+    title: string;
+    tasks: QuadrantTask[];
     bgColor: string;
     textColor: string;
     icon: React.ReactNode;

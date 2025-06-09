@@ -7,10 +7,9 @@ import listPlugin from '@fullcalendar/list';
 import { supabase } from '../../supabaseClient';
 import TaskEditModal from './TaskEditModal';
 import TaskForm from '../tasks/TaskForm';
+import { Task } from '../../types';
 
-interface Task {
-  id: string;
-  title: string;
+interface CalendarTask extends Task {
   start_time: string;
   end_time: string | null;
   is_authentic_deposit: boolean;
@@ -86,7 +85,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         }
 
         if (tasks) {
-          const calendarEvents = tasks.map((task: Task) => ({
+          const calendarEvents = tasks.map((task: CalendarTask) => ({
             id: task.id,
             title: task.title,
             // FullCalendar automatically converts UTC times to local time for display

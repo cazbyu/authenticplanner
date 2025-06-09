@@ -3,6 +3,7 @@ import { Plus, Check, UserPlus, X } from 'lucide-react';
 import TaskForm from '../components/tasks/TaskForm';
 import { supabase } from '../supabaseClient';
 import { format } from 'date-fns';
+import { Task } from '../types';
 
 interface Role {
   id: string;
@@ -14,19 +15,16 @@ interface Domain {
   name: string;
 }
 
-interface Task {
-  id: string;
-  title: string;
+interface DbTask extends Task {
   date: string | null;
   time: string | null;
-  status: string;
   task_roles: { role_id: string }[];
   task_domains: { domain_id: string }[];
 }
 
 function Tasks() {
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<DbTask[]>([]);
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [loading, setLoading] = useState(true);
@@ -117,7 +115,7 @@ function Tasks() {
   }
 
   // Group tasks by date
-  const tasksByDate = tasks.reduce((acc: Record<string, Task[]>, task) => {
+  const tasksByDate = tasks.reduce((acc: Record<string, DbTask[]>, task) => {
     const date = task.date ? format(new Date(task.date), 'yyyy-MM-dd') : 'No Date';
     if (!acc[date]) acc[date] = [];
     acc[date].push(task);
