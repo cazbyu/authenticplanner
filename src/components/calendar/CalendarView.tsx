@@ -258,7 +258,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const getTemporaryEventRect = (): DOMRect | null => {
       if (!fullCalendarRef || !('current' in fullCalendarRef) || !fullCalendarRef.current) return null;
       
-      const calendarEl = fullCalendarRef.current.el;
+      const calendarApi = fullCalendarRef.current.getApi();
+      const calendarEl = calendarApi.el;
       const tempEventEl = calendarEl.querySelector('[data-event-id="temp-event"]');
       
       if (tempEventEl) {
