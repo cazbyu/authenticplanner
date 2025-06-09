@@ -55,7 +55,11 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
 
   const fetchTaskData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      console.warn('No authenticated user found when fetching quadrant tasks');
+      setLoading(false);
+      return;
+    }
 
     setLoading(true);
 
