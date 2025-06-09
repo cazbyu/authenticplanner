@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback, forwardRef } from 'react';
-import FullCalendar, { DatesSetArg, DateHeaderContentArg, EventClickArg, DateSelectArg } from '@fullcalendar/react';
+import React, { useState, useEffect, useRef, forwardRef } from 'react';
+import FullCalendar, { DatesSetArg, DateHeaderContentArg, EventClickArg, DateSelectArg, DateClickArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -166,8 +166,70 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     };
 
+    // Handle single date clicks (for month view primarily)
+    const handleDateClick = (dateClickInfo: DateClickArg) => {
+      console.log('Date clicked:', dateClickInfo);
+      
+      const { date, allDay, jsEvent } = dateClickInfo;
+      
+      // Create a default time slot for the clicked date
+      const start = new Date(date);
+      const end = new Date(date);
+      
+      if (allDay || view === 'dayGridMonth') {
+        // For month view, create an all-day task
+        setSelectedTimeSlot({
+          start,
+          end,
+          element: jsEvent?.target as HTMLElement || document.body,
+          allDay: true
+        });
+      } else {
+        // For time grid views, create a 1-hour slot starting at the clicked time
+        end.setHours(end.getHours() + 1);
+        setSelectedTimeSlot({
+          start,
+          end,
+          element: jsEvent?.target as HTMLElement || document.body,
+          allDay: false
+        });
+      }
+
+      // Position the form
+      if (jsEvent) {
+        const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const formWidth = 500;
+        const formHeight = 600;
+        
+        let x = rect.right + 10;
+        let y = Math.max(rect.top, 100);
+        
+        // Adjust if form would go off screen
+        if (x + formWidth > viewportWidth - 20) {
+          x = rect.left - formWidth - 10;
+        }
+        if (x < 20) {
+          x = (viewportWidth - formWidth) / 2;
+        }
+        if (y + formHeight > viewportHeight - 20) {
+          y = viewportHeight - formHeight - 20;
+        }
+        y = Math.max(y, 20);
+        
+        setTaskFormPosition({ x, y });
+      } else {
+        setTaskFormPosition(null);
+      }
+      
+      setShowTaskForm(true);
+    };
+
     // Handle date/time selection (drag to create) - Enhanced for all views
     const handleDateSelect = (selectInfo: DateSelectArg) => {
+      console.log('Date range selected:', selectInfo);
+      
       const { start, end, allDay, jsEvent } = selectInfo;
       
       // Store the selected time slot
@@ -231,6 +293,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     };
 
     const handleEventClick = (info: EventClickArg) => {
+      // Prevent event bubbling to avoid triggering date click
+      info.jsEvent.stopPropagation();
       // Open edit modal for the clicked task
       setEditingTaskId(info.event.id);
     };
@@ -344,6 +408,10 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             height: 48px !important;
             border-bottom: 1px solid #f3f4f6 !important;
             position: relative;
+            cursor: pointer !important;
+          }
+          .fc-timegrid-slot:hover {
+            background-color: rgba(59, 130, 246, 0.05) !important;
           }
           .fc-timegrid-slot-label {
             font-size: 0.625rem !important;
@@ -391,7 +459,10 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           /* Month View Specific Styles - EXTREMELY Small Fonts Like Google Calendar */
           .fc-daygrid-view .fc-daygrid-day-frame {
             min-height: 100px;
-            cursor: pointer;
+            cursor: pointer !important;
+          }
+          .fc-daygrid-view .fc-daygrid-day-frame:hover {
+            background-color: rgba(59, 130, 246, 0.02) !important;
           }
           .fc-daygrid-view .fc-daygrid-day-top {
             justify-content: center;
@@ -410,6 +481,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             font-weight: 500 !important;
             color: #374151;
             border-radius: 50%;
+            cursor: pointer !important;
           }
           .fc-daygrid-view .fc-day-today .fc-daygrid-day-number {
             background: #3B82F6;
@@ -516,12 +588,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           /* Time slot hover effects - only for time grid views */
           .fc-timegrid-view .fc-timegrid-slot[data-time] {
             transition: background-color 0.1s ease;
-            cursor: crosshair;
+            cursor: pointer !important;
           }
           
           /* Day grid hover effects - only for month view */
           .fc-daygrid-view .fc-daygrid-day {
-            cursor: pointer;
+            cursor: pointer !important;
             transition: background-color 0.1s ease;
           }
           
@@ -538,6 +610,20 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-daygrid-view .fc-daygrid-day.fc-highlight {
             background-color: rgba(59, 130, 246, 0.1) !important;
             border: 2px solid #3B82F6 !important;
+          }
+          
+          /* Ensure clickable areas are properly defined */
+          .fc-timegrid-col {
+            cursor: pointer !important;
+          }
+          
+          .fc-daygrid-day {
+            cursor: pointer !important;
+          }
+          
+          /* Make sure time slots are clickable */
+          .fc-timegrid-slot-lane {
+            cursor: pointer !important;
           }
         `}
         </style>
@@ -557,6 +643,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           events={events}
           eventClick={handleEventClick}
           select={handleDateSelect}
+          dateClick={handleDateClick}
           height="100%"
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
