@@ -216,6 +216,58 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setTemporaryEvent(null);
     };
 
+    // Smart form positioning - always next to the time block, never covering it
+    const calculateSmartFormPosition = (clickRect: DOMRect, timeBlockRect?: DOMRect) => {
+      const viewportWidth = window.innerWidth;
+      const viewportHeight = window.innerHeight;
+      
+      // Compact form size (75% of original)
+      const formWidth = 375; // 75% of 500px
+      const formHeight = 450; // 75% of 600px
+      
+      // Use time block position if available, otherwise click position
+      const targetRect = timeBlockRect || clickRect;
+      
+      let x = targetRect.right + 15; // Start to the right with some padding
+      let y = targetRect.top;
+      
+      // Check if form fits to the right
+      if (x + formWidth > viewportWidth - 20) {
+        // Try to the left
+        x = targetRect.left - formWidth - 15;
+        
+        // If still doesn't fit, center it but offset vertically
+        if (x < 20) {
+          x = Math.max(20, (viewportWidth - formWidth) / 2);
+          y = targetRect.bottom + 10; // Position below the target
+        }
+      }
+      
+      // Ensure form doesn't go off bottom
+      if (y + formHeight > viewportHeight - 20) {
+        y = Math.max(20, viewportHeight - formHeight - 20);
+      }
+      
+      // Ensure form doesn't go off top
+      y = Math.max(20, y);
+      
+      return { x, y };
+    };
+
+    // Get the visual rectangle of the temporary event block
+    const getTemporaryEventRect = (): DOMRect | null => {
+      if (!fullCalendarRef || !('current' in fullCalendarRef) || !fullCalendarRef.current) return null;
+      
+      const calendarEl = fullCalendarRef.current.el;
+      const tempEventEl = calendarEl.querySelector('[data-event-id="temp-event"]');
+      
+      if (tempEventEl) {
+        return tempEventEl.getBoundingClientRect();
+      }
+      
+      return null;
+    };
+
     // Handle single date clicks (Google Calendar style)
     const handleDateClick = (dateClickInfo: DateClickArg) => {
       console.log('Date clicked:', dateClickInfo);
@@ -237,6 +289,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           element: jsEvent?.target as HTMLElement || document.body,
           allDay: true
         });
+        
+        // Position form for month view
+        if (jsEvent) {
+          const clickRect = (jsEvent.target as HTMLElement).getBoundingClientRect();
+          const position = calculateSmartFormPosition(clickRect);
+          setTaskFormPosition(position);
+        } else {
+          setTaskFormPosition(null);
+        }
       } else {
         // For time grid views, create a 1-hour slot starting at the clicked time
         end.setHours(end.getHours() + 1);
@@ -250,34 +311,14 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           element: jsEvent?.target as HTMLElement || document.body,
           allDay: false
         });
-      }
-
-      // Position the form next to the clicked area
-      if (jsEvent) {
-        const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const formWidth = 500;
-        const formHeight = 600;
         
-        let x = rect.right + 10;
-        let y = Math.max(rect.top, 100);
-        
-        // Adjust if form would go off screen
-        if (x + formWidth > viewportWidth - 20) {
-          x = rect.left - formWidth - 10;
-        }
-        if (x < 20) {
-          x = (viewportWidth - formWidth) / 2;
-        }
-        if (y + formHeight > viewportHeight - 20) {
-          y = viewportHeight - formHeight - 20;
-        }
-        y = Math.max(y, 20);
-        
-        setTaskFormPosition({ x, y });
-      } else {
-        setTaskFormPosition(null);
+        // Wait for temporary event to render, then position form next to it
+        setTimeout(() => {
+          const clickRect = jsEvent ? (jsEvent.target as HTMLElement).getBoundingClientRect() : new DOMRect();
+          const tempEventRect = getTemporaryEventRect();
+          const position = calculateSmartFormPosition(clickRect, tempEventRect || undefined);
+          setTaskFormPosition(position);
+        }, 50);
       }
       
       setShowTaskForm(true);
@@ -306,34 +347,23 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       // Create temporary event block for time grid views
       if (!allDay && (view === 'timeGridDay' || view === 'timeGridWeek')) {
         createTemporaryEvent(startDate, endDate);
-      }
-
-      // Position the form
-      if (jsEvent) {
-        const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const formWidth = 500;
-        const formHeight = 600;
         
-        let x = rect.right + 10;
-        let y = Math.max(rect.top, 100);
-        
-        // Adjust if form would go off screen
-        if (x + formWidth > viewportWidth - 20) {
-          x = rect.left - formWidth - 10;
-        }
-        if (x < 20) {
-          x = (viewportWidth - formWidth) / 2;
-        }
-        if (y + formHeight > viewportHeight - 20) {
-          y = viewportHeight - formHeight - 20;
-        }
-        y = Math.max(y, 20);
-        
-        setTaskFormPosition({ x, y });
+        // Wait for temporary event to render, then position form next to it
+        setTimeout(() => {
+          const clickRect = jsEvent ? (jsEvent.target as HTMLElement).getBoundingClientRect() : new DOMRect();
+          const tempEventRect = getTemporaryEventRect();
+          const position = calculateSmartFormPosition(clickRect, tempEventRect || undefined);
+          setTaskFormPosition(position);
+        }, 50);
       } else {
-        setTaskFormPosition(null);
+        // Position form for month view or all-day events
+        if (jsEvent) {
+          const clickRect = (jsEvent.target as HTMLElement).getBoundingClientRect();
+          const position = calculateSmartFormPosition(clickRect);
+          setTaskFormPosition(position);
+        } else {
+          setTaskFormPosition(null);
+        }
       }
       
       setShowTaskForm(true);
@@ -342,18 +372,26 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       selectInfo.view.calendar.unselect();
     };
 
-    // Handle event resizing (for temporary events)
+    // Handle event resizing (for temporary events) - REAL-TIME SYNC WITH FORM
     const handleEventResize = (resizeInfo: any) => {
       if (resizeInfo.event.id === 'temp-event' && temporaryEvent) {
         const newEnd = new Date(resizeInfo.event.end);
         
+        // Snap to 15-minute intervals
+        const minutes = newEnd.getMinutes();
+        const snappedMinutes = Math.round(minutes / 15) * 15;
+        newEnd.setMinutes(snappedMinutes, 0, 0);
+        
         // Update the temporary event state
         setTemporaryEvent(prev => prev ? { ...prev, end: newEnd } : null);
         
-        // Update the selected time slot
+        // Update the selected time slot - THIS WILL SYNC WITH THE FORM
         setSelectedTimeSlot(prev => prev ? { ...prev, end: newEnd } : null);
         
-        console.log('Event resized to:', resizeInfo.event.start, '->', resizeInfo.event.end);
+        console.log('Event resized to:', resizeInfo.event.start, '->', newEnd);
+        
+        // Update the actual event on the calendar to reflect the snapped time
+        resizeInfo.event.setEnd(newEnd);
       }
     };
 
@@ -663,26 +701,41 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             cursor: pointer !important;
           }
           
-          /* Temporary event styling */
+          /* Temporary event styling - Enhanced for better visibility */
           .fc-event[data-event-id="temp-event"] {
-            opacity: 0.8;
+            opacity: 0.9 !important;
             border: 2px solid #3B82F6 !important;
+            background: rgba(59, 130, 246, 0.8) !important;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3) !important;
           }
           
-          /* Resize handle styling for temporary events */
-          .fc-event-resizer {
-            background: #3B82F6;
-            border: none;
-            width: 100%;
-            height: 4px;
-            bottom: -2px;
-            cursor: ns-resize;
+          /* Enhanced resize handle styling for temporary events */
+          .fc-event[data-event-id="temp-event"] .fc-event-resizer {
+            background: #3B82F6 !important;
+            border: none !important;
+            width: 100% !important;
+            height: 6px !important;
+            bottom: -3px !important;
+            cursor: ns-resize !important;
+            border-radius: 0 0 4px 4px !important;
+            opacity: 0.8 !important;
+          }
+          
+          .fc-event[data-event-id="temp-event"] .fc-event-resizer:hover {
+            opacity: 1 !important;
+            height: 8px !important;
+            bottom: -4px !important;
           }
           
           /* Remove any row-wide highlighting */
           .fc-timegrid-slot-lane:hover,
           .fc-timegrid-col:hover {
             /* REMOVED: No background changes */
+          }
+          
+          /* Ensure temporary events are easily resizable */
+          .fc-event[data-event-id="temp-event"]:hover .fc-event-resizer {
+            opacity: 1 !important;
           }
         `}
         </style>
@@ -734,9 +787,10 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           eventLongPressDelay={300}
           slotDuration="00:15:00"
           snapDuration="00:15:00"
+          eventResizableFromStart={false}
         />
         
-        {/* Task Form Modal */}
+        {/* Compact Task Form Modal - 75% size with smart positioning */}
         {showTaskForm && (
           <>
             <div 
@@ -745,13 +799,21 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             />
             
             <div 
-              className={`fixed z-50 ${taskFormPosition ? '' : 'inset-0 flex items-center justify-center'}`}
+              className="fixed z-50"
               style={taskFormPosition ? {
                 left: `${taskFormPosition.x}px`,
                 top: `${taskFormPosition.y}px`,
-              } : undefined}
+                width: '375px', // 75% of 500px
+                maxHeight: '450px', // 75% of 600px
+              } : {
+                left: '50%',
+                top: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '375px',
+                maxHeight: '450px',
+              }}
             >
-              <div className={`${taskFormPosition ? 'w-[500px]' : 'w-full max-w-2xl mx-4'} bg-white rounded-lg shadow-xl`}>
+              <div className="bg-white rounded-lg shadow-xl overflow-hidden">
                 <TaskForm
                   onClose={handleTaskFormClose}
                   onTaskCreated={handleTaskCreated}
