@@ -630,6 +630,20 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-col-header-cell {
             padding: 0;
             background: #fff;
+            border-right: none !important;
+            border-bottom: none !important;
+          }
+          .fc-col-header-cell.fc-day {
+            position: relative;
+          }
+          .fc-col-header-cell.fc-day:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 1px;
+            height: 6px;
+            background-color: #e5e7eb;
           }
           .fc-col-header-cell-cushion {
             display: flex;
