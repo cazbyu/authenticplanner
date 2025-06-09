@@ -60,6 +60,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [isSelecting, setIsSelecting] = useState(false);
     const [selectionStart, setSelectionStart] = useState<{ time: Date; element: HTMLElement } | null>(null);
     const [currentSelection, setCurrentSelection] = useState<TimeSlotSelection | null>(null);
+    const [hoveredSlot, setHoveredSlot] = useState<HTMLElement | null>(null);
 
     // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
@@ -132,7 +133,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         setCalendarReady(true);
         
         // Set up time slot interaction after calendar is ready
-        setupTimeSlotInteraction();
+        setTimeout(() => setupTimeSlotInteraction(), 100);
       }
     };
 
@@ -155,7 +156,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         }
         
         // Re-setup interaction when view changes
-        setupTimeSlotInteraction();
+        setTimeout(() => setupTimeSlotInteraction(), 100);
       }
     }, [view, currentDate, fullCalendarRef, calendarReady]);
 
@@ -190,7 +191,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       // Only apply to time grid views (day/week)
       if (view !== 'timeGridDay' && view !== 'timeGridWeek') return;
 
-      // Remove existing listeners
+      // Remove existing listeners by cloning nodes
       const existingSlots = calendarEl.querySelectorAll('.fc-timegrid-slot[data-time]');
       existingSlots.forEach(slot => {
         const newSlot = slot.cloneNode(true);
@@ -220,9 +221,16 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       const slot = e.target as HTMLElement;
       if (!slot.classList.contains('fc-timegrid-slot')) return;
       
-      // Add hover styles
+      // Clear previous hover
+      if (hoveredSlot && hoveredSlot !== slot) {
+        hoveredSlot.style.cursor = '';
+        hoveredSlot.style.backgroundColor = '';
+      }
+      
+      // Set hover styles
       slot.style.cursor = 'crosshair';
       slot.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
+      setHoveredSlot(slot);
     };
 
     const handleSlotLeave = (e: Event) => {
@@ -234,10 +242,16 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         slot.style.cursor = '';
         slot.style.backgroundColor = '';
       }
+      
+      if (hoveredSlot === slot) {
+        setHoveredSlot(null);
+      }
     };
 
     const handleSlotMouseDown = (e: MouseEvent) => {
       e.preventDefault();
+      e.stopPropagation();
+      
       const slot = e.target as HTMLElement;
       if (!slot.classList.contains('fc-timegrid-slot')) return;
 
@@ -724,12 +738,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           
           /* Time slot hover effects - only for time grid views */
           .fc-timegrid-view .fc-timegrid-slot[data-time] {
-            cursor: crosshair !important;
             transition: background-color 0.1s ease;
-          }
-          
-          .fc-timegrid-view .fc-timegrid-slot[data-time]:hover {
-            background-color: rgba(59, 130, 246, 0.1) !important;
           }
           
           /* Selected time slot styling */
