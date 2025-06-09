@@ -7,4 +7,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react', 'date-fns-tz'],
   },
+  test: {
+    environment: 'jsdom',
+  },
 });
