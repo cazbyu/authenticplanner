@@ -27,6 +27,7 @@ interface TimeSlotSelection {
   start: Date;
   end: Date;
   element: HTMLElement;
+  allDay?: boolean;
 }
 
 const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -470,7 +471,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }, 100);
     };
 
-    // Handle date/time selection (drag to create) - fallback for FullCalendar's built-in selection
+    // Handle date/time selection (drag to create) - Enhanced for all views
     const handleDateSelect = (selectInfo: DateSelectArg) => {
       const { start, end, allDay, jsEvent } = selectInfo;
       
@@ -478,23 +479,52 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setSelectedTimeSlot({
         start: new Date(start),
         end: new Date(end),
-        element: jsEvent?.target as HTMLElement || document.body
+        element: jsEvent?.target as HTMLElement || document.body,
+        allDay
       });
 
-      // Calculate position for the task form (anchor to selection)
+      // Calculate position for the task form
       if (jsEvent && !allDay) {
         // For time grid views, position the form near the selection
         const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
         const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const formWidth = 500;
+        const formHeight = 600;
+        
+        let x = rect.right + 10;
+        let y = Math.max(rect.top, 100);
+        
+        // Adjust if form would go off screen
+        if (x + formWidth > viewportWidth - 20) {
+          x = rect.left - formWidth - 10;
+        }
+        if (x < 20) {
+          x = (viewportWidth - formWidth) / 2;
+        }
+        if (y + formHeight > viewportHeight - 20) {
+          y = viewportHeight - formHeight - 20;
+        }
+        y = Math.max(y, 20);
+        
+        setTaskFormPosition({ x, y });
+      } else if (jsEvent && allDay) {
+        // For month view or all-day events, position near the clicked cell
+        const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
         const formWidth = 500;
         
-        // Position to the right if there's space, otherwise to the left
-        const x = rect.right + formWidth < viewportWidth ? rect.right + 10 : rect.left - formWidth - 10;
-        const y = Math.max(rect.top, 100);
+        let x = rect.left + rect.width / 2 - formWidth / 2;
+        let y = rect.bottom + 10;
+        
+        // Keep form on screen
+        if (x < 20) x = 20;
+        if (x + formWidth > viewportWidth - 20) x = viewportWidth - formWidth - 20;
+        if (y + 400 > window.innerHeight - 20) y = rect.top - 410;
         
         setTaskFormPosition({ x, y });
       } else {
-        // For month view or when positioning fails, center the form
+        // Fallback: center the form
         setTaskFormPosition(null);
       }
       
@@ -547,18 +577,26 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const getInitialFormData = () => {
       if (!selectedTimeSlot) return {};
 
-      const { start, end } = selectedTimeSlot;
+      const { start, end, allDay } = selectedTimeSlot;
       
-      // For timed events, set date and times
-      const startTime = start.toTimeString().slice(0, 5); // HH:MM format
-      const endTime = end.toTimeString().slice(0, 5); // HH:MM format
-      
-      return {
-        dueDate: start.toISOString().split('T')[0],
-        startTime,
-        endTime,
-        schedulingType: 'scheduled' as const,
-      };
+      if (allDay) {
+        // For all-day events (month view), just set the date
+        return {
+          dueDate: start.toISOString().split('T')[0],
+          schedulingType: 'unscheduled' as const,
+        };
+      } else {
+        // For timed events, set date and times
+        const startTime = start.toTimeString().slice(0, 5); // HH:MM format
+        const endTime = end.toTimeString().slice(0, 5); // HH:MM format
+        
+        return {
+          dueDate: start.toISOString().split('T')[0],
+          startTime,
+          endTime,
+          schedulingType: 'scheduled' as const,
+        };
+      }
     };
 
     // Cleanup event listeners on unmount
@@ -603,6 +641,30 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           }
           .fc-theme-standard th {
             padding: 0;
+            border-right: none !important;
+            border-bottom: none !important;
+          }
+          .fc-col-header-cell.fc-day {
+            position: relative;
+          }
+          .fc-col-header-cell.fc-day:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: 0;
+            width: 1px;
+            height: 6px;
+            background-color: #e5e7eb;
+          }
+          .fc-col-header-cell-cushion {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            color: #4B5563;
+            font-weight: 500;
+            text-transform: uppercase;
+            font-size: 0.75rem;
           }
           .fc-addEvent-button {
             display: none !important;
@@ -630,30 +692,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-col-header-cell {
             padding: 0;
             background: #fff;
-            border-right: none !important;
-            border-bottom: none !important;
-          }
-          .fc-col-header-cell.fc-day {
-            position: relative;
-          }
-          .fc-col-header-cell.fc-day:not(:last-child)::after {
-            content: '';
-            position: absolute;
-            bottom: 0;
-            right: 0;
-            width: 1px;
-            height: 6px;
-            background-color: #e5e7eb;
-          }
-          .fc-col-header-cell-cushion {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding: 8px 0;
-            color: #4B5563;
-            font-weight: 500;
-            text-transform: uppercase;
-            font-size: 0.75rem;
           }
           .day-name {
             font-size: 0.625rem !important;
@@ -682,6 +720,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           /* Month View Specific Styles - EXTREMELY Small Fonts Like Google Calendar */
           .fc-daygrid-view .fc-daygrid-day-frame {
             min-height: 100px;
+            cursor: pointer;
           }
           .fc-daygrid-view .fc-daygrid-day-top {
             justify-content: center;
@@ -806,6 +845,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           /* Time slot hover effects - only for time grid views */
           .fc-timegrid-view .fc-timegrid-slot[data-time] {
             transition: background-color 0.1s ease;
+            cursor: crosshair;
           }
           
           /* Selected time slot styling */
@@ -816,7 +856,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           
           /* Day grid hover effects - only for month view */
           .fc-daygrid-view .fc-daygrid-day {
-            cursor: crosshair;
+            cursor: pointer;
             transition: background-color 0.1s ease;
           }
           
