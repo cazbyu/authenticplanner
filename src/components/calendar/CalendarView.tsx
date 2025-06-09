@@ -30,6 +30,19 @@ interface TimeSlotSelection {
   allDay?: boolean;
 }
 
+interface TemporaryEvent {
+  id: string;
+  start: Date;
+  end: Date;
+  title: string;
+  backgroundColor: string;
+  borderColor: string;
+  textColor: string;
+  editable: boolean;
+  startEditable: boolean;
+  durationEditable: boolean;
+}
+
 const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 // This custom header ONLY for week/day, not month!
@@ -53,6 +66,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [showTaskForm, setShowTaskForm] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlotSelection | null>(null);
     const [taskFormPosition, setTaskFormPosition] = useState<{ x: number; y: number } | null>(null);
+    const [temporaryEvent, setTemporaryEvent] = useState<TemporaryEvent | null>(null);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [calendarReady, setCalendarReady] = useState(false);
 
@@ -166,11 +180,50 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     };
 
-    // Handle single date clicks (for month view primarily)
+    // Create temporary event block on calendar
+    const createTemporaryEvent = (start: Date, end: Date) => {
+      const tempEvent: TemporaryEvent = {
+        id: 'temp-event',
+        start,
+        end,
+        title: '(No title)',
+        backgroundColor: 'rgba(59, 130, 246, 0.8)',
+        borderColor: '#3B82F6',
+        textColor: 'white',
+        editable: true,
+        startEditable: false, // Don't allow moving the start time
+        durationEditable: true, // Allow resizing
+      };
+      
+      setTemporaryEvent(tempEvent);
+      
+      // Add to calendar events temporarily
+      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
+        const calendarApi = fullCalendarRef.current.getApi();
+        calendarApi.addEvent(tempEvent);
+      }
+    };
+
+    // Remove temporary event from calendar
+    const removeTemporaryEvent = () => {
+      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current && temporaryEvent) {
+        const calendarApi = fullCalendarRef.current.getApi();
+        const event = calendarApi.getEventById('temp-event');
+        if (event) {
+          event.remove();
+        }
+      }
+      setTemporaryEvent(null);
+    };
+
+    // Handle single date clicks (Google Calendar style)
     const handleDateClick = (dateClickInfo: DateClickArg) => {
       console.log('Date clicked:', dateClickInfo);
       
       const { date, allDay, jsEvent } = dateClickInfo;
+      
+      // Remove any existing temporary event
+      removeTemporaryEvent();
       
       // Create a default time slot for the clicked date
       const start = new Date(date);
@@ -187,12 +240,72 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       } else {
         // For time grid views, create a 1-hour slot starting at the clicked time
         end.setHours(end.getHours() + 1);
+        
+        // Create temporary event block on calendar
+        createTemporaryEvent(start, end);
+        
         setSelectedTimeSlot({
           start,
           end,
           element: jsEvent?.target as HTMLElement || document.body,
           allDay: false
         });
+      }
+
+      // Position the form next to the clicked area
+      if (jsEvent) {
+        const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        const formWidth = 500;
+        const formHeight = 600;
+        
+        let x = rect.right + 10;
+        let y = Math.max(rect.top, 100);
+        
+        // Adjust if form would go off screen
+        if (x + formWidth > viewportWidth - 20) {
+          x = rect.left - formWidth - 10;
+        }
+        if (x < 20) {
+          x = (viewportWidth - formWidth) / 2;
+        }
+        if (y + formHeight > viewportHeight - 20) {
+          y = viewportHeight - formHeight - 20;
+        }
+        y = Math.max(y, 20);
+        
+        setTaskFormPosition({ x, y });
+      } else {
+        setTaskFormPosition(null);
+      }
+      
+      setShowTaskForm(true);
+    };
+
+    // Handle drag selection (for creating longer events)
+    const handleDateSelect = (selectInfo: DateSelectArg) => {
+      console.log('Date range selected:', selectInfo);
+      
+      const { start, end, allDay, jsEvent } = selectInfo;
+      
+      // Remove any existing temporary event
+      removeTemporaryEvent();
+      
+      // Store the selected time slot
+      const startDate = new Date(start);
+      const endDate = new Date(end);
+      
+      setSelectedTimeSlot({
+        start: startDate,
+        end: endDate,
+        element: jsEvent?.target as HTMLElement || document.body,
+        allDay
+      });
+
+      // Create temporary event block for time grid views
+      if (!allDay && (view === 'timeGridDay' || view === 'timeGridWeek')) {
+        createTemporaryEvent(startDate, endDate);
       }
 
       // Position the form
@@ -224,75 +337,32 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
       
       setShowTaskForm(true);
-    };
-
-    // Handle date/time selection (drag to create) - Enhanced for all views
-    const handleDateSelect = (selectInfo: DateSelectArg) => {
-      console.log('Date range selected:', selectInfo);
-      
-      const { start, end, allDay, jsEvent } = selectInfo;
-      
-      // Store the selected time slot
-      setSelectedTimeSlot({
-        start: new Date(start),
-        end: new Date(end),
-        element: jsEvent?.target as HTMLElement || document.body,
-        allDay
-      });
-
-      // Calculate position for the task form
-      if (jsEvent && !allDay) {
-        // For time grid views, position the form near the selection
-        const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const viewportHeight = window.innerHeight;
-        const formWidth = 500;
-        const formHeight = 600;
-        
-        let x = rect.right + 10;
-        let y = Math.max(rect.top, 100);
-        
-        // Adjust if form would go off screen
-        if (x + formWidth > viewportWidth - 20) {
-          x = rect.left - formWidth - 10;
-        }
-        if (x < 20) {
-          x = (viewportWidth - formWidth) / 2;
-        }
-        if (y + formHeight > viewportHeight - 20) {
-          y = viewportHeight - formHeight - 20;
-        }
-        y = Math.max(y, 20);
-        
-        setTaskFormPosition({ x, y });
-      } else if (jsEvent && allDay) {
-        // For month view or all-day events, position near the clicked cell
-        const rect = (jsEvent.target as HTMLElement).getBoundingClientRect();
-        const viewportWidth = window.innerWidth;
-        const formWidth = 500;
-        
-        let x = rect.left + rect.width / 2 - formWidth / 2;
-        let y = rect.bottom + 10;
-        
-        // Keep form on screen
-        if (x < 20) x = 20;
-        if (x + formWidth > viewportWidth - 20) x = viewportWidth - formWidth - 20;
-        if (y + 400 > window.innerHeight - 20) y = rect.top - 410;
-        
-        setTaskFormPosition({ x, y });
-      } else {
-        // Fallback: center the form
-        setTaskFormPosition(null);
-      }
-      
-      // Open the task form
-      setShowTaskForm(true);
       
       // Clear the selection visually
       selectInfo.view.calendar.unselect();
     };
 
+    // Handle event resizing (for temporary events)
+    const handleEventResize = (resizeInfo: any) => {
+      if (resizeInfo.event.id === 'temp-event' && temporaryEvent) {
+        const newEnd = new Date(resizeInfo.event.end);
+        
+        // Update the temporary event state
+        setTemporaryEvent(prev => prev ? { ...prev, end: newEnd } : null);
+        
+        // Update the selected time slot
+        setSelectedTimeSlot(prev => prev ? { ...prev, end: newEnd } : null);
+        
+        console.log('Event resized to:', resizeInfo.event.start, '->', resizeInfo.event.end);
+      }
+    };
+
     const handleEventClick = (info: EventClickArg) => {
+      // Don't edit temporary events
+      if (info.event.id === 'temp-event') {
+        return;
+      }
+      
       // Prevent event bubbling to avoid triggering date click
       info.jsEvent.stopPropagation();
       // Open edit modal for the clicked task
@@ -300,14 +370,16 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     };
 
     const handleTaskCreated = () => {
+      removeTemporaryEvent();
       setShowTaskForm(false);
       setSelectedTimeSlot(null);
       setTaskFormPosition(null);
-      // Refresh the calendar by incrementing the refresh trigger
+      // Refresh the calendar
       fetchTasks();
     };
 
     const handleTaskFormClose = () => {
+      removeTemporaryEvent();
       setShowTaskForm(false);
       setSelectedTimeSlot(null);
       setTaskFormPosition(null);
@@ -315,7 +387,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     const handleTaskUpdated = () => {
       setEditingTaskId(null);
-      // Refresh the calendar by incrementing the refresh trigger
+      // Refresh the calendar
       fetchTasks();
     };
 
@@ -404,15 +476,20 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-addEvent-button {
             display: none !important;
           }
+          
+          /* CRITICAL: Remove all hover effects - Google Calendar doesn't highlight on hover */
           .fc-timegrid-slot {
             height: 48px !important;
             border-bottom: 1px solid #f3f4f6 !important;
             position: relative;
             cursor: pointer !important;
+            /* NO HOVER EFFECTS */
           }
+          
           .fc-timegrid-slot:hover {
-            background-color: rgba(59, 130, 246, 0.05) !important;
+            /* REMOVED: No background change on hover */
           }
+          
           .fc-timegrid-slot-label {
             font-size: 0.625rem !important;
             color: #9CA3AF !important;
@@ -456,14 +533,17 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             color: white;
           }
           
-          /* Month View Specific Styles - EXTREMELY Small Fonts Like Google Calendar */
+          /* Month View Specific Styles */
           .fc-daygrid-view .fc-daygrid-day-frame {
             min-height: 100px;
             cursor: pointer !important;
           }
+          
+          /* CRITICAL: Remove month view hover effects too */
           .fc-daygrid-view .fc-daygrid-day-frame:hover {
-            background-color: rgba(59, 130, 246, 0.02) !important;
+            /* REMOVED: No background change on hover */
           }
+          
           .fc-daygrid-view .fc-daygrid-day-top {
             justify-content: center;
             padding: 2px 0 1px 0;
@@ -489,7 +569,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             font-weight: 600 !important;
           }
           
-          /* NUCLEAR OPTION - Force tiny text on ALL month view events */
+          /* Month view events - tiny like Google Calendar */
           .fc-daygrid-view .fc-event,
           .fc-daygrid-view .fc-event *,
           .fc-daygrid-view .fc-daygrid-event,
@@ -511,7 +591,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             text-overflow: ellipsis !important;
           }
           
-          /* Force event containers to be tiny */
           .fc-daygrid-view .fc-event,
           .fc-daygrid-view .fc-daygrid-event {
             height: 8px !important;
@@ -523,13 +602,11 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             cursor: pointer;
           }
           
-          /* Month View Day Cell Content */
           .fc-daygrid-view .fc-daygrid-day-events {
             margin-top: 1px;
             min-height: 8px;
           }
           
-          /* Month View "More" Link - Make it tiny */
           .fc-daygrid-view .fc-daygrid-more-link,
           .fc-daygrid-view .fc-more-link {
             font-size: 0.25rem !important;
@@ -542,7 +619,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             max-height: 8px !important;
           }
           
-          /* Month View Header - Make smaller */
           .fc-daygrid-view .fc-col-header-cell-cushion {
             padding: 2px 0 !important;
             font-size: 0.3125rem !important;
@@ -551,17 +627,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             text-transform: uppercase;
             letter-spacing: 0.025em;
             line-height: 1.0 !important;
-          }
-          
-          /* Override FullCalendar's inline styles with maximum specificity */
-          .fc-daygrid-view .fc-event[style],
-          .fc-daygrid-view .fc-daygrid-event[style],
-          .fc-daygrid-view .fc-event-main[style],
-          .fc-daygrid-view .fc-event-title[style],
-          .fc-daygrid-view .fc-event-time[style] {
-            font-size: 0.3125rem !important;
-            height: 8px !important;
-            line-height: 0.8 !important;
           }
           
           .fc-timegrid-col-frame {
@@ -579,37 +644,10 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             opacity: 0.8;
           }
           
-          /* Google Calendar-style selection and hover effects */
+          /* Selection feedback - only when actually selecting */
           .fc-highlight {
             background: rgba(59, 130, 246, 0.2) !important;
             border: 1px solid #3B82F6 !important;
-          }
-          
-          /* Time slot hover effects - only for time grid views */
-          .fc-timegrid-view .fc-timegrid-slot[data-time] {
-            transition: background-color 0.1s ease;
-            cursor: pointer !important;
-          }
-          
-          /* Day grid hover effects - only for month view */
-          .fc-daygrid-view .fc-daygrid-day {
-            cursor: pointer !important;
-            transition: background-color 0.1s ease;
-          }
-          
-          .fc-daygrid-view .fc-daygrid-day:hover {
-            background-color: rgba(59, 130, 246, 0.05) !important;
-          }
-          
-          /* Selection feedback improvements */
-          .fc-timegrid-view .fc-timegrid-slot.fc-highlight {
-            background-color: rgba(59, 130, 246, 0.15) !important;
-            border-left: 3px solid #3B82F6 !important;
-          }
-          
-          .fc-daygrid-view .fc-daygrid-day.fc-highlight {
-            background-color: rgba(59, 130, 246, 0.1) !important;
-            border: 2px solid #3B82F6 !important;
           }
           
           /* Ensure clickable areas are properly defined */
@@ -621,9 +659,30 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             cursor: pointer !important;
           }
           
-          /* Make sure time slots are clickable */
           .fc-timegrid-slot-lane {
             cursor: pointer !important;
+          }
+          
+          /* Temporary event styling */
+          .fc-event[data-event-id="temp-event"] {
+            opacity: 0.8;
+            border: 2px solid #3B82F6 !important;
+          }
+          
+          /* Resize handle styling for temporary events */
+          .fc-event-resizer {
+            background: #3B82F6;
+            border: none;
+            width: 100%;
+            height: 4px;
+            bottom: -2px;
+            cursor: ns-resize;
+          }
+          
+          /* Remove any row-wide highlighting */
+          .fc-timegrid-slot-lane:hover,
+          .fc-timegrid-col:hover {
+            /* REMOVED: No background changes */
           }
         `}
         </style>
@@ -644,6 +703,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           eventClick={handleEventClick}
           select={handleDateSelect}
           dateClick={handleDateClick}
+          eventResize={handleEventResize}
           height="100%"
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
@@ -663,33 +723,27 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           }}
           datesSet={handleDatesSet}
           viewDidMount={handleCalendarReady}
-          // Only show custom header in week/day view; let month use default
           dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
-          // Selection configuration for Google Calendar-like behavior
           selectConstraint={{
             start: '00:00',
             end: '24:00',
           }}
           selectOverlap={false}
-          selectMinDistance={5} // Minimum pixels to drag before selection starts
-          // Allow selection on touch devices
+          selectMinDistance={5}
           longPressDelay={300}
           eventLongPressDelay={300}
-          // Snap to 15-minute intervals
           slotDuration="00:15:00"
           snapDuration="00:15:00"
         />
         
-        {/* Task Form Modal for drag-to-create - Positioned or centered */}
+        {/* Task Form Modal */}
         {showTaskForm && (
           <>
-            {/* Backdrop */}
             <div 
               className="fixed inset-0 z-40 bg-black bg-opacity-25"
               onClick={handleTaskFormClose}
             />
             
-            {/* Task Form - Positioned near selection or centered */}
             <div 
               className={`fixed z-50 ${taskFormPosition ? '' : 'inset-0 flex items-center justify-center'}`}
               style={taskFormPosition ? {
