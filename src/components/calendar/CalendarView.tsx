@@ -55,21 +55,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [taskFormPosition, setTaskFormPosition] = useState<{ x: number; y: number } | null>(null);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [calendarReady, setCalendarReady] = useState(false);
-    
-    // Time slot selection state
-    const [isSelecting, setIsSelecting] = useState(false);
-    const [selectionStart, setSelectionStart] = useState<{ time: Date; element: HTMLElement } | null>(null);
-    const [currentSelection, setCurrentSelection] = useState<TimeSlotSelection | null>(null);
-    const [hoveredSlot, setHoveredSlot] = useState<HTMLElement | null>(null);
-    const hoveredSlotRef = useRef<HTMLElement | null>(null);
-    const scrollerRef = useRef<HTMLElement | null>(null);
-    const dragStartedRef = useRef(false);
-    const clickOpenTimeoutRef = useRef<number | null>(null);
-
-    // Keep hoveredSlot ref in sync
-    useEffect(() => {
-      hoveredSlotRef.current = hoveredSlot;
-    }, [hoveredSlot]);
 
     // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
@@ -140,9 +125,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           });
         }
         setCalendarReady(true);
-        
-        // Set up time slot interaction after calendar is ready
-        setTimeout(() => setupTimeSlotInteraction(), 100);
       }
     };
 
@@ -163,9 +145,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             }
           });
         }
-        
-        // Re-setup interaction when view changes
-        setTimeout(() => setupTimeSlotInteraction(), 100);
       }
     }, [view, currentDate, fullCalendarRef, calendarReady]);
 
@@ -185,290 +164,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           }
         }, 10);
       }
-      
-      // Re-setup interaction when dates change
-      setTimeout(() => setupTimeSlotInteraction(), 100);
-    };
-
-    // Setup time slot interaction for Google Calendar-like behavior
-    const setupTimeSlotInteraction = () => {
-      if (!fullCalendarRef || !('current' in fullCalendarRef) || !fullCalendarRef.current) return;
-
-      const calendarEl = fullCalendarRef.current.el;
-      if (!calendarEl) return;
-
-      // Only apply to time grid views (day/week)
-      if (view !== 'timeGridDay' && view !== 'timeGridWeek') {
-        if (scrollerRef.current) {
-          scrollerRef.current.removeEventListener('scroll', handleScrollerScroll);
-          scrollerRef.current = null;
-        }
-        return;
-      }
-
-      // Setup scroller scroll handler
-      const scroller = calendarEl.querySelector('.fc-scroller');
-      if (scrollerRef.current && scrollerRef.current !== scroller) {
-        scrollerRef.current.removeEventListener('scroll', handleScrollerScroll);
-      }
-      if (scroller) {
-        scroller.addEventListener('scroll', handleScrollerScroll);
-        scrollerRef.current = scroller as HTMLElement;
-      }
-
-      // Remove existing listeners by cloning nodes
-      const existingSlots = calendarEl.querySelectorAll('.fc-timegrid-slot[data-time]');
-      existingSlots.forEach(slot => {
-        const newSlot = slot.cloneNode(true);
-        slot.parentNode?.replaceChild(newSlot, slot);
-      });
-
-      // Add interaction to time slots
-      const timeSlots = calendarEl.querySelectorAll('.fc-timegrid-slot[data-time]');
-      
-      timeSlots.forEach((slot: Element) => {
-        const slotEl = slot as HTMLElement;
-        
-        // Add hover effects
-        slotEl.addEventListener('mouseenter', handleSlotHover);
-        slotEl.addEventListener('mouseleave', handleSlotLeave);
-        
-        // Add click/drag interaction
-        slotEl.addEventListener('mousedown', handleSlotMouseDown);
-      });
-
-      // Remove old global handlers to prevent duplicates
-      document.removeEventListener('mousemove', handleGlobalMouseMove);
-      document.removeEventListener('mouseup', handleGlobalMouseUp);
-
-      // Add global mouse events for dragging
-      document.addEventListener('mousemove', handleGlobalMouseMove);
-      document.addEventListener('mouseup', handleGlobalMouseUp);
-    };
-
-    const handleSlotHover = (e: Event) => {
-      const slot = e.target as HTMLElement;
-      if (!slot.classList.contains('fc-timegrid-slot')) return;
-      
-      // Clear previous hover
-      if (hoveredSlot && hoveredSlot !== slot) {
-        hoveredSlot.style.cursor = '';
-        hoveredSlot.style.backgroundColor = '';
-      }
-      
-      // Set hover styles
-      slot.style.cursor = 'crosshair';
-      slot.style.backgroundColor = 'rgba(59, 130, 246, 0.1)';
-      setHoveredSlot(slot);
-    };
-
-    const handleSlotLeave = (e: Event) => {
-      const slot = e.target as HTMLElement;
-      if (!slot.classList.contains('fc-timegrid-slot')) return;
-      
-      // Remove hover styles if not selected
-      if (!currentSelection || !isElementInSelection(slot, currentSelection)) {
-        slot.style.cursor = '';
-        slot.style.backgroundColor = '';
-      }
-      
-      if (hoveredSlot === slot) {
-        setHoveredSlot(null);
-      }
-    };
-
-    const handleSlotMouseDown = (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const slot = e.target as HTMLElement;
-      if (!slot.classList.contains('fc-timegrid-slot')) return;
-
-      const timeStr = slot.getAttribute('data-time');
-      if (!timeStr) return;
-
-      // Parse the time from the slot
-      const slotTime = parseSlotTime(slot);
-      if (!slotTime) return;
-
-      setIsSelecting(true);
-      setSelectionStart({ time: slotTime, element: slot });
-      
-      // Create initial 1-hour selection
-      const endTime = new Date(slotTime.getTime() + 60 * 60 * 1000); // 1 hour later
-      const selection: TimeSlotSelection = {
-        start: slotTime,
-        end: endTime,
-        element: slot
-      };
-      
-      setCurrentSelection(selection);
-      highlightSelection(selection);
-
-      dragStartedRef.current = false;
-      if (clickOpenTimeoutRef.current) {
-        clearTimeout(clickOpenTimeoutRef.current);
-        clickOpenTimeoutRef.current = null;
-      }
-    };
-
-    const handleScrollerScroll = useCallback(() => {
-      const slot = hoveredSlotRef.current;
-      if (slot) {
-        slot.style.cursor = '';
-        slot.style.backgroundColor = '';
-        setHoveredSlot(null);
-      }
-    }, []);
-
-    const handleGlobalMouseMove = (e: MouseEvent) => {
-      if (!isSelecting || !selectionStart) return;
-
-      dragStartedRef.current = true;
-
-      const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
-      if (!elementUnderMouse || !elementUnderMouse.classList.contains('fc-timegrid-slot')) return;
-
-      const currentSlot = elementUnderMouse as HTMLElement;
-      const currentTime = parseSlotTime(currentSlot);
-      if (!currentTime) return;
-
-      // Update selection based on drag direction
-      const startTime = selectionStart.time;
-      let newStart: Date, newEnd: Date;
-
-      if (currentTime >= startTime) {
-        // Dragging down
-        newStart = startTime;
-        newEnd = new Date(currentTime.getTime() + 15 * 60 * 1000); // Add 15 minutes to include the slot
-      } else {
-        // Dragging up
-        newStart = currentTime;
-        newEnd = new Date(startTime.getTime() + 15 * 60 * 1000);
-      }
-
-      const selection: TimeSlotSelection = {
-        start: newStart,
-        end: newEnd,
-        element: selectionStart.element
-      };
-
-      setCurrentSelection(selection);
-      highlightSelection(selection);
-    };
-
-    const handleGlobalMouseUp = (e: MouseEvent) => {
-      if (!isSelecting || !currentSelection) return;
-
-      setIsSelecting(false);
-      setSelectionStart(null);
-
-      if (dragStartedRef.current) {
-        openTaskFormForSelection(currentSelection, e);
-      } else {
-        clickOpenTimeoutRef.current = window.setTimeout(() => {
-          openTaskFormForSelection(currentSelection, e);
-        }, 150);
-      }
-    };
-
-    const parseSlotTime = (slot: HTMLElement): Date | null => {
-      const timeStr = slot.getAttribute('data-time');
-      if (!timeStr) return null;
-
-      // Get the date from the column
-      const dayEl = slot.closest('.fc-day');
-      const dateStr = dayEl?.getAttribute('data-date');
-      if (!dateStr) return null;
-
-      // Parse time (format: "08:00:00")
-      const [hours, minutes] = timeStr.split(':').map(Number);
-      const date = new Date(dateStr);
-      date.setHours(hours, minutes, 0, 0);
-      
-      return date;
-    };
-
-    const highlightSelection = (selection: TimeSlotSelection) => {
-      if (!fullCalendarRef || !('current' in fullCalendarRef) || !fullCalendarRef.current) return;
-
-      const calendarEl = fullCalendarRef.current.el;
-      
-      // Clear previous highlights
-      const previousHighlights = calendarEl.querySelectorAll('.fc-timegrid-slot.time-slot-selected');
-      previousHighlights.forEach(slot => {
-        (slot as HTMLElement).classList.remove('time-slot-selected');
-        (slot as HTMLElement).style.backgroundColor = '';
-        (slot as HTMLElement).style.borderLeft = '';
-      });
-
-      // Highlight selected slots
-      const timeSlots = calendarEl.querySelectorAll('.fc-timegrid-slot[data-time]');
-      timeSlots.forEach((slot: Element) => {
-        const slotEl = slot as HTMLElement;
-        const slotTime = parseSlotTime(slotEl);
-        if (!slotTime) return;
-
-        if (slotTime >= selection.start && slotTime < selection.end) {
-          slotEl.classList.add('time-slot-selected');
-          slotEl.style.backgroundColor = 'rgba(59, 130, 246, 0.2)';
-          slotEl.style.borderLeft = '3px solid #3B82F6';
-        }
-      });
-    };
-
-    const isElementInSelection = (element: HTMLElement, selection: TimeSlotSelection): boolean => {
-      const slotTime = parseSlotTime(element);
-      if (!slotTime) return false;
-      return slotTime >= selection.start && slotTime < selection.end;
-    };
-
-    const openTaskFormForSelection = (selection: TimeSlotSelection, mouseEvent: MouseEvent) => {
-      // Calculate form position near the selection
-      const rect = selection.element.getBoundingClientRect();
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      const formWidth = 500;
-      const formHeight = 600;
-
-      let x = rect.right + 10; // Default to right of selection
-      let y = Math.max(rect.top, 100);
-
-      // If form would go off right edge, position to left
-      if (x + formWidth > viewportWidth - 20) {
-        x = rect.left - formWidth - 10;
-      }
-
-      // If still off screen, center horizontally
-      if (x < 20) {
-        x = (viewportWidth - formWidth) / 2;
-      }
-
-      // Ensure form doesn't go off bottom
-      if (y + formHeight > viewportHeight - 20) {
-        y = viewportHeight - formHeight - 20;
-      }
-
-      // Ensure form doesn't go off top
-      y = Math.max(y, 20);
-
-      setTaskFormPosition({ x, y });
-      setSelectedTimeSlot(selection);
-      setShowTaskForm(true);
-
-      // Clear visual selection after a brief delay
-      setTimeout(() => {
-        setCurrentSelection(null);
-        if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
-          const calendarEl = fullCalendarRef.current.el;
-          const highlights = calendarEl.querySelectorAll('.fc-timegrid-slot.time-slot-selected');
-          highlights.forEach(slot => {
-            (slot as HTMLElement).classList.remove('time-slot-selected');
-            (slot as HTMLElement).style.backgroundColor = '';
-            (slot as HTMLElement).style.borderLeft = '';
-          });
-        }
-      }, 100);
     };
 
     // Handle date/time selection (drag to create) - Enhanced for all views
@@ -544,7 +239,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setShowTaskForm(false);
       setSelectedTimeSlot(null);
       setTaskFormPosition(null);
-      setCurrentSelection(null);
       // Refresh the calendar by incrementing the refresh trigger
       fetchTasks();
     };
@@ -553,18 +247,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setShowTaskForm(false);
       setSelectedTimeSlot(null);
       setTaskFormPosition(null);
-      setCurrentSelection(null);
-      
-      // Clear any remaining highlights
-      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
-        const calendarEl = fullCalendarRef.current.el;
-        const highlights = calendarEl.querySelectorAll('.fc-timegrid-slot.time-slot-selected');
-        highlights.forEach(slot => {
-          (slot as HTMLElement).classList.remove('time-slot-selected');
-          (slot as HTMLElement).style.backgroundColor = '';
-          (slot as HTMLElement).style.borderLeft = '';
-        });
-      }
     };
 
     const handleTaskUpdated = () => {
@@ -598,17 +280,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         };
       }
     };
-
-    // Cleanup event listeners on unmount
-    useEffect(() => {
-      return () => {
-        document.removeEventListener('mousemove', handleGlobalMouseMove);
-        document.removeEventListener('mouseup', handleGlobalMouseUp);
-        if (scrollerRef.current) {
-          scrollerRef.current.removeEventListener('scroll', handleScrollerScroll);
-        }
-      };
-    }, []);
 
     if (loading) {
       return (
@@ -846,12 +517,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-timegrid-view .fc-timegrid-slot[data-time] {
             transition: background-color 0.1s ease;
             cursor: crosshair;
-          }
-          
-          /* Selected time slot styling */
-          .fc-timegrid-slot.time-slot-selected {
-            background-color: rgba(59, 130, 246, 0.2) !important;
-            border-left: 3px solid #3B82F6 !important;
           }
           
           /* Day grid hover effects - only for month view */
