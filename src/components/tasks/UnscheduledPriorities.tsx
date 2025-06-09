@@ -294,3 +294,168 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
             </button>
             <button
               onClick={(e) => handleTaskAction(task.id, 'delegate', e)}
+              className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+              title="Delegate"
+            >
+              <UserPlus className="h-3 w-3" />
+            </button>
+            <button
+              onClick={(e) => handleTaskAction(task.id, 'cancel', e)}
+              className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+              title="Cancel"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+
+        {/* Task metadata */}
+        <div className="flex flex-wrap gap-1 mt-2">
+          {task.is_authentic_deposit && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-800">
+              Authentic Deposit
+            </span>
+          )}
+          {task.is_twelve_week_goal && (
+            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800">
+              12-Week Goal
+            </span>
+          )}
+          {task.task_roles?.map((taskRole) => {
+            const role = roles[taskRole.role_id];
+            return role ? (
+              <span key={taskRole.role_id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-800">
+                {role.label}
+              </span>
+            ) : null;
+          })}
+          {task.task_domains?.map((taskDomain) => {
+            const domain = domains[taskDomain.domain_id];
+            return domain ? (
+              <span key={taskDomain.domain_id} className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800">
+                {domain.name}
+              </span>
+            ) : null;
+          })}
+        </div>
+
+        {task.notes && (
+          <div className="mt-2 text-xs text-gray-600 line-clamp-2">
+            {task.notes}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const QuadrantSection: React.FC<{
+    title: string;
+    tasks: Task[];
+    quadrantId: string;
+    quadrantColor: string;
+    icon: React.ReactNode;
+  }> = ({ title, tasks, quadrantId, quadrantColor, icon }) => {
+    const isCollapsed = collapsedQuadrants[quadrantId];
+
+    return (
+      <div className="bg-gray-50 rounded-lg border border-gray-200">
+        <div
+          className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-100 transition-colors"
+          onClick={() => toggleQuadrant(quadrantId)}
+        >
+          <div className="flex items-center space-x-3">
+            <div className={`p-2 rounded-lg ${quadrantColor.replace('border-l-', 'bg-').replace('-500', '-100')}`}>
+              {icon}
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">{title}</h3>
+              <p className="text-sm text-gray-600">{tasks.length} task{tasks.length !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          {isCollapsed ? (
+            <ChevronDown className="h-5 w-5 text-gray-400" />
+          ) : (
+            <ChevronUp className="h-5 w-5 text-gray-400" />
+          )}
+        </div>
+
+        {!isCollapsed && (
+          <div className="px-4 pb-4 space-y-3">
+            {tasks.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <p>No unscheduled tasks in this quadrant</p>
+              </div>
+            ) : (
+              tasks.map((task) => (
+                <TaskCard key={task.id} task={task} quadrantColor={quadrantColor} />
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Unscheduled Priorities</h2>
+          <p className="text-gray-600 mt-1">Tasks organized by urgency and importance</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <QuadrantSection
+          title="Urgent & Important"
+          tasks={urgentImportant}
+          quadrantId="urgent-important"
+          quadrantColor="border-l-red-500"
+          icon={<AlertTriangle className="h-5 w-5 text-red-600" />}
+        />
+
+        <QuadrantSection
+          title="Not Urgent & Important"
+          tasks={notUrgentImportant}
+          quadrantId="not-urgent-important"
+          quadrantColor="border-l-blue-500"
+          icon={<Clock className="h-5 w-5 text-blue-600" />}
+        />
+
+        <QuadrantSection
+          title="Urgent & Not Important"
+          tasks={urgentNotImportant}
+          quadrantId="urgent-not-important"
+          quadrantColor="border-l-yellow-500"
+          icon={<UserPlus className="h-5 w-5 text-yellow-600" />}
+        />
+
+        <QuadrantSection
+          title="Not Urgent & Not Important"
+          tasks={notUrgentNotImportant}
+          quadrantId="not-urgent-not-important"
+          quadrantColor="border-l-gray-500"
+          icon={<X className="h-5 w-5 text-gray-600" />}
+        />
+      </div>
+
+      {editingTask && (
+        <EditTask
+          task={editingTask}
+          onTaskUpdated={handleTaskUpdated}
+          onCancel={handleEditCancel}
+        />
+      )}
+    </div>
+  );
+};
+
+export default UnscheduledPriorities;
