@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, forwardRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback, forwardRef } from 'react';
 import FullCalendar, { DatesSetArg, DateHeaderContentArg, EventClickArg, DateSelectArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
@@ -7,10 +7,9 @@ import listPlugin from '@fullcalendar/list';
 import { supabase } from '../../supabaseClient';
 import TaskEditModal from './TaskEditModal';
 import TaskForm from '../tasks/TaskForm';
+import { Task } from '../../types';
 
-interface Task {
-  id: string;
-  title: string;
+interface CalendarTask extends Task {
   start_time: string;
   end_time: string | null;
   is_authentic_deposit: boolean;
@@ -61,6 +60,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [selectionStart, setSelectionStart] = useState<{ time: Date; element: HTMLElement } | null>(null);
     const [currentSelection, setCurrentSelection] = useState<TimeSlotSelection | null>(null);
     const [hoveredSlot, setHoveredSlot] = useState<HTMLElement | null>(null);
+    const hoveredSlotRef = useRef<HTMLElement | null>(null);
+    const scrollerRef = useRef<HTMLElement | null>(null);
+    const dragStartedRef = useRef(false);
+    const clickOpenTimeoutRef = useRef<number | null>(null);
+
+    // Keep hoveredSlot ref in sync
+    useEffect(() => {
+      hoveredSlotRef.current = hoveredSlot;
+    }, [hoveredSlot]);
 
     // Keep both legacy and new ref for compatibility
     const fullCalendarRef = (ref as any) || calendarRef;
@@ -86,7 +94,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         }
 
         if (tasks) {
-          const calendarEvents = tasks.map((task: Task) => ({
+          const calendarEvents = tasks.map((task: CalendarTask) => ({
             id: task.id,
             title: task.title,
             // FullCalendar automatically converts UTC times to local time for display
@@ -184,12 +192,28 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     // Setup time slot interaction for Google Calendar-like behavior
     const setupTimeSlotInteraction = () => {
       if (!fullCalendarRef || !('current' in fullCalendarRef) || !fullCalendarRef.current) return;
-      
+
       const calendarEl = fullCalendarRef.current.el;
       if (!calendarEl) return;
 
       // Only apply to time grid views (day/week)
-      if (view !== 'timeGridDay' && view !== 'timeGridWeek') return;
+      if (view !== 'timeGridDay' && view !== 'timeGridWeek') {
+        if (scrollerRef.current) {
+          scrollerRef.current.removeEventListener('scroll', handleScrollerScroll);
+          scrollerRef.current = null;
+        }
+        return;
+      }
+
+      // Setup scroller scroll handler
+      const scroller = calendarEl.querySelector('.fc-scroller');
+      if (scrollerRef.current && scrollerRef.current !== scroller) {
+        scrollerRef.current.removeEventListener('scroll', handleScrollerScroll);
+      }
+      if (scroller) {
+        scroller.addEventListener('scroll', handleScrollerScroll);
+        scrollerRef.current = scroller as HTMLElement;
+      }
 
       // Remove existing listeners by cloning nodes
       const existingSlots = calendarEl.querySelectorAll('.fc-timegrid-slot[data-time]');
@@ -279,10 +303,27 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       
       setCurrentSelection(selection);
       highlightSelection(selection);
+
+      dragStartedRef.current = false;
+      if (clickOpenTimeoutRef.current) {
+        clearTimeout(clickOpenTimeoutRef.current);
+        clickOpenTimeoutRef.current = null;
+      }
     };
+
+    const handleScrollerScroll = useCallback(() => {
+      const slot = hoveredSlotRef.current;
+      if (slot) {
+        slot.style.cursor = '';
+        slot.style.backgroundColor = '';
+        setHoveredSlot(null);
+      }
+    }, []);
 
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (!isSelecting || !selectionStart) return;
+
+      dragStartedRef.current = true;
 
       const elementUnderMouse = document.elementFromPoint(e.clientX, e.clientY);
       if (!elementUnderMouse || !elementUnderMouse.classList.contains('fc-timegrid-slot')) return;
@@ -321,8 +362,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setIsSelecting(false);
       setSelectionStart(null);
 
-      // Open task form with the selection
-      openTaskFormForSelection(currentSelection, e);
+      if (dragStartedRef.current) {
+        openTaskFormForSelection(currentSelection, e);
+      } else {
+        clickOpenTimeoutRef.current = window.setTimeout(() => {
+          openTaskFormForSelection(currentSelection, e);
+        }, 150);
+      }
     };
 
     const parseSlotTime = (slot: HTMLElement): Date | null => {
@@ -520,6 +566,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       return () => {
         document.removeEventListener('mousemove', handleGlobalMouseMove);
         document.removeEventListener('mouseup', handleGlobalMouseUp);
+        if (scrollerRef.current) {
+          scrollerRef.current.removeEventListener('scroll', handleScrollerScroll);
+        }
       };
     }, []);
 

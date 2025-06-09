@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Users, Star, X, Plus, ChevronRight } from 'lucide-react';
 import TaskForm from '../tasks/TaskForm';
 import { supabase } from '../../supabaseClient';
+import { Task } from '../../types';
 
 interface Role {
   id: string;
@@ -11,9 +12,7 @@ interface Role {
   domains?: string[];
 }
 
-interface Task {
-  id: string;
-  title: string;
+interface RoleBankTask extends Task {
   role_id: string;
   is_deposit: boolean;
   due_date?: string;
@@ -36,7 +35,7 @@ interface Relationship {
 const RoleBank: React.FC = () => {
   const [activeRoles, setActiveRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const [tasks, setTasks] = useState<RoleBankTask[]>([]);
   const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
   const [relationships, setRelationships] = useState<Relationship[]>([]);
   const [showTaskForm, setShowTaskForm] = useState(false);

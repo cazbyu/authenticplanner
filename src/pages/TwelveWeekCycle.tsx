@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
-import { createClient } from '@supabase/supabase-js';
 import TaskForm from '../components/tasks/TaskForm';
 import { format } from 'date-fns';
 
-const supabase = createClient(
-  'https://wyipyiahvjcvnwoxwttd.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Ind5aXB5aWFodmpjdm53b3h3dHRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgyOTIxOTUsImV4cCI6MjA2Mzg2ODE5NX0.xDXgmmyJ_Hz742DnzW9lcLnjaMU0Die3V0FlxZAyP5Y'
-);
+// ---- Use ONE of the following for Supabase. ----
+
+// If you use a shared supabase client in your project (most common):
+import { supabase } from '../supabaseClient';
+
+// // Or, if you don't have a shared client, use this (commented out):
+// import { createClient } from '@supabase/supabase-js';
+// const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+// const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+// const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface WeekBoxProps {
   weekNumber: number;
