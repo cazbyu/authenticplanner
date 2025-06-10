@@ -17,6 +17,7 @@ interface QuadrantTask extends Task {
   notes: string | null;
   task_roles: { role_id: string }[];
   task_domains: { domain_id: string }[];
+  priority?: number;
 }
 
 interface Role {
@@ -33,12 +34,15 @@ interface TaskQuadrantsProps {
   refreshTrigger?: number;
 }
 
+type SortOption = 'date' | 'priority';
+
 const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => {
   const [tasks, setTasks] = useState<QuadrantTask[]>([]);
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [loading, setLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<QuadrantTask | null>(null);
+  const [sortBy, setSortBy] = useState<SortOption>('date');
   
   // State for collapsing quadrants
   const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>({
@@ -197,11 +201,35 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     }
   };
 
-  // Categorize tasks into quadrants
-  const urgentImportant = tasks.filter(task => task.is_urgent && task.is_important);
-  const notUrgentImportant = tasks.filter(task => !task.is_urgent && task.is_important);
-  const urgentNotImportant = tasks.filter(task => task.is_urgent && !task.is_important);
-  const notUrgentNotImportant = tasks.filter(task => !task.is_urgent && !task.is_important);
+  // Sort tasks within each quadrant
+  const sortTasks = (taskList: QuadrantTask[]): QuadrantTask[] => {
+    return [...taskList].sort((a, b) => {
+      if (sortBy === 'date') {
+        // Sort by date (earliest first, no date at bottom)
+        if (a.due_date && b.due_date) {
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        }
+        if (a.due_date && !b.due_date) return -1;
+        if (!a.due_date && b.due_date) return 1;
+        return a.title.localeCompare(b.title);
+      } else if (sortBy === 'priority') {
+        // Sort by priority (higher priority first, then by title)
+        const aPriority = a.priority || 0;
+        const bPriority = b.priority || 0;
+        if (aPriority !== bPriority) {
+          return bPriority - aPriority; // Higher priority first
+        }
+        return a.title.localeCompare(b.title);
+      }
+      return 0;
+    });
+  };
+
+  // Categorize tasks into quadrants and sort them
+  const urgentImportant = sortTasks(tasks.filter(task => task.is_urgent && task.is_important));
+  const notUrgentImportant = sortTasks(tasks.filter(task => !task.is_urgent && task.is_important));
+  const urgentNotImportant = sortTasks(tasks.filter(task => task.is_urgent && !task.is_important));
+  const notUrgentNotImportant = sortTasks(tasks.filter(task => !task.is_urgent && !task.is_important));
 
   const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
     const dateTimeDisplay = formatTaskDateTime(task.due_date, task.start_time);
@@ -249,6 +277,12 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
               <div className="flex items-center mt-1 text-xs text-gray-400">
                 <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
                 <span>No date set</span>
+              </div>
+            )}
+            {/* Show priority if sorting by priority and priority exists */}
+            {sortBy === 'priority' && task.priority && (
+              <div className="flex items-center mt-1 text-xs text-blue-600">
+                <span className="font-medium">Priority: {task.priority}</span>
               </div>
             )}
           </div>
@@ -380,10 +414,30 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   return (
     <div className="h-full flex flex-col">
       <div className="flex-shrink-0 p-6 pb-4">
-        <h2 className="text-2xl font-bold text-gray-900">Task Priorities</h2>
-        <p className="text-gray-600 mt-1">
-          Organize your tasks by urgency and importance • {isMobileDevice() ? 'Tap' : 'Double-click'} to edit
-        </p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Task Priorities</h2>
+            <p className="text-gray-600 mt-1">
+              Organize your tasks by urgency and importance • {isMobileDevice() ? 'Tap' : 'Double-click'} to edit
+            </p>
+          </div>
+          
+          {/* Sort Dropdown */}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-gray-600">Sort by:</span>
+            <div className="relative">
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as SortOption)}
+                className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="date">Date</option>
+                <option value="priority">Priority</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* Desktop: 2x2 Grid with proper scrolling */}
