@@ -44,7 +44,7 @@ const StrategicGoals: React.FC = () => {
 
       // Fetch onboarding responses
       const { data: onboardingRes, error: onboardingError } = await supabase
-        .from('onboarding_responses')
+        .from('0007-ap-onboarding-responses')
         .select('*')
         .eq('user_id', user.id)
         .single();
@@ -58,7 +58,7 @@ const StrategicGoals: React.FC = () => {
 
       // Fetch onboarding goals
       const { data: goalsData, error: goalsError } = await supabase
-        .from('onboarding_goals')
+        .from('0007-ap-onboarding-goals')
         .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: true });
@@ -84,7 +84,7 @@ const StrategicGoals: React.FC = () => {
       if (!user) return;
 
       const { error } = await supabase
-        .from('onboarding_responses')
+        .from('0007-ap-onboarding-responses')
         .upsert({
           user_id: user.id,
           vision_statement: visionText.trim(),
