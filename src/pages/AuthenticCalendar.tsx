@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Menu, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase, X } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Menu, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase, X, Archive } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
@@ -293,16 +293,16 @@ const AuthenticCalendar: React.FC = () => {
         </div>
       </div>
 
-      {/* FIXED: Mobile Floating Navigation - Expandable Stack */}
+      {/* FIXED: Mobile Floating Navigation - Expandable Stack with Dresser Icon */}
       <div className="fixed bottom-4 right-4 z-30 lg:hidden">
         {!mobileNavExpanded ? (
-          /* Collapsed State - Single Floating Button */
+          /* Collapsed State - Single Floating Button with Dresser Icon */
           <button
             onClick={() => setMobileNavExpanded(true)}
             className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
             aria-label="Open navigation"
           >
-            <Users className="h-6 w-6" />
+            <Archive className="h-6 w-6" />
           </button>
         ) : (
           /* Expanded State - Vertical Stack of All Icons */
