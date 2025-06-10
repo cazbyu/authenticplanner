@@ -45,8 +45,8 @@ const OnboardingLayout: React.FC = () => {
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === onboardingSteps.length - 1;
   
-  // Don't show navigation on the final completion screen
-  const showNavigation = currentStepIndex !== onboardingSteps.length - 1;
+  // Don't show navigation on the final completion screen OR the first welcome screen
+  const showNavigation = currentStepIndex !== onboardingSteps.length - 1 && currentStepIndex !== 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -90,7 +90,7 @@ const OnboardingLayout: React.FC = () => {
           <Outlet context={{ goToNextStep, goToPreviousStep }} />
         </div>
         
-        {/* Navigation buttons */}
+        {/* Navigation buttons - Only show for middle steps (not first or last) */}
         {showNavigation && (
           <div className="mt-8 flex justify-between">
             <button
