@@ -395,17 +395,17 @@ const OnboardingRoles: React.FC = () => {
           </div>
         )}
 
-        {/* Navigation */}
-        <div className="mt-8 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={goToPreviousStep}
-            className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
-          >
-            ← Back
-          </button>
-          
-          <div className="flex items-center space-x-4">
+        {/* Single Navigation Row - Centered Continue button between Back and Skip */}
+        <div className="mt-8 flex items-center justify-center">
+          <div className="flex items-center space-x-8">
+            <button
+              type="button"
+              onClick={goToPreviousStep}
+              className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
+            >
+              ← Back
+            </button>
+            
             <button
               onClick={handleContinue}
               className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
