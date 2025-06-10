@@ -1,18 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Target } from 'lucide-react';
 import TaskForm from '../components/tasks/TaskForm';
+import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
+import TwelveWeekGoalCard from '../components/goals/TwelveWeekGoalCard';
 import { format, differenceInDays, addWeeks, parseISO, differenceInWeeks, startOfWeek, endOfWeek } from 'date-fns';
-
-// ---- Use ONE of the following for Supabase. ----
-
-// If you use a shared supabase client in your project (most common):
 import { supabase } from '../supabaseClient';
-
-// // Or, if you don't have a shared client, use this (commented out):
-// import { createClient } from '@supabase/supabase-js';
-// const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
-// const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
-// const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 interface WeekBoxProps {
   weekNumber: number;
@@ -33,6 +25,30 @@ interface WeeklyGoal {
   id: string;
   goal_text: string;
   week_number: number;
+}
+
+interface Role {
+  id: string;
+  label: string;
+  category: string;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+}
+
+interface TwelveWeekGoal {
+  id: string;
+  title: string;
+  description?: string;
+  status: 'active' | 'completed' | 'paused' | 'cancelled';
+  progress: number;
+  created_at: string;
+  domains: Domain[];
+  roles: Role[];
+  weeklyGoals: any[];
+  tasks: any[];
 }
 
 const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, isCurrent, onClick }) => (
@@ -64,47 +80,100 @@ const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, isCu
 const TwelveWeekCycle: React.FC = () => {
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showGoalForm, setShowGoalForm] = useState(false);
   const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
   const [quarterlyGoal, setQuarterlyGoal] = useState('');
   const [cycleData, setCycleData] = useState<CycleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [newGoalText, setNewGoalText] = useState('');
   const [addingGoal, setAddingGoal] = useState(false);
+  const [twelveWeekGoals, setTwelveWeekGoals] = useState<TwelveWeekGoal[]>([]);
+  const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCycleData = async () => {
-      const { data, error } = await supabase
-        .from('0007-ap-global-cycles')
-        .select('reflection_end, cycle_label, title, start_date')
-        .eq('is_active', true)
-        .single();
-
-      if (error) {
-        console.error('Error fetching cycle data:', error);
-        return;
-      }
-
-      setCycleData(data);
+    const fetchData = async () => {
+      await Promise.all([
+        fetchCycleData(),
+        fetchTwelveWeekGoals()
+      ]);
       setLoading(false);
     };
 
-    fetchCycleData();
+    fetchData();
   }, []);
+
+  const fetchCycleData = async () => {
+    const { data, error } = await supabase
+      .from('0007-ap-global-cycles')
+      .select('reflection_end, cycle_label, title, start_date')
+      .eq('is_active', true)
+      .single();
+
+    if (error) {
+      console.error('Error fetching cycle data:', error);
+      return;
+    }
+
+    setCycleData(data);
+  };
+
+  const fetchTwelveWeekGoals = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch main goals with their relationships
+      const { data: goals, error: goalsError } = await supabase
+        .from('0007-ap-goals_12wk_main')
+        .select(`
+          *,
+          goal_domains:0007-ap-goal_domains(
+            domain:0007-ap-domains(id, name)
+          ),
+          goal_roles:0007-ap-goal_roles(
+            role:0007-ap-roles(id, label, category)
+          )
+        `)
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false });
+
+      if (goalsError) {
+        console.error('Error fetching goals:', goalsError);
+        return;
+      }
+
+      // Transform the data to match our interface
+      const transformedGoals: TwelveWeekGoal[] = (goals || []).map(goal => ({
+        id: goal.id,
+        title: goal.title,
+        description: goal.description,
+        status: goal.status,
+        progress: goal.progress,
+        created_at: goal.created_at,
+        domains: goal.goal_domains?.map((gd: any) => gd.domain).filter(Boolean) || [],
+        roles: goal.goal_roles?.map((gr: any) => gr.role).filter(Boolean) || [],
+        weeklyGoals: [], // TODO: Fetch weekly goals
+        tasks: [] // TODO: Fetch associated tasks
+      }));
+
+      setTwelveWeekGoals(transformedGoals);
+    } catch (error) {
+      console.error('Error fetching 12-week goals:', error);
+    }
+  };
 
   // Calculate remaining days using the exact reflection_end date
   const calculateRemainingDays = (endDateString?: string) => {
     if (!endDateString) return 0;
     
-    // Parse the date string and ensure we're using the exact date from the database
     const endDate = parseISO(endDateString);
     const today = new Date();
     
-    // Set both dates to start of day for accurate day calculation
     const endDateStartOfDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
     const todayStartOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
     
     const remainingDays = differenceInDays(endDateStartOfDay, todayStartOfDay);
-    return Math.max(0, remainingDays); // Don't show negative days
+    return Math.max(0, remainingDays);
   };
 
   // Format cycle end date using the exact reflection_end date
@@ -115,7 +184,6 @@ const TwelveWeekCycle: React.FC = () => {
       const date = parseISO(dateString);
       if (isNaN(date.getTime())) return 'Invalid date';
       
-      // Use the exact date from the database
       return format(date, 'dd MMM yyyy');
     } catch (error) {
       console.error('Error formatting date:', error);
@@ -129,18 +197,15 @@ const TwelveWeekCycle: React.FC = () => {
       return parseISO(cycleData.start_date);
     }
     
-    // Fallback: calculate from reflection_end date (13 weeks back)
     if (cycleData?.reflection_end) {
       const reflectionEndDate = parseISO(cycleData.reflection_end);
       return addWeeks(reflectionEndDate, -13);
     }
     
-    // Default fallback
     return new Date();
   };
 
   const cycleStartDate = getCycleStartDate();
-  // Use the exact reflection_end date from the database
   const cycleEndDate = cycleData ? parseISO(cycleData.reflection_end) : new Date();
 
   // Calculate progress percentage
@@ -150,8 +215,6 @@ const TwelveWeekCycle: React.FC = () => {
   const progressPercentage = Math.min(100, Math.max(0, (daysElapsed / totalDays) * 100));
 
   const remainingDays = calculateRemainingDays(cycleData?.reflection_end);
-
-  // Get current cycle name - use title if available, otherwise cycle_label
   const currentCycleName = cycleData?.title || cycleData?.cycle_label || '2025 Cycle #2';
 
   // Generate week start dates
@@ -165,36 +228,9 @@ const TwelveWeekCycle: React.FC = () => {
 
   const weekStartDates = getWeekStartDates();
 
-  // Calculate current week based on today's date - HARDCODED TO WEEK 11 FOR NOW
+  // Calculate current week - HARDCODED TO WEEK 11 FOR NOW
   const getCurrentWeek = (): number | null => {
-    // HARDCODED: Return week 11 as the current week
     return 11;
-    
-    // Original logic (commented out):
-    /*
-    const today = new Date();
-    
-    // Check if we're in the reflection week (week 13)
-    const reflectionWeekStart = addWeeks(cycleStartDate, 12);
-    const reflectionWeekEnd = addWeeks(cycleStartDate, 13);
-    
-    if (today >= reflectionWeekStart && today < reflectionWeekEnd) {
-      return 13;
-    }
-    
-    // Check which regular week we're in (weeks 1-12)
-    for (let i = 0; i < 12; i++) {
-      const weekStart = weekStartDates[i];
-      const weekEnd = addWeeks(weekStart, 1);
-      
-      if (today >= weekStart && today < weekEnd) {
-        return i + 1;
-      }
-    }
-    
-    // If we're before the cycle starts or after it ends
-    return null;
-    */
   };
 
   const currentWeek = getCurrentWeek();
@@ -229,7 +265,7 @@ const TwelveWeekCycle: React.FC = () => {
         const { data, error } = await supabase
           .from('0007-ap-goals_12wk_weeks')
           .insert([{
-            goal_id: 'temp-goal-id', // This would be the actual 12-week goal ID
+            goal_id: 'temp-goal-id',
             week_number: selectedWeek,
             title: newGoalText.trim(),
             notes: '',
@@ -253,6 +289,49 @@ const TwelveWeekCycle: React.FC = () => {
     } finally {
       setAddingGoal(false);
     }
+  };
+
+  const handleGoalCreated = () => {
+    setShowGoalForm(false);
+    fetchTwelveWeekGoals(); // Refresh the goals list
+  };
+
+  const handleToggleGoalExpand = (goalId: string) => {
+    setExpandedGoal(expandedGoal === goalId ? null : goalId);
+  };
+
+  const handleEditGoal = (goal: TwelveWeekGoal) => {
+    // TODO: Implement edit functionality
+    console.log('Edit goal:', goal);
+  };
+
+  const handleDeleteGoal = async (goalId: string) => {
+    try {
+      const { error } = await supabase
+        .from('0007-ap-goals_12wk_main')
+        .delete()
+        .eq('id', goalId);
+
+      if (error) {
+        console.error('Error deleting goal:', error);
+        return;
+      }
+
+      // Refresh the goals list
+      fetchTwelveWeekGoals();
+    } catch (error) {
+      console.error('Error deleting goal:', error);
+    }
+  };
+
+  const handleAddWeeklyGoalToGoal = (goalId: string) => {
+    // TODO: Implement add weekly goal to specific 12-week goal
+    console.log('Add weekly goal to goal:', goalId);
+  };
+
+  const handleAddTaskToGoal = (goalId: string) => {
+    // TODO: Implement add task to specific 12-week goal
+    console.log('Add task to goal:', goalId);
   };
 
   if (loading) {
@@ -292,37 +371,63 @@ const TwelveWeekCycle: React.FC = () => {
         </div>
       </div>
 
+      {/* 12-Week Goals Section */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center space-x-2">
+            <Target className="h-6 w-6 text-primary-600" />
+            <h3 className="text-2xl font-bold text-gray-900">12-Week Goals</h3>
+          </div>
+          <button
+            onClick={() => setShowGoalForm(true)}
+            className="flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 transition-colors"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add 12-Week Goal
+          </button>
+        </div>
+
+        {/* Goals List */}
+        <div className="space-y-4">
+          {twelveWeekGoals.length > 0 ? (
+            twelveWeekGoals.map(goal => (
+              <TwelveWeekGoalCard
+                key={goal.id}
+                goal={goal}
+                isExpanded={expandedGoal === goal.id}
+                onToggleExpand={() => handleToggleGoalExpand(goal.id)}
+                onEdit={handleEditGoal}
+                onDelete={handleDeleteGoal}
+                onAddWeeklyGoal={handleAddWeeklyGoalToGoal}
+                onAddTask={handleAddTaskToGoal}
+              />
+            ))
+          ) : (
+            <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+              <Target className="mx-auto h-12 w-12 text-gray-400 mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No 12-Week Goals Yet</h3>
+              <p className="text-gray-600 mb-4">
+                Create your first 12-week goal to start tracking your progress and organizing your tasks.
+              </p>
+              <button
+                onClick={() => setShowGoalForm(true)}
+                className="inline-flex items-center rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 transition-colors"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                Add Your First 12-Week Goal
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Main Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Left Column - Main Content (3/4 width) */}
         <div className="lg:col-span-3 space-y-8">
-          {/* Goal Section */}
-          <div>
-            <div className="mb-4">
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-xl font-bold text-gray-900">Current 12-Week Goal:</h3>
-                <button
-                  className="flex items-center rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
-                >
-                  <Plus className="mr-1 h-4 w-4" />
-                  Add Cycle Goal
-                </button>
-              </div>
-              <input
-                type="text"
-                value={quarterlyGoal}
-                onChange={(e) => setQuarterlyGoal(e.target.value)}
-                placeholder="Enter your 12-week goal here..."
-                className="w-full rounded-lg border border-gray-300 p-3 text-lg"
-              />
-              <div className="mt-2 text-sm text-gray-600">
-                12 Week Goal Score: XX/XX (XXX%)
-              </div>
-            </div>
-          </div>
-
           {/* Week Grid */}
           <div>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Weekly View</h3>
             <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-6">
               {Array.from({ length: 12 }, (_, i) => (
                 <WeekBox
@@ -426,7 +531,7 @@ const TwelveWeekCycle: React.FC = () => {
               </div>
             </div>
 
-            {/* Weekly Tasks Section - MOVED BELOW WEEKLY GOALS */}
+            {/* Weekly Tasks Section */}
             {selectedWeek && (
               <div>
                 <div className="mb-4 flex items-center justify-between">
@@ -522,7 +627,14 @@ const TwelveWeekCycle: React.FC = () => {
         </div>
       </div>
 
-      {/* Task Form Modal */}
+      {/* Modals */}
+      {showGoalForm && (
+        <TwelveWeekGoalForm
+          onClose={() => setShowGoalForm(false)}
+          onGoalCreated={handleGoalCreated}
+        />
+      )}
+
       {showTaskForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl">
