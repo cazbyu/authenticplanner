@@ -292,7 +292,7 @@ const OnboardingRoles: React.FC = () => {
     >
       <h2 className="text-xl font-bold text-gray-900">Define Your Roles</h2>
       <p className="mt-2 text-sm text-gray-600">
-        Select your active roles from these categories or Customize your own. If you ever want to update just go to Settings > Role Dashboard
+        Select your active roles from these categories or Customize your own. If you ever want to update just go to Settings &gt; Role Dashboard
       </p>
 
       <div className="mt-6">
