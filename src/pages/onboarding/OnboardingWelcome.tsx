@@ -29,12 +29,12 @@ const OnboardingWelcome: React.FC = () => {
         
         <div className="mt-6 rounded-lg bg-primary-50 p-6 text-left">
           <p className="text-gray-700 leading-relaxed">
-            The Authentic Planner is a <strong>role-based, balance-focused, goal-driven system</strong> designed to help you intentionally invest your time, energy, and resources where they matter most—as you live your best life, you align with a community that empowers African entrepreneurs to do the same.
+            The Authentic Planner is a <strong>role-based, balance-focused, goal-driven system</strong> designed to help you intentionally invest your time, energy, and resources where they matter most.
           </p>
         </div>
         
         <p className="mt-4 text-gray-600">
-          Hello{user?.name ? `, ${user.name}` : ''}! We're excited to help you live a more intentional,
+          We're excited to help you live a more intentional,
           purpose-driven life through structured goal-setting and strategic rhythms.
         </p>
         
