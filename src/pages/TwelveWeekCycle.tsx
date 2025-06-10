@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import TaskForm from '../components/tasks/TaskForm';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInDays, addWeeks, parseISO } from 'date-fns';
 
 // ---- Use ONE of the following for Supabase. ----
 
@@ -16,6 +16,7 @@ import { supabase } from '../supabaseClient';
 
 interface WeekBoxProps {
   weekNumber: number;
+  startDate: Date;
   isActive?: boolean;
   onClick: () => void;
 }
@@ -24,13 +25,14 @@ interface CycleData {
   reflection_end: string;
   cycle_label: string;
   title?: string;
+  start_date?: string;
 }
 
-const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, isActive, onClick }) => (
+const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, onClick }) => (
   <button
     onClick={onClick}
     className={`
-      h-24 w-full rounded-lg border-2 transition-colors
+      h-28 w-full rounded-lg border-2 transition-colors
       ${isActive 
         ? 'border-primary-500 bg-primary-50 text-primary-700' 
         : 'border-gray-200 bg-white hover:bg-gray-50'
@@ -40,6 +42,9 @@ const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, isActive, onClick }) => (
     <div className="flex h-full flex-col items-center justify-center">
       <span className="text-sm font-medium text-gray-600">Week</span>
       <span className="text-xl font-bold">{weekNumber}</span>
+      <span className="text-xs text-gray-500 mt-1">
+        ({format(startDate, 'dd MMM')})
+      </span>
     </div>
   </button>
 );
@@ -56,7 +61,7 @@ const TwelveWeekCycle: React.FC = () => {
     const fetchCycleData = async () => {
       const { data, error } = await supabase
         .from('0007-ap-global-cycles')
-        .select('reflection_end, cycle_label, title')
+        .select('reflection_end, cycle_label, title, start_date')
         .eq('is_active', true)
         .single();
 
@@ -110,12 +115,27 @@ const TwelveWeekCycle: React.FC = () => {
     return format(date, 'dd MMM yyyy');
   };
 
+  // Calculate cycle start date and week start dates
+  const getCycleStartDate = () => {
+    if (cycleData?.start_date) {
+      return parseISO(cycleData.start_date);
+    }
+    
+    // Fallback: calculate from reflection_end date (13 weeks back)
+    if (cycleData?.reflection_end) {
+      const reflectionEndDate = parseISO(cycleData.reflection_end);
+      return addWeeks(reflectionEndDate, -13);
+    }
+    
+    // Default fallback
+    return new Date();
+  };
+
+  const cycleStartDate = getCycleStartDate();
+  const cycleEndDate = cycleData ? new Date(cycleData.reflection_end) : new Date();
+
   // Calculate progress percentage
   const today = new Date();
-  const cycleEndDate = cycleData ? new Date(cycleData.reflection_end) : new Date();
-  const cycleStartDate = new Date(cycleEndDate);
-  cycleStartDate.setDate(cycleStartDate.getDate() - (13 * 7)); // 13 weeks back from end date
-
   const totalDays = (cycleEndDate.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24);
   const daysElapsed = (today.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24);
   const progressPercentage = Math.min(100, Math.max(0, (daysElapsed / totalDays) * 100));
@@ -124,6 +144,17 @@ const TwelveWeekCycle: React.FC = () => {
 
   // Get current cycle name - use title if available, otherwise cycle_label
   const currentCycleName = cycleData?.title || cycleData?.cycle_label || '2025 Cycle #2';
+
+  // Generate week start dates
+  const getWeekStartDates = () => {
+    const weekDates = [];
+    for (let i = 0; i < 12; i++) {
+      weekDates.push(addWeeks(cycleStartDate, i));
+    }
+    return weekDates;
+  };
+
+  const weekStartDates = getWeekStartDates();
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -185,6 +216,7 @@ const TwelveWeekCycle: React.FC = () => {
           <WeekBox
             key={i + 1}
             weekNumber={i + 1}
+            startDate={weekStartDates[i]}
             isActive={selectedWeek === i + 1}
             onClick={() => handleWeekSelect(i + 1)}
           />
@@ -203,7 +235,12 @@ const TwelveWeekCycle: React.FC = () => {
             }
           `}
         >
-          <span className="text-lg font-bold">Week 13 (Reflection Week)</span>
+          <div className="flex flex-col items-center">
+            <span className="text-lg font-bold">Week 13 (Reflection Week)</span>
+            <span className="text-sm text-gray-500 mt-1">
+              ({format(addWeeks(cycleStartDate, 12), 'dd MMM')})
+            </span>
+          </div>
         </button>
 
         {/* Weekly Goal Input moved here */}
