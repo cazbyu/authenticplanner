@@ -25,6 +25,7 @@ const AuthenticCalendar: React.FC = () => {
   const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<'roles' | 'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('calendar');
+  const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const calendarRef = useRef<FullCalendar | null>(null);
   const [isViewChanging, setIsViewChanging] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -77,6 +78,8 @@ const AuthenticCalendar: React.FC = () => {
       // Open the selected drawer
       setActiveDrawer(drawer);
     }
+    // Close mobile nav when selecting a drawer
+    setMobileNavExpanded(false);
   };
 
   const getDateDisplayText = () => {
@@ -171,6 +174,7 @@ const AuthenticCalendar: React.FC = () => {
             onClick={() => {
               closeMainSidebar();
               setActiveDrawer(null);
+              setMobileNavExpanded(false);
             }}
           />
         )}
@@ -247,7 +251,7 @@ const AuthenticCalendar: React.FC = () => {
         </div>
       </motion.aside>
 
-      {/* Google Calendar Style Floating Navigation Bar - Desktop Only */}
+      {/* FIXED: Google Calendar Style Floating Navigation Bar - Desktop Only */}
       <div className="fixed top-1/2 right-0 transform -translate-y-1/2 z-30 hidden lg:block">
         <div className="bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg">
           {/* Navigation Icons - Vertically Stacked */}
@@ -289,30 +293,30 @@ const AuthenticCalendar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Floating Navigation - Single Button that Expands */}
+      {/* FIXED: Mobile Floating Navigation - Expandable Stack */}
       <div className="fixed bottom-4 right-4 z-30 lg:hidden">
-        {!activeDrawer ? (
+        {!mobileNavExpanded ? (
           /* Collapsed State - Single Floating Button */
           <button
-            onClick={() => setActiveDrawer('roles')}
+            onClick={() => setMobileNavExpanded(true)}
             className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
             aria-label="Open navigation"
           >
             <Users className="h-6 w-6" />
           </button>
         ) : (
-          /* Expanded State - Vertical Stack of Icons */
+          /* Expanded State - Vertical Stack of All Icons */
           <div className="flex flex-col-reverse space-y-reverse space-y-2">
             {/* Close Button */}
             <button
-              onClick={() => setActiveDrawer(null)}
+              onClick={() => setMobileNavExpanded(false)}
               className="flex items-center justify-center w-12 h-12 bg-gray-600 text-white rounded-full shadow-lg hover:bg-gray-700 transition-colors"
               aria-label="Close navigation"
             >
               <X className="h-5 w-5" />
             </button>
             
-            {/* Navigation Icons */}
+            {/* All Navigation Icons */}
             {drawerItems.map((item) => {
               const IconComponent = item.icon;
               const isActive = activeDrawer === item.id;
@@ -325,7 +329,7 @@ const AuthenticCalendar: React.FC = () => {
                     flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-colors
                     ${isActive 
                       ? 'bg-blue-600 text-white' 
-                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
                     }
                   `}
                   title={item.title}
