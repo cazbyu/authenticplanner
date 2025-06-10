@@ -15,7 +15,6 @@ import Settings from './pages/Settings';
 import Login from './pages/auth/Login';
 import PaymentCheck from './pages/auth/PaymentCheck';
 import OnboardingWelcome from './pages/onboarding/OnboardingWelcome';
-import OnboardingQuestions from './pages/onboarding/OnboardingQuestions';
 import OnboardingRoles from './pages/onboarding/OnboardingRoles';
 import OnboardingVision from './pages/onboarding/OnboardingVision';
 import OnboardingGoals from './pages/onboarding/OnboardingGoals';
@@ -99,7 +98,6 @@ function App() {
         }
       >
         <Route path="welcome" element={<OnboardingWelcome />} />
-        <Route path="questions" element={<OnboardingQuestions />} />
         <Route path="roles" element={<OnboardingRoles />} />
         <Route path="vision" element={<OnboardingVision />} />
         <Route path="goals" element={<OnboardingGoals />} />
