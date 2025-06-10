@@ -251,136 +251,6 @@ const AuthenticCalendar: React.FC = () => {
         </div>
       </motion.aside>
 
-      {/* FIXED: Google Calendar Style Floating Navigation Bar - Desktop Only */}
-      <div className="fixed top-1/2 right-0 transform -translate-y-1/2 z-30 hidden lg:block">
-        <div className="bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg">
-          {/* Navigation Icons - Vertically Stacked */}
-          <div className="flex flex-col">
-            {drawerItems.map((item) => {
-              const IconComponent = item.icon;
-              const isActive = activeDrawer === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
-                  className={`
-                    group relative p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200
-                    ${isActive 
-                      ? 'bg-blue-50 text-blue-600 border-r-3 border-r-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }
-                  `}
-                  title={item.title}
-                  aria-label={item.title}
-                >
-                  <IconComponent className="h-5 w-5" />
-                  
-                  {/* Tooltip on hover - Only show when not active */}
-                  {!isActive && (
-                    <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
-                      <div className="bg-gray-900 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap shadow-lg">
-                        {item.title}
-                        {/* Tooltip arrow */}
-                        <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-900 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
-                      </div>
-                    </div>
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* FIXED: Mobile Floating Navigation - Expandable Stack with Dresser Icon */}
-      <div className="fixed bottom-4 right-4 z-30 lg:hidden">
-        {!mobileNavExpanded ? (
-          /* Collapsed State - Single Floating Button with Dresser Icon */
-          <button
-            onClick={() => setMobileNavExpanded(true)}
-            className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-            aria-label="Open navigation"
-          >
-            <Archive className="h-6 w-6" />
-          </button>
-        ) : (
-          /* Expanded State - Vertical Stack of All Icons */
-          <div className="flex flex-col-reverse space-y-reverse space-y-2">
-            {/* Close Button */}
-            <button
-              onClick={() => setMobileNavExpanded(false)}
-              className="flex items-center justify-center w-12 h-12 bg-gray-600 text-white rounded-full shadow-lg hover:bg-gray-700 transition-colors"
-              aria-label="Close navigation"
-            >
-              <X className="h-5 w-5" />
-            </button>
-            
-            {/* All Navigation Icons */}
-            {drawerItems.map((item) => {
-              const IconComponent = item.icon;
-              const isActive = activeDrawer === item.id;
-              
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
-                  className={`
-                    flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-colors
-                    ${isActive 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                    }
-                  `}
-                  title={item.title}
-                  aria-label={item.title}
-                >
-                  <IconComponent className="h-5 w-5" />
-                </button>
-              );
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Floating Drawer Content */}
-      <AnimatePresence>
-        {activeDrawer && (
-          <motion.div
-            className="fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-xl border-l border-gray-200"
-            initial="closed"
-            animate="open"
-            exit="closed"
-            variants={drawerVariants}
-          >
-            <div className="flex h-full flex-col">
-              {/* Drawer Header */}
-              <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {drawerItems.find(item => item.id === activeDrawer)?.title}
-                </h2>
-                <button
-                  onClick={() => setActiveDrawer(null)}
-                  className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
-                  aria-label="Close drawer"
-                >
-                  <ChevronRight className="h-5 w-5" />
-                </button>
-              </div>
-              
-              {/* Drawer Content */}
-              <div className="flex-1 overflow-y-auto">
-                {ActiveDrawerComponent && (
-                  <div className="p-4">
-                    <ActiveDrawerComponent />
-                  </div>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       {/* Google Calendar Style Header - Compact and minimal */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white min-h-[56px]">
         {/* Left Section: Menu, Logo, Toggle */}
@@ -501,7 +371,7 @@ const AuthenticCalendar: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {activeView === 'tasks' ? (
           /* Task Priorities View - Now the default */
-          <div className="flex-1 overflow-hidden\" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
+          <div className="flex-1 overflow-hidden" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
             <TaskQuadrants refreshTrigger={refreshTrigger} />
           </div>
         ) : (
