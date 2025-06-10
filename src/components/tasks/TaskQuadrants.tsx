@@ -42,7 +42,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [loading, setLoading] = useState(true);
   const [editingTask, setEditingTask] = useState<QuadrantTask | null>(null);
-  const [sortBy, setSortBy] = useState<SortOption>('date');
+  const [sortBy, setSortBy] = useState<SortOption>('priority');
   
   // State for collapsing quadrants
   const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>({
@@ -487,8 +487,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
                 onChange={(e) => setSortBy(e.target.value as SortOption)}
                 className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               >
-                <option value="date">Date</option>
                 <option value="priority">Priority</option>
+                <option value="date">Date</option>
               </select>
               <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
@@ -532,88 +532,89 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
           </div>
         ) : (
           /* Priority Sorting View - Quadrant layout */
-          <div className="hidden md:grid md:grid-cols-2 gap-4 h-full">
-            {/* Urgent & Important */}
-            <QuadrantSection
-              id="urgent-important"
-              title="Urgent & Important"
-              tasks={urgentImportant}
-              bgColor="bg-red-500"
-              textColor="text-white"
-              icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
-            />
+          <>
+            {/* Desktop: 2x2 Grid with proper scrolling */}
+            <div className="hidden md:grid md:grid-cols-2 gap-4 h-full">
+              {/* Urgent & Important */}
+              <QuadrantSection
+                id="urgent-important"
+                title="Urgent & Important"
+                tasks={urgentImportant}
+                bgColor="bg-red-500"
+                textColor="text-white"
+                icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+              />
 
-            {/* Not Urgent & Important */}
-            <QuadrantSection
-              id="not-urgent-important"
-              title="Not Urgent & Important"
-              tasks={notUrgentImportant}
-              bgColor="bg-green-500"
-              textColor="text-white"
-              icon={<Check className="h-4 w-4 flex-shrink-0" />}
-            />
+              {/* Not Urgent & Important */}
+              <QuadrantSection
+                id="not-urgent-important"
+                title="Not Urgent & Important"
+                tasks={notUrgentImportant}
+                bgColor="bg-green-500"
+                textColor="text-white"
+                icon={<Check className="h-4 w-4 flex-shrink-0" />}
+              />
 
-            {/* Urgent & Not Important */}
-            <QuadrantSection
-              id="urgent-not-important"
-              title="Urgent & Not Important"
-              tasks={urgentNotImportant}
-              bgColor="bg-yellow-500"
-              textColor="text-white"
-              icon={<Clock className="h-4 w-4 flex-shrink-0" />}
-            />
+              {/* Urgent & Not Important */}
+              <QuadrantSection
+                id="urgent-not-important"
+                title="Urgent & Not Important"
+                tasks={urgentNotImportant}
+                bgColor="bg-yellow-500"
+                textColor="text-white"
+                icon={<Clock className="h-4 w-4 flex-shrink-0" />}
+              />
 
-            {/* Not Urgent & Not Important */}
-            <QuadrantSection
-              id="not-urgent-not-important"
-              title="Not Urgent & Not Important"
-              tasks={notUrgentNotImportant}
-              bgColor="bg-gray-500"
-              textColor="text-white"
-              icon={<X className="h-4 w-4 flex-shrink-0" />}
-            />
-          </div>
-        )}
+              {/* Not Urgent & Not Important */}
+              <QuadrantSection
+                id="not-urgent-not-important"
+                title="Not Urgent & Not Important"
+                tasks={notUrgentNotImportant}
+                bgColor="bg-gray-500"
+                textColor="text-white"
+                icon={<X className="h-4 w-4 flex-shrink-0" />}
+              />
+            </div>
 
-        {/* Mobile: Stacked Layout for priority view */}
-        {sortBy === 'priority' && (
-          <div className="md:hidden space-y-4 h-full overflow-y-auto">
-            <QuadrantSection
-              id="urgent-important"
-              title="Urgent & Important"
-              tasks={urgentImportant}
-              bgColor="bg-red-500"
-              textColor="text-white"
-              icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
-            />
+            {/* Mobile: Stacked Layout for priority view */}
+            <div className="md:hidden space-y-4 h-full overflow-y-auto">
+              <QuadrantSection
+                id="urgent-important"
+                title="Urgent & Important"
+                tasks={urgentImportant}
+                bgColor="bg-red-500"
+                textColor="text-white"
+                icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+              />
 
-            <QuadrantSection
-              id="not-urgent-important"
-              title="Not Urgent & Important"
-              tasks={notUrgentImportant}
-              bgColor="bg-green-500"
-              textColor="text-white"
-              icon={<Check className="h-4 w-4 flex-shrink-0" />}
-            />
+              <QuadrantSection
+                id="not-urgent-important"
+                title="Not Urgent & Important"
+                tasks={notUrgentImportant}
+                bgColor="bg-green-500"
+                textColor="text-white"
+                icon={<Check className="h-4 w-4 flex-shrink-0" />}
+              />
 
-            <QuadrantSection
-              id="urgent-not-important"
-              title="Urgent & Not Important"
-              tasks={urgentNotImportant}
-              bgColor="bg-yellow-500"
-              textColor="text-white"
-              icon={<Clock className="h-4 w-4 flex-shrink-0" />}
-            />
+              <QuadrantSection
+                id="urgent-not-important"
+                title="Urgent & Not Important"
+                tasks={urgentNotImportant}
+                bgColor="bg-yellow-500"
+                textColor="text-white"
+                icon={<Clock className="h-4 w-4 flex-shrink-0" />}
+              />
 
-            <QuadrantSection
-              id="not-urgent-not-important"
-              title="Not Urgent & Not Important"
-              tasks={notUrgentNotImportant}
-              bgColor="bg-gray-500"
-              textColor="text-white"
-              icon={<X className="h-4 w-4 flex-shrink-0" />}
-            />
-          </div>
+              <QuadrantSection
+                id="not-urgent-not-important"
+                title="Not Urgent & Not Important"
+                tasks={notUrgentNotImportant}
+                bgColor="bg-gray-500"
+                textColor="text-white"
+                icon={<X className="h-4 w-4 flex-shrink-0" />}
+              />
+            </div>
+          </>
         )}
       </div>
 
