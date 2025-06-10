@@ -83,27 +83,6 @@ const TwelveWeekCycle: React.FC = () => {
     fetchCycleData();
   }, []);
 
-  const handleWeekSelect = (weekNum: number) => {
-    setSelectedWeek(weekNum);
-  };
-
-  const handleAddTask = () => {
-    setShowTaskForm(true);
-  };
-
-  const handleTaskSave = (taskData: any) => {
-    console.log('Task saved:', taskData);
-    setShowTaskForm(false);
-  };
-
-  if (loading) {
-    return (
-      <div className="flex h-64 items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
-      </div>
-    );
-  }
-
   // Calculate remaining days
   const calculateRemainingDays = (endDateString?: string) => {
     if (!endDateString) return 0;
@@ -196,6 +175,27 @@ const TwelveWeekCycle: React.FC = () => {
       setSelectedWeek(currentWeek);
     }
   }, [currentWeek, selectedWeek]);
+
+  const handleWeekSelect = (weekNum: number) => {
+    setSelectedWeek(weekNum);
+  };
+
+  const handleAddTask = () => {
+    setShowTaskForm(true);
+  };
+
+  const handleTaskSave = (taskData: any) => {
+    console.log('Task saved:', taskData);
+    setShowTaskForm(false);
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
