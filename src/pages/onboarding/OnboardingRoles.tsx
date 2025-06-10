@@ -28,7 +28,7 @@ interface UserRole {
 }
 
 const OnboardingRoles: React.FC = () => {
-  const { goToNextStep } = useOutletContext<OnboardingContextType>();
+  const { goToNextStep, goToPreviousStep } = useOutletContext<OnboardingContextType>();
   const [userId, setUserId] = useState<string | null>(null);
   const [presetRoles, setPresetRoles] = useState<PresetRole[]>([]);
   const [userRoles, setUserRoles] = useState<UserRole[]>([]);
@@ -238,10 +238,11 @@ const OnboardingRoles: React.FC = () => {
   };
 
   const handleContinue = () => {
-    const hasActiveRoles = userRoles.some(role => role.is_active);
-    if (hasActiveRoles) {
-      goToNextStep();
-    }
+    goToNextStep();
+  };
+
+  const handleSkip = () => {
+    goToNextStep();
   };
 
   if (loading) {
@@ -394,25 +395,32 @@ const OnboardingRoles: React.FC = () => {
           </div>
         )}
 
-        {/* Continue Button */}
-        <div className="mt-8 pt-4">
+        {/* Navigation */}
+        <div className="mt-8 flex items-center justify-between">
           <button
-            onClick={handleContinue}
-            disabled={!hasActiveRoles}
-            className={`w-full rounded-md py-3 px-4 text-center text-sm font-medium ${
-              hasActiveRoles
-                ? 'bg-primary-500 text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
-                : 'cursor-not-allowed bg-gray-300 text-gray-500'
-            }`}
+            type="button"
+            onClick={goToPreviousStep}
+            className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
           >
-            Continue
+            ← Back
           </button>
           
-          {!hasActiveRoles && (
-            <p className="mt-2 text-center text-xs text-gray-500">
-              Please select at least one role to continue
-            </p>
-          )}
+          <div className="flex items-center space-x-4">
+            <button
+              onClick={handleContinue}
+              className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            >
+              Continue
+            </button>
+            
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
+            >
+              Skip for now →
+            </button>
+          </div>
         </div>
       </div>
     </motion.div>
