@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Menu, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Menu, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase, X } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
@@ -247,10 +247,10 @@ const AuthenticCalendar: React.FC = () => {
         </div>
       </motion.aside>
 
-      {/* Google Calendar Style Floating Navigation Bar */}
+      {/* Google Calendar Style Floating Navigation Bar - Desktop Only */}
       <div className="fixed top-1/2 right-0 transform -translate-y-1/2 z-30 hidden lg:block">
         <div className="bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg">
-          {/* Navigation Icons */}
+          {/* Navigation Icons - Vertically Stacked */}
           <div className="flex flex-col">
             {drawerItems.map((item) => {
               const IconComponent = item.icon;
@@ -261,22 +261,27 @@ const AuthenticCalendar: React.FC = () => {
                   key={item.id}
                   onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
                   className={`
-                    group relative p-3 border-b border-gray-100 last:border-b-0 transition-colors
+                    group relative p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200
                     ${isActive 
-                      ? 'bg-blue-50 text-blue-600 border-r-2 border-r-blue-600' 
+                      ? 'bg-blue-50 text-blue-600 border-r-3 border-r-blue-600 shadow-sm' 
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                     }
                   `}
                   title={item.title}
+                  aria-label={item.title}
                 >
                   <IconComponent className="h-5 w-5" />
                   
-                  {/* Tooltip on hover */}
-                  <div className="absolute right-full mr-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
-                    <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
-                      {item.title}
+                  {/* Tooltip on hover - Only show when not active */}
+                  {!isActive && (
+                    <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                      <div className="bg-gray-900 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap shadow-lg">
+                        {item.title}
+                        {/* Tooltip arrow */}
+                        <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-900 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </button>
               );
             })}
@@ -284,15 +289,54 @@ const AuthenticCalendar: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile Floating Navigation Button */}
+      {/* Mobile Floating Navigation - Single Button that Expands */}
       <div className="fixed bottom-4 right-4 z-30 lg:hidden">
-        <button
-          onClick={() => setActiveDrawer(activeDrawer ? null : 'roles')}
-          className="flex items-center justify-center w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
-          aria-label="Toggle navigation"
-        >
-          <Users className="h-6 w-6" />
-        </button>
+        {!activeDrawer ? (
+          /* Collapsed State - Single Floating Button */
+          <button
+            onClick={() => setActiveDrawer('roles')}
+            className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+            aria-label="Open navigation"
+          >
+            <Users className="h-6 w-6" />
+          </button>
+        ) : (
+          /* Expanded State - Vertical Stack of Icons */
+          <div className="flex flex-col-reverse space-y-reverse space-y-2">
+            {/* Close Button */}
+            <button
+              onClick={() => setActiveDrawer(null)}
+              className="flex items-center justify-center w-12 h-12 bg-gray-600 text-white rounded-full shadow-lg hover:bg-gray-700 transition-colors"
+              aria-label="Close navigation"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            
+            {/* Navigation Icons */}
+            {drawerItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = activeDrawer === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
+                  className={`
+                    flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-colors
+                    ${isActive 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-white text-gray-600 hover:bg-gray-50'
+                    }
+                  `}
+                  title={item.title}
+                  aria-label={item.title}
+                >
+                  <IconComponent className="h-5 w-5" />
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Floating Drawer Content */}
