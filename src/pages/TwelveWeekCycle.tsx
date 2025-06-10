@@ -62,7 +62,7 @@ const TwelveWeekCycle: React.FC = () => {
   const [quarterlyGoal, setQuarterlyGoal] = useState('');
   const [cycleData, setCycleData] = useState<CycleData | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   useEffect(() => {
     const fetchCycleData = async () => {
       const { data, error } = await supabase
@@ -83,21 +83,36 @@ const TwelveWeekCycle: React.FC = () => {
     fetchCycleData();
   }, []);
 
-  // Calculate remaining days
+  // Calculate remaining days using the exact reflection_end date
   const calculateRemainingDays = (endDateString?: string) => {
     if (!endDateString) return 0;
-    const endDate = new Date(endDateString);
+    
+    // Parse the date string and ensure we're using the exact date from the database
+    const endDate = parseISO(endDateString);
     const today = new Date();
-    const remainingDays = differenceInDays(endDate, today);
+    
+    // Set both dates to start of day for accurate day calculation
+    const endDateStartOfDay = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+    const todayStartOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    
+    const remainingDays = differenceInDays(endDateStartOfDay, todayStartOfDay);
     return Math.max(0, remainingDays); // Don't show negative days
   };
 
-  // Format cycle end date
+  // Format cycle end date using the exact reflection_end date
   const formatCycleEndDate = (dateString?: string) => {
     if (!dateString) return 'Invalid date';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Invalid date';
-    return format(date, 'dd MMM yyyy');
+    
+    try {
+      const date = parseISO(dateString);
+      if (isNaN(date.getTime())) return 'Invalid date';
+      
+      // Use the exact date from the database
+      return format(date, 'dd MMM yyyy');
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Invalid date';
+    }
   };
 
   // Calculate cycle start date and week start dates
@@ -117,7 +132,8 @@ const TwelveWeekCycle: React.FC = () => {
   };
 
   const cycleStartDate = getCycleStartDate();
-  const cycleEndDate = cycleData ? new Date(cycleData.reflection_end) : new Date();
+  // Use the exact reflection_end date from the database
+  const cycleEndDate = cycleData ? parseISO(cycleData.reflection_end) : new Date();
 
   // Calculate progress percentage
   const today = new Date();
