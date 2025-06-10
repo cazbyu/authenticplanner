@@ -7,7 +7,6 @@ import logo from '../assets/logo.svg'; // This would be your app logo
 
 const onboardingSteps = [
   { path: '/onboarding/welcome', label: 'Welcome' },
-  { path: '/onboarding/questions', label: 'Orientation' },
   { path: '/onboarding/roles', label: 'Roles' },
   { path: '/onboarding/vision', label: 'Vision' },
   { path: '/onboarding/goals', label: 'Goals' },
