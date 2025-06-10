@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Menu, Calendar as CalendarIcon, CheckSquare } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Menu, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
@@ -23,7 +23,6 @@ const AuthenticCalendar: React.FC = () => {
   const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridDay');
   const [prioritiesCollapsed, setPrioritiesCollapsed] = useState(false);
   const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
-  const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<'roles' | 'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('calendar');
   const calendarRef = useRef<FullCalendar | null>(null);
@@ -70,15 +69,14 @@ const AuthenticCalendar: React.FC = () => {
   const toggleMainSidebar = () => setMainSidebarOpen(!mainSidebarOpen);
   const closeMainSidebar = () => setMainSidebarOpen(false);
 
-  const toggleDrawer = () => {
-    setDrawerOpen(!drawerOpen);
-    if (!drawerOpen) {
+  const handleDrawerSelect = (drawer: typeof activeDrawer) => {
+    if (activeDrawer === drawer) {
+      // If clicking the same drawer, close it
       setActiveDrawer(null);
+    } else {
+      // Open the selected drawer
+      setActiveDrawer(drawer);
     }
-  };
-
-  const selectDrawer = (drawer: typeof activeDrawer) => {
-    setActiveDrawer(drawer);
   };
 
   const getDateDisplayText = () => {
@@ -107,30 +105,35 @@ const AuthenticCalendar: React.FC = () => {
       id: 'roles',
       title: 'Role Bank',
       description: 'Manage your life roles and authentic deposits',
+      icon: Users,
       component: RoleBank
     },
     {
       id: 'tasks',
       title: 'Tasks',
       description: 'View and manage your tasks',
+      icon: Briefcase,
       component: Tasks
     },
     {
       id: 'goals',
       title: 'Strategic Goals',
       description: 'Review your mission, vision, and goals',
+      icon: Target,
       component: StrategicGoals
     },
     {
       id: 'reflections',
       title: 'Reflections',
       description: 'View your task-related notes and reflections',
+      icon: BookOpen,
       component: Reflections
     },
     {
       id: 'scorecard',
       title: 'Scorecard',
       description: 'Track your balance and progress',
+      icon: BarChart3,
       component: Scorecard
     }
   ];
@@ -158,16 +161,15 @@ const AuthenticCalendar: React.FC = () => {
     <div className="h-screen flex flex-col bg-white">
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
-        {(mainSidebarOpen || drawerOpen) && (
+        {(mainSidebarOpen || activeDrawer) && (
           <motion.div 
-            className="fixed inset-0 z-40 bg-black bg-opacity-50"
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
             initial="closed"
             animate="open"
             exit="closed"
             variants={overlayVariants}
             onClick={() => {
               closeMainSidebar();
-              setDrawerOpen(false);
               setActiveDrawer(null);
             }}
           />
@@ -176,7 +178,7 @@ const AuthenticCalendar: React.FC = () => {
 
       {/* Main Navigation Sidebar */}
       <motion.aside
-        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg"
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:hidden"
         initial="closed"
         animate={mainSidebarOpen ? 'open' : 'closed'}
         variants={sidebarVariants}
@@ -245,48 +247,91 @@ const AuthenticCalendar: React.FC = () => {
         </div>
       </motion.aside>
 
-      {/* Floating Dresser */}
-      <motion.aside
-        className="fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-lg"
-        initial="closed"
-        animate={drawerOpen ? 'open' : 'closed'}
-        variants={drawerVariants}
-      >
-        <div className="flex h-full flex-col">
-          <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
-            <h2 className="text-lg font-semibold text-gray-900">
-              {activeDrawer ? drawerItems.find(item => item.id === activeDrawer)?.title : 'Floating Dresser'}
-            </h2>
-            <button
-              onClick={toggleDrawer}
-              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
-            >
-              <ChevronRight className="h-5 w-5" />
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto">
-            {ActiveDrawerComponent ? (
-              <div className="p-4">
-                <ActiveDrawerComponent />
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-4 p-4">
-                {drawerItems.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => selectDrawer(item.id as typeof activeDrawer)}
-                    className="flex flex-col items-start rounded-lg border border-gray-200 p-4 text-left transition-colors hover:bg-gray-50"
-                  >
-                    <h3 className="font-medium text-gray-900">{item.title}</h3>
-                    <p className="mt-1 text-sm text-gray-500">{item.description}</p>
-                  </button>
-                ))}
-              </div>
-            )}
+      {/* Google Calendar Style Floating Navigation Bar */}
+      <div className="fixed top-1/2 right-0 transform -translate-y-1/2 z-30 hidden lg:block">
+        <div className="bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg">
+          {/* Navigation Icons */}
+          <div className="flex flex-col">
+            {drawerItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = activeDrawer === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
+                  className={`
+                    group relative p-3 border-b border-gray-100 last:border-b-0 transition-colors
+                    ${isActive 
+                      ? 'bg-blue-50 text-blue-600 border-r-2 border-r-blue-600' 
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }
+                  `}
+                  title={item.title}
+                >
+                  <IconComponent className="h-5 w-5" />
+                  
+                  {/* Tooltip on hover */}
+                  <div className="absolute right-full mr-2 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                    <div className="bg-gray-900 text-white text-xs rounded px-2 py-1 whitespace-nowrap">
+                      {item.title}
+                    </div>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </motion.aside>
+      </div>
+
+      {/* Mobile Floating Navigation Button */}
+      <div className="fixed bottom-4 right-4 z-30 lg:hidden">
+        <button
+          onClick={() => setActiveDrawer(activeDrawer ? null : 'roles')}
+          className="flex items-center justify-center w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+          aria-label="Toggle navigation"
+        >
+          <Users className="h-6 w-6" />
+        </button>
+      </div>
+
+      {/* Floating Drawer Content */}
+      <AnimatePresence>
+        {activeDrawer && (
+          <motion.div
+            className="fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-xl border-l border-gray-200"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={drawerVariants}
+          >
+            <div className="flex h-full flex-col">
+              {/* Drawer Header */}
+              <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {drawerItems.find(item => item.id === activeDrawer)?.title}
+                </h2>
+                <button
+                  onClick={() => setActiveDrawer(null)}
+                  className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
+                  aria-label="Close drawer"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+              
+              {/* Drawer Content */}
+              <div className="flex-1 overflow-y-auto">
+                {ActiveDrawerComponent && (
+                  <div className="p-4">
+                    <ActiveDrawerComponent />
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Google Calendar Style Header - Compact and minimal */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white min-h-[56px]">
@@ -295,7 +340,7 @@ const AuthenticCalendar: React.FC = () => {
           {/* Hamburger Menu - Opens main navigation sidebar */}
           <button
             onClick={toggleMainSidebar}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors lg:hidden"
             aria-label="Toggle main menu"
           >
             <Menu className="h-5 w-5 text-gray-600" />
@@ -387,12 +432,12 @@ const AuthenticCalendar: React.FC = () => {
             <Plus className="h-5 w-5" />
           </button>
 
-          {/* Profile/Floating Dresser Icon - Opens right sidebar */}
-          <div className="relative">
+          {/* Profile Icon - Hidden on desktop since we have the floating nav */}
+          <div className="relative lg:hidden">
             <button
-              onClick={toggleDrawer}
+              onClick={() => setActiveDrawer(activeDrawer ? null : 'roles')}
               className="flex items-center space-x-2 p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Toggle floating dresser"
+              aria-label="Toggle navigation"
             >
               <div className="h-7 w-7 bg-blue-100 rounded-full flex items-center justify-center">
                 <span className="text-xs font-medium text-blue-600">
@@ -472,7 +517,7 @@ const AuthenticCalendar: React.FC = () => {
             </div>
 
             {/* Calendar Area - Takes up remaining space and expands when priorities collapsed */}
-            <div className="flex-1 flex flex-col overflow-hidden min-w-0">
+            <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
               <CalendarView
                 ref={calendarRef}
                 view={view}
@@ -483,7 +528,7 @@ const AuthenticCalendar: React.FC = () => {
             </div>
           </>
         ) : (
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
             <TaskQuadrants refreshTrigger={refreshTrigger} />
           </div>
         )}
