@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import TaskForm from '../components/tasks/TaskForm';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 
 // ---- Use ONE of the following for Supabase. ----
 
@@ -23,6 +23,7 @@ interface WeekBoxProps {
 interface CycleData {
   reflection_end: string;
   cycle_label: string;
+  title?: string;
 }
 
 const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, isActive, onClick }) => (
@@ -55,7 +56,7 @@ const TwelveWeekCycle: React.FC = () => {
     const fetchCycleData = async () => {
       const { data, error } = await supabase
         .from('0007-ap-global-cycles')
-        .select('reflection_end, cycle_label')
+        .select('reflection_end, cycle_label, title')
         .eq('is_active', true)
         .single();
 
@@ -92,6 +93,15 @@ const TwelveWeekCycle: React.FC = () => {
     );
   }
 
+  // Calculate remaining days
+  const calculateRemainingDays = (endDateString?: string) => {
+    if (!endDateString) return 0;
+    const endDate = new Date(endDateString);
+    const today = new Date();
+    const remainingDays = differenceInDays(endDate, today);
+    return Math.max(0, remainingDays); // Don't show negative days
+  };
+
   // Format cycle end date
   const formatCycleEndDate = (dateString?: string) => {
     if (!dateString) return 'Invalid date';
@@ -110,11 +120,26 @@ const TwelveWeekCycle: React.FC = () => {
   const daysElapsed = (today.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24);
   const progressPercentage = Math.min(100, Math.max(0, (daysElapsed / totalDays) * 100));
 
-  // Format the cycle label to include "Goal 1"
-  const formattedCycleLabel = cycleData?.cycle_label ? `${cycleData.cycle_label} Goal 1:` : '2025Q Goal 1:';
+  const remainingDays = calculateRemainingDays(cycleData?.reflection_end);
+
+  // Get current cycle name - use title if available, otherwise cycle_label
+  const currentCycleName = cycleData?.title || cycleData?.cycle_label || '2025 Cycle #2';
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
+      {/* Main Title and Cycle Information */}
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">12 Week Goals</h1>
+        <h2 className="text-xl text-gray-700 mb-2">{currentCycleName}</h2>
+        <p className="text-lg text-gray-600">
+          {remainingDays > 0 ? (
+            <span className="font-medium text-primary-600">{remainingDays} days remain in the current cycle</span>
+          ) : (
+            <span className="font-medium text-red-600">Current cycle has ended</span>
+          )}
+        </p>
+      </div>
+
       {/* Progress Bar */}
       <div className="mb-8">
         <div className="mb-2 flex items-center justify-between text-sm text-gray-600">
@@ -133,7 +158,7 @@ const TwelveWeekCycle: React.FC = () => {
       <div className="mb-8">
         <div className="mb-4">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-bold text-gray-900">{formattedCycleLabel}</h2>
+            <h3 className="text-xl font-bold text-gray-900">Current 12-Week Goal:</h3>
             <button
               className="flex items-center rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
             >
@@ -145,7 +170,7 @@ const TwelveWeekCycle: React.FC = () => {
             type="text"
             value={quarterlyGoal}
             onChange={(e) => setQuarterlyGoal(e.target.value)}
-            placeholder="Enter your quarterly goal here..."
+            placeholder="Enter your 12-week goal here..."
             className="w-full rounded-lg border border-gray-300 p-3 text-lg"
           />
           <div className="mt-2 text-sm text-gray-600">
