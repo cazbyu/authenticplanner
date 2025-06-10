@@ -29,6 +29,12 @@ interface CycleData {
   start_date?: string;
 }
 
+interface WeeklyGoal {
+  id: string;
+  goal_text: string;
+  week_number: number;
+}
+
 const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, isCurrent, onClick }) => (
   <button
     onClick={onClick}
@@ -58,10 +64,12 @@ const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, isCu
 const TwelveWeekCycle: React.FC = () => {
   const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
-  const [weeklyGoal, setWeeklyGoal] = useState('');
+  const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
   const [quarterlyGoal, setQuarterlyGoal] = useState('');
   const [cycleData, setCycleData] = useState<CycleData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [newGoalText, setNewGoalText] = useState('');
+  const [addingGoal, setAddingGoal] = useState(false);
 
   useEffect(() => {
     const fetchCycleData = async () => {
@@ -205,6 +213,42 @@ const TwelveWeekCycle: React.FC = () => {
     setShowTaskForm(false);
   };
 
+  const handleAddWeeklyGoal = async () => {
+    if (!newGoalText.trim() || !selectedWeek) return;
+    
+    setAddingGoal(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data, error } = await supabase
+          .from('0007-ap-goals_12wk_weeks')
+          .insert([{
+            goal_id: 'temp-goal-id', // This would be the actual 12-week goal ID
+            week_number: selectedWeek,
+            title: newGoalText.trim(),
+            notes: '',
+          }])
+          .select()
+          .single();
+
+        if (error) {
+          console.error('Error adding weekly goal:', error);
+        } else if (data) {
+          setWeeklyGoals(prev => [...prev, {
+            id: data.id,
+            goal_text: data.title,
+            week_number: data.week_number
+          }]);
+          setNewGoalText('');
+        }
+      }
+    } catch (err) {
+      console.error('Error adding weekly goal:', err);
+    } finally {
+      setAddingGoal(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex h-64 items-center justify-center">
@@ -306,16 +350,56 @@ const TwelveWeekCycle: React.FC = () => {
           </div>
         </button>
 
-        {/* Weekly Goal Input moved here */}
+        {/* Weekly Goal Input - Now shows current/selected week */}
         <div className="rounded-lg border-2 border-gray-200 p-4">
-          <h3 className="mb-2 text-lg font-semibold">Week {selectedWeek} Goal:</h3>
-          <input
-            type="text"
-            value={weeklyGoal}
-            onChange={(e) => setWeeklyGoal(e.target.value)}
-            placeholder="Enter your weekly goal here..."
-            className="w-full rounded-lg border border-gray-300 p-2"
-          />
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-lg font-semibold">
+              Week {selectedWeek || currentWeek || 1} Goals:
+            </h3>
+            <button
+              onClick={() => setNewGoalText('')}
+              className="flex items-center text-sm text-primary-600 hover:text-primary-700"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Goal
+            </button>
+          </div>
+
+          {/* Existing goals for this week */}
+          <div className="space-y-2 mb-3">
+            {weeklyGoals
+              .filter(goal => goal.week_number === (selectedWeek || currentWeek))
+              .map((goal, index) => (
+                <div key={goal.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
+                  <span className="text-sm">{goal.goal_text}</span>
+                  <button className="text-xs text-red-600 hover:text-red-700">Remove</button>
+                </div>
+              ))}
+          </div>
+
+          {/* Add new goal input */}
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={newGoalText}
+              onChange={(e) => setNewGoalText(e.target.value)}
+              placeholder="Enter a goal for this week..."
+              className="flex-1 rounded-lg border border-gray-300 p-2 text-sm"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleAddWeeklyGoal();
+                }
+              }}
+            />
+            <button
+              onClick={handleAddWeeklyGoal}
+              disabled={!newGoalText.trim() || addingGoal}
+              className="px-3 py-2 bg-primary-500 text-white rounded-lg text-sm hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {addingGoal ? 'Adding...' : 'Add'}
+            </button>
+          </div>
+
           <div className="mt-2">
             <div className="text-sm text-gray-600">
               Weekly Goal Score: XX/XX (XXX%)
@@ -328,7 +412,7 @@ const TwelveWeekCycle: React.FC = () => {
       {selectedWeek && (
         <div className="mt-8">
           <div className="mb-4 flex items-center justify-between">
-            <h3 className="text-lg font-bold">Tasks (Week {selectedWeek} Goal)</h3>
+            <h3 className="text-lg font-bold">Tasks (Week {selectedWeek} Goals)</h3>
             <button
               onClick={handleAddTask}
               className="flex items-center rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
