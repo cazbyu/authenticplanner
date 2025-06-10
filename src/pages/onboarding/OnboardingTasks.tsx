@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Plus, X } from 'lucide-react';
+import { supabase } from '../../supabaseClient';
 
 interface OnboardingContextType {
   goToNextStep: () => void;
@@ -11,6 +12,7 @@ interface OnboardingContextType {
 const OnboardingTasks: React.FC = () => {
   const { goToNextStep, goToPreviousStep } = useOutletContext<OnboardingContextType>();
   const [goals, setGoals] = useState<string[]>(['']);
+  const [saving, setSaving] = useState(false);
 
   const handleGoalChange = (index: number, value: string) => {
     const newGoals = [...goals];
@@ -29,11 +31,45 @@ const OnboardingTasks: React.FC = () => {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Save 12-week goals to localStorage or API
+    
     const validGoals = goals.filter(goal => goal.trim());
-    localStorage.setItem('onboarding_12week_goals', JSON.stringify(validGoals));
+    
+    if (validGoals.length > 0) {
+      setSaving(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Delete existing twelve-week goals for this user
+          await supabase
+            .from('onboarding_goals')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('goal_type', 'twelve_week');
+          
+          // Insert new twelve-week goals
+          const goalInserts = validGoals.map(goal => ({
+            user_id: user.id,
+            goal_text: goal.trim(),
+            goal_type: 'twelve_week'
+          }));
+          
+          const { error } = await supabase
+            .from('onboarding_goals')
+            .insert(goalInserts);
+          
+          if (error) {
+            console.error('Error saving 12-week goals:', error);
+          }
+        }
+      } catch (err) {
+        console.error('Error saving 12-week goals:', err);
+      } finally {
+        setSaving(false);
+      }
+    }
+    
     goToNextStep();
   };
 
@@ -102,9 +138,10 @@ const OnboardingTasks: React.FC = () => {
             
             <button
               type="submit"
-              className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              disabled={saving}
+              className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              Continue
+              {saving ? 'Saving...' : 'Continue'}
             </button>
             
             <button

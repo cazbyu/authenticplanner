@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { supabase } from '../../supabaseClient';
 
 interface OnboardingContextType {
   goToNextStep: () => void;
@@ -10,9 +11,38 @@ interface OnboardingContextType {
 const OnboardingVision: React.FC = () => {
   const { goToNextStep, goToPreviousStep } = useOutletContext<OnboardingContextType>();
   const [vision, setVision] = useState('');
+  const [saving, setSaving] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (vision.trim()) {
+      setSaving(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Save vision statement to Supabase
+          const { error } = await supabase
+            .from('onboarding_responses')
+            .upsert({
+              user_id: user.id,
+              vision_statement: vision.trim(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
+            });
+          
+          if (error) {
+            console.error('Error saving vision statement:', error);
+          }
+        }
+      } catch (err) {
+        console.error('Error saving vision statement:', err);
+      } finally {
+        setSaving(false);
+      }
+    }
+    
     goToNextStep();
   };
 
@@ -59,9 +89,10 @@ const OnboardingVision: React.FC = () => {
             
             <button
               type="submit"
-              className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+              disabled={saving}
+              className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
             >
-              Continue
+              {saving ? 'Saving...' : 'Continue'}
             </button>
             
             <button
