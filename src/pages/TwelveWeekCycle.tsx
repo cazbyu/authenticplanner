@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Target, Calendar, Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Target, Calendar, Clock, ChevronDown, ChevronUp, CheckSquare } from 'lucide-react';
 import TaskForm from '../components/tasks/TaskForm';
 import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
+import WeeklyGoalForm from '../components/goals/WeeklyGoalForm';
 import { format, differenceInDays, addWeeks, parseISO, differenceInWeeks, startOfWeek, endOfWeek } from 'date-fns';
 import { supabase } from '../supabaseClient';
 
@@ -24,6 +25,10 @@ interface WeeklyGoal {
   id: string;
   goal_text: string;
   week_number: number;
+  title: string;
+  description?: string;
+  status: 'pending' | 'completed' | 'cancelled';
+  progress: number;
 }
 
 interface Role {
@@ -46,7 +51,7 @@ interface TwelveWeekGoal {
   created_at: string;
   domains: Domain[];
   roles: Role[];
-  weeklyGoals: any[];
+  weeklyGoals: WeeklyGoal[];
   tasks: any[];
 }
 
@@ -79,13 +84,19 @@ const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, isCu
 const TwelveWeekCycle: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showGoalForm, setShowGoalForm] = useState(false);
+  const [showWeeklyGoalForm, setShowWeeklyGoalForm] = useState(false);
+  const [weeklyGoalFormData, setWeeklyGoalFormData] = useState<{
+    goalId: string;
+    weekNumber: number;
+    domains: Domain[];
+    roles: Role[];
+  } | null>(null);
   const [cycleData, setCycleData] = useState<CycleData | null>(null);
   const [loading, setLoading] = useState(true);
   const [twelveWeekGoals, setTwelveWeekGoals] = useState<TwelveWeekGoal[]>([]);
   const [expandedGoal, setExpandedGoal] = useState<string | null>(null);
   const [selectedWeekByGoal, setSelectedWeekByGoal] = useState<Record<string, number>>({});
-  const [newGoalTextByGoal, setNewGoalTextByGoal] = useState<Record<string, string>>({});
-  const [addingGoalByGoal, setAddingGoalByGoal] = useState<Record<string, boolean>>({});
+  const [weeklyGoalsByGoal, setWeeklyGoalsByGoal] = useState<Record<string, WeeklyGoal[]>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -149,8 +160,8 @@ const TwelveWeekCycle: React.FC = () => {
         created_at: goal.created_at,
         domains: goal.goal_domains?.map((gd: any) => gd.domain).filter(Boolean) || [],
         roles: goal.goal_roles?.map((gr: any) => gr.role).filter(Boolean) || [],
-        weeklyGoals: [], // TODO: Fetch weekly goals
-        tasks: [] // TODO: Fetch associated tasks
+        weeklyGoals: [],
+        tasks: []
       }));
 
       setTwelveWeekGoals(transformedGoals);
@@ -162,8 +173,42 @@ const TwelveWeekCycle: React.FC = () => {
       });
       setSelectedWeekByGoal(defaultWeekSelection);
 
+      // Fetch weekly goals for each 12-week goal
+      await fetchWeeklyGoals(transformedGoals.map(g => g.id));
+
     } catch (error) {
       console.error('Error fetching 12-week goals:', error);
+    }
+  };
+
+  const fetchWeeklyGoals = async (goalIds: string[]) => {
+    if (goalIds.length === 0) return;
+
+    try {
+      const { data: weeklyGoals, error } = await supabase
+        .from('0007-ap-goal_weekly_goals')
+        .select('*')
+        .in('goal_id', goalIds)
+        .order('week_number', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching weekly goals:', error);
+        return;
+      }
+
+      // Group weekly goals by goal_id
+      const groupedWeeklyGoals: Record<string, WeeklyGoal[]> = {};
+      (weeklyGoals || []).forEach(wg => {
+        if (!groupedWeeklyGoals[wg.goal_id]) {
+          groupedWeeklyGoals[wg.goal_id] = [];
+        }
+        groupedWeeklyGoals[wg.goal_id].push(wg);
+      });
+
+      setWeeklyGoalsByGoal(groupedWeeklyGoals);
+
+    } catch (error) {
+      console.error('Error fetching weekly goals:', error);
     }
   };
 
@@ -256,6 +301,15 @@ const TwelveWeekCycle: React.FC = () => {
     fetchTwelveWeekGoals(); // Refresh the goals list
   };
 
+  const handleWeeklyGoalCreated = () => {
+    setShowWeeklyGoalForm(false);
+    setWeeklyGoalFormData(null);
+    // Refresh weekly goals for the specific goal
+    if (weeklyGoalFormData) {
+      fetchWeeklyGoals([weeklyGoalFormData.goalId]);
+    }
+  };
+
   const handleDeleteGoal = async (goalId: string) => {
     try {
       const { error } = await supabase
@@ -275,40 +329,18 @@ const TwelveWeekCycle: React.FC = () => {
     }
   };
 
-  const handleAddWeeklyGoal = async (goalId: string) => {
-    const goalText = newGoalTextByGoal[goalId];
-    const selectedWeek = selectedWeekByGoal[goalId];
+  const handleAddWeeklyGoal = (goalId: string) => {
+    const goal = twelveWeekGoals.find(g => g.id === goalId);
+    const selectedWeek = selectedWeekByGoal[goalId] || currentWeek || 11;
     
-    if (!goalText?.trim() || !selectedWeek) return;
-    
-    setAddingGoalByGoal(prev => ({ ...prev, [goalId]: true }));
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data, error } = await supabase
-          .from('0007-ap-goal_weekly_goals')
-          .insert([{
-            goal_id: goalId,
-            week_number: selectedWeek,
-            title: goalText.trim(),
-            description: '',
-          }])
-          .select()
-          .single();
-
-        if (error) {
-          console.error('Error adding weekly goal:', error);
-        } else if (data) {
-          // Clear the input for this goal
-          setNewGoalTextByGoal(prev => ({ ...prev, [goalId]: '' }));
-          // TODO: Refresh weekly goals for this specific goal
-        }
-      }
-    } catch (err) {
-      console.error('Error adding weekly goal:', err);
-    } finally {
-      setAddingGoalByGoal(prev => ({ ...prev, [goalId]: false }));
+    if (goal) {
+      setWeeklyGoalFormData({
+        goalId,
+        weekNumber: selectedWeek,
+        domains: goal.domains,
+        roles: goal.roles
+      });
+      setShowWeeklyGoalForm(true);
     }
   };
 
@@ -373,254 +405,270 @@ const TwelveWeekCycle: React.FC = () => {
         {/* Goals List with Nested Weekly View */}
         <div className="space-y-4">
           {twelveWeekGoals.length > 0 ? (
-            twelveWeekGoals.map(goal => (
-              <div key={goal.id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
-                {/* Goal Header - Always Visible */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2 mb-2">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate">{goal.title}</h3>
-                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800`}>
-                          {goal.status}
-                        </span>
-                      </div>
-                      
-                      {goal.description && (
-                        <p className="text-sm text-gray-600 mb-3 line-clamp-2">{goal.description}</p>
-                      )}
+            twelveWeekGoals.map(goal => {
+              const goalWeeklyGoals = weeklyGoalsByGoal[goal.id] || [];
+              const selectedWeek = selectedWeekByGoal[goal.id] || currentWeek || 11;
+              const weeklyGoalsForSelectedWeek = goalWeeklyGoals.filter(wg => wg.week_number === selectedWeek);
 
-                      {/* Progress Bar */}
-                      <div className="mb-3">
-                        <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
-                          <span>Progress</span>
-                          <span>{goal.progress}%</span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div 
-                            className="bg-primary-500 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${goal.progress}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Domains and Roles */}
-                      <div className="space-y-2">
-                        {goal.domains.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            <span className="text-xs text-gray-500 mr-1">Domains:</span>
-                            {goal.domains.slice(0, 3).map(domain => (
-                              <span key={domain.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                {domain.name}
-                              </span>
-                            ))}
-                            {goal.domains.length > 3 && (
-                              <span className="text-xs text-gray-500">+{goal.domains.length - 3} more</span>
-                            )}
-                          </div>
-                        )}
-
-                        {goal.roles.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            <span className="text-xs text-gray-500 mr-1">Roles:</span>
-                            {goal.roles.slice(0, 2).map(role => (
-                              <span key={role.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800">
-                                {role.label}
-                              </span>
-                            ))}
-                            {goal.roles.length > 2 && (
-                              <span className="text-xs text-gray-500">+{goal.roles.length - 2} more</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Quick Stats */}
-                      <div className="flex items-center space-x-4 mt-3 text-sm text-gray-600">
-                        <span className="flex items-center">
-                          <Calendar className="h-4 w-4 mr-1" />
-                          {goal.weeklyGoals.length} weekly goals
-                        </span>
-                        <span className="flex items-center">
-                          <Target className="h-4 w-4 mr-1" />
-                          {goal.tasks.length} tasks
-                        </span>
-                        <span className="text-xs">
-                          Created {format(new Date(goal.created_at), 'MMM d, yyyy')}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Expand/Collapse Button */}
-                    <div className="flex items-center space-x-2 ml-4">
-                      <button
-                        onClick={() => handleToggleGoalExpand(goal.id)}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
-                        title={expandedGoal === goal.id ? 'Collapse' : 'Expand'}
-                      >
-                        {expandedGoal === goal.id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Expanded Content - Weekly View, Goals, and Tasks */}
-                {expandedGoal === goal.id && (
-                  <div className="border-t border-gray-200 p-4 space-y-6">
-                    {/* Weekly View Grid */}
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                        <Calendar className="h-5 w-5 mr-2" />
-                        Weekly View
-                      </h4>
-                      
-                      {/* Week Grid */}
-                      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
-                        {Array.from({ length: 12 }, (_, i) => (
-                          <WeekBox
-                            key={i + 1}
-                            weekNumber={i + 1}
-                            startDate={weekStartDates[i]}
-                            isActive={selectedWeekByGoal[goal.id] === i + 1}
-                            isCurrent={currentWeek === i + 1}
-                            onClick={() => handleWeekSelect(goal.id, i + 1)}
-                          />
-                        ))}
-                      </div>
-
-                      {/* Reflection Week */}
-                      <button 
-                        onClick={() => handleWeekSelect(goal.id, 13)}
-                        className={`
-                          w-full rounded-lg border-2 p-3 text-center transition-colors mb-6
-                          ${currentWeek === 13 && selectedWeekByGoal[goal.id] !== 13
-                            ? 'border-blue-400 bg-blue-100 text-blue-800 ring-2 ring-blue-200'
-                            : selectedWeekByGoal[goal.id] === 13
-                            ? 'border-primary-500 bg-primary-50 text-primary-700'
-                            : 'border-gray-200 bg-white hover:bg-gray-50'
-                          }
-                        `}
-                      >
-                        <div className="flex flex-col items-center">
-                          <span className="text-md font-bold">Week 13 (Reflection Week)</span>
-                          <span className="text-sm text-gray-500 mt-1">
-                            ({format(addWeeks(cycleStartDate, 12), 'dd MMM')})
+              return (
+                <div key={goal.id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
+                  {/* Goal Header - Always Visible */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <h3 className="text-lg font-semibold text-gray-900 truncate">{goal.title}</h3>
+                          <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800`}>
+                            {goal.status}
                           </span>
-                          {currentWeek === 13 && (
-                            <span className="text-sm font-medium text-blue-600 mt-1">Current</span>
+                        </div>
+                        
+                        {goal.description && (
+                          <p className="text-sm text-gray-600 mb-3 line-clamp-2">{goal.description}</p>
+                        )}
+
+                        {/* Progress Bar */}
+                        <div className="mb-3">
+                          <div className="flex items-center justify-between text-sm text-gray-600 mb-1">
+                            <span>Progress</span>
+                            <span>{goal.progress}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-primary-500 h-2 rounded-full transition-all duration-300"
+                              style={{ width: `${goal.progress}%` }}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Domains and Roles */}
+                        <div className="space-y-2">
+                          {goal.domains.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              <span className="text-xs text-gray-500 mr-1">Domains:</span>
+                              {goal.domains.slice(0, 3).map(domain => (
+                                <span key={domain.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                  {domain.name}
+                                </span>
+                              ))}
+                              {goal.domains.length > 3 && (
+                                <span className="text-xs text-gray-500">+{goal.domains.length - 3} more</span>
+                              )}
+                            </div>
+                          )}
+
+                          {goal.roles.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              <span className="text-xs text-gray-500 mr-1">Roles:</span>
+                              {goal.roles.slice(0, 2).map(role => (
+                                <span key={role.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800">
+                                  {role.label}
+                                </span>
+                              ))}
+                              {goal.roles.length > 2 && (
+                                <span className="text-xs text-gray-500">+{goal.roles.length - 2} more</span>
+                              )}
+                            </div>
                           )}
                         </div>
-                      </button>
-                    </div>
 
-                    {/* Weekly Goals Section */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold text-gray-900">
-                          Week {selectedWeekByGoal[goal.id] || currentWeek || 11} Goals
-                        </h4>
+                        {/* Quick Stats */}
+                        <div className="flex items-center space-x-4 mt-3 text-sm text-gray-600">
+                          <span className="flex items-center">
+                            <Calendar className="h-4 w-4 mr-1" />
+                            {goalWeeklyGoals.length} weekly goals
+                          </span>
+                          <span className="flex items-center">
+                            <Target className="h-4 w-4 mr-1" />
+                            {goal.tasks.length} tasks
+                          </span>
+                          <span className="text-xs">
+                            Created {format(new Date(goal.created_at), 'MMM d, yyyy')}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Expand/Collapse Button */}
+                      <div className="flex items-center space-x-2 ml-4">
                         <button
-                          onClick={() => setNewGoalTextByGoal(prev => ({ ...prev, [goal.id]: '' }))}
-                          className="flex items-center text-sm text-primary-600 hover:text-primary-700"
+                          onClick={() => handleToggleGoalExpand(goal.id)}
+                          className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
+                          title={expandedGoal === goal.id ? 'Collapse' : 'Expand'}
                         >
-                          <Plus className="h-4 w-4 mr-1" />
-                          Add Goal
+                          {expandedGoal === goal.id ? <ChevronUp className="h-5 w-5" /> : <ChevronDown className="h-5 w-5" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Expanded Content - Weekly View, Goals, and Tasks */}
+                  {expandedGoal === goal.id && (
+                    <div className="border-t border-gray-200 p-4 space-y-6">
+                      {/* Weekly View Grid */}
+                      <div>
+                        <h4 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                          <Calendar className="h-5 w-5 mr-2" />
+                          Weekly View
+                        </h4>
+                        
+                        {/* Week Grid */}
+                        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-6">
+                          {Array.from({ length: 12 }, (_, i) => (
+                            <WeekBox
+                              key={i + 1}
+                              weekNumber={i + 1}
+                              startDate={weekStartDates[i]}
+                              isActive={selectedWeekByGoal[goal.id] === i + 1}
+                              isCurrent={currentWeek === i + 1}
+                              onClick={() => handleWeekSelect(goal.id, i + 1)}
+                            />
+                          ))}
+                        </div>
+
+                        {/* Reflection Week */}
+                        <button 
+                          onClick={() => handleWeekSelect(goal.id, 13)}
+                          className={`
+                            w-full rounded-lg border-2 p-3 text-center transition-colors mb-6
+                            ${currentWeek === 13 && selectedWeekByGoal[goal.id] !== 13
+                              ? 'border-blue-400 bg-blue-100 text-blue-800 ring-2 ring-blue-200'
+                              : selectedWeekByGoal[goal.id] === 13
+                              ? 'border-primary-500 bg-primary-50 text-primary-700'
+                              : 'border-gray-200 bg-white hover:bg-gray-50'
+                            }
+                          `}
+                        >
+                          <div className="flex flex-col items-center">
+                            <span className="text-md font-bold">Week 13 (Reflection Week)</span>
+                            <span className="text-sm text-gray-500 mt-1">
+                              ({format(addWeeks(cycleStartDate, 12), 'dd MMM')})
+                            </span>
+                            {currentWeek === 13 && (
+                              <span className="text-sm font-medium text-blue-600 mt-1">Current</span>
+                            )}
+                          </div>
                         </button>
                       </div>
 
-                      {/* Add new goal input */}
-                      <div className="space-y-3 mb-4">
-                        <div className="flex space-x-2">
-                          <input
-                            type="text"
-                            value={newGoalTextByGoal[goal.id] || ''}
-                            onChange={(e) => setNewGoalTextByGoal(prev => ({ ...prev, [goal.id]: e.target.value }))}
-                            placeholder={`Enter a goal for week ${selectedWeekByGoal[goal.id] || currentWeek || 11}...`}
-                            className="flex-1 rounded-md border border-gray-300 p-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                            onKeyPress={(e) => {
-                              if (e.key === 'Enter') {
-                                handleAddWeeklyGoal(goal.id);
-                              }
-                            }}
-                          />
+                      {/* Weekly Goals Section */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            Week {selectedWeek} Goals
+                          </h4>
                           <button
                             onClick={() => handleAddWeeklyGoal(goal.id)}
-                            disabled={!newGoalTextByGoal[goal.id]?.trim() || addingGoalByGoal[goal.id]}
-                            className="px-4 py-2 bg-primary-500 text-white rounded-md text-sm hover:bg-primary-600 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="flex items-center text-sm text-primary-600 hover:text-primary-700"
                           >
-                            {addingGoalByGoal[goal.id] ? 'Adding...' : 'Add'}
+                            <Plus className="h-4 w-4 mr-1" />
+                            Add Weekly Goal
                           </button>
                         </div>
 
-                        <div className="text-sm text-gray-600">
-                          Weekly Goal Score: XX/XX (XXX%)
+                        {/* Weekly Goals List */}
+                        <div className="space-y-3 mb-4">
+                          {weeklyGoalsForSelectedWeek.length > 0 ? (
+                            weeklyGoalsForSelectedWeek.map(weeklyGoal => (
+                              <div key={weeklyGoal.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+                                <div className="flex items-start justify-between">
+                                  <div className="flex-1">
+                                    <h5 className="font-medium text-gray-900">{weeklyGoal.title}</h5>
+                                    {weeklyGoal.description && (
+                                      <p className="text-sm text-gray-600 mt-1">{weeklyGoal.description}</p>
+                                    )}
+                                    <div className="flex items-center space-x-4 mt-2 text-sm text-gray-500">
+                                      <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${
+                                        weeklyGoal.status === 'completed' ? 'bg-green-100 text-green-800' :
+                                        weeklyGoal.status === 'cancelled' ? 'bg-red-100 text-red-800' :
+                                        'bg-yellow-100 text-yellow-800'
+                                      }`}>
+                                        {weeklyGoal.status}
+                                      </span>
+                                      <span>Progress: {weeklyGoal.progress}%</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div className="text-center py-6 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+                              <Calendar className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                              <p className="text-sm text-gray-500">No weekly goals for Week {selectedWeek} yet.</p>
+                              <button
+                                onClick={() => handleAddWeeklyGoal(goal.id)}
+                                className="mt-2 text-sm text-primary-600 hover:text-primary-700 font-medium"
+                              >
+                                Add your first weekly goal
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Weekly Tasks Section */}
+                      <div>
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-lg font-semibold text-gray-900">
+                            Week {selectedWeek} Tasks
+                          </h4>
+                          <button
+                            onClick={() => setShowTaskForm(true)}
+                            className="flex items-center rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
+                          >
+                            <Plus className="mr-1 h-4 w-4" />
+                            Add Task
+                          </button>
+                        </div>
+
+                        {/* Task Table */}
+                        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
+                          <table className="w-full border-collapse">
+                            <thead>
+                              <tr className="border-b border-gray-200 bg-gray-50">
+                                <th className="w-16 px-3 py-2 text-left text-xs font-medium text-gray-500">Pr</th>
+                                <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Complete</th>
+                                <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Delegate</th>
+                                <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Follow Up</th>
+                                <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Cancel</th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Task Description</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {Array.from({ length: 8 }).map((_, index) => (
+                                <tr key={index} className="border-b border-gray-200">
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="text"
+                                      className="w-12 rounded border border-gray-300 px-2 py-1 text-sm"
+                                      placeholder="A1"
+                                    />
+                                  </td>
+                                  {['Complete', 'Delegate', 'Follow Up', 'Cancel'].map((action) => (
+                                    <td key={action} className="px-2 py-2 text-center">
+                                      <input
+                                        type="checkbox"
+                                        className="h-4 w-4 cursor-pointer rounded border-2 border-gray-300 checked:border-primary-500 checked:bg-primary-500"
+                                      />
+                                    </td>
+                                  ))}
+                                  <td className="px-3 py-2">
+                                    <input
+                                      type="text"
+                                      className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
+                                      placeholder="Enter task description"
+                                    />
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
                         </div>
                       </div>
                     </div>
-
-                    {/* Weekly Tasks Section */}
-                    <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold text-gray-900">
-                          Week {selectedWeekByGoal[goal.id] || currentWeek || 11} Tasks
-                        </h4>
-                        <button
-                          onClick={() => setShowTaskForm(true)}
-                          className="flex items-center rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
-                        >
-                          <Plus className="mr-1 h-4 w-4" />
-                          Add Task
-                        </button>
-                      </div>
-
-                      {/* Task Table */}
-                      <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                        <table className="w-full border-collapse">
-                          <thead>
-                            <tr className="border-b border-gray-200 bg-gray-50">
-                              <th className="w-16 px-3 py-2 text-left text-xs font-medium text-gray-500">Pr</th>
-                              <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Complete</th>
-                              <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Delegate</th>
-                              <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Follow Up</th>
-                              <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Cancel</th>
-                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Task Description</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {Array.from({ length: 8 }).map((_, index) => (
-                              <tr key={index} className="border-b border-gray-200">
-                                <td className="px-3 py-2">
-                                  <input
-                                    type="text"
-                                    className="w-12 rounded border border-gray-300 px-2 py-1 text-sm"
-                                    placeholder="A1"
-                                  />
-                                </td>
-                                {['Complete', 'Delegate', 'Follow Up', 'Cancel'].map((action) => (
-                                  <td key={action} className="px-2 py-2 text-center">
-                                    <input
-                                      type="checkbox"
-                                      className="h-4 w-4 cursor-pointer rounded border-2 border-gray-300 checked:border-primary-500 checked:bg-primary-500"
-                                    />
-                                  </td>
-                                ))}
-                                <td className="px-3 py-2">
-                                  <input
-                                    type="text"
-                                    className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
-                                    placeholder="Enter task description"
-                                  />
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))
+                  )}
+                </div>
+              );
+            })
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
               <Target className="mx-auto h-12 w-12 text-gray-400 mb-4" />
@@ -645,6 +693,20 @@ const TwelveWeekCycle: React.FC = () => {
         <TwelveWeekGoalForm
           onClose={() => setShowGoalForm(false)}
           onGoalCreated={handleGoalCreated}
+        />
+      )}
+
+      {showWeeklyGoalForm && weeklyGoalFormData && (
+        <WeeklyGoalForm
+          onClose={() => {
+            setShowWeeklyGoalForm(false);
+            setWeeklyGoalFormData(null);
+          }}
+          onGoalCreated={handleWeeklyGoalCreated}
+          twelveWeekGoalId={weeklyGoalFormData.goalId}
+          weekNumber={weeklyGoalFormData.weekNumber}
+          prefilledDomains={weeklyGoalFormData.domains}
+          prefilledRoles={weeklyGoalFormData.roles}
         />
       )}
 
