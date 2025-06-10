@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import TaskForm from '../components/tasks/TaskForm';
-import { format, differenceInDays, addWeeks, parseISO } from 'date-fns';
+import { format, differenceInDays, addWeeks, parseISO, differenceInWeeks, startOfWeek, endOfWeek } from 'date-fns';
 
 // ---- Use ONE of the following for Supabase. ----
 
@@ -18,6 +18,7 @@ interface WeekBoxProps {
   weekNumber: number;
   startDate: Date;
   isActive?: boolean;
+  isCurrent?: boolean;
   onClick: () => void;
 }
 
@@ -28,12 +29,14 @@ interface CycleData {
   start_date?: string;
 }
 
-const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, onClick }) => (
+const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, isCurrent, onClick }) => (
   <button
     onClick={onClick}
     className={`
       h-28 w-full rounded-lg border-2 transition-colors
-      ${isActive 
+      ${isCurrent && !isActive
+        ? 'border-blue-400 bg-blue-100 text-blue-800 ring-2 ring-blue-200' 
+        : isActive 
         ? 'border-primary-500 bg-primary-50 text-primary-700' 
         : 'border-gray-200 bg-white hover:bg-gray-50'
       }
@@ -45,12 +48,15 @@ const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, onCl
       <span className="text-xs text-gray-500 mt-1">
         ({format(startDate, 'dd MMM')})
       </span>
+      {isCurrent && (
+        <span className="text-xs font-medium text-blue-600 mt-1">Current</span>
+      )}
     </div>
   </button>
 );
 
 const TwelveWeekCycle: React.FC = () => {
-  const [selectedWeek, setSelectedWeek] = useState<number | null>(8);
+  const [selectedWeek, setSelectedWeek] = useState<number | null>(null);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [weeklyGoal, setWeeklyGoal] = useState('');
   const [quarterlyGoal, setQuarterlyGoal] = useState('');
@@ -156,6 +162,41 @@ const TwelveWeekCycle: React.FC = () => {
 
   const weekStartDates = getWeekStartDates();
 
+  // Calculate current week based on today's date
+  const getCurrentWeek = (): number | null => {
+    const today = new Date();
+    
+    // Check if we're in the reflection week (week 13)
+    const reflectionWeekStart = addWeeks(cycleStartDate, 12);
+    const reflectionWeekEnd = addWeeks(cycleStartDate, 13);
+    
+    if (today >= reflectionWeekStart && today < reflectionWeekEnd) {
+      return 13;
+    }
+    
+    // Check which regular week we're in (weeks 1-12)
+    for (let i = 0; i < 12; i++) {
+      const weekStart = weekStartDates[i];
+      const weekEnd = addWeeks(weekStart, 1);
+      
+      if (today >= weekStart && today < weekEnd) {
+        return i + 1;
+      }
+    }
+    
+    // If we're before the cycle starts or after it ends
+    return null;
+  };
+
+  const currentWeek = getCurrentWeek();
+
+  // Set default selected week to current week if not already set
+  useEffect(() => {
+    if (selectedWeek === null && currentWeek !== null) {
+      setSelectedWeek(currentWeek);
+    }
+  }, [currentWeek, selectedWeek]);
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       {/* Main Title and Cycle Information */}
@@ -218,6 +259,7 @@ const TwelveWeekCycle: React.FC = () => {
             weekNumber={i + 1}
             startDate={weekStartDates[i]}
             isActive={selectedWeek === i + 1}
+            isCurrent={currentWeek === i + 1}
             onClick={() => handleWeekSelect(i + 1)}
           />
         ))}
@@ -229,7 +271,9 @@ const TwelveWeekCycle: React.FC = () => {
           onClick={() => handleWeekSelect(13)}
           className={`
             w-full rounded-lg border-2 p-4 text-center transition-colors
-            ${selectedWeek === 13
+            ${currentWeek === 13 && selectedWeek !== 13
+              ? 'border-blue-400 bg-blue-100 text-blue-800 ring-2 ring-blue-200'
+              : selectedWeek === 13
               ? 'border-primary-500 bg-primary-50 text-primary-700'
               : 'border-gray-200 bg-white hover:bg-gray-50'
             }
@@ -240,6 +284,9 @@ const TwelveWeekCycle: React.FC = () => {
             <span className="text-sm text-gray-500 mt-1">
               ({format(addWeeks(cycleStartDate, 12), 'dd MMM')})
             </span>
+            {currentWeek === 13 && (
+              <span className="text-sm font-medium text-blue-600 mt-1">Current</span>
+            )}
           </div>
         </button>
 
