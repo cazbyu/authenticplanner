@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Target, Calendar, Clock, ChevronDown, ChevronUp, CheckSquare } from 'lucide-react';
+import { Plus, Target, Calendar, Clock, ChevronDown, ChevronUp, CheckSquare, Edit3 } from 'lucide-react';
 import TaskForm from '../components/tasks/TaskForm';
 import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
+import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
 import WeeklyGoalForm from '../components/goals/WeeklyGoalForm';
 import { format, differenceInDays, addWeeks, parseISO, differenceInWeeks, startOfWeek, endOfWeek } from 'date-fns';
 import { supabase } from '../supabaseClient';
@@ -84,6 +85,8 @@ const WeekBox: React.FC<WeekBoxProps> = ({ weekNumber, startDate, isActive, isCu
 const TwelveWeekCycle: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showGoalForm, setShowGoalForm] = useState(false);
+  const [showGoalEditForm, setShowGoalEditForm] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<TwelveWeekGoal | null>(null);
   const [showWeeklyGoalForm, setShowWeeklyGoalForm] = useState(false);
   const [weeklyGoalFormData, setWeeklyGoalFormData] = useState<{
     goalId: string;
@@ -301,31 +304,29 @@ const TwelveWeekCycle: React.FC = () => {
     fetchTwelveWeekGoals(); // Refresh the goals list
   };
 
+  const handleGoalUpdated = () => {
+    setShowGoalEditForm(false);
+    setEditingGoal(null);
+    fetchTwelveWeekGoals(); // Refresh the goals list
+  };
+
+  const handleGoalDeleted = () => {
+    setShowGoalEditForm(false);
+    setEditingGoal(null);
+    fetchTwelveWeekGoals(); // Refresh the goals list
+  };
+
+  const handleEditGoal = (goal: TwelveWeekGoal) => {
+    setEditingGoal(goal);
+    setShowGoalEditForm(true);
+  };
+
   const handleWeeklyGoalCreated = () => {
     setShowWeeklyGoalForm(false);
     setWeeklyGoalFormData(null);
     // Refresh weekly goals for the specific goal
     if (weeklyGoalFormData) {
       fetchWeeklyGoals([weeklyGoalFormData.goalId]);
-    }
-  };
-
-  const handleDeleteGoal = async (goalId: string) => {
-    try {
-      const { error } = await supabase
-        .from('0007-ap-goals_12wk_main')
-        .delete()
-        .eq('id', goalId);
-
-      if (error) {
-        console.error('Error deleting goal:', error);
-        return;
-      }
-
-      // Refresh the goals list
-      fetchTwelveWeekGoals();
-    } catch (error) {
-      console.error('Error deleting goal:', error);
     }
   };
 
@@ -412,8 +413,12 @@ const TwelveWeekCycle: React.FC = () => {
 
               return (
                 <div key={goal.id} className="bg-white border border-gray-200 rounded-lg shadow-sm">
-                  {/* Goal Header - Always Visible */}
-                  <div className="p-4">
+                  {/* Goal Header - Always Visible - CLICKABLE FOR EDIT */}
+                  <div 
+                    className="p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => handleEditGoal(goal)}
+                    title="Click to edit goal"
+                  >
                     <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center space-x-2 mb-2">
@@ -421,6 +426,7 @@ const TwelveWeekCycle: React.FC = () => {
                           <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800`}>
                             {goal.status}
                           </span>
+                          <Edit3 className="h-4 w-4 text-gray-400" />
                         </div>
                         
                         {goal.description && (
@@ -491,7 +497,10 @@ const TwelveWeekCycle: React.FC = () => {
                       {/* Expand/Collapse Button */}
                       <div className="flex items-center space-x-2 ml-4">
                         <button
-                          onClick={() => handleToggleGoalExpand(goal.id)}
+                          onClick={(e) => {
+                            e.stopPropagation(); // Prevent triggering edit
+                            handleToggleGoalExpand(goal.id);
+                          }}
                           className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-full transition-colors"
                           title={expandedGoal === goal.id ? 'Collapse' : 'Expand'}
                         >
@@ -550,7 +559,7 @@ const TwelveWeekCycle: React.FC = () => {
                         </button>
                       </div>
 
-                      {/* Weekly Goals Section */}
+                      {/* Weekly Goals Section - ONLY SHOW IF WEEKLY GOALS EXIST */}
                       <div>
                         <div className="flex items-center justify-between mb-4">
                           <h4 className="text-lg font-semibold text-gray-900">
@@ -588,6 +597,66 @@ const TwelveWeekCycle: React.FC = () => {
                                     </div>
                                   </div>
                                 </div>
+
+                                {/* Weekly Tasks Section - ONLY SHOW UNDER WEEKLY GOALS */}
+                                <div className="mt-4 pt-3 border-t border-gray-200">
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h6 className="text-sm font-medium text-gray-700">
+                                      Tasks for this weekly goal
+                                    </h6>
+                                    <button
+                                      onClick={() => setShowTaskForm(true)}
+                                      className="flex items-center text-xs text-primary-600 hover:text-primary-700"
+                                    >
+                                      <Plus className="mr-1 h-3 w-3" />
+                                      Add Task
+                                    </button>
+                                  </div>
+
+                                  {/* Task Table - Smaller version for weekly goals */}
+                                  <div className="overflow-x-auto rounded border border-gray-200 bg-white">
+                                    <table className="w-full border-collapse text-xs">
+                                      <thead>
+                                        <tr className="border-b border-gray-200 bg-gray-50">
+                                          <th className="w-12 px-2 py-1 text-left text-xs font-medium text-gray-500">Pr</th>
+                                          <th className="w-16 px-1 py-1 text-center text-xs font-medium text-gray-500">✓</th>
+                                          <th className="w-16 px-1 py-1 text-center text-xs font-medium text-gray-500">→</th>
+                                          <th className="w-16 px-1 py-1 text-center text-xs font-medium text-gray-500">↑</th>
+                                          <th className="w-16 px-1 py-1 text-center text-xs font-medium text-gray-500">✗</th>
+                                          <th className="px-2 py-1 text-left text-xs font-medium text-gray-500">Task Description</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody>
+                                        {Array.from({ length: 5 }).map((_, index) => (
+                                          <tr key={index} className="border-b border-gray-200">
+                                            <td className="px-2 py-1">
+                                              <input
+                                                type="text"
+                                                className="w-10 rounded border border-gray-300 px-1 py-0.5 text-xs"
+                                                placeholder="A1"
+                                              />
+                                            </td>
+                                            {['Complete', 'Delegate', 'Follow Up', 'Cancel'].map((action) => (
+                                              <td key={action} className="px-1 py-1 text-center">
+                                                <input
+                                                  type="checkbox"
+                                                  className="h-3 w-3 cursor-pointer rounded border-2 border-gray-300 checked:border-primary-500 checked:bg-primary-500"
+                                                />
+                                              </td>
+                                            ))}
+                                            <td className="px-2 py-1">
+                                              <input
+                                                type="text"
+                                                className="w-full rounded border border-gray-300 px-1 py-0.5 text-xs"
+                                                placeholder="Enter task description"
+                                              />
+                                            </td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                </div>
                               </div>
                             ))
                           ) : (
@@ -602,66 +671,6 @@ const TwelveWeekCycle: React.FC = () => {
                               </button>
                             </div>
                           )}
-                        </div>
-                      </div>
-
-                      {/* Weekly Tasks Section */}
-                      <div>
-                        <div className="flex items-center justify-between mb-4">
-                          <h4 className="text-lg font-semibold text-gray-900">
-                            Week {selectedWeek} Tasks
-                          </h4>
-                          <button
-                            onClick={() => setShowTaskForm(true)}
-                            className="flex items-center rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
-                          >
-                            <Plus className="mr-1 h-4 w-4" />
-                            Add Task
-                          </button>
-                        </div>
-
-                        {/* Task Table */}
-                        <div className="overflow-x-auto rounded-lg border border-gray-200 bg-white">
-                          <table className="w-full border-collapse">
-                            <thead>
-                              <tr className="border-b border-gray-200 bg-gray-50">
-                                <th className="w-16 px-3 py-2 text-left text-xs font-medium text-gray-500">Pr</th>
-                                <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Complete</th>
-                                <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Delegate</th>
-                                <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Follow Up</th>
-                                <th className="w-20 px-2 py-2 text-center text-xs font-medium text-gray-500">Cancel</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Task Description</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {Array.from({ length: 8 }).map((_, index) => (
-                                <tr key={index} className="border-b border-gray-200">
-                                  <td className="px-3 py-2">
-                                    <input
-                                      type="text"
-                                      className="w-12 rounded border border-gray-300 px-2 py-1 text-sm"
-                                      placeholder="A1"
-                                    />
-                                  </td>
-                                  {['Complete', 'Delegate', 'Follow Up', 'Cancel'].map((action) => (
-                                    <td key={action} className="px-2 py-2 text-center">
-                                      <input
-                                        type="checkbox"
-                                        className="h-4 w-4 cursor-pointer rounded border-2 border-gray-300 checked:border-primary-500 checked:bg-primary-500"
-                                      />
-                                    </td>
-                                  ))}
-                                  <td className="px-3 py-2">
-                                    <input
-                                      type="text"
-                                      className="w-full rounded border border-gray-300 px-2 py-1 text-sm"
-                                      placeholder="Enter task description"
-                                    />
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
                         </div>
                       </div>
                     </div>
@@ -693,6 +702,18 @@ const TwelveWeekCycle: React.FC = () => {
         <TwelveWeekGoalForm
           onClose={() => setShowGoalForm(false)}
           onGoalCreated={handleGoalCreated}
+        />
+      )}
+
+      {showGoalEditForm && editingGoal && (
+        <TwelveWeekGoalEditForm
+          goal={editingGoal}
+          onClose={() => {
+            setShowGoalEditForm(false);
+            setEditingGoal(null);
+          }}
+          onGoalUpdated={handleGoalUpdated}
+          onGoalDeleted={handleGoalDeleted}
         />
       )}
 
