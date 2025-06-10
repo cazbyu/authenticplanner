@@ -1,317 +1,422 @@
-// src/components/OnboardingRoles.tsx
+import React, { useEffect, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { supabase } from '../../supabaseClient';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
-import { useEffect, useState } from "react";
-import { supabase } from "../../supabaseClient"; // Fixed import path
+interface OnboardingContextType {
+  goToNextStep: () => void;
+  goToPreviousStep: () => void;
+}
 
 interface PresetRole {
   id: string;
-  category: string;
   label: string;
-  sort_order: number;
+  category: string;
+  icon?: string;
+  is_active?: boolean;
 }
 
 interface UserRole {
   id: string;
   user_id: string;
+  is_active: boolean;
   preset_role_id?: string;
   label: string;
-  is_active: boolean;
+  category: string;
+  [key: string]: any;
 }
 
-/**
- * OnboardingRoles – Step 3 of 7 ("Define Your Roles")
- *
- *  1. Loads a "preset roles" list (Family, Professional, Community, etc.)
- *  2. Fetches any existing roles for the current user (so they can re‐edit)
- *  3. Allows toggling / adding a custom role
- *  4. Only blocks on the "user roles" fetch, not on presets
- */
+const OnboardingRoles: React.FC = () => {
+  const { goToNextStep } = useOutletContext<OnboardingContextType>();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [presetRoles, setPresetRoles] = useState<PresetRole[]>([]);
+  const [userRoles, setUserRoles] = useState<UserRole[]>([]);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [customRole, setCustomRole] = useState('');
+  const [customCategory, setCustomCategory] = useState('');
+  const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
 
-export default function OnboardingRoles() {
-  // 1) State
-  const [userId, setUserId]             = useState<string | null>(null);
-  const [presetRoles, setPresetRoles]   = useState<PresetRole[]>([]);
-  const [userRoles, setUserRoles]       = useState<UserRole[]>([]);
-  const [loadingUserRoles, setLoadingUserRoles] = useState<boolean>(false);
-  const [presetLoading, setPresetLoading]       = useState<boolean>(true);
-  const [error, setError]               = useState<string | null>(null);
-
-  // 2) Get current user on mount
   useEffect(() => {
-    const getCurrentUser = async () => {
-      const { data, error } = await supabase.auth.getUser();
-      if (error) {
-        console.error("getUser error:", error.message);
-        setError("Could not fetch user session. Please try logging in again.");
-        return;
+    const getUser = async () => {
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error('Auth error:', error);
+          setError('Authentication failed. Please try logging in again.');
+          setLoading(false);
+          return;
+        }
+        
+        if (data?.user?.id) {
+          setUserId(data.user.id);
+        } else {
+          setError('No user found. Please log in.');
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error getting user:', err);
+        setError('Failed to authenticate user.');
+        setLoading(false);
       }
-      setUserId(data.user?.id ?? null);
     };
-
-    getCurrentUser();
-
-    // Also listen for sign‐in / sign‐out events to update userId:
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session?.user) {
-        setUserId(session.user.id);
-      }
-      if (event === "SIGNED_OUT") {
-        setUserId(null);
-      }
-    });
-
-    return () => {
-      listener.subscription.unsubscribe();
-    };
+    getUser();
   }, []);
 
-  // 3) Fetch the preset roles (categories) once, on mount
   useEffect(() => {
     const fetchPresetRoles = async () => {
-      const { data, error } = await supabase
-        .from("0007-ap-preset-roles")
-        .select("*")
-        .order("category", { ascending: true })
-        .order("sort_order", { ascending: true });
-
-      if (error) {
-        console.error("fetchPresetRoles error:", error.message);
-        setError("Failed to load role categories.");
-      } else {
-        setPresetRoles(data || []);
+      try {
+        const { data, error } = await supabase
+          .from('0007-ap-preset-roles')
+          .select('*')
+          .order('category', { ascending: true })
+          .order('sort_order', { ascending: true });
+        
+        if (error) {
+          console.error('Preset roles error:', error);
+          setError('Failed to load preset roles.');
+          return;
+        }
+        
+        const sortOrder = ['Family', 'Professional', 'Community', 'Recreation'];
+        const sortedData = data?.sort((a, b) => {
+          const aIndex = sortOrder.indexOf(a.category);
+          const bIndex = sortOrder.indexOf(b.category);
+          if (aIndex === -1 && bIndex === -1) return 0;
+          if (aIndex === -1) return 1;
+          if (bIndex === -1) return -1;
+          return aIndex - bIndex;
+        });
+        setPresetRoles(sortedData || []);
+      } catch (err) {
+        console.error('Error fetching preset roles:', err);
+        setError('Failed to load preset roles.');
       }
-      setPresetLoading(false);
     };
-
     fetchPresetRoles();
   }, []);
 
-  // 4) Once we know userId, fetch the user's existing roles
-  useEffect(() => {
+  const fetchAllRoles = async () => {
     if (!userId) return;
-
-    const fetchUserRoles = async () => {
-      setLoadingUserRoles(true);
-
+    
+    try {
+      setLoading(true);
       const { data, error } = await supabase
-        .from("0007-ap-roles")
-        .select("*")
-        .eq("user_id", userId);
+        .from('0007-ap-roles')
+        .select('*')
+        .eq('user_id', userId);
 
       if (error) {
-        console.error("fetchUserRoles error:", error.message);
-        setError("Failed to load your roles.");
-      } else {
-        setUserRoles(data || []);
+        console.error('User roles error:', error);
+        setError('Failed to load your roles.');
+        return;
       }
-      setLoadingUserRoles(false);
-    };
-
-    fetchUserRoles();
-  }, [userId]);
-
-  // 5) If either building preset list or fetching user roles is in flight, show Loading
-  if (presetLoading || loadingUserRoles) {
-    return <div className="p-6">Loading…</div>;
-  }
-  if (error) {
-    return <div className="p-6 text-red-500">{error}</div>;
-  }
-  if (!userId) {
-    // Normally this never happens because you upstream guard via ProtectedRoute,
-    // but just in case:
-    return <div className="p-6">Please log in to continue.</div>;
-  }
-
-  // 6) Now we can render the actual "Define Your Roles" UI
-  //    Example: show checkboxes for each preset under its category,
-  //    plus a text input to add a custom role.
-  return (
-    <div className="max-w-3xl mx-auto p-6 space-y-8">
-      <h1 className="text-2xl font-semibold">Step 3 of 7: Define Your Roles</h1>
-      <p className="text-gray-700 mb-6">
-        Define the key roles that make up your authentic self. These roles will
-        help guide your personal and professional development.
-      </p>
-
-      {/* Example: Group by category */}
-      {["Family", "Professional", "Community", "Recreation", "Other"].map(
-        (category) => {
-          // Filter only those presetRoles in this category:
-          const presetsInCategory = presetRoles.filter(
-            (pr) => pr.category === category
-          );
-          if (presetsInCategory.length === 0) return null;
-
-          return (
-            <div key={category} className="mb-6">
-              <h2 className="text-xl font-medium mb-2">{category}</h2>
-              <div className="grid grid-cols-2 gap-3">
-                {presetsInCategory.map((pr) => {
-                  // Check if this preset role is already active for the user
-                  const isActive = userRoles.some(
-                    (ur) => ur.preset_role_id === pr.id && ur.is_active
-                  );
-
-                  // Handler to toggle this preset on/off
-                  const togglePreset = async () => {
-                    if (isActive) {
-                      // If currently active, update is_active = false
-                      await supabase
-                        .from("0007-ap-roles")
-                        .update({ is_active: false })
-                        .eq("user_id", userId)
-                        .eq("preset_role_id", pr.id);
-                      // Remove from userRoles locally
-                      setUserRoles((prev) =>
-                        prev.filter((ur) => ur.preset_role_id !== pr.id)
-                      );
-                    } else {
-                      // Not active yet → insert a new row
-                      const { data, error } = await supabase
-                        .from("0007-ap-roles")
-                        .insert([
-                          {
-                            user_id: userId,
-                            preset_role_id: pr.id,
-                            label: pr.label,
-                            is_active: true,
-                          },
-                        ])
-                        .select()
-                        .single();
-
-                      if (!error && data) {
-                        setUserRoles((prev) => [...prev, data]);
-                      }
-                    }
-                  };
-
-                  return (
-                    <label
-                      key={pr.id}
-                      className={`flex items-center gap-2 p-3 border rounded-lg ${
-                        isActive
-                          ? "bg-emerald-100 border-emerald-400"
-                          : "bg-white border-gray-300"
-                      } cursor-pointer`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isActive}
-                        onChange={togglePreset}
-                        className="h-4 w-4"
-                      />
-                      <span className="text-sm">{pr.label}</span>
-                    </label>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        }
-      )}
-
-      {/* 7) Custom "Other Role" input */}
-      <div className="mb-8">
-        <h2 className="text-xl font-medium mb-2">Add a Custom Role</h2>
-        <CustomRoleInput
-          userId={userId}
-          userRoles={userRoles}
-          setUserRoles={setUserRoles}
-        />
-      </div>
-
-      {/* 8) Continue / Next button: only enabled if userRoles has at least one is_active */}
-      <div className="flex justify-between items-center">
-        <button
-          onClick={() => window.history.back()}
-          className="text-gray-600 hover:underline"
-        >
-          ← Back
-        </button>
-
-        <button
-          onClick={() => {
-            // When the user has at least one role, mark onboardingComplete = true
-            // Then navigate to the next step:
-            supabase
-              .from("users") // or wherever your "onboardingComplete" column lives
-              .update({ onboardingComplete: true })
-              .eq("id", userId)
-              .then(() => {
-                window.location.href = "/onboarding/vision";
-              });
-          }}
-          disabled={!userRoles.some((ur) => ur.is_active)}
-          className={`px-6 py-2 text-white rounded ${
-            userRoles.some((ur) => ur.is_active)
-              ? "bg-emerald-600 hover:bg-emerald-700"
-              : "bg-gray-300 cursor-not-allowed"
-          }`}
-        >
-          Continue →
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// 9) Helper component for Custom Role input
-function CustomRoleInput({
-  userId,
-  userRoles,
-  setUserRoles,
-}: {
-  userId: string;
-  userRoles: UserRole[];
-  setUserRoles: React.Dispatch<React.SetStateAction<UserRole[]>>;
-}) {
-  const [newLabel, setNewLabel] = useState("");
-
-  const addCustomRole = async () => {
-    if (!newLabel.trim()) return;
-
-    // Insert a new "custom" role row (no preset_role_id)
-    const { data, error } = await supabase
-      .from("0007-ap-roles")
-      .insert([
-        {
-          user_id: userId,
-          label: newLabel.trim(),
-          is_active: true,
-        },
-      ])
-      .select()
-      .single();
-
-    if (error) {
-      console.error("Failed to add custom role:", error.message);
-      return;
+      
+      setUserRoles(data || []);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching user roles:', err);
+      setError('Failed to load your roles.');
+    } finally {
+      setLoading(false);
     }
-    // Add it locally so the checkbox appears immediately
-    setUserRoles((prev) => [...prev, data]);
-    setNewLabel("");
   };
 
+  useEffect(() => {
+    if (userId) {
+      fetchAllRoles();
+    }
+  }, [userId]);
+
+  const presetRolesByCategory: { [cat: string]: PresetRole[] } = {};
+  presetRoles.forEach(role => {
+    if (!presetRolesByCategory[role.category]) presetRolesByCategory[role.category] = [];
+    presetRolesByCategory[role.category].push(role);
+  });
+
+  const handleTogglePreset = async (role: PresetRole) => {
+    if (!userId) return;
+    
+    try {
+      const match = userRoles.find(r => r.preset_role_id === role.id && r.user_id === userId);
+
+      if (match) {
+        setUserRoles(prev =>
+          prev.map(r =>
+            r.id === match.id ? { ...r, is_active: !r.is_active } : r
+          )
+        );
+        await supabase
+          .from('0007-ap-roles')
+          .update({ is_active: !match.is_active })
+          .eq('id', match.id)
+          .eq('user_id', userId);
+      } else {
+        const tempId = `temp-${Date.now()}-${Math.random()}`;
+        const newRole = {
+          user_id: userId,
+          is_active: true,
+          preset_role_id: role.id,
+          label: role.label,
+          category: role.category,
+          id: tempId,
+        };
+        setUserRoles(prev => [...prev, newRole]);
+        await supabase
+          .from('0007-ap-roles')
+          .insert([{
+            user_id: userId,
+            is_active: true,
+            preset_role_id: role.id,
+            label: role.label,
+            category: role.category,
+          }]);
+        fetchAllRoles();
+      }
+    } catch (err) {
+      console.error('Error toggling preset role:', err);
+      setError('Failed to update role. Please try again.');
+    }
+  };
+
+  const handleToggleCustomRole = async (role: UserRole) => {
+    if (!role.id || !userId) return;
+    
+    try {
+      setUserRoles(prev =>
+        prev.map(r =>
+          r.id === role.id ? { ...r, is_active: !r.is_active } : r
+        )
+      );
+      await supabase
+        .from('0007-ap-roles')
+        .update({ is_active: !role.is_active })
+        .eq('id', role.id);
+    } catch (err) {
+      console.error('Error toggling custom role:', err);
+      setError('Failed to update role. Please try again.');
+    }
+  };
+
+  const handleAddCustomRole = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userId || !customRole.trim()) return;
+    
+    try {
+      const tempId = `temp-custom-${Date.now()}-${Math.random()}`;
+      setUserRoles(prev => [
+        ...prev,
+        {
+          user_id: userId,
+          is_active: true,
+          label: customRole.trim(),
+          category: customCategory.trim() || 'Other',
+          id: tempId,
+        },
+      ]);
+      await supabase.from('0007-ap-roles').insert([{
+        user_id: userId,
+        is_active: true,
+        label: customRole.trim(),
+        category: customCategory.trim() || 'Other',
+      }]);
+      setCustomRole('');
+      setCustomCategory('');
+      fetchAllRoles();
+    } catch (err) {
+      console.error('Error adding custom role:', err);
+      setError('Failed to add custom role. Please try again.');
+    }
+  };
+
+  const toggleCategory = (category: string) => {
+    setExpandedCategories(prev => ({
+      ...prev,
+      [category]: !prev[category]
+    }));
+  };
+
+  const handleContinue = () => {
+    const hasActiveRoles = userRoles.some(role => role.is_active);
+    if (hasActiveRoles) {
+      goToNextStep();
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-500 border-r-transparent align-[-0.125em]"></div>
+          <p className="mt-2 text-gray-600">Loading roles...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-md p-4">
+        <div className="flex">
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-red-800">Error</h3>
+            <div className="mt-2 text-sm text-red-700">
+              <p>{error}</p>
+            </div>
+            <div className="mt-4">
+              <button
+                onClick={() => {
+                  setError(null);
+                  setLoading(true);
+                  window.location.reload();
+                }}
+                className="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const hasActiveRoles = userRoles.some(role => role.is_active);
+
   return (
-    <div className="flex gap-2 items-center">
-      <input
-        type="text"
-        placeholder='Type a custom role (e.g. "Mentor")'
-        value={newLabel}
-        onChange={(e) => setNewLabel(e.target.value)}
-        className="flex-1 border rounded px-3 py-2"
-      />
-      <button
-        onClick={addCustomRole}
-        disabled={!newLabel.trim()}
-        className={`px-4 py-2 text-white rounded ${
-          newLabel.trim() ? "bg-emerald-600 hover:bg-emerald-700" : "bg-gray-300"
-        }`}
-      >
-        Add
-      </button>
-    </div>
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      <h2 className="text-xl font-bold text-gray-900">Define Your Roles</h2>
+      <p className="mt-2 text-sm text-gray-600">
+        Select your active roles from these categories or Customize your own. If you ever want to update just go to Settings > Role Dashboard
+      </p>
+
+      <div className="mt-6">
+        {/* Custom Role Form */}
+        <form onSubmit={handleAddCustomRole} className="flex gap-2 mb-6">
+          <input
+            type="text"
+            value={customRole}
+            placeholder="Add a custom role..."
+            onChange={e => setCustomRole(e.target.value)}
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          />
+          <input
+            type="text"
+            value={customCategory}
+            placeholder="Category"
+            onChange={e => setCustomCategory(e.target.value)}
+            className="w-32 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+          />
+          <button
+            type="submit"
+            disabled={!customRole.trim()}
+            className={`px-4 py-2 rounded-md text-sm font-medium ${
+              customRole.trim()
+                ? 'bg-primary-500 text-white hover:bg-primary-600'
+                : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            }`}
+          >
+            Add
+          </button>
+        </form>
+
+        {/* Preset Roles by Category */}
+        <div className="space-y-4">
+          {Object.entries(presetRolesByCategory).map(([category, roles]) => (
+            <div key={category} className="border rounded-lg overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleCategory(category)}
+                className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+              >
+                <span className="font-medium text-gray-900">{category}</span>
+                {expandedCategories[category] ? (
+                  <ChevronUp className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+
+              {expandedCategories[category] && (
+                <div className="p-4 grid grid-cols-2 gap-4">
+                  {roles.map(role => {
+                    const userRole = userRoles.find(
+                      r => r.preset_role_id === role.id && r.user_id === userId
+                    );
+                    const checked = userRole ? !!userRole.is_active : false;
+
+                    return (
+                      <div key={role.id} className="flex items-center space-x-3">
+                        <span className="text-sm text-gray-700 min-w-[120px]">{role.label}</span>
+                        <label className="switch">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => handleTogglePreset(role)}
+                          />
+                          <span className="slider"></span>
+                        </label>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+
+        {/* Custom Roles Section */}
+        {userRoles.filter(r => !r.preset_role_id && r.is_active).length > 0 && (
+          <div className="mt-6">
+            <h3 className="font-medium mb-3 text-gray-900">Custom Roles</h3>
+            <div className="grid grid-cols-2 gap-4">
+              {userRoles
+                .filter(r => !r.preset_role_id && r.is_active)
+                .map(r => (
+                  <div key={r.id} className="flex items-center space-x-3">
+                    <span className="text-sm text-gray-700 min-w-[120px]">{r.label}</span>
+                    <label className="switch">
+                      <input
+                        type="checkbox"
+                        checked={!!r.is_active}
+                        onChange={() => handleToggleCustomRole(r)}
+                      />
+                      <span className="slider"></span>
+                    </label>
+                  </div>
+                ))}
+            </div>
+          </div>
+        )}
+
+        {/* Continue Button */}
+        <div className="mt-8 pt-4">
+          <button
+            onClick={handleContinue}
+            disabled={!hasActiveRoles}
+            className={`w-full rounded-md py-3 px-4 text-center text-sm font-medium ${
+              hasActiveRoles
+                ? 'bg-primary-500 text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
+                : 'cursor-not-allowed bg-gray-300 text-gray-500'
+            }`}
+          >
+            Continue
+          </button>
+          
+          {!hasActiveRoles && (
+            <p className="mt-2 text-center text-xs text-gray-500">
+              Please select at least one role to continue
+            </p>
+          )}
+        </div>
+      </div>
+    </motion.div>
   );
-}
+};
+
+export default OnboardingRoles;
