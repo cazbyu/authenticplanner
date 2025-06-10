@@ -4,6 +4,7 @@ import TaskForm from '../components/tasks/TaskForm';
 import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
 import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
 import WeeklyGoalForm from '../components/goals/WeeklyGoalForm';
+import WeeklyGoalEditForm from '../components/goals/WeeklyGoalEditForm';
 import { format, differenceInDays, addWeeks, parseISO, differenceInWeeks, startOfWeek, endOfWeek } from 'date-fns';
 import { supabase } from '../supabaseClient';
 
@@ -88,6 +89,8 @@ const TwelveWeekCycle: React.FC = () => {
   const [showGoalEditForm, setShowGoalEditForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<TwelveWeekGoal | null>(null);
   const [showWeeklyGoalForm, setShowWeeklyGoalForm] = useState(false);
+  const [showWeeklyGoalEditForm, setShowWeeklyGoalEditForm] = useState(false);
+  const [editingWeeklyGoal, setEditingWeeklyGoal] = useState<WeeklyGoal | null>(null);
   const [weeklyGoalFormData, setWeeklyGoalFormData] = useState<{
     goalId: string;
     weekNumber: number;
@@ -328,6 +331,25 @@ const TwelveWeekCycle: React.FC = () => {
     if (weeklyGoalFormData) {
       fetchWeeklyGoals([weeklyGoalFormData.goalId]);
     }
+  };
+
+  const handleWeeklyGoalUpdated = () => {
+    setShowWeeklyGoalEditForm(false);
+    setEditingWeeklyGoal(null);
+    // Refresh weekly goals for all goals
+    fetchWeeklyGoals(twelveWeekGoals.map(g => g.id));
+  };
+
+  const handleWeeklyGoalDeleted = () => {
+    setShowWeeklyGoalEditForm(false);
+    setEditingWeeklyGoal(null);
+    // Refresh weekly goals for all goals
+    fetchWeeklyGoals(twelveWeekGoals.map(g => g.id));
+  };
+
+  const handleEditWeeklyGoal = (weeklyGoal: WeeklyGoal) => {
+    setEditingWeeklyGoal(weeklyGoal);
+    setShowWeeklyGoalEditForm(true);
   };
 
   const handleAddWeeklyGoal = (goalId: string) => {
@@ -581,7 +603,16 @@ const TwelveWeekCycle: React.FC = () => {
                               <div key={weeklyGoal.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
                                 <div className="flex items-start justify-between">
                                   <div className="flex-1">
-                                    <h5 className="font-medium text-gray-900">{weeklyGoal.title}</h5>
+                                    <div className="flex items-center space-x-2 mb-1">
+                                      <h5 
+                                        className="font-medium text-gray-900 cursor-pointer hover:text-primary-600 transition-colors"
+                                        onClick={() => handleEditWeeklyGoal(weeklyGoal)}
+                                        title="Click to edit weekly goal"
+                                      >
+                                        {weeklyGoal.title}
+                                      </h5>
+                                      <Edit3 className="h-3 w-3 text-gray-400" />
+                                    </div>
                                     {weeklyGoal.description && (
                                       <p className="text-sm text-gray-600 mt-1">{weeklyGoal.description}</p>
                                     )}
@@ -728,6 +759,18 @@ const TwelveWeekCycle: React.FC = () => {
           weekNumber={weeklyGoalFormData.weekNumber}
           prefilledDomains={weeklyGoalFormData.domains}
           prefilledRoles={weeklyGoalFormData.roles}
+        />
+      )}
+
+      {showWeeklyGoalEditForm && editingWeeklyGoal && (
+        <WeeklyGoalEditForm
+          weeklyGoal={editingWeeklyGoal}
+          onClose={() => {
+            setShowWeeklyGoalEditForm(false);
+            setEditingWeeklyGoal(null);
+          }}
+          onGoalUpdated={handleWeeklyGoalUpdated}
+          onGoalDeleted={handleWeeklyGoalDeleted}
         />
       )}
 
