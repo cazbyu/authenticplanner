@@ -8,15 +8,15 @@ interface OnboardingContextType {
 }
 
 const OnboardingVision: React.FC = () => {
-  const { goToNextStep } = useOutletContext<OnboardingContextType>();
+  const { goToNextStep, goToPreviousStep } = useOutletContext<OnboardingContextType>();
   const [vision, setVision] = useState('');
   
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // In a real app, save this to your state management or API
-    localStorage.setItem('onboarding_vision', vision);
-    
+    goToNextStep();
+  };
+
+  const handleSkip = () => {
     goToNextStep();
   };
   
@@ -28,7 +28,7 @@ const OnboardingVision: React.FC = () => {
     >
       <h2 className="text-xl font-bold text-gray-900">Your Five-Year Vision</h2>
       <p className="mt-2 text-sm text-gray-600">
-        Take a moment to envision where you want to be in five years. What does your ideal life look like?
+        Imagine who you are after 1,826 sunsets (5 years). Keep it simple, but what does your ideal life look like?
       </p>
       
       <form onSubmit={handleSubmit} className="mt-6">
@@ -46,24 +46,31 @@ const OnboardingVision: React.FC = () => {
           />
         </div>
         
-        <div className="mt-6">
+        <div className="mt-6 flex items-center justify-between">
           <button
-            type="submit"
-            disabled={!vision.trim()}
-            className={`w-full rounded-md py-2 px-4 text-center text-sm font-medium text-white ${
-              vision.trim()
-                ? 'bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
-                : 'cursor-not-allowed bg-gray-300'
-            }`}
+            type="button"
+            onClick={goToPreviousStep}
+            className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
           >
-            Continue
+            ← Back
           </button>
           
-          {!vision.trim() && (
-            <p className="mt-2 text-center text-xs text-gray-500">
-              Please write your vision statement to continue
-            </p>
-          )}
+          <div className="flex items-center space-x-4">
+            <button
+              type="submit"
+              className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            >
+              Continue
+            </button>
+            
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
+            >
+              Skip for now →
+            </button>
+          </div>
         </div>
       </form>
     </motion.div>
