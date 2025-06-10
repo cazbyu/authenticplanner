@@ -43,7 +43,7 @@ const OnboardingTasks: React.FC = () => {
         if (user) {
           // Delete existing twelve-week goals for this user
           await supabase
-            .from('0007-ap-onboarding-goals')
+            .from('0007-ap-onboarding_goals')
             .delete()
             .eq('user_id', user.id)
             .eq('goal_type', 'twelve_week');
@@ -56,7 +56,7 @@ const OnboardingTasks: React.FC = () => {
           }));
           
           const { error } = await supabase
-            .from('0007-ap-onboarding-goals')
+            .from('0007-ap-onboarding_goals')
             .insert(goalInserts);
           
           if (error) {
@@ -83,7 +83,7 @@ const OnboardingTasks: React.FC = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      <h2 className="text-xl font-bold text-gray-900">84 Days of Action & 7 Days of Reflection</h2>
+      <h2 className="text-xl font-bold text-gray-900">12 Weeks of Action & 1 Week of Reflection</h2>
       <p className="mt-2 text-sm text-gray-600">
         12 week goals allow us to see progress while maintaining focus. What will you <strong>achieve</strong> in the next 12 weeks?
       </p>
