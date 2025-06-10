@@ -23,7 +23,7 @@ const OnboardingVision: React.FC = () => {
         if (user) {
           // Save vision statement to Supabase
           const { error } = await supabase
-            .from('0007-ap-onboarding-responses')
+            .from('0007-ap-onboarding_responses')
             .upsert({
               user_id: user.id,
               vision_statement: vision.trim(),

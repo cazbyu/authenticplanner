@@ -43,7 +43,7 @@ const OnboardingGoals: React.FC = () => {
         if (user) {
           // Delete existing one-year goals for this user
           await supabase
-            .from('0007-ap-onboarding-goals')
+            .from('0007-ap-onboarding_goals')
             .delete()
             .eq('user_id', user.id)
             .eq('goal_type', 'one_year');
@@ -56,7 +56,7 @@ const OnboardingGoals: React.FC = () => {
           }));
           
           const { error } = await supabase
-            .from('0007-ap-onboarding-goals')
+            .from('0007-ap-onboarding_goals')
             .insert(goalInserts);
           
           if (error) {
