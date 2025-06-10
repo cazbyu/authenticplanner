@@ -23,7 +23,6 @@ interface OnboardingGoal {
 const StrategicGoals: React.FC = () => {
   const [onboardingData, setOnboardingData] = useState<OnboardingResponse | null>(null);
   const [oneYearGoals, setOneYearGoals] = useState<OnboardingGoal[]>([]);
-  const [twelveWeekGoals, setTwelveWeekGoals] = useState<OnboardingGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [editingVision, setEditingVision] = useState(false);
@@ -56,18 +55,18 @@ const StrategicGoals: React.FC = () => {
         setVisionText(onboardingRes.vision_statement || '');
       }
 
-      // Fetch onboarding goals
+      // Fetch ONLY one-year goals (strategic goals)
       const { data: goalsData, error: goalsError } = await supabase
         .from('0007-ap-onboarding_goals')
         .select('*')
         .eq('user_id', user.id)
+        .eq('goal_type', 'one_year') // Only fetch one-year goals
         .order('created_at', { ascending: true });
 
       if (goalsError) {
         console.error('Error fetching goals:', goalsError);
       } else if (goalsData) {
-        setOneYearGoals(goalsData.filter(goal => goal.goal_type === 'one_year'));
-        setTwelveWeekGoals(goalsData.filter(goal => goal.goal_type === 'twelve_week'));
+        setOneYearGoals(goalsData);
       }
 
     } catch (err) {
@@ -144,7 +143,7 @@ const StrategicGoals: React.FC = () => {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Strategic Goals</h1>
           <p className="mt-1 text-sm text-gray-600">
-            Your vision, goals, and strategic direction from onboarding
+            Your long-term vision and strategic direction
           </p>
         </div>
       </div>
@@ -208,12 +207,12 @@ const StrategicGoals: React.FC = () => {
         )}
       </div>
 
-      {/* One-Year Goals Section */}
+      {/* One-Year Strategic Goals Section */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center space-x-2">
-            <Calendar className="h-5 w-5 text-amber-600" />
-            <h2 className="text-lg font-semibold text-gray-900">365 Sunsets (One-Year Goals)</h2>
+            <Target className="h-5 w-5 text-amber-600" />
+            <h2 className="text-lg font-semibold text-gray-900">365 Sunsets (One-Year Strategic Goals)</h2>
           </div>
           <span className="text-sm text-gray-500">{oneYearGoals.length} goals</span>
         </div>
@@ -235,39 +234,26 @@ const StrategicGoals: React.FC = () => {
             ))}
           </div>
         ) : (
-          <p className="text-gray-500 italic">No one-year goals set. Complete onboarding to add your goals.</p>
+          <p className="text-gray-500 italic">No one-year strategic goals set. Complete onboarding to add your goals.</p>
         )}
       </div>
 
-      {/* Twelve-Week Goals Section */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center space-x-2">
-            <Target className="h-5 w-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-900">84 Days of Action (12-Week Goals)</h2>
+      {/* Note about 12-Week Goals */}
+      <div className="bg-blue-50 border border-blue-200 rounded-md p-4">
+        <div className="flex">
+          <div className="flex-shrink-0">
+            <Calendar className="h-5 w-5 text-blue-400" />
           </div>
-          <span className="text-sm text-gray-500">{twelveWeekGoals.length} goals</span>
+          <div className="ml-3">
+            <h3 className="text-sm font-medium text-blue-800">12-Week Goals</h3>
+            <div className="mt-2 text-sm text-blue-700">
+              <p>
+                Your 12-week operational goals are managed in the <strong>12 Week Cycle</strong> section. 
+                These tactical goals help you execute on your strategic vision above.
+              </p>
+            </div>
+          </div>
         </div>
-
-        {twelveWeekGoals.length > 0 ? (
-          <div className="space-y-3">
-            {twelveWeekGoals.map((goal, index) => (
-              <div key={goal.id} className="flex items-start space-x-3 p-3 bg-blue-50 rounded-md">
-                <span className="flex-shrink-0 w-6 h-6 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center text-sm font-medium">
-                  {index + 1}
-                </span>
-                <div className="flex-1">
-                  <p className="text-gray-900">{goal.goal_text}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    Created: {formatDate(goal.created_at)}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-gray-500 italic">No 12-week goals set. Complete onboarding to add your goals.</p>
-        )}
       </div>
 
       {/* Onboarding Context Section */}
