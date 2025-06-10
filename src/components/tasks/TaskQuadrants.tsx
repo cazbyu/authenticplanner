@@ -231,7 +231,10 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   const urgentNotImportant = sortTasks(tasks.filter(task => task.is_urgent && !task.is_important));
   const notUrgentNotImportant = sortTasks(tasks.filter(task => !task.is_urgent && !task.is_important));
 
-  const TaskCard: React.FC<{ task: Task }> = ({ task }) => {
+  // For date sorting, combine all tasks and sort chronologically
+  const allTasksSorted = sortBy === 'date' ? sortTasks(tasks) : [];
+
+  const TaskCard: React.FC<{ task: QuadrantTask; showPriorityBadge?: boolean }> = ({ task, showPriorityBadge = false }) => {
     const dateTimeDisplay = formatTaskDateTime(task.due_date, task.start_time);
     const isMobile = isMobileDevice();
     
@@ -251,6 +254,21 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
         event.stopPropagation();
         handleTaskEdit(task);
       }
+    };
+
+    // Get priority badge color based on urgency/importance
+    const getPriorityBadgeColor = () => {
+      if (task.is_urgent && task.is_important) return 'bg-red-100 text-red-800';
+      if (!task.is_urgent && task.is_important) return 'bg-green-100 text-green-800';
+      if (task.is_urgent && !task.is_important) return 'bg-yellow-100 text-yellow-800';
+      return 'bg-gray-100 text-gray-800';
+    };
+
+    const getPriorityLabel = () => {
+      if (task.is_urgent && task.is_important) return 'Urgent & Important';
+      if (!task.is_urgent && task.is_important) return 'Important';
+      if (task.is_urgent && !task.is_important) return 'Urgent';
+      return 'Low Priority';
     };
     
     return (
@@ -277,6 +295,14 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
               <div className="flex items-center mt-1 text-xs text-gray-400">
                 <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
                 <span>No date set</span>
+              </div>
+            )}
+            {/* Show priority badge when sorting by date */}
+            {showPriorityBadge && (
+              <div className="mt-1">
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium ${getPriorityBadgeColor()}`}>
+                  {getPriorityLabel()}
+                </span>
               </div>
             )}
             {/* Show priority if sorting by priority and priority exists */}
@@ -403,6 +429,32 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     );
   };
 
+  // Group tasks by date for date sorting view
+  const groupTasksByDate = (tasks: QuadrantTask[]) => {
+    const grouped: { [key: string]: QuadrantTask[] } = {};
+    
+    tasks.forEach(task => {
+      let dateKey = 'No Date';
+      if (task.due_date) {
+        try {
+          const date = parseISO(task.due_date);
+          if (isValid(date)) {
+            dateKey = format(date, 'yyyy-MM-dd');
+          }
+        } catch (error) {
+          console.warn('Error parsing date:', error);
+        }
+      }
+      
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+      }
+      grouped[dateKey].push(task);
+    });
+    
+    return grouped;
+  };
+
   if (loading) {
     return (
       <div className="flex h-full items-center justify-center">
@@ -418,7 +470,11 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
           <div>
             <h2 className="text-2xl font-bold text-gray-900">Task Priorities</h2>
             <p className="text-gray-600 mt-1">
-              Organize your tasks by urgency and importance • {isMobileDevice() ? 'Tap' : 'Double-click'} to edit
+              {sortBy === 'date' 
+                ? 'All tasks sorted chronologically • ' 
+                : 'Organize your tasks by urgency and importance • '
+              }
+              {isMobileDevice() ? 'Tap' : 'Double-click'} to edit
             </p>
           </div>
           
@@ -440,88 +496,125 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
         </div>
       </div>
 
-      {/* Desktop: 2x2 Grid with proper scrolling */}
+      {/* Content Area */}
       <div className="flex-1 min-h-0 px-6 pb-6">
-        <div className="hidden md:grid md:grid-cols-2 gap-4 h-full">
-          {/* Urgent & Important */}
-          <QuadrantSection
-            id="urgent-important"
-            title="Urgent & Important"
-            tasks={urgentImportant}
-            bgColor="bg-red-500"
-            textColor="text-white"
-            icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
-          />
+        {sortBy === 'date' ? (
+          /* Date Sorting View - Single chronological list */
+          <div className="space-y-6 h-full overflow-y-auto">
+            {(() => {
+              const groupedTasks = groupTasksByDate(allTasksSorted);
+              const sortedDateKeys = Object.keys(groupedTasks).sort((a, b) => {
+                if (a === 'No Date') return 1;
+                if (b === 'No Date') return -1;
+                return new Date(a).getTime() - new Date(b).getTime();
+              });
 
-          {/* Not Urgent & Important */}
-          <QuadrantSection
-            id="not-urgent-important"
-            title="Not Urgent & Important"
-            tasks={notUrgentImportant}
-            bgColor="bg-green-500"
-            textColor="text-white"
-            icon={<Check className="h-4 w-4 flex-shrink-0" />}
-          />
+              return sortedDateKeys.map(dateKey => {
+                const dateTasks = groupedTasks[dateKey];
+                const displayDate = dateKey === 'No Date' ? 'No Date' : format(new Date(dateKey), 'EEEE, MMMM d, yyyy');
+                
+                return (
+                  <div key={dateKey} className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                      <Clock className="h-5 w-5 mr-2 text-gray-500" />
+                      {displayDate}
+                      <span className="ml-2 text-sm font-normal text-gray-500">({dateTasks.length} tasks)</span>
+                    </h3>
+                    <div className="grid gap-3">
+                      {dateTasks.map(task => (
+                        <TaskCard key={task.id} task={task} showPriorityBadge={true} />
+                      ))}
+                    </div>
+                  </div>
+                );
+              });
+            })()}
+          </div>
+        ) : (
+          /* Priority Sorting View - Quadrant layout */
+          <div className="hidden md:grid md:grid-cols-2 gap-4 h-full">
+            {/* Urgent & Important */}
+            <QuadrantSection
+              id="urgent-important"
+              title="Urgent & Important"
+              tasks={urgentImportant}
+              bgColor="bg-red-500"
+              textColor="text-white"
+              icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+            />
 
-          {/* Urgent & Not Important */}
-          <QuadrantSection
-            id="urgent-not-important"
-            title="Urgent & Not Important"
-            tasks={urgentNotImportant}
-            bgColor="bg-yellow-500"
-            textColor="text-white"
-            icon={<Clock className="h-4 w-4 flex-shrink-0" />}
-          />
+            {/* Not Urgent & Important */}
+            <QuadrantSection
+              id="not-urgent-important"
+              title="Not Urgent & Important"
+              tasks={notUrgentImportant}
+              bgColor="bg-green-500"
+              textColor="text-white"
+              icon={<Check className="h-4 w-4 flex-shrink-0" />}
+            />
 
-          {/* Not Urgent & Not Important */}
-          <QuadrantSection
-            id="not-urgent-not-important"
-            title="Not Urgent & Not Important"
-            tasks={notUrgentNotImportant}
-            bgColor="bg-gray-500"
-            textColor="text-white"
-            icon={<X className="h-4 w-4 flex-shrink-0" />}
-          />
-        </div>
+            {/* Urgent & Not Important */}
+            <QuadrantSection
+              id="urgent-not-important"
+              title="Urgent & Not Important"
+              tasks={urgentNotImportant}
+              bgColor="bg-yellow-500"
+              textColor="text-white"
+              icon={<Clock className="h-4 w-4 flex-shrink-0" />}
+            />
 
-        {/* Mobile: Stacked Layout with scrolling */}
-        <div className="md:hidden space-y-4 h-full overflow-y-auto">
-          <QuadrantSection
-            id="urgent-important"
-            title="Urgent & Important"
-            tasks={urgentImportant}
-            bgColor="bg-red-500"
-            textColor="text-white"
-            icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
-          />
+            {/* Not Urgent & Not Important */}
+            <QuadrantSection
+              id="not-urgent-not-important"
+              title="Not Urgent & Not Important"
+              tasks={notUrgentNotImportant}
+              bgColor="bg-gray-500"
+              textColor="text-white"
+              icon={<X className="h-4 w-4 flex-shrink-0" />}
+            />
+          </div>
+        )}
 
-          <QuadrantSection
-            id="not-urgent-important"
-            title="Not Urgent & Important"
-            tasks={notUrgentImportant}
-            bgColor="bg-green-500"
-            textColor="text-white"
-            icon={<Check className="h-4 w-4 flex-shrink-0" />}
-          />
+        {/* Mobile: Stacked Layout for priority view */}
+        {sortBy === 'priority' && (
+          <div className="md:hidden space-y-4 h-full overflow-y-auto">
+            <QuadrantSection
+              id="urgent-important"
+              title="Urgent & Important"
+              tasks={urgentImportant}
+              bgColor="bg-red-500"
+              textColor="text-white"
+              icon={<AlertTriangle className="h-4 w-4 flex-shrink-0" />}
+            />
 
-          <QuadrantSection
-            id="urgent-not-important"
-            title="Urgent & Not Important"
-            tasks={urgentNotImportant}
-            bgColor="bg-yellow-500"
-            textColor="text-white"
-            icon={<Clock className="h-4 w-4 flex-shrink-0" />}
-          />
+            <QuadrantSection
+              id="not-urgent-important"
+              title="Not Urgent & Important"
+              tasks={notUrgentImportant}
+              bgColor="bg-green-500"
+              textColor="text-white"
+              icon={<Check className="h-4 w-4 flex-shrink-0" />}
+            />
 
-          <QuadrantSection
-            id="not-urgent-not-important"
-            title="Not Urgent & Not Important"
-            tasks={notUrgentNotImportant}
-            bgColor="bg-gray-500"
-            textColor="text-white"
-            icon={<X className="h-4 w-4 flex-shrink-0" />}
-          />
-        </div>
+            <QuadrantSection
+              id="urgent-not-important"
+              title="Urgent & Not Important"
+              tasks={urgentNotImportant}
+              bgColor="bg-yellow-500"
+              textColor="text-white"
+              icon={<Clock className="h-4 w-4 flex-shrink-0" />}
+            />
+
+            <QuadrantSection
+              id="not-urgent-not-important"
+              title="Not Urgent & Not Important"
+              tasks={notUrgentNotImportant}
+              bgColor="bg-gray-500"
+              textColor="text-white"
+              icon={<X className="h-4 w-4 flex-shrink-0" />}
+            />
+          </div>
+        )}
       </div>
 
       {/* Edit Task Modal */}
