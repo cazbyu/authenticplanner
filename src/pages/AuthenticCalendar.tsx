@@ -24,7 +24,7 @@ const AuthenticCalendar: React.FC = () => {
   const [prioritiesCollapsed, setPrioritiesCollapsed] = useState(false);
   const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<'roles' | 'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
-  const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('calendar');
+  const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('tasks'); // Changed default to 'tasks'
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const calendarRef = useRef<FullCalendar | null>(null);
   const [isViewChanging, setIsViewChanging] = useState(false);
@@ -403,8 +403,19 @@ const AuthenticCalendar: React.FC = () => {
             </div>
           </div>
 
-          {/* Calendar/Tasks Toggle - Icon Only */}
+          {/* Tasks/Calendar Toggle - Updated labels and default */}
           <div className="flex items-center bg-gray-100 rounded-full p-1">
+            <button
+              onClick={() => setActiveView('tasks')}
+              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                activeView === 'tasks'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Task Priorities View"
+            >
+              <CheckSquare className="h-4 w-4" />
+            </button>
             <button
               onClick={() => setActiveView('calendar')}
               className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
@@ -415,17 +426,6 @@ const AuthenticCalendar: React.FC = () => {
               title="Calendar View"
             >
               <CalendarIcon className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setActiveView('tasks')}
-              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
-                activeView === 'tasks'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Tasks View"
-            >
-              <CheckSquare className="h-4 w-4" />
             </button>
           </div>
 
@@ -499,7 +499,13 @@ const AuthenticCalendar: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {activeView === 'calendar' ? (
+        {activeView === 'tasks' ? (
+          /* Task Priorities View - Now the default */
+          <div className="flex-1 overflow-hidden" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
+            <TaskQuadrants refreshTrigger={refreshTrigger} />
+          </div>
+        ) : (
+          /* Calendar View - Now secondary */
           <>
             {/* Left Sidebar - Unscheduled Priorities with collapse functionality */}
             <div className={`${prioritiesCollapsed ? 'w-16' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200 flex-shrink-0`}>
@@ -575,10 +581,6 @@ const AuthenticCalendar: React.FC = () => {
               />
             </div>
           </>
-        ) : (
-          <div className="flex-1 overflow-hidden" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
-            <TaskQuadrants refreshTrigger={refreshTrigger} />
-          </div>
         )}
       </div>
 
