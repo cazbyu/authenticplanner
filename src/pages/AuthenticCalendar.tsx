@@ -501,7 +501,7 @@ const AuthenticCalendar: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {activeView === 'tasks' ? (
           /* Task Priorities View - Now the default */
-          <div className="flex-1 overflow-hidden" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
+          <div className="flex-1 overflow-hidden\" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
             <TaskQuadrants refreshTrigger={refreshTrigger} />
           </div>
         ) : (
