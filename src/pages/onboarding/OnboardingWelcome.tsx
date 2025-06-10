@@ -41,7 +41,7 @@ const OnboardingWelcome: React.FC = () => {
             <div>
               <h3 className="text-lg font-medium text-gray-900">Role-Based Living</h3>
               <p className="mt-1 text-sm text-gray-600">
-                Define your life roles and align your actions to what matters most in each area of your authentic self.
+                Roles support relationships that contribute to your purpose and meaning. Invest authentically!
               </p>
             </div>
           </div>
@@ -51,9 +51,9 @@ const OnboardingWelcome: React.FC = () => {
               <Star className="h-5 w-5 text-accent-600" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900">Balance-Focused Wellness</h3>
+              <h3 className="text-lg font-medium text-gray-900">Balance-Focused</h3>
               <p className="mt-1 text-sm text-gray-600">
-                Track your activities across 8 domains: Physical, Emotional, Intellectual, Spiritual, Financial, Social, Recreational, and Community.
+                Create Balance in 8 domains of personal wellness: Physical, Emotional, Intellectual, Spiritual, Financial, Social, Recreational, and Community.
               </p>
             </div>
           </div>
@@ -63,9 +63,9 @@ const OnboardingWelcome: React.FC = () => {
               <Target className="h-5 w-5 text-success-600" />
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900">Goal-Driven Strategic Rhythms</h3>
+              <h3 className="text-lg font-medium text-gray-900">Goal-Driven</h3>
               <p className="mt-1 text-sm text-gray-600">
-                From 5-year vision to daily execution, organize your life in meaningful cycles that drive intentional progress.
+                If "Time is the stuff life is made of" (Benjamin Franklin) then let's be intentional with how we spend our time!
               </p>
             </div>
           </div>
