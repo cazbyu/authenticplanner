@@ -275,38 +275,8 @@ const TwelveWeekCycle: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50">
-        {/* Mobile header */}
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-4 shadow-sm md:px-6 lg:hidden">
-          <button 
-            onClick={toggleMainSidebar}
-            className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
-            aria-label="Toggle menu"
-          >
-            <Menu className="h-6 w-6" />
-          </button>
-          
-          <div className="flex items-center space-x-2">
-            <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
-            <span className="text-lg font-bold text-primary-600">12 Week Cycle</span>
-          </div>
-          
-          <button
-            onClick={() => setActiveDrawer(activeDrawer ? null : 'roles')}
-            className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
-            aria-label="Toggle navigation"
-          >
-            <div className="h-7 w-7 bg-blue-100 rounded-full flex items-center justify-center">
-              <span className="text-xs font-medium text-blue-600">
-                {user?.name?.charAt(0) || 'U'}
-              </span>
-            </div>
-          </button>
-        </header>
-
-        <div className="flex h-64 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
-        </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
       </div>
     );
   }
@@ -401,34 +371,6 @@ const TwelveWeekCycle: React.FC = () => {
           </div>
         </div>
       </motion.aside>
-
-      {/* Mobile header */}
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-4 shadow-sm md:px-6 lg:hidden">
-        <button 
-          onClick={toggleMainSidebar}
-          className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
-          aria-label="Toggle menu"
-        >
-          <Menu className="h-6 w-6" />
-        </button>
-        
-        <div className="flex items-center space-x-2">
-          <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
-          <span className="text-lg font-bold text-primary-600">12 Week Cycle</span>
-        </div>
-        
-        <button
-          onClick={() => setActiveDrawer(activeDrawer ? null : 'roles')}
-          className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
-          aria-label="Toggle navigation"
-        >
-          <div className="h-7 w-7 bg-blue-100 rounded-full flex items-center justify-center">
-            <span className="text-xs font-medium text-blue-600">
-              {user?.name?.charAt(0) || 'U'}
-            </span>
-          </div>
-        </button>
-      </header>
 
       {/* GLOBAL FLOATING DRESSER - Desktop Navigation Bar */}
       <div className="fixed top-1/2 right-0 transform -translate-y-1/2 z-30 hidden lg:block">
