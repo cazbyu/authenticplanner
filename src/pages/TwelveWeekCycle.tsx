@@ -7,7 +7,7 @@ import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
 import WeeklyGoalForm from '../components/goals/WeeklyGoalForm';
 import WeeklyGoalEditForm from '../components/goals/WeeklyGoalEditForm';
 import { supabase } from '../supabaseClient';
-import { format, addWeeks, startOfWeek, differenceInDays, isWithinInterval } from 'date-fns';
+import { format, addWeeks, differenceInDays } from 'date-fns';
 import logo from '../assets/logo.svg';
 
 // Import drawer content components
@@ -66,11 +66,14 @@ interface WeeklyTask {
 }
 
 interface CycleInfo {
-  name: string;
+  id: string;
+  cycle_label: string;
+  title?: string;
   start_date: Date;
   end_date: Date;
   reflection_start: Date;
   reflection_end: Date;
+  is_active: boolean;
 }
 
 const TwelveWeekCycle: React.FC = () => {
@@ -91,14 +94,8 @@ const TwelveWeekCycle: React.FC = () => {
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
   const [selectedWeeks, setSelectedWeeks] = useState<Record<string, number>>({});
   
-  // Cycle information
-  const [cycleInfo, setCycleInfo] = useState<CycleInfo>({
-    name: 'Spring 2025 Cycle',
-    start_date: new Date('2025-01-06'), // Monday of first week
-    end_date: new Date('2025-03-31'), // End of 12 weeks
-    reflection_start: new Date('2025-04-01'), // Week 13 start
-    reflection_end: new Date('2025-04-07'), // Week 13 end
-  });
+  // Cycle information - now loaded from database
+  const [cycleInfo, setCycleInfo] = useState<CycleInfo | null>(null);
   
   // Navigation state
   const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
@@ -106,11 +103,86 @@ const TwelveWeekCycle: React.FC = () => {
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
 
   useEffect(() => {
-    fetchGoals();
+    fetchCycleInfo();
   }, []);
+
+  useEffect(() => {
+    if (cycleInfo) {
+      fetchGoals();
+    }
+  }, [cycleInfo]);
+
+  // Fetch current active cycle from database
+  const fetchCycleInfo = async () => {
+    try {
+      const { data: cycles, error } = await supabase
+        .from('0007-ap-global-cycles')
+        .select('*')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.error('Error fetching cycle info:', error);
+        // Fallback to default cycle if database fetch fails
+        setCycleInfo({
+          id: 'default',
+          cycle_label: 'Spring 2025 Cycle',
+          title: 'Spring 2025 Cycle',
+          start_date: new Date('2025-01-06'),
+          end_date: new Date('2025-03-31'),
+          reflection_start: new Date('2025-04-01'),
+          reflection_end: new Date('2025-04-07'),
+          is_active: true
+        });
+        return;
+      }
+
+      if (cycles && cycles.length > 0) {
+        const cycle = cycles[0];
+        setCycleInfo({
+          id: cycle.id,
+          cycle_label: cycle.cycle_label || 'Current Cycle',
+          title: cycle.title || cycle.cycle_label || 'Current Cycle',
+          start_date: new Date(cycle.start_date),
+          end_date: new Date(cycle.end_date),
+          reflection_start: new Date(cycle.reflection_start),
+          reflection_end: new Date(cycle.reflection_end),
+          is_active: cycle.is_active
+        });
+      } else {
+        // No active cycle found, use default
+        setCycleInfo({
+          id: 'default',
+          cycle_label: 'Spring 2025 Cycle',
+          title: 'Spring 2025 Cycle',
+          start_date: new Date('2025-01-06'),
+          end_date: new Date('2025-03-31'),
+          reflection_start: new Date('2025-04-01'),
+          reflection_end: new Date('2025-04-07'),
+          is_active: true
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching cycle info:', error);
+      // Fallback to default cycle
+      setCycleInfo({
+        id: 'default',
+        cycle_label: 'Spring 2025 Cycle',
+        title: 'Spring 2025 Cycle',
+        start_date: new Date('2025-01-06'),
+        end_date: new Date('2025-03-31'),
+        reflection_start: new Date('2025-04-01'),
+        reflection_end: new Date('2025-04-07'),
+        is_active: true
+      });
+    }
+  };
 
   // Calculate current week and days remaining
   const getCurrentWeek = () => {
+    if (!cycleInfo) return 1;
+    
     const today = new Date();
     const cycleStart = cycleInfo.start_date;
     const cycleEnd = cycleInfo.end_date;
@@ -123,13 +195,18 @@ const TwelveWeekCycle: React.FC = () => {
   };
 
   const getDaysRemaining = () => {
+    if (!cycleInfo) return 0;
+    
     const today = new Date();
     const cycleEnd = cycleInfo.reflection_end;
     return Math.max(0, differenceInDays(cycleEnd, today));
   };
 
   const getWeekStartDate = (weekNumber: number) => {
+    if (!cycleInfo) return new Date();
+    
     if (weekNumber === 13) return cycleInfo.reflection_start;
+    // Week start dates: start_date + (weekNumber - 1) * 7 days
     return addWeeks(cycleInfo.start_date, weekNumber - 1);
   };
 
@@ -340,16 +417,20 @@ const TwelveWeekCycle: React.FC = () => {
     ? drawerItems.find(item => item.id === activeDrawer)?.component 
     : null;
 
-  const currentWeek = getCurrentWeek();
-  const daysRemaining = getDaysRemaining();
-
-  if (loading) {
+  // Don't render until we have cycle info
+  if (loading || !cycleInfo) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
+        <div className="text-center">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading cycle information...</p>
+        </div>
       </div>
     );
   }
+
+  const currentWeek = getCurrentWeek();
+  const daysRemaining = getDaysRemaining();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -566,10 +647,10 @@ const TwelveWeekCycle: React.FC = () => {
       {/* Main content */}
       <main className="lg:pl-0" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 md:px-8">
-          {/* Enhanced Header with Cycle Info */}
+          {/* Enhanced Header with Real Cycle Info */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">12 Week Goals</h1>
-            <p className="text-lg text-gray-600 mt-2">{cycleInfo.name}</p>
+            <p className="text-lg text-gray-600 mt-2">{cycleInfo.title || cycleInfo.cycle_label}</p>
             <p className="text-sm text-teal-600 mt-1 font-medium">
               {daysRemaining} days remain in the current cycle
             </p>
@@ -595,7 +676,7 @@ const TwelveWeekCycle: React.FC = () => {
               <div className="flex items-center space-x-2">
                 <Target className="h-6 w-6 text-teal-600" />
                 <h2 className="text-xl font-semibold text-gray-900">
-                  {cycleInfo.name} Goals ({daysRemaining} Days Remain)
+                  {cycleInfo.title || cycleInfo.cycle_label} Goals ({daysRemaining} Days Remain)
                 </h2>
               </div>
               <button
