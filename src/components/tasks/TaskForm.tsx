@@ -42,6 +42,9 @@ interface TaskFormProps {
   availableDomains?: Domain[];
   onTaskCreated?: () => void;
   initialFormData?: Partial<TaskFormValues>;
+  // Legacy props for compatibility
+  onSave?: (taskData: any) => void;
+  onDelete?: () => void;
 }
 
 const TaskForm: React.FC<TaskFormProps> = ({ 
@@ -49,7 +52,10 @@ const TaskForm: React.FC<TaskFormProps> = ({
   availableRoles, 
   availableDomains, 
   onTaskCreated,
-  initialFormData = {}
+  initialFormData = {},
+  // Legacy props
+  onSave,
+  onDelete
 }) => {
   const [userId, setUserId] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
@@ -425,8 +431,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
       toast.success("Task created successfully!");
 
+      // Handle both new and legacy callback patterns
       if (onTaskCreated) {
         onTaskCreated();
+      } else if (onSave) {
+        onSave(taskRow);
       } else if (onClose) {
         onClose();
       }
@@ -436,6 +445,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setError("An unexpected error occurred while creating the task.");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Handle close/cancel action
+  const handleClose = () => {
+    if (onClose) {
+      onClose();
+    } else if (onDelete) {
+      onDelete();
     }
   };
 
@@ -450,19 +468,18 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-xl overflow-hidden" style={{ maxHeight: '450px' }}>
-      {/* Compact Header */}
+      {/* Compact Header with Close Button */}
       <div className="flex justify-between items-center p-3 border-b border-gray-200">
         <h3 className="text-sm font-medium text-gray-900">New Task</h3>
-        {onClose && (
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 p-1"
-            aria-label="Close form"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        )}
+        <button
+          type="button"
+          onClick={handleClose}
+          className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full transition-colors"
+          aria-label="Close form"
+          title="Close"
+        >
+          <X className="h-4 w-4" />
+        </button>
       </div>
 
       {/* Scrollable Content */}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Target, Calendar, Clock, ChevronDown, ChevronUp, CheckSquare, Edit3 } from 'lucide-react';
+import { Plus, Target, Calendar, Clock, ChevronDown, ChevronUp, CheckSquare, Edit3, Trash2, X } from 'lucide-react';
 import TaskForm from '../components/tasks/TaskForm';
 import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
 import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
@@ -7,6 +7,7 @@ import WeeklyGoalForm from '../components/goals/WeeklyGoalForm';
 import WeeklyGoalEditForm from '../components/goals/WeeklyGoalEditForm';
 import { format, differenceInDays, addWeeks, parseISO, differenceInWeeks, startOfWeek, endOfWeek } from 'date-fns';
 import { supabase } from '../supabaseClient';
+import { toast } from 'sonner';
 
 interface WeekBoxProps {
   weekNumber: number;
@@ -25,7 +26,7 @@ interface CycleData {
 
 interface WeeklyGoal {
   id: string;
-  goal_text: string;
+  goal_id: string;
   week_number: number;
   title: string;
   description?: string;
@@ -352,6 +353,34 @@ const TwelveWeekCycle: React.FC = () => {
     setShowWeeklyGoalEditForm(true);
   };
 
+  const handleDeleteWeeklyGoal = async (weeklyGoal: WeeklyGoal, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering edit modal
+    
+    if (!confirm(`Are you sure you want to delete the weekly goal "${weeklyGoal.title}"?`)) {
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from('0007-ap-goal_weekly_goals')
+        .delete()
+        .eq('id', weeklyGoal.id);
+
+      if (error) {
+        console.error('Error deleting weekly goal:', error);
+        toast.error('Failed to delete weekly goal');
+        return;
+      }
+
+      toast.success('Weekly goal deleted successfully');
+      // Refresh weekly goals for all goals
+      fetchWeeklyGoals(twelveWeekGoals.map(g => g.id));
+    } catch (err) {
+      console.error('Error deleting weekly goal:', err);
+      toast.error('An error occurred while deleting the weekly goal');
+    }
+  };
+
   const handleAddWeeklyGoal = (goalId: string) => {
     const goal = twelveWeekGoals.find(g => g.id === goalId);
     const selectedWeek = selectedWeekByGoal[goalId] || currentWeek || 11;
@@ -627,6 +656,15 @@ const TwelveWeekCycle: React.FC = () => {
                                       <span>Progress: {weeklyGoal.progress}%</span>
                                     </div>
                                   </div>
+                                  
+                                  {/* Delete button for weekly goal */}
+                                  <button
+                                    onClick={(e) => handleDeleteWeeklyGoal(weeklyGoal, e)}
+                                    className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                                    title="Delete weekly goal"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </button>
                                 </div>
 
                                 {/* Weekly Tasks Section - ONLY SHOW UNDER WEEKLY GOALS */}
