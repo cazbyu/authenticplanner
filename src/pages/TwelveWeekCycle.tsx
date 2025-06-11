@@ -7,7 +7,8 @@ import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
 import WeeklyGoalForm from '../components/goals/WeeklyGoalForm';
 import WeeklyGoalEditForm from '../components/goals/WeeklyGoalEditForm';
 import { supabase } from '../supabaseClient';
-import { format, addWeeks, differenceInDays } from 'date-fns';
+import { format, addWeeks, differenceInDays, parseISO, startOfDay } from 'date-fns';
+import { zonedTimeToUtc, utcToZonedTime } from 'date-fns-tz';
 import logo from '../assets/logo.svg';
 
 // Import drawer content components
@@ -94,13 +95,36 @@ const TwelveWeekCycle: React.FC = () => {
   const [expandedGoals, setExpandedGoals] = useState<Record<string, boolean>>({});
   const [selectedWeeks, setSelectedWeeks] = useState<Record<string, number>>({});
   
-  // Cycle information - now loaded from database
+  // Cycle information - now loaded from database with timezone awareness
   const [cycleInfo, setCycleInfo] = useState<CycleInfo | null>(null);
   
   // Navigation state
   const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<'roles' | 'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
+
+  // Get user's timezone (fallback to UTC if not available)
+  const getUserTimezone = () => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return 'UTC';
+    }
+  };
+
+  // Parse database date string to local timezone Date object
+  const parseDbDate = (dateString: string): Date => {
+    if (!dateString) return new Date();
+    
+    const userTimezone = getUserTimezone();
+    
+    // Parse the date string as if it's in the user's timezone
+    // This assumes the database stores dates in the user's local timezone
+    const parsedDate = parseISO(dateString);
+    
+    // Convert to user's timezone for display
+    return utcToZonedTime(parsedDate, userTimezone);
+  };
 
   useEffect(() => {
     fetchCycleInfo();
@@ -112,7 +136,7 @@ const TwelveWeekCycle: React.FC = () => {
     }
   }, [cycleInfo]);
 
-  // Fetch current active cycle from database
+  // Fetch current active cycle from database with timezone handling
   const fetchCycleInfo = async () => {
     try {
       const { data: cycles, error } = await supabase
@@ -129,10 +153,10 @@ const TwelveWeekCycle: React.FC = () => {
           id: 'default',
           cycle_label: 'Spring 2025 Cycle',
           title: 'Spring 2025 Cycle',
-          start_date: new Date('2025-01-06'),
-          end_date: new Date('2025-03-31'),
-          reflection_start: new Date('2025-04-01'),
-          reflection_end: new Date('2025-04-07'),
+          start_date: parseDbDate('2025-03-30'),
+          end_date: parseDbDate('2025-06-21'),
+          reflection_start: parseDbDate('2025-06-22'),
+          reflection_end: parseDbDate('2025-06-28'),
           is_active: true
         });
         return;
@@ -144,68 +168,80 @@ const TwelveWeekCycle: React.FC = () => {
           id: cycle.id,
           cycle_label: cycle.cycle_label || 'Current Cycle',
           title: cycle.title || cycle.cycle_label || 'Current Cycle',
-          start_date: new Date(cycle.start_date),
-          end_date: new Date(cycle.end_date),
-          reflection_start: new Date(cycle.reflection_start),
-          reflection_end: new Date(cycle.reflection_end),
+          start_date: parseDbDate(cycle.start_date),
+          end_date: parseDbDate(cycle.end_date),
+          reflection_start: parseDbDate(cycle.reflection_start),
+          reflection_end: parseDbDate(cycle.reflection_end),
           is_active: cycle.is_active
         });
       } else {
-        // No active cycle found, use default
+        // No active cycle found, use default with your actual dates
         setCycleInfo({
           id: 'default',
           cycle_label: 'Spring 2025 Cycle',
           title: 'Spring 2025 Cycle',
-          start_date: new Date('2025-01-06'),
-          end_date: new Date('2025-03-31'),
-          reflection_start: new Date('2025-04-01'),
-          reflection_end: new Date('2025-04-07'),
+          start_date: parseDbDate('2025-03-30'),
+          end_date: parseDbDate('2025-06-21'),
+          reflection_start: parseDbDate('2025-06-22'),
+          reflection_end: parseDbDate('2025-06-28'),
           is_active: true
         });
       }
     } catch (error) {
       console.error('Error fetching cycle info:', error);
-      // Fallback to default cycle
+      // Fallback to default cycle with your actual dates
       setCycleInfo({
         id: 'default',
         cycle_label: 'Spring 2025 Cycle',
         title: 'Spring 2025 Cycle',
-        start_date: new Date('2025-01-06'),
-        end_date: new Date('2025-03-31'),
-        reflection_start: new Date('2025-04-01'),
-        reflection_end: new Date('2025-04-07'),
+        start_date: parseDbDate('2025-03-30'),
+        end_date: parseDbDate('2025-06-21'),
+        reflection_start: parseDbDate('2025-06-22'),
+        reflection_end: parseDbDate('2025-06-28'),
         is_active: true
       });
     }
   };
 
-  // Calculate current week and days remaining
+  // Calculate current week with timezone awareness
   const getCurrentWeek = () => {
     if (!cycleInfo) return 1;
     
-    const today = new Date();
-    const cycleStart = cycleInfo.start_date;
-    const cycleEnd = cycleInfo.end_date;
+    const userTimezone = getUserTimezone();
+    const today = utcToZonedTime(new Date(), userTimezone);
+    const todayStart = startOfDay(today);
     
-    if (today < cycleStart) return 0; // Before cycle starts
-    if (today > cycleEnd) return 13; // In reflection week or after
+    const cycleStart = startOfDay(cycleInfo.start_date);
+    const cycleEnd = startOfDay(cycleInfo.end_date);
+    const reflectionStart = startOfDay(cycleInfo.reflection_start);
     
-    const weeksDiff = Math.floor((today.getTime() - cycleStart.getTime()) / (7 * 24 * 60 * 60 * 1000));
+    if (todayStart < cycleStart) return 0; // Before cycle starts
+    if (todayStart >= reflectionStart) return 13; // In reflection week
+    if (todayStart > cycleEnd) return 13; // After cycle ends
+    
+    const daysDiff = differenceInDays(todayStart, cycleStart);
+    const weeksDiff = Math.floor(daysDiff / 7);
     return Math.min(weeksDiff + 1, 12); // Weeks 1-12
   };
 
+  // Calculate days remaining with timezone awareness
   const getDaysRemaining = () => {
     if (!cycleInfo) return 0;
     
-    const today = new Date();
-    const cycleEnd = cycleInfo.reflection_end;
-    return Math.max(0, differenceInDays(cycleEnd, today));
+    const userTimezone = getUserTimezone();
+    const today = utcToZonedTime(new Date(), userTimezone);
+    const todayStart = startOfDay(today);
+    const cycleEnd = startOfDay(cycleInfo.reflection_end);
+    
+    return Math.max(0, differenceInDays(cycleEnd, todayStart));
   };
 
+  // Get week start date with timezone awareness
   const getWeekStartDate = (weekNumber: number) => {
     if (!cycleInfo) return new Date();
     
     if (weekNumber === 13) return cycleInfo.reflection_start;
+    
     // Week start dates: start_date + (weekNumber - 1) * 7 days
     return addWeeks(cycleInfo.start_date, weekNumber - 1);
   };
@@ -647,7 +683,7 @@ const TwelveWeekCycle: React.FC = () => {
       {/* Main content */}
       <main className="lg:pl-0" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
         <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 md:px-8">
-          {/* Enhanced Header with Real Cycle Info */}
+          {/* Enhanced Header with Real Cycle Info and Timezone Awareness */}
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-gray-900">12 Week Goals</h1>
             <p className="text-lg text-gray-600 mt-2">{cycleInfo.title || cycleInfo.cycle_label}</p>
