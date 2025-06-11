@@ -130,13 +130,7 @@ const MainLayout: React.FC = () => {
             <span className="text-lg font-bold text-primary-600">Authentic Planner</span>
           </div>
           
-          <button
-            onClick={toggleDrawer}
-            className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
-            aria-label="Toggle floating dresser"
-          >
-            <Drawer className="h-6 w-6" />
-          </button>
+          {/* REMOVED: Top right icon that was causing clutter */}
         </header>
       )}
       
