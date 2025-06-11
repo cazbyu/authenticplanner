@@ -348,7 +348,11 @@ const TwelveWeekCycle: React.FC = () => {
     fetchWeeklyGoals(twelveWeekGoals.map(g => g.id));
   };
 
-  const handleEditWeeklyGoal = (weeklyGoal: WeeklyGoal) => {
+  const handleEditWeeklyGoal = (weeklyGoal: WeeklyGoal, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation(); // Prevent event bubbling
+    }
+    console.log('Editing weekly goal:', weeklyGoal); // Debug log
     setEditingWeeklyGoal(weeklyGoal);
     setShowWeeklyGoalEditForm(true);
   };
@@ -635,12 +639,15 @@ const TwelveWeekCycle: React.FC = () => {
                                     <div className="flex items-center space-x-2 mb-1">
                                       <h5 
                                         className="font-medium text-gray-900 cursor-pointer hover:text-primary-600 transition-colors"
-                                        onClick={() => handleEditWeeklyGoal(weeklyGoal)}
+                                        onClick={(e) => handleEditWeeklyGoal(weeklyGoal, e)}
                                         title="Click to edit weekly goal"
                                       >
                                         {weeklyGoal.title}
                                       </h5>
-                                      <Edit3 className="h-3 w-3 text-gray-400" />
+                                      <Edit3 
+                                        className="h-3 w-3 text-gray-400 cursor-pointer hover:text-primary-600" 
+                                        onClick={(e) => handleEditWeeklyGoal(weeklyGoal, e)}
+                                      />
                                     </div>
                                     {weeklyGoal.description && (
                                       <p className="text-sm text-gray-600 mt-1">{weeklyGoal.description}</p>
@@ -800,6 +807,7 @@ const TwelveWeekCycle: React.FC = () => {
         />
       )}
 
+      {/* Weekly Goal Edit Modal - Make sure this is properly displayed */}
       {showWeeklyGoalEditForm && editingWeeklyGoal && (
         <WeeklyGoalEditForm
           weeklyGoal={editingWeeklyGoal}
