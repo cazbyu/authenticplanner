@@ -5,7 +5,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    exclude: ['lucide-react', 'date-fns-tz'],
+    exclude: ['lucide-react'],
   },
   test: {
     environment: 'jsdom',
