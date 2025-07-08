@@ -20,6 +20,8 @@ import OnboardingVision from './pages/onboarding/OnboardingVision';
 import OnboardingGoals from './pages/onboarding/OnboardingGoals';
 import OnboardingTasks from './pages/onboarding/OnboardingTasks';
 import OnboardingComplete from './pages/onboarding/OnboardingComplete';
+import DomainDashboard from './pages/DomainDashboard';
+import DomainDetail from './pages/DomainDetail';
 
 // Loading screen component
 const LoadingScreen = () => (
@@ -118,6 +120,8 @@ function App() {
         <Route index element={<AuthenticCalendar />} />
         <Route path="calendar" element={<AuthenticCalendar />} />
         <Route path="twelve-week-cycle" element={<TwelveWeekCycle />} />
+        <Route path="domains" element={<DomainDashboard />} />
+        <Route path="domains/:domainId" element={<DomainDetail />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       

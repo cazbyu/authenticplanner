@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { Menu, X, Home, Calendar, Settings, LogOut, ChevronRight, Drama as Drawer, Clock, Users, Target, BookOpen, BarChart3, Briefcase, Archive } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.svg';
@@ -49,6 +50,7 @@ const MainLayout: React.FC = () => {
   const navItems = [
     { name: 'Authentic Calendar', path: '/', icon: Calendar },
     { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: Clock },
+    { name: 'Domain Dashboard', path: '/domains', icon: Compass },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
   

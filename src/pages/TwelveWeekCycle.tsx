@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X, ChevronRight, Users, Target, BookOpen, BarChart3, Briefcase, Archive, Plus, Calendar, Clock, CheckCircle } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
 import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
@@ -393,6 +394,7 @@ const TwelveWeekCycle: React.FC = () => {
   const navItems = [
     { name: 'Authentic Calendar', path: '/', icon: 'Calendar' },
     { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: 'Clock' },
+    { name: 'Domain Dashboard', path: '/domains', icon: 'Compass' },
     { name: 'Settings', path: '/settings', icon: 'Settings' },
   ];
 

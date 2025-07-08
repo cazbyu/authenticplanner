@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Plus, ChevronLeft, ChevronRight, Menu, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase, X, Archive } from 'lucide-react';
+import { Compass } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
@@ -100,6 +101,7 @@ const AuthenticCalendar: React.FC = () => {
   const navItems = [
     { name: 'Authentic Calendar', path: '/', icon: 'Calendar' },
     { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: 'Clock' },
+    { name: 'Domain Dashboard', path: '/domains', icon: 'Compass' },
     { name: 'Settings', path: '/settings', icon: 'Settings' },
   ];
 
