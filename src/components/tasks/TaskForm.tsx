@@ -549,7 +549,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             {/* Compact Date/Time Section */}
-            <div className="flex items-center gap-2 py-1">
+            <div className="flex items-center gap-2 py-1 flex-wrap">
               {/* Compact Date Picker */}
               <div className="relative" ref={datePickerRef}>
                 <button
@@ -639,8 +639,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
                 )}
               </div>
 
-              {/* Compact Scheduling Dropdown */}
-              <div className="flex-1">
+              {/* Compact Scheduling Dropdown - Reduced Width */}
+              <div className="w-32">
                 <select
                   value={form.schedulingType}
                   onChange={(e) => handleSchedulingTypeChange(e.target.value as TaskFormValues['schedulingType'])}
@@ -653,34 +653,66 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <option value="custom">Custom</option>
                 </select>
               </div>
+
+              {/* Inline Time Selection - Only show when scheduled */}
+              {form.schedulingType === 'scheduled' && (
+                <>
+                  <div className="w-24">
+                    <select
+                      name="startTime"
+                      value={form.startTime}
+                      onChange={handleChange}
+                      className="w-full text-xs border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">Start</option>
+                      {timeOptions.map(time => (
+                        <option key={time.value} value={time.value}>{time.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="w-24">
+                    <select
+                      name="endTime"
+                      value={form.endTime}
+                      onChange={handleChange}
+                      className="w-full text-xs border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">End</option>
+                      {timeOptions.map(time => (
+                        <option key={time.value} value={time.value}>{time.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Compact Time Selection */}
-            {form.schedulingType === 'scheduled' && (
+            {/* Keep the separate time section for other scheduling types if needed */}
+            {form.schedulingType !== 'scheduled' && form.schedulingType !== 'unscheduled' && (
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-medium mb-1 text-gray-600">Start</label>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">Start time</label>
                   <select
                     name="startTime"
                     value={form.startTime}
                     onChange={handleChange}
                     className="w-full text-xs border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
-                    <option value="">Time</option>
+                    <option value="">Select time</option>
                     {timeOptions.map(time => (
                       <option key={time.value} value={time.value}>{time.label}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1 text-gray-600">End</label>
+                  <label className="block text-xs font-medium mb-1 text-gray-600">End time</label>
                   <select
                     name="endTime"
                     value={form.endTime}
                     onChange={handleChange}
                     className="w-full text-xs border border-gray-300 rounded-md px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   >
-                    <option value="">Time</option>
+                    <option value="">Select time</option>
                     {timeOptions.map(time => (
                       <option key={time.value} value={time.value}>{time.label}</option>
                     ))}
