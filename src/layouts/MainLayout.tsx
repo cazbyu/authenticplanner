@@ -8,6 +8,7 @@ import logo from '../assets/logo.svg';
 
 // Import drawer content components
 import RoleBank from '../components/roles/RoleBank';
+import RoleBankPage from '../pages/RoleBank';
 import StrategicGoals from '../pages/StrategicGoals';
 import Reflections from '../pages/Reflections';
 import Scorecard from '../pages/Scorecard';
@@ -50,18 +51,12 @@ const MainLayout: React.FC = () => {
   const navItems = [
     { name: 'Authentic Calendar', path: '/', icon: Calendar },
     { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: Clock },
+    { name: 'Role Bank', path: '/role-bank', icon: Users },
     { name: 'Domain Dashboard', path: '/domains', icon: Compass },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
   
   const drawerItems = [
-    { 
-      id: 'roles',
-      title: 'Role Bank',
-      description: 'Manage your life roles and authentic deposits',
-      icon: Users,
-      component: RoleBank
-    },
     {
       id: 'tasks',
       title: 'Tasks',

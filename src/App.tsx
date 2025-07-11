@@ -120,6 +120,7 @@ function App() {
         <Route index element={<AuthenticCalendar />} />
         <Route path="calendar" element={<AuthenticCalendar />} />
         <Route path="twelve-week-cycle" element={<TwelveWeekCycle />} />
+        <Route path="role-bank" element={<RoleBank />} />
         <Route path="domains" element={<DomainDashboard />} />
         <Route path="domains/:domainId" element={<DomainDetail />} />
         <Route path="settings" element={<Settings />} />

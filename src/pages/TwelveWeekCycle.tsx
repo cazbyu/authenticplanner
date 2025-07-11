@@ -394,18 +394,12 @@ const TwelveWeekCycle: React.FC = () => {
   const navItems = [
     { name: 'Authentic Calendar', path: '/', icon: 'Calendar' },
     { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: 'Clock' },
+    { name: 'Role Bank', path: '/role-bank', icon: 'Users' },
     { name: 'Domain Dashboard', path: '/domains', icon: 'Compass' },
     { name: 'Settings', path: '/settings', icon: 'Settings' },
   ];
 
   const drawerItems = [
-    { 
-      id: 'roles',
-      title: 'Role Bank',
-      description: 'Manage your life roles and authentic deposits',
-      icon: Users,
-      component: RoleBank
-    },
     {
       id: 'tasks',
       title: 'Tasks',
