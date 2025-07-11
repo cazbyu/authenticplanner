@@ -59,11 +59,16 @@ interface WeeklyGoal {
 interface WeeklyTask {
   id: string;
   title: string;
-  description?: string;
+  notes?: string;
   status: 'pending' | 'completed' | 'cancelled';
-  week_number: number;
-  goal_id: string;
   due_date?: string;
+  start_time?: string;
+  is_urgent: boolean;
+  is_important: boolean;
+  is_authentic_deposit: boolean;
+  is_twelve_week_goal: boolean;
+  task_roles: { role_id: string }[];
+  task_domains: { domain_id: string }[];
   created_at: string;
 }
 
@@ -82,7 +87,9 @@ const TwelveWeekCycle: React.FC = () => {
   const { user, logout } = useAuth();
   const [goals, setGoals] = useState<TwelveWeekGoal[]>([]);
   const [weeklyGoals, setWeeklyGoals] = useState<Record<string, WeeklyGoal[]>>({});
-  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, WeeklyTask[]>>({});
+  const [weeklyTasks, setWeeklyTasks] = useState<Record<string, Record<string, WeeklyTask[]>>>({});
+  const [roles, setRoles] = useState<Record<string, { id: string; label: string }>>({});
+  const [domains, setDomains] = useState<Record<string, { id: string; name: string }>>({});
   const [loading, setLoading] = useState(true);
   const [showGoalForm, setShowGoalForm] = useState(false);
   const [editingGoal, setEditingGoal] = useState<TwelveWeekGoal | null>(null);
@@ -252,6 +259,33 @@ const TwelveWeekCycle: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
+      // Fetch roles and domains for task display
+      const [rolesRes, domainsRes] = await Promise.all([
+        supabase
+          .from('0007-ap-roles')
+          .select('id, label')
+          .eq('user_id', user.id),
+        supabase
+          .from('0007-ap-domains')
+          .select('id, name')
+      ]);
+
+      if (rolesRes.data) {
+        const rolesMap = rolesRes.data.reduce((acc, role) => ({
+          ...acc,
+          [role.id]: role
+        }), {});
+        setRoles(rolesMap);
+      }
+
+      if (domainsRes.data) {
+        const domainsMap = domainsRes.data.reduce((acc, domain) => ({
+          ...acc,
+          [domain.id]: domain
+        }), {});
+        setDomains(domainsMap);
+      }
+
       // Fetch 12-week goals with their relationships
       const { data: goalsData, error: goalsError } = await supabase
         .from('0007-ap-goals_12wk_main')
@@ -283,7 +317,7 @@ const TwelveWeekCycle: React.FC = () => {
 
       // Fetch weekly goals for each 12-week goal
       const weeklyGoalsData: Record<string, WeeklyGoal[]> = {};
-      const weeklyTasksData: Record<string, WeeklyTask[]> = {};
+      const weeklyTasksData: Record<string, Record<string, WeeklyTask[]>> = {};
       
       for (const goal of transformedGoals) {
         const { data: weeklyData, error: weeklyError } = await supabase
@@ -296,8 +330,62 @@ const TwelveWeekCycle: React.FC = () => {
           weeklyGoalsData[goal.id] = weeklyData;
         }
 
-        // Fetch weekly tasks (mock data for now - you can implement this table)
-        weeklyTasksData[goal.id] = [];
+        // Fetch tasks linked to this goal
+        const { data: goalTasks, error: tasksError } = await supabase
+          .from('0007-ap-goal_tasks')
+          .select(`
+            task:0007-ap-tasks(
+              id,
+              title,
+              notes,
+              status,
+              due_date,
+              start_time,
+              is_urgent,
+              is_important,
+              is_authentic_deposit,
+              is_twelve_week_goal,
+              created_at,
+              task_roles:0007-ap-task_roles(role_id),
+              task_domains:0007-ap-task_domains(domain_id)
+            )
+          `)
+          .eq('goal_id', goal.id);
+
+        if (!tasksError && goalTasks) {
+          // Group tasks by week based on due_date
+          const tasksByWeek: Record<string, WeeklyTask[]> = {};
+          
+          goalTasks.forEach(({ task }) => {
+            if (task && task.status === 'pending') {
+              // Determine which week this task belongs to based on due_date
+              let weekKey = 'unscheduled';
+              
+              if (task.due_date && cycleInfo) {
+                const taskDate = parseDbDate(task.due_date);
+                const cycleStart = cycleInfo.start_date;
+                const daysDiff = Math.floor((taskDate.getTime() - cycleStart.getTime()) / (1000 * 60 * 60 * 24));
+                const weekNumber = Math.floor(daysDiff / 7) + 1;
+                
+                if (weekNumber >= 1 && weekNumber <= 12) {
+                  weekKey = `week-${weekNumber}`;
+                } else if (taskDate >= cycleInfo.reflection_start && taskDate <= cycleInfo.reflection_end) {
+                  weekKey = 'week-13';
+                }
+              }
+              
+              if (!tasksByWeek[weekKey]) {
+                tasksByWeek[weekKey] = [];
+              }
+              
+              tasksByWeek[weekKey].push(task as WeeklyTask);
+            }
+          });
+          
+          weeklyTasksData[goal.id] = tasksByWeek;
+        } else {
+          weeklyTasksData[goal.id] = {};
+        }
       }
 
       setWeeklyGoals(weeklyGoalsData);
@@ -376,6 +464,133 @@ const TwelveWeekCycle: React.FC = () => {
       'Community': 'bg-red-100 text-red-800 border-red-200'
     };
     return colors[domainName] || 'bg-gray-100 text-gray-800 border-gray-200';
+  };
+
+  // Helper function to categorize tasks by priority (like TaskQuadrants)
+  const categorizeTasksByPriority = (tasks: WeeklyTask[]) => {
+    return {
+      urgentImportant: tasks.filter(task => task.is_urgent && task.is_important),
+      notUrgentImportant: tasks.filter(task => !task.is_urgent && task.is_important),
+      urgentNotImportant: tasks.filter(task => task.is_urgent && !task.is_important),
+      notUrgentNotImportant: tasks.filter(task => !task.is_urgent && !task.is_important),
+    };
+  };
+
+  // Helper function to handle task actions
+  const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
+    const updates: any = {
+      status: action === 'complete' ? 'completed' : action === 'cancel' ? 'cancelled' : 'delegated',
+    };
+    
+    if (action === 'complete') {
+      updates.completed_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from('0007-ap-tasks')
+      .update(updates)
+      .eq('id', taskId);
+
+    if (!error) {
+      // Refresh goals to update task lists
+      fetchGoals();
+    }
+  };
+
+  // Task Card Component (similar to TaskQuadrants)
+  const TaskCard: React.FC<{ task: WeeklyTask; quadrantColor: string }> = ({ task, quadrantColor }) => {
+    const dateDisplay = task.due_date ? format(parseDbDate(task.due_date), 'MMM d') : null;
+    
+    return (
+      <div className={`bg-white border-l-4 ${quadrantColor} border-r border-t border-b border-gray-200 rounded-r-lg p-2 hover:shadow-md transition-all`}>
+        <div className="flex items-start justify-between mb-1">
+          <div className="flex-1 min-w-0">
+            <h4 className="font-medium text-gray-900 text-sm leading-tight">{task.title}</h4>
+            {dateDisplay && (
+              <div className="flex items-center mt-1 text-xs text-gray-600">
+                <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                <span>Due {dateDisplay}</span>
+              </div>
+            )}
+          </div>
+          <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
+            <button
+              onClick={() => handleTaskAction(task.id, 'complete')}
+              className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
+              title="Complete"
+            >
+              <CheckCircle className="h-3 w-3" />
+            </button>
+            <button
+              onClick={() => handleTaskAction(task.id, 'cancel')}
+              className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+              title="Cancel"
+            >
+              <X className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+        
+        {/* Task badges */}
+        <div className="flex flex-wrap gap-1 mb-1">
+          {task.is_authentic_deposit && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Deposit
+            </span>
+          )}
+        </div>
+
+        {/* Roles and domains - compact display */}
+        <div className="flex flex-wrap gap-1">
+          {task.task_roles?.slice(0, 1).map(({ role_id }) => (
+            roles[role_id] && (
+              <span key={role_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700 truncate max-w-16">
+                {roles[role_id].label}
+              </span>
+            )
+          ))}
+          {task.task_domains?.slice(0, 1).map(({ domain_id }) => (
+            domains[domain_id] && (
+              <span key={domain_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-purple-100 text-purple-700 truncate max-w-16">
+                {domains[domain_id].name}
+              </span>
+            )
+          ))}
+          {(task.task_roles?.length > 1 || task.task_domains?.length > 1) && (
+            <span className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-200 text-gray-600">
+              +{(task.task_roles?.length || 0) + (task.task_domains?.length || 0) - 2}
+            </span>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // Priority Quadrant Component
+  const PriorityQuadrant: React.FC<{
+    title: string;
+    tasks: WeeklyTask[];
+    bgColor: string;
+    borderColor: string;
+    textColor: string;
+    icon: React.ReactNode;
+  }> = ({ title, tasks, bgColor, borderColor, textColor, icon }) => {
+    if (tasks.length === 0) return null;
+    
+    return (
+      <div className="mb-3">
+        <div className={`${bgColor} ${textColor} px-2 py-1 rounded-t-lg flex items-center space-x-2`}>
+          {icon}
+          <span className="text-xs font-medium">{title}</span>
+          <span className="text-xs opacity-75">({tasks.length})</span>
+        </div>
+        <div className="bg-gray-50 rounded-b-lg p-2 space-y-1">
+          {tasks.map(task => (
+            <TaskCard key={task.id} task={task} quadrantColor={borderColor} />
+          ))}
+        </div>
+      </div>
+    );
   };
 
   // Navigation handlers
@@ -881,43 +1096,132 @@ const TwelveWeekCycle: React.FC = () => {
                               </button>
                             </div>
 
-                            {/* Tasks List */}
-                            <div className="space-y-2">
-                              {weeklyTasks[goal.id]?.filter(task => task.week_number === selectedWeeks[goal.id]).length > 0 ? (
-                                weeklyTasks[goal.id]
-                                  .filter(task => task.week_number === selectedWeeks[goal.id])
-                                  .map(task => (
-                                    <div key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-md">
-                                      <div className="flex items-center space-x-3">
-                                        <input
-                                          type="checkbox"
-                                          checked={task.status === 'completed'}
-                                          className="h-4 w-4 text-teal-600 rounded"
-                                          readOnly
-                                        />
-                                        <span className={`text-sm ${task.status === 'completed' ? 'line-through text-gray-500' : 'text-gray-900'}`}>
-                                          {task.title}
-                                        </span>
-                                      </div>
-                                      {task.due_date && (
-                                        <span className="text-xs text-gray-500">
-                                          Due: {format(new Date(task.due_date), 'MMM dd')}
-                                        </span>
-                                      )}
-                                    </div>
-                                  ))
-                              ) : (
+                            {/* Prioritized Tasks List */}
+                            {(() => {
+                              const weekKey = selectedWeeks[goal.id] === 13 ? 'week-13' : `week-${selectedWeeks[goal.id]}`;
+                              const weekTasks = weeklyTasks[goal.id]?.[weekKey] || [];
+                              
+                              if (weekTasks.length === 0) {
+                                return (
+                                  <div className="text-center py-6 text-gray-500">
+                                    <Calendar className="mx-auto h-8 w-8 text-gray-400 mb-2" />
+                                    <p className="text-sm">No tasks for Week {selectedWeeks[goal.id]} yet.</p>
+                                    <button
+                                      onClick={() => setShowWeeklyGoalForm({
+                                        goalId: goal.id,
+                                        weekNumber: selectedWeeks[goal.id],
+                                        domains: goal.domains,
+                                        roles: goal.roles
+                                      })}
+                                      className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+                                    >
+                                      Add your first task
+                                    </button>
+                                  </div>
+                                );
+                              }
+                              
+                              const categorizedTasks = categorizeTasksByPriority(weekTasks);
+                              
+                              return (
                                 <div className="text-center py-6 text-gray-500">
-                                  <Calendar className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-                                  <p className="text-sm">No tasks for Week {selectedWeeks[goal.id]} yet.</p>
-                                  <button
-                                    onClick={() => setShowWeeklyGoalForm({
-                                      goalId: goal.id,
-                                      weekNumber: selectedWeeks[goal.id],
-                                      domains: goal.domains,
-                                      roles: goal.roles
-                                    })}
-                                    className="mt-2 text-sm text-blue-600 hover:text-blue-700"
+                                  <div className="space-y-3">
+                                    {/* Urgent & Important */}
+                                    <PriorityQuadrant
+                                      title="Urgent & Important"
+                                      tasks={categorizedTasks.urgentImportant}
+                                      bgColor="bg-red-500"
+                                      borderColor="border-l-red-500"
+                                      textColor="text-white"
+                                      icon={<AlertTriangle className="h-3 w-3" />}
+                                    />
+
+                                    {/* Not Urgent & Important */}
+                                    <PriorityQuadrant
+                                      title="Not Urgent & Important"
+                                      tasks={categorizedTasks.notUrgentImportant}
+                                      bgColor="bg-green-500"
+                                      borderColor="border-l-green-500"
+                                      textColor="text-white"
+                                      icon={<CheckCircle className="h-3 w-3" />}
+                                    />
+
+                                    {/* Urgent & Not Important */}
+                                    <PriorityQuadrant
+                                      title="Urgent & Not Important"
+                                      tasks={categorizedTasks.urgentNotImportant}
+                                      bgColor="bg-orange-500"
+                                      borderColor="border-l-orange-500"
+                                      textColor="text-white"
+                                      icon={<Clock className="h-3 w-3" />}
+                                    />
+
+                                    {/* Not Urgent & Not Important */}
+                                    <PriorityQuadrant
+                                      title="Not Urgent & Not Important"
+                                      tasks={categorizedTasks.notUrgentNotImportant}
+                                      bgColor="bg-gray-500"
+                                      borderColor="border-l-gray-500"
+                                      textColor="text-white"
+                                      icon={<X className="h-3 w-3" />}
+                                    />
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* Modals */}
+      {showGoalForm && (
+        <TwelveWeekGoalForm
+          onClose={() => setShowGoalForm(false)}
+          onGoalCreated={handleGoalCreated}
+        />
+      )}
+
+      {editingGoal && (
+        <TwelveWeekGoalEditForm
+          goal={editingGoal}
+          onClose={() => setEditingGoal(null)}
+          onGoalUpdated={handleGoalUpdated}
+          onGoalDeleted={handleGoalDeleted}
+        />
+      )}
+
+      {showWeeklyGoalForm && (
+        <WeeklyGoalForm
+          onClose={() => setShowWeeklyGoalForm(null)}
+          onGoalCreated={handleWeeklyGoalCreated}
+          twelveWeekGoalId={showWeeklyGoalForm.goalId}
+          weekNumber={showWeeklyGoalForm.weekNumber}
+          prefilledDomains={showWeeklyGoalForm.domains}
+          prefilledRoles={showWeeklyGoalForm.roles}
+        />
+      )}
+
+      {editingWeeklyGoal && (
+        <WeeklyGoalEditForm
+          weeklyGoal={editingWeeklyGoal}
+          onClose={() => setEditingWeeklyGoal(null)}
+          onGoalUpdated={handleWeeklyGoalUpdated}
+          onGoalDeleted={handleWeeklyGoalDeleted}
+        />
+      )}
+    </div>
+  );
+};
+
+export default TwelveWeekCycle;
                                   >
                                     Add your first task
                                   </button>
