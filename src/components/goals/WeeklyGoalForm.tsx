@@ -197,7 +197,7 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="max-w-xl mx-auto bg-white rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto space-y-6 m-4">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">Add Week {weekNumber} Goal</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Add Week {weekNumber} Tasks</h2>
           <button
             type="button"
             onClick={onClose}
