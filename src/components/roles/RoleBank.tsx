@@ -54,6 +54,12 @@ const RoleBank: React.FC = () => {
   const [selectedDepositIdea, setSelectedDepositIdea] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<MainView>('menu');
+  const [depositIdeasData, setDepositIdeasData] = useState<any[]>([]);
+  const [sortBy, setSortBy] = useState<'title' | 'role' | 'relationship'>('title');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [depositLoading, setDepositLoading] = useState(true);
 
   useEffect(() => {
     const fetchActiveRoles = async () => {
@@ -79,6 +85,61 @@ const RoleBank: React.FC = () => {
 
     fetchActiveRoles();
   }, []);
+
+  useEffect(() => {
+    if (currentView === 'deposit-ideas') {
+      const fetchDepositIdeas = async () => {
+        setDepositLoading(true);
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+
+          // Fetch deposit ideas with related role and relationship data
+          const { data: ideas, error } = await supabase
+            .from('0007-ap-deposit_ideas')
+            .select(`
+              id,
+              description,
+              is_active,
+              created_at,
+              relationship:0007-ap-key_relationships(
+                id,
+                name,
+                role:0007-ap-roles(
+                  id,
+                  label,
+                  category
+                )
+              )
+            `)
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.error('Error fetching deposit ideas:', error);
+            return;
+          }
+
+          // Transform data for table display
+          const transformedData = ideas?.map(idea => ({
+            id: idea.id,
+            title: idea.description,
+            role: idea.relationship?.role?.label || 'No Role',
+            keyRelationship: idea.relationship?.name || 'No Relationship',
+            isActive: idea.is_active,
+            createdAt: idea.created_at
+          })) || [];
+
+          setDepositIdeasData(transformedData);
+        } catch (error) {
+          console.error('Error fetching deposit ideas:', error);
+        } finally {
+          setDepositLoading(false);
+        }
+      };
+
+      fetchDepositIdeas();
+    }
+  }, [currentView]);
 
   useEffect(() => {
     if (!selectedRole) return;
@@ -448,66 +509,6 @@ const RoleBank: React.FC = () => {
 
   // Placeholder views for other sections
   if (currentView === 'deposit-ideas') {
-    const [depositIdeasData, setDepositIdeasData] = useState<any[]>([]);
-    const [sortBy, setSortBy] = useState<'title' | 'role' | 'relationship'>('title');
-    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-    const [itemsPerPage, setItemsPerPage] = useState(10);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [depositLoading, setDepositLoading] = useState(true);
-
-    useEffect(() => {
-      const fetchDepositIdeas = async () => {
-        setDepositLoading(true);
-        try {
-          const { data: { user } } = await supabase.auth.getUser();
-          if (!user) return;
-
-          // Fetch deposit ideas with related role and relationship data
-          const { data: ideas, error } = await supabase
-            .from('0007-ap-deposit_ideas')
-            .select(`
-              id,
-              description,
-              is_active,
-              created_at,
-              relationship:0007-ap-key_relationships(
-                id,
-                name,
-                role:0007-ap-roles(
-                  id,
-                  label,
-                  category
-                )
-              )
-            `)
-            .order('created_at', { ascending: false });
-
-          if (error) {
-            console.error('Error fetching deposit ideas:', error);
-            return;
-          }
-
-          // Transform data for table display
-          const transformedData = ideas?.map(idea => ({
-            id: idea.id,
-            title: idea.description,
-            role: idea.relationship?.role?.label || 'No Role',
-            keyRelationship: idea.relationship?.name || 'No Relationship',
-            isActive: idea.is_active,
-            createdAt: idea.created_at
-          })) || [];
-
-          setDepositIdeasData(transformedData);
-        } catch (error) {
-          console.error('Error fetching deposit ideas:', error);
-        } finally {
-          setDepositLoading(false);
-        }
-      };
-
-      fetchDepositIdeas();
-    }, []);
-
     // Sorting function
     const sortedData = React.useMemo(() => {
       const sorted = [...depositIdeasData].sort((a, b) => {
