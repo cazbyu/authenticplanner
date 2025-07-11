@@ -214,45 +214,17 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
           </div>
         )}
 
-        {/* Show prefilled domains and roles */}
-        {(prefilledDomains.length > 0 || prefilledRoles.length > 0) && (
-          <div className="bg-blue-50 border border-blue-200 rounded-md p-3">
-            <h3 className="text-sm font-medium text-blue-800 mb-2">Pre-filled from 12-Week Goal:</h3>
-            <div className="space-y-2">
-              {prefilledDomains.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  <span className="text-xs text-blue-700 mr-1">Domains:</span>
-                  {prefilledDomains.map(domain => (
-                    <span key={domain.id} className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getDomainColor(domain.name)}`}>
-                      {domain.name}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {prefilledRoles.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  <span className="text-xs text-blue-700 mr-1">Roles:</span>
-                  {prefilledRoles.map(role => (
-                    <span key={role.id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-secondary-100 text-secondary-800 border border-secondary-200">
-                      {role.label}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
 
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Goal Title */}
           <div>
-            <label className="block text-sm font-medium mb-2">What is your Week {weekNumber} Goal? *</label>
+            <label className="block text-sm font-medium mb-2">What tasks will support this goal this week? *</label>
             <input
               name="title"
               value={form.title}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              placeholder={`Enter your week ${weekNumber} goal...`}
+              placeholder="Enter tasks that will support this goal..."
               required
             />
           </div>
