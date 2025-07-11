@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Star, X, Plus, ChevronRight } from 'lucide-react';
+import { Users, Star, X, Plus, ChevronRight, UserPlus } from 'lucide-react';
 import TaskForm from '../tasks/TaskForm';
+import KeyRelationshipForm from './KeyRelationshipForm';
 import { supabase } from '../../supabaseClient';
 import { Task } from '../../types';
 
@@ -32,13 +33,21 @@ interface Relationship {
   name: string;
 }
 
+interface KeyRelationship {
+  id: string;
+  role_id: string;
+  name: string;
+  notes?: string;
+}
+
 const RoleBank: React.FC = () => {
   const [activeRoles, setActiveRoles] = useState<Role[]>([]);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [tasks, setTasks] = useState<RoleBankTask[]>([]);
   const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
-  const [relationships, setRelationships] = useState<Relationship[]>([]);
+  const [relationships, setRelationships] = useState<KeyRelationship[]>([]);
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showRelationshipForm, setShowRelationshipForm] = useState(false);
   const [selectedDepositIdea, setSelectedDepositIdea] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -79,19 +88,16 @@ const RoleBank: React.FC = () => {
       
       setTasks(taskData || []);
 
-      const { data: depositData } = await supabase
-        .from('deposit_ideas')
-        .select('*')
-        .eq('role_id', selectedRole.id);
-      
-      setDepositIdeas(depositData || []);
-
+      // Fetch key relationships
       const { data: relationshipData } = await supabase
-        .from('relationships')
+        .from('0007-ap-key_relationships')
         .select('*')
         .eq('role_id', selectedRole.id);
       
       setRelationships(relationshipData || []);
+
+      // For now, we'll keep deposit ideas empty since they're managed per relationship
+      setDepositIdeas([]);
     };
 
     fetchRoleData();
@@ -100,6 +106,12 @@ const RoleBank: React.FC = () => {
   const handleTaskSave = async (taskData: any) => {
     setShowTaskForm(false);
     setSelectedDepositIdea(null);
+  };
+
+  const handleRelationshipCreated = () => {
+    setShowRelationshipForm(false);
+    // Refresh role data to show new relationship
+    if (selectedRole) fetchRoleData();
   };
 
   const handleDepositToggle = async (idea: DepositIdea) => {
@@ -209,13 +221,37 @@ const RoleBank: React.FC = () => {
 
             {/* Key Relationships */}
             <div>
-              <h3 className="text-lg font-medium mb-4">Key Relationships</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-medium">Key Relationships</h3>
+                <button
+                  onClick={() => setShowRelationshipForm(true)}
+                  className="flex items-center space-x-1 text-primary-600 hover:text-primary-700 text-sm"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  <span>Add Key Relationship</span>
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {relationships.map(rel => (
-                  <div key={rel.id} className="p-3 bg-gray-50 rounded-lg">
-                    {rel.name}
+                  <div key={rel.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="font-medium text-gray-900">{rel.name}</div>
+                    {rel.notes && (
+                      <div className="text-sm text-gray-600 mt-1">{rel.notes}</div>
+                    )}
                   </div>
                 ))}
+                {relationships.length === 0 && (
+                  <div className="col-span-full text-center py-6 text-gray-500">
+                    <UserPlus className="mx-auto h-8 w-8 text-gray-300 mb-2" />
+                    <p className="text-sm">No key relationships yet.</p>
+                    <button
+                      onClick={() => setShowRelationshipForm(true)}
+                      className="text-sm text-primary-600 hover:text-primary-700 mt-1"
+                    >
+                      Add your first relationship
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -251,6 +287,15 @@ const RoleBank: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {showRelationshipForm && selectedRole && (
+        <KeyRelationshipForm
+          roleId={selectedRole.id}
+          roleName={selectedRole.label}
+          onClose={() => setShowRelationshipForm(false)}
+          onRelationshipCreated={handleRelationshipCreated}
+        />
       )}
     </div>
   );
