@@ -40,6 +40,10 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
   const [form, setForm] = useState({
     title: '',
     description: '',
+    isUrgent: false,
+    isImportant: false,
+    isAuthenticDeposit: false,
+    isTwelveWeekGoal: false,
     selectedDomains: prefilledDomains.map(d => d.id),
     selectedRoles: prefilledRoles.map(r => r.id),
   });
@@ -95,8 +99,12 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    const { name, value, type } = e.target;
+    const checked = (e.target as HTMLInputElement).checked;
+    setForm(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
   const toggleDomain = (domainId: string) => {
@@ -218,91 +226,108 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Goal Title */}
           <div>
-            <label className="block text-sm font-medium mb-2">What tasks will support this goal this week? *</label>
             <input
               name="title"
               value={form.title}
               onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              placeholder="Enter tasks that will support this goal..."
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Add Task Title"
               required
             />
           </div>
 
-          {/* Goal Description */}
+          {/* Task Priority Checkboxes - 2x2 Grid */}
           <div>
-            <label className="block text-sm font-medium mb-2">Description (Optional)</label>
-            <textarea
-              name="description"
-              value={form.description}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              rows={3}
-              placeholder="Add more details about your weekly goal..."
-            />
+            <div className="grid grid-cols-2 gap-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="isUrgent"
+                  checked={form.isUrgent}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                Urgent
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="isImportant"
+                  checked={form.isImportant}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                Important
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="isAuthenticDeposit"
+                  checked={form.isAuthenticDeposit}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                Authentic Deposit
+              </label>
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="isTwelveWeekGoal"
+                  checked={form.isTwelveWeekGoal}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                12-Week Goal
+              </label>
+            </div>
           </div>
 
-          {/* Wellness Domains - Optional Override */}
+          {/* Roles Section */}
           <div>
-            <label className="block text-sm font-medium mb-3">
-              Wellness Domains (Optional - modify from 12-week goal selection)
-            </label>
-            <div className="grid grid-cols-2 gap-2">
-              {availableDomains.map((domain) => (
-                <button
-                  key={domain.id}
-                  type="button"
-                  onClick={() => toggleDomain(domain.id)}
-                  className={`
-                    flex items-center justify-between px-3 py-2 rounded-md border text-left transition-colors text-sm
-                    ${form.selectedDomains.includes(domain.id)
-                      ? `border ${getDomainColor(domain.name)}`
-                      : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
-                    }
-                  `}
-                >
-                  <span className="font-medium">{domain.name}</span>
-                  {form.selectedDomains.includes(domain.id) && (
-                    <Check className="h-4 w-4 text-current" />
-                  )}
-                </button>
+            <h3 className="text-sm font-medium mb-2">Roles</h3>
+            <div className="grid grid-cols-2 gap-2 border border-gray-200 p-3 rounded-md max-h-32 overflow-y-auto">
+              {activeRoles.map((role) => (
+                <label key={role.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.selectedRoles.includes(role.id)}
+                    onChange={() => toggleRole(role.id)}
+                    className="h-3 w-3"
+                  />
+                  <span className="truncate">{role.label}</span>
+                </label>
               ))}
             </div>
           </div>
 
-          {/* Active Roles - Optional Override */}
+          {/* Domains Section */}
           <div>
-            <label className="block text-sm font-medium mb-3">
-              Associated Roles (Optional - modify from 12-week goal selection)
-            </label>
-            {activeRoles.length > 0 ? (
-              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-                {activeRoles.map((role) => (
-                  <button
-                    key={role.id}
-                    type="button"
-                    onClick={() => toggleRole(role.id)}
-                    className={`
-                      flex flex-col items-center justify-center px-2 py-2 rounded-md border text-center transition-colors text-xs
-                      ${form.selectedRoles.includes(role.id)
-                        ? 'bg-secondary-50 border-secondary-200 text-secondary-700'
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
-                      }
-                    `}
-                  >
-                    <span className="font-medium block truncate w-full">{role.label}</span>
-                    <span className="text-xs text-gray-500 truncate w-full">{role.category}</span>
-                    {form.selectedRoles.includes(role.id) && (
-                      <Check className="h-3 w-3 text-secondary-600 mt-1" />
-                    )}
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500 italic">
-                No active roles found. You can add roles in Settings to link them to your goals.
-              </p>
-            )}
+            <h3 className="text-sm font-medium mb-2">Domains</h3>
+            <div className="grid grid-cols-2 gap-2 border border-gray-200 p-3 rounded-md max-h-32 overflow-y-auto">
+              {availableDomains.map((domain) => (
+                <label key={domain.id} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.selectedDomains.includes(domain.id)}
+                    onChange={() => toggleDomain(domain.id)}
+                    className="h-3 w-3"
+                  />
+                  <span className="truncate">{domain.name}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Notes Section - Moved to Bottom */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Notes</label>
+            <textarea
+              name="description"
+              value={form.description}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm min-h-[60px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Add any additional notes here..."
+            />
           </div>
 
           {/* Submit Button */}
