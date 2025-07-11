@@ -61,6 +61,63 @@ const RoleBank: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [depositLoading, setDepositLoading] = useState(true);
 
+  // Sorting function - moved to top level
+  const sortedData = React.useMemo(() => {
+    const sorted = [...depositIdeasData].sort((a, b) => {
+      let aValue = '';
+      let bValue = '';
+      
+      switch (sortBy) {
+        case 'title':
+          aValue = a.title.toLowerCase();
+          bValue = b.title.toLowerCase();
+          break;
+        case 'role':
+          aValue = a.role.toLowerCase();
+          bValue = b.role.toLowerCase();
+          break;
+        case 'relationship':
+          aValue = a.keyRelationship.toLowerCase();
+          bValue = b.keyRelationship.toLowerCase();
+          break;
+      }
+      
+      if (sortDirection === 'asc') {
+        return aValue.localeCompare(bValue);
+      } else {
+        return bValue.localeCompare(aValue);
+      }
+    });
+    
+    return sorted;
+  }, [depositIdeasData, sortBy, sortDirection]);
+
+  // Pagination - moved to top level
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleSort = (column: 'title' | 'role' | 'relationship') => {
+    if (sortBy === column) {
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortBy(column);
+      setSortDirection('asc');
+    }
+  };
+
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    setItemsPerPage(newItemsPerPage);
+    setCurrentPage(1); // Reset to first page
+  };
+
+  const SortIcon = ({ column }: { column: 'title' | 'role' | 'relationship' }) => {
+    if (sortBy !== column) {
+      return <span className="text-gray-400">↕</span>;
+    }
+    return sortDirection === 'asc' ? <span className="text-blue-600">↑</span> : <span className="text-blue-600">↓</span>;
+  };
+
   useEffect(() => {
     const fetchActiveRoles = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -509,63 +566,6 @@ const RoleBank: React.FC = () => {
 
   // Placeholder views for other sections
   if (currentView === 'deposit-ideas') {
-    // Sorting function
-    const sortedData = React.useMemo(() => {
-      const sorted = [...depositIdeasData].sort((a, b) => {
-        let aValue = '';
-        let bValue = '';
-        
-        switch (sortBy) {
-          case 'title':
-            aValue = a.title.toLowerCase();
-            bValue = b.title.toLowerCase();
-            break;
-          case 'role':
-            aValue = a.role.toLowerCase();
-            bValue = b.role.toLowerCase();
-            break;
-          case 'relationship':
-            aValue = a.keyRelationship.toLowerCase();
-            bValue = b.keyRelationship.toLowerCase();
-            break;
-        }
-        
-        if (sortDirection === 'asc') {
-          return aValue.localeCompare(bValue);
-        } else {
-          return bValue.localeCompare(aValue);
-        }
-      });
-      
-      return sorted;
-    }, [depositIdeasData, sortBy, sortDirection]);
-
-    // Pagination
-    const totalPages = Math.ceil(sortedData.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
-
-    const handleSort = (column: 'title' | 'role' | 'relationship') => {
-      if (sortBy === column) {
-        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-      } else {
-        setSortBy(column);
-        setSortDirection('asc');
-      }
-    };
-
-    const handleItemsPerPageChange = (newItemsPerPage: number) => {
-      setItemsPerPage(newItemsPerPage);
-      setCurrentPage(1); // Reset to first page
-    };
-
-    const SortIcon = ({ column }: { column: 'title' | 'role' | 'relationship' }) => {
-      if (sortBy !== column) {
-        return <span className="text-gray-400">↕</span>;
-      }
-      return sortDirection === 'asc' ? <span className="text-blue-600">↑</span> : <span className="text-blue-600">↓</span>;
-    };
-
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
