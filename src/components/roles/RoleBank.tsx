@@ -448,6 +448,123 @@ const RoleBank: React.FC = () => {
 
   // Placeholder views for other sections
   if (currentView === 'deposit-ideas') {
+    const [depositIdeasData, setDepositIdeasData] = useState<any[]>([]);
+    const [sortBy, setSortBy] = useState<'title' | 'role' | 'relationship'>('title');
+    const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [depositLoading, setDepositLoading] = useState(true);
+
+    useEffect(() => {
+      const fetchDepositIdeas = async () => {
+        setDepositLoading(true);
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (!user) return;
+
+          // Fetch deposit ideas with related role and relationship data
+          const { data: ideas, error } = await supabase
+            .from('0007-ap-deposit_ideas')
+            .select(`
+              id,
+              description,
+              is_active,
+              created_at,
+              relationship:0007-ap-key_relationships(
+                id,
+                name,
+                role:0007-ap-roles(
+                  id,
+                  label,
+                  category
+                )
+              )
+            `)
+            .order('created_at', { ascending: false });
+
+          if (error) {
+            console.error('Error fetching deposit ideas:', error);
+            return;
+          }
+
+          // Transform data for table display
+          const transformedData = ideas?.map(idea => ({
+            id: idea.id,
+            title: idea.description,
+            role: idea.relationship?.role?.label || 'No Role',
+            keyRelationship: idea.relationship?.name || 'No Relationship',
+            isActive: idea.is_active,
+            createdAt: idea.created_at
+          })) || [];
+
+          setDepositIdeasData(transformedData);
+        } catch (error) {
+          console.error('Error fetching deposit ideas:', error);
+        } finally {
+          setDepositLoading(false);
+        }
+      };
+
+      fetchDepositIdeas();
+    }, []);
+
+    // Sorting function
+    const sortedData = React.useMemo(() => {
+      const sorted = [...depositIdeasData].sort((a, b) => {
+        let aValue = '';
+        let bValue = '';
+        
+        switch (sortBy) {
+          case 'title':
+            aValue = a.title.toLowerCase();
+            bValue = b.title.toLowerCase();
+            break;
+          case 'role':
+            aValue = a.role.toLowerCase();
+            bValue = b.role.toLowerCase();
+            break;
+          case 'relationship':
+            aValue = a.keyRelationship.toLowerCase();
+            bValue = b.keyRelationship.toLowerCase();
+            break;
+        }
+        
+        if (sortDirection === 'asc') {
+          return aValue.localeCompare(bValue);
+        } else {
+          return bValue.localeCompare(aValue);
+        }
+      });
+      
+      return sorted;
+    }, [depositIdeasData, sortBy, sortDirection]);
+
+    // Pagination
+    const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const paginatedData = sortedData.slice(startIndex, startIndex + itemsPerPage);
+
+    const handleSort = (column: 'title' | 'role' | 'relationship') => {
+      if (sortBy === column) {
+        setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+      } else {
+        setSortBy(column);
+        setSortDirection('asc');
+      }
+    };
+
+    const handleItemsPerPageChange = (newItemsPerPage: number) => {
+      setItemsPerPage(newItemsPerPage);
+      setCurrentPage(1); // Reset to first page
+    };
+
+    const SortIcon = ({ column }: { column: 'title' | 'role' | 'relationship' }) => {
+      if (sortBy !== column) {
+        return <span className="text-gray-400">↕</span>;
+      }
+      return sortDirection === 'asc' ? <span className="text-blue-600">↑</span> : <span className="text-blue-600">↓</span>;
+    };
+
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
@@ -460,11 +577,176 @@ const RoleBank: React.FC = () => {
             </button>
             <h2 className="text-xl font-semibold text-gray-900">Deposit Ideas</h2>
           </div>
+          <div className="flex items-center space-x-4">
+            <span className="text-sm text-gray-600">Show:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => handleItemsPerPageChange(Number(e.target.value))}
+              className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={10}>10</option>
+              <option value={25}>25</option>
+              <option value={50}>50</option>
+            </select>
+            <span className="text-sm text-gray-600">per page</span>
+          </div>
         </div>
-        <div className="text-center py-12">
-          <Lightbulb className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Deposit Ideas</h3>
-          <p className="text-gray-600">This section will be implemented soon.</p>
+
+        {depositLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          </div>
+        ) : depositIdeasData.length === 0 ? (
+          <div className="text-center py-12">
+            <Lightbulb className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No Deposit Ideas Yet</h3>
+            <p className="text-gray-600">Deposit ideas will appear here when you add them to your key relationships.</p>
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            {/* Table */}
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('title')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Title</span>
+                        <SortIcon column="title" />
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('role')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Role</span>
+                        <SortIcon column="role" />
+                      </div>
+                    </th>
+                    <th 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('relationship')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Key Relationship</span>
+                        <SortIcon column="relationship" />
+                      </div>
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {paginatedData.map((idea) => (
+                    <tr key={idea.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{idea.title}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{idea.role}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{idea.keyRelationship}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                          idea.isActive 
+                            ? 'bg-green-100 text-green-800' 
+                            : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {idea.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {totalPages > 1 && (
+              <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+                <div className="flex-1 flex justify-between sm:hidden">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Next
+                  </button>
+                </div>
+                <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm text-gray-700">
+                      Showing <span className="font-medium">{startIndex + 1}</span> to{' '}
+                      <span className="font-medium">{Math.min(startIndex + itemsPerPage, sortedData.length)}</span> of{' '}
+                      <span className="font-medium">{sortedData.length}</span> results
+                    </p>
+                  </div>
+                  <div>
+                    <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                      <button
+                        onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Previous
+                      </button>
+                      
+                      {/* Page numbers */}
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        let pageNum;
+                        if (totalPages <= 5) {
+                          pageNum = i + 1;
+                        } else if (currentPage <= 3) {
+                          pageNum = i + 1;
+                        } else if (currentPage >= totalPages - 2) {
+                          pageNum = totalPages - 4 + i;
+                        } else {
+                          pageNum = currentPage - 2 + i;
+                        }
+                        
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                              currentPage === pageNum
+                                ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
+                                : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                      
+                      <button
+                        onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        Next
+                      </button>
+                    </nav>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
         </div>
       </div>
     );
