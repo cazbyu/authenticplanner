@@ -39,11 +39,14 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
   
   const [form, setForm] = useState({
     title: '',
-    description: '',
+    notes: '',
     isUrgent: false,
     isImportant: false,
     isAuthenticDeposit: false,
     isTwelveWeekGoal: false,
+    dueDate: new Date().toISOString().split('T')[0],
+    startTime: '',
+    endTime: '',
     selectedDomains: prefilledDomains.map(d => d.id),
     selectedRoles: prefilledRoles.map(r => r.id),
   });
@@ -150,7 +153,7 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
           goal_id: twelveWeekGoalId,
           week_number: weekNumber,
           title: form.title.trim(),
-          description: form.description.trim() || null,
+          description: form.notes.trim() || null,
           status: 'pending',
           progress: 0
         }])
@@ -282,6 +285,45 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
             </div>
           </div>
 
+          {/* Date and Time Section */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Date</label>
+            <input
+              name="dueDate"
+              type="date"
+              value={form.dueDate}
+              onChange={handleChange}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* Time Section */}
+          <div>
+            <label className="block text-sm font-medium mb-2">Time (Optional)</label>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">Start Time</label>
+                <input
+                  name="startTime"
+                  type="time"
+                  value={form.startTime}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">End Time</label>
+                <input
+                  name="endTime"
+                  type="time"
+                  value={form.endTime}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+          </div>
+
           {/* Roles Section */}
           <div>
             <h3 className="text-sm font-medium mb-2">Roles</h3>
@@ -322,8 +364,8 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
           <div>
             <label className="block text-sm font-medium mb-1">Notes</label>
             <textarea
-              name="description"
-              value={form.description}
+              name="notes"
+              value={form.notes}
               onChange={handleChange}
               className="w-full border border-gray-300 rounded-md px-2 py-1.5 text-sm min-h-[60px] focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="Add any additional notes here..."
