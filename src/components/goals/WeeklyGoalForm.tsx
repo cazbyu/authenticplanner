@@ -276,26 +276,24 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
               Associated Roles (Optional - modify from 12-week goal selection)
             </label>
             {activeRoles.length > 0 ? (
-              <div className="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+              <div className="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto">
                 {activeRoles.map((role) => (
                   <button
                     key={role.id}
                     type="button"
                     onClick={() => toggleRole(role.id)}
                     className={`
-                      flex items-center justify-between px-3 py-2 rounded-md border text-left transition-colors
+                      flex flex-col items-center justify-center px-2 py-2 rounded-md border text-center transition-colors text-xs
                       ${form.selectedRoles.includes(role.id)
                         ? 'bg-secondary-50 border-secondary-200 text-secondary-700'
                         : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
                       }
                     `}
                   >
-                    <div>
-                      <span className="font-medium block text-sm">{role.label}</span>
-                      <span className="text-xs text-gray-500">{role.category}</span>
-                    </div>
+                    <span className="font-medium block truncate w-full">{role.label}</span>
+                    <span className="text-xs text-gray-500 truncate w-full">{role.category}</span>
                     {form.selectedRoles.includes(role.id) && (
-                      <Check className="h-4 w-4 text-secondary-600" />
+                      <Check className="h-3 w-3 text-secondary-600 mt-1" />
                     )}
                   </button>
                 ))}
@@ -321,7 +319,7 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
               disabled={submitting || !form.title.trim()}
               className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {submitting ? 'Creating...' : `Create Week ${weekNumber} Goal`}
+              {submitting ? 'Creating...' : `Create Week ${weekNumber} Task`}
             </button>
           </div>
         </form>
