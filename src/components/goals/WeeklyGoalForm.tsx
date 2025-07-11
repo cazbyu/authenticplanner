@@ -43,7 +43,7 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
     isUrgent: false,
     isImportant: false,
     isAuthenticDeposit: false,
-    isTwelveWeekGoal: false,
+    isTwelveWeekGoal: true, // Auto-selected since this is within 12-week cycle
     dueDate: new Date().toISOString().split('T')[0],
     startTime: '',
     endTime: '',
