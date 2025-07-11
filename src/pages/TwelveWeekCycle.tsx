@@ -83,12 +83,21 @@ const TwelveWeekCycle: React.FC = () => {
   useEffect(() => {
     if (user) {
       fetchCurrentCycle();
-      fetchGoals();
-      fetchWeeklyGoals();
-      fetchTasks();
     }
   }, [user]);
 
+  useEffect(() => {
+    if (user && currentCycle) {
+      fetchGoals();
+      fetchTasks();
+    }
+  }, [user, currentCycle]);
+
+  useEffect(() => {
+    if (user) {
+      fetchWeeklyGoals();
+    }
+  }, [user]);
   const fetchCurrentCycle = async () => {
     try {
       const { data, error } = await supabase
@@ -109,7 +118,7 @@ const TwelveWeekCycle: React.FC = () => {
   };
 
   const fetchGoals = async () => {
-    if (!user || !currentCycle) return;
+    if (!user) return;
 
     try {
       const { data: goalsData, error: goalsError } = await supabase
@@ -124,7 +133,7 @@ const TwelveWeekCycle: React.FC = () => {
           )
         `)
         .eq('user_id', user.id)
-        .eq('global_cycle_id', currentCycle.id)
+        .eq('global_cycle_id', currentCycle?.id)
         .order('created_at', { ascending: false });
 
       if (goalsError) {
@@ -211,38 +220,33 @@ const TwelveWeekCycle: React.FC = () => {
   };
 
   const handleGoalCreated = (newGoal: TwelveWeekGoal) => {
-    setGoals(prev => [newGoal, ...prev]);
     setShowGoalForm(false);
+    fetchGoals(); // Refresh goals instead of manual state update
   };
 
   const handleGoalUpdated = (updatedGoal: TwelveWeekGoal) => {
-    setGoals(prev => prev.map(goal => 
-      goal.id === updatedGoal.id ? updatedGoal : goal
-    ));
     setEditingGoal(null);
+    fetchGoals(); // Refresh goals instead of manual state update
   };
 
   const handleGoalDeleted = (deletedGoalId: string) => {
-    setGoals(prev => prev.filter(goal => goal.id !== deletedGoalId));
     setEditingGoal(null);
+    fetchGoals(); // Refresh goals instead of manual state update
   };
 
   const handleWeeklyGoalCreated = (newWeeklyGoal: WeeklyGoal) => {
-    setWeeklyGoals(prev => [...prev, newWeeklyGoal]);
     setShowWeeklyGoalForm(null);
-    fetchTasks(); // Refresh tasks as new task was created
+    fetchTasks(); // Refresh tasks since new task was created
   };
 
   const handleWeeklyGoalUpdated = (updatedWeeklyGoal: WeeklyGoal) => {
-    setWeeklyGoals(prev => prev.map(wg => 
-      wg.id === updatedWeeklyGoal.id ? updatedWeeklyGoal : wg
-    ));
     setEditingWeeklyGoal(null);
+    fetchTasks(); // Refresh tasks in case task was updated
   };
 
   const handleWeeklyGoalDeleted = (deletedWeeklyGoalId: string) => {
-    setWeeklyGoals(prev => prev.filter(wg => wg.id !== deletedWeeklyGoalId));
     setEditingWeeklyGoal(null);
+    fetchTasks(); // Refresh tasks in case task was deleted
   };
 
   const toggleGoalExpansion = (goalId: string) => {
