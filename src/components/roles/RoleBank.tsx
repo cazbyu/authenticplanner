@@ -234,10 +234,32 @@ const RoleBank: React.FC = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {relationships.map(rel => (
                   <div key={rel.id} className="p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="font-medium text-gray-900">{rel.name}</div>
-                    {rel.notes && (
-                      <div className="text-sm text-gray-600 mt-1">{rel.notes}</div>
-                    )}
+                    <div className="flex items-center space-x-3">
+                      {/* Profile Image */}
+                      <div className="flex-shrink-0">
+                        <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center">
+                          {rel.image_url ? (
+                            <img 
+                              src={rel.image_url} 
+                              alt={rel.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <svg className="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Name and Notes */}
+                      <div className="flex-1 min-w-0">
+                        <div className="font-medium text-gray-900 truncate">{rel.name}</div>
+                        {rel.notes && (
+                          <div className="text-sm text-gray-600 mt-1 line-clamp-2">{rel.notes}</div>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 ))}
                 {relationships.length === 0 && (
