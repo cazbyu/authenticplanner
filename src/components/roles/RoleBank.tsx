@@ -747,7 +747,6 @@ const RoleBank: React.FC = () => {
             )}
           </div>
         )}
-        </div>
       </div>
     );
   }
