@@ -36,21 +36,95 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
 }) => {
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [form, setForm] = useState({
     name: '',
-    notes: ''
+    notes: '',
+    imageUrl: ''
   });
 
   const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
   const [newDepositIdea, setNewDepositIdea] = useState('');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [newTask, setNewTask] = useState('');
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file');
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size must be less than 5MB');
+        return;
+      }
+      
+      setSelectedImage(file);
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      setError(null);
+    }
+  };
+
+  const uploadImage = async (): Promise<string | null> => {
+    if (!selectedImage) return null;
+    
+    setUploadingImage(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+      
+      // Create unique filename
+      const fileExt = selectedImage.name.split('.').pop();
+      const fileName = `${user.id}/${roleId}/${Date.now()}.${fileExt}`;
+      
+      // Upload to Supabase Storage
+      const { data, error } = await supabase.storage
+        .from('relationship-images')
+        .upload(fileName, selectedImage);
+      
+      if (error) {
+        console.error('Upload error:', error);
+        throw error;
+      }
+      
+      // Get public URL
+      const { data: { publicUrl } } = supabase.storage
+        .from('relationship-images')
+        .getPublicUrl(fileName);
+      
+      return publicUrl;
+    } catch (err) {
+      console.error('Error uploading image:', err);
+      setError('Failed to upload image. Please try again.');
+      return null;
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const removeImage = () => {
+    setSelectedImage(null);
+    setImagePreview(null);
+    setForm(prev => ({ ...prev, imageUrl: '' }));
   };
 
   const addDepositIdea = () => {
@@ -121,13 +195,26 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
         return;
       }
 
+      // Upload image if selected
+      let imageUrl = form.imageUrl;
+      if (selectedImage) {
+        const uploadedUrl = await uploadImage();
+        if (uploadedUrl) {
+          imageUrl = uploadedUrl;
+        } else {
+          // If image upload fails, don't proceed
+          return;
+        }
+      }
+
       // Create the key relationship
       const { data: relationship, error: relationshipError } = await supabase
         .from('0007-ap-key_relationships')
         .insert([{
           role_id: roleId,
           name: form.name.trim(),
-          notes: form.notes.trim() || null
+          notes: form.notes.trim() || null,
+          image_url: imageUrl || null
         }])
         .select()
         .single();
@@ -222,6 +309,63 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
               placeholder="Enter the person's name..."
               required
             />
+          </div>
+
+          {/* Image Upload */}
+          <div>
+            <label className="block text-sm font-medium mb-3">Photo</label>
+            <div className="flex items-start space-x-4">
+              {/* Image Preview/Placeholder */}
+              <div className="flex-shrink-0">
+                <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+                  {imagePreview ? (
+                    <img 
+                      src={imagePreview} 
+                      alt="Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <svg className="w-8 h-8 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                      <p className="text-xs text-gray-500">Photo</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              {/* Upload Controls */}
+              <div className="flex-1">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="hidden"
+                  id="image-upload"
+                />
+                <div className="space-y-2">
+                  <label
+                    htmlFor="image-upload"
+                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
+                  >
+                    Choose Photo
+                  </label>
+                  {imagePreview && (
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="block text-sm text-red-600 hover:text-red-700"
+                    >
+                      Remove Photo
+                    </button>
+                  )}
+                  <p className="text-xs text-gray-500">
+                    JPG, PNG up to 5MB
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Current Tasks */}
@@ -356,10 +500,10 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
             </button>
             <button
               type="submit"
-              disabled={submitting || !form.name.trim()}
+              disabled={submitting || uploadingImage || !form.name.trim()}
               className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {submitting ? 'Creating...' : 'Create Relationship'}
+              {submitting ? 'Creating...' : uploadingImage ? 'Uploading...' : 'Create Relationship'}
             </button>
           </div>
         </form>
