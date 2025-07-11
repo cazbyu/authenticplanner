@@ -167,11 +167,6 @@ const RoleBank: React.FC = () => {
   if (currentView === 'menu') {
     return (
       <div className="space-y-6">
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Role Bank</h2>
-          <p className="text-gray-600">Manage your life roles and authentic deposits</p>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Active Roles */}
           <button
