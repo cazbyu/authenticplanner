@@ -132,7 +132,7 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
     e.preventDefault();
     
     if (!form.title.trim()) {
-      setError('Weekly goal title is required');
+      setError('Task title is required');
       return;
     }
 
@@ -146,31 +146,103 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
         return;
       }
 
-      // Create the weekly goal
-      const { data: weeklyGoal, error: goalError } = await supabase
-        .from('0007-ap-goal_weekly_goals')
+      // Convert local times to UTC for database storage
+      const convertToUTC = (dateStr: string, timeStr: string): string | null => {
+        if (!dateStr || !timeStr) return null;
+        const localDateTime = new Date(`${dateStr}T${timeStr}:00`);
+        return localDateTime.toISOString();
+      };
+
+      // Convert time string to PostgreSQL TIME format (HH:MM:SS)
+      const convertToTimeFormat = (timeStr: string): string | null => {
+        if (!timeStr) return null;
+        return timeStr.match(/^\d{2}:\d{2}$/) ? `${timeStr}:00` : timeStr;
+      };
+
+      // Prepare time data
+      const startTimeUTC = convertToUTC(form.dueDate, form.startTime);
+      const endTimeFormatted = convertToTimeFormat(form.endTime);
+
+      // Create the actual task in the tasks table
+      const { data: task, error: taskError } = await supabase
+        .from('0007-ap-tasks')
         .insert([{
-          goal_id: twelveWeekGoalId,
-          week_number: weekNumber,
+          user_id: user.id,
           title: form.title.trim(),
-          description: form.notes.trim() || null,
+          is_urgent: form.isUrgent,
+          is_important: form.isImportant,
+          is_authentic_deposit: form.isAuthenticDeposit,
+          is_twelve_week_goal: form.isTwelveWeekGoal,
+          due_date: form.dueDate || null,
+          start_time: startTimeUTC, // Full datetime for calendar
+          end_time: endTimeFormatted, // Just time format for PostgreSQL TIME field
+          notes: form.notes.trim() || null,
+          percent_complete: 0,
           status: 'pending',
-          progress: 0
+          priority: null // Could be calculated based on urgent/important
         }])
         .select()
         .single();
 
-      if (goalError || !weeklyGoal) {
-        console.error('Error creating weekly goal:', goalError);
-        setError('Failed to create weekly goal');
+      if (taskError || !task) {
+        console.error('Error creating task:', taskError);
+        setError('Failed to create task');
         return;
       }
 
-      toast.success(`Week ${weekNumber} goal created successfully!`);
+      // Link task to the 12-week goal
+      const { error: goalLinkError } = await supabase
+        .from('0007-ap-goal_tasks')
+        .insert([{
+          goal_id: twelveWeekGoalId,
+          task_id: task.id,
+          weekly_goal_id: null // We're not creating weekly goals anymore, just tasks
+        }]);
+
+      if (goalLinkError) {
+        console.error('Error linking task to goal:', goalLinkError);
+        // Don't fail the whole operation for this
+      }
+
+      // Create role relationships
+      if (form.selectedRoles.length > 0) {
+        const roleInserts = form.selectedRoles.map(roleId => ({
+          task_id: task.id,
+          role_id: roleId,
+        }));
+        
+        const { error: roleError } = await supabase
+          .from('0007-ap-task_roles')
+          .insert(roleInserts);
+
+        if (roleError) {
+          console.error('Error linking roles:', roleError);
+          // Don't fail the whole operation for this
+        }
+      }
+
+      // Create domain relationships
+      if (form.selectedDomains.length > 0) {
+        const domainInserts = form.selectedDomains.map(domainId => ({
+          task_id: task.id,
+          domain_id: domainId,
+        }));
+        
+        const { error: domainError } = await supabase
+          .from('0007-ap-task_domains')
+          .insert(domainInserts);
+
+        if (domainError) {
+          console.error('Error linking domains:', domainError);
+          // Don't fail the whole operation for this
+        }
+      }
+
+      toast.success(`Week ${weekNumber} task created successfully!`);
       onGoalCreated();
 
     } catch (err) {
-      console.error('Error creating weekly goal:', err);
+      console.error('Error creating task:', err);
       setError('An unexpected error occurred');
     } finally {
       setSubmitting(false);
@@ -386,7 +458,7 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
               disabled={submitting || !form.title.trim()}
               className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {submitting ? 'Creating...' : `Create Week ${weekNumber} Task`}
+              {submitting ? 'Creating Task...' : `Create Week ${weekNumber} Task`}
             </button>
           </div>
         </form>
