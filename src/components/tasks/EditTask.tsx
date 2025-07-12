@@ -58,7 +58,6 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showCustomRecurrence, setShowCustomRecurrence] = useState(false);
   const [showRoleModal, setShowRoleModal] = useState(false);
-  const [showGoalModal, setShowGoalModal] = useState(false); // PLACEHOLDER for future goal selection
   const [calendarDate, setCalendarDate] = useState(new Date());
   const datePickerRef = useRef<HTMLDivElement>(null);
 
@@ -228,11 +227,6 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
     // Special handling for Authentic Deposit checkbox
     if (name === 'isAuthenticDeposit' && type === 'checkbox' && checked) {
       setShowRoleModal(true);
-    }
-    
-    // Special handling for 12-Week Goal dropdown - PLACEHOLDER for future goal selection
-    if (name === 'selectedTwelveWeekGoal' && value) {
-      setShowGoalModal(true);
     }
     
     setForm((prev) => ({
@@ -966,47 +960,6 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
                   className="w-full px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
                 >
                   Done
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* PLACEHOLDER for future goal selection - 12-Week Goal Modal */}
-        {showGoalModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-4 max-w-xs w-full mx-4">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="text-sm font-medium text-gray-900">
-                  Which goal does this support?
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setShowGoalModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                  aria-label="Close modal"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-              
-              {/* PLACEHOLDER content - no actual goal data yet */}
-              <div className="text-center py-6">
-                <p className="text-sm text-gray-500 mb-4">
-                  Goal selection will be implemented here.
-                </p>
-                <p className="text-xs text-gray-400">
-                  This is a placeholder for future functionality.
-                </p>
-              </div>
-
-              <div className="mt-3 pt-2 border-t border-gray-100">
-                <button
-                  type="button"
-                  onClick={() => setShowGoalModal(false)}
-                  className="w-full px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
-                >
-                  Close
                 </button>
               </div>
             </div>
