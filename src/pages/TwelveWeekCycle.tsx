@@ -34,6 +34,14 @@ interface WeeklyGoal {
   updated_at: string;
 }
 
+interface WeekModalData {
+  goalId: string;
+  weekNumber: number;
+  weekDates: { start: string; end: string };
+  domains: Array<{ id: string; name: string; }>;
+  roles: Array<{ id: string; label: string; category?: string; }>;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -78,7 +86,7 @@ const TwelveWeekCycle: React.FC = () => {
   } | null>(null);
   const [editingWeeklyGoal, setEditingWeeklyGoal] = useState<WeeklyGoal | null>(null);
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
-  const [expandedWeeks, setExpandedWeeks] = useState<Set<string>>(new Set());
+  const [selectedWeek, setSelectedWeek] = useState<WeekModalData | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -98,6 +106,7 @@ const TwelveWeekCycle: React.FC = () => {
       fetchWeeklyGoals();
     }
   }, [user]);
+
   const fetchCurrentCycle = async () => {
     try {
       const { data, error } = await supabase
@@ -236,6 +245,7 @@ const TwelveWeekCycle: React.FC = () => {
 
   const handleWeeklyGoalCreated = (newWeeklyGoal: WeeklyGoal) => {
     setShowWeeklyGoalForm(null);
+    setSelectedWeek(null);
     fetchTasks(); // Refresh tasks since new task was created
   };
 
@@ -261,15 +271,14 @@ const TwelveWeekCycle: React.FC = () => {
     });
   };
 
-  const toggleWeekExpansion = (weekKey: string) => {
-    setExpandedWeeks(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(weekKey)) {
-        newSet.delete(weekKey);
-      } else {
-        newSet.add(weekKey);
-      }
-      return newSet;
+  const handleWeekClick = (goal: TwelveWeekGoal, weekNumber: number) => {
+    const weekDates = getWeekDates(weekNumber);
+    setSelectedWeek({
+      goalId: goal.id,
+      weekNumber,
+      weekDates,
+      domains: goal.domains || [],
+      roles: goal.roles || []
     });
   };
 
@@ -580,7 +589,7 @@ const TwelveWeekCycle: React.FC = () => {
                           const isExpanded = expandedWeeks.has(weekKey);
                           
                           return (
-                            <div key={weekNumber} className="border rounded-lg">
+                                onClick={() => handleWeekClick(goal, weekNumber)}
                               <button
                                 onClick={() => toggleWeekExpansion(weekKey)}
                                 className="w-full p-3 text-left hover:bg-gray-50 transition-colors"
@@ -597,94 +606,6 @@ const TwelveWeekCycle: React.FC = () => {
                                   )}
                                 </div>
                               </button>
-                              
-                              {isExpanded && (
-                                <div className="border-t p-4">
-                                  <div className="flex items-center justify-between mb-4">
-                                    <h4 className="font-medium text-gray-900">Week {weekNumber} Tasks</h4>
-                                    <button
-                                      onClick={() => setShowWeeklyGoalForm({
-                                        goalId: goal.id,
-                                        weekNumber,
-                                        domains: goal.domains || [],
-                                        roles: goal.roles || []
-                                      })}
-                                      className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                      Add Task
-                                    </button>
-                                  </div>
-
-                                  {weekTasks.length === 0 ? (
-                                    <div className="text-center py-6 text-gray-500">
-                                      <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                      <p className="text-sm">No tasks for Week {weekNumber} yet.</p>
-                                      <button
-                                        onClick={() => setShowWeeklyGoalForm({
-                                          goalId: goal.id,
-                                          weekNumber,
-                                          domains: goal.domains || [],
-                                          roles: goal.roles || []
-                                        })}
-                                        className="text-blue-600 hover:text-blue-700 text-sm mt-2"
-                                      >
-                                        Add your first task
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-3">
-                                      {(() => {
-                                        const categorizedTasks = categorizeTasksByPriority(weekTasks);
-                                        
-                                        return (
-                                          <div className="space-y-3">
-                                            {/* Urgent & Important */}
-                                            <PriorityQuadrant
-                                              title="Urgent & Important"
-                                              tasks={categorizedTasks.urgentImportant}
-                                              bgColor="bg-red-500"
-                                              borderColor="border-l-red-500"
-                                              textColor="text-white"
-                                              icon={<AlertTriangle className="h-3 w-3" />}
-                                            />
-
-                                            {/* Not Urgent & Important */}
-                                            <PriorityQuadrant
-                                              title="Not Urgent & Important"
-                                              tasks={categorizedTasks.notUrgentImportant}
-                                              bgColor="bg-green-500"
-                                              borderColor="border-l-green-500"
-                                              textColor="text-white"
-                                              icon={<CheckCircle className="h-3 w-3" />}
-                                            />
-
-                                            {/* Urgent & Not Important */}
-                                            <PriorityQuadrant
-                                              title="Urgent & Not Important"
-                                              tasks={categorizedTasks.urgentNotImportant}
-                                              bgColor="bg-orange-500"
-                                              borderColor="border-l-orange-500"
-                                              textColor="text-white"
-                                              icon={<Clock className="h-3 w-3" />}
-                                            />
-
-                                            {/* Not Urgent & Not Important */}
-                                            <PriorityQuadrant
-                                              title="Not Urgent & Not Important"
-                                              tasks={categorizedTasks.notUrgentNotImportant}
-                                              bgColor="bg-gray-500"
-                                              borderColor="border-l-gray-500"
-                                              textColor="text-white"
-                                              icon={<X className="h-3 w-3" />}
-                                            />
-                                          </div>
-                                        );
-                                      })()}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           );
                         })}
@@ -695,13 +616,11 @@ const TwelveWeekCycle: React.FC = () => {
                         {weeks.slice(6, 12).map(weekNumber => {
                           const weekDates = getWeekDates(weekNumber);
                           const weekTasks = getTasksForWeek(goal.id, weekNumber);
-                          const weekKey = `${goal.id}-week-${weekNumber}`;
-                          const isExpanded = expandedWeeks.has(weekKey);
                           
                           return (
                             <div key={weekNumber} className="border rounded-lg">
                               <button
-                                onClick={() => toggleWeekExpansion(weekKey)}
+                                onClick={() => handleWeekClick(goal, weekNumber)}
                                 className="w-full p-3 text-left hover:bg-gray-50 transition-colors"
                               >
                                 <div className="text-center">
@@ -716,94 +635,6 @@ const TwelveWeekCycle: React.FC = () => {
                                   )}
                                 </div>
                               </button>
-                              
-                              {isExpanded && (
-                                <div className="border-t p-4">
-                                  <div className="flex items-center justify-between mb-4">
-                                    <h4 className="font-medium text-gray-900">Week {weekNumber} Tasks</h4>
-                                    <button
-                                      onClick={() => setShowWeeklyGoalForm({
-                                        goalId: goal.id,
-                                        weekNumber,
-                                        domains: goal.domains || [],
-                                        roles: goal.roles || []
-                                      })}
-                                      className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
-                                    >
-                                      <Plus className="h-3 w-3" />
-                                      Add Task
-                                    </button>
-                                  </div>
-
-                                  {weekTasks.length === 0 ? (
-                                    <div className="text-center py-6 text-gray-500">
-                                      <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                      <p className="text-sm">No tasks for Week {weekNumber} yet.</p>
-                                      <button
-                                        onClick={() => setShowWeeklyGoalForm({
-                                          goalId: goal.id,
-                                          weekNumber,
-                                          domains: goal.domains || [],
-                                          roles: goal.roles || []
-                                        })}
-                                        className="text-blue-600 hover:text-blue-700 text-sm mt-2"
-                                      >
-                                        Add your first task
-                                      </button>
-                                    </div>
-                                  ) : (
-                                    <div className="space-y-3">
-                                      {(() => {
-                                        const categorizedTasks = categorizeTasksByPriority(weekTasks);
-                                        
-                                        return (
-                                          <div className="space-y-3">
-                                            {/* Urgent & Important */}
-                                            <PriorityQuadrant
-                                              title="Urgent & Important"
-                                              tasks={categorizedTasks.urgentImportant}
-                                              bgColor="bg-red-500"
-                                              borderColor="border-l-red-500"
-                                              textColor="text-white"
-                                              icon={<AlertTriangle className="h-3 w-3" />}
-                                            />
-
-                                            {/* Not Urgent & Important */}
-                                            <PriorityQuadrant
-                                              title="Not Urgent & Important"
-                                              tasks={categorizedTasks.notUrgentImportant}
-                                              bgColor="bg-green-500"
-                                              borderColor="border-l-green-500"
-                                              textColor="text-white"
-                                              icon={<CheckCircle className="h-3 w-3" />}
-                                            />
-
-                                            {/* Urgent & Not Important */}
-                                            <PriorityQuadrant
-                                              title="Urgent & Not Important"
-                                              tasks={categorizedTasks.urgentNotImportant}
-                                              bgColor="bg-orange-500"
-                                              borderColor="border-l-orange-500"
-                                              textColor="text-white"
-                                              icon={<Clock className="h-3 w-3" />}
-                                            />
-
-                                            {/* Not Urgent & Not Important */}
-                                            <PriorityQuadrant
-                                              title="Not Urgent & Not Important"
-                                              tasks={categorizedTasks.notUrgentNotImportant}
-                                              bgColor="bg-gray-500"
-                                              borderColor="border-l-gray-500"
-                                              textColor="text-white"
-                                              icon={<X className="h-3 w-3" />}
-                                            />
-                                          </div>
-                                        );
-                                      })()}
-                                    </div>
-                                  )}
-                                </div>
-                              )}
                             </div>
                           );
                         })}
@@ -828,6 +659,119 @@ const TwelveWeekCycle: React.FC = () => {
           )}
         </div>
       </main>
+
+      {/* Week Details Modal */}
+      {selectedWeek && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6 border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Week {selectedWeek.weekNumber} Tasks
+                  </h2>
+                  <p className="text-gray-600 mt-1">
+                    {selectedWeek.weekDates.start} - {selectedWeek.weekDates.end}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowWeeklyGoalForm({
+                      goalId: selectedWeek.goalId,
+                      weekNumber: selectedWeek.weekNumber,
+                      domains: selectedWeek.domains,
+                      roles: selectedWeek.roles
+                    })}
+                    className="bg-blue-600 text-white px-3 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Add Task
+                  </button>
+                  <button
+                    onClick={() => setSelectedWeek(null)}
+                    className="text-gray-400 hover:text-gray-600 p-2"
+                  >
+                    <X className="h-5 w-5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {(() => {
+                const weekTasks = getTasksForWeek(selectedWeek.goalId, selectedWeek.weekNumber);
+                
+                if (weekTasks.length === 0) {
+                  return (
+                    <div className="text-center py-12 text-gray-500">
+                      <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p className="text-lg font-medium mb-2">No tasks for Week {selectedWeek.weekNumber} yet.</p>
+                      <p className="text-sm mb-6">Add your first task to get started with this week.</p>
+                      <button
+                        onClick={() => setShowWeeklyGoalForm({
+                          goalId: selectedWeek.goalId,
+                          weekNumber: selectedWeek.weekNumber,
+                          domains: selectedWeek.domains,
+                          roles: selectedWeek.roles
+                        })}
+                        className="text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Add your first task
+                      </button>
+                    </div>
+                  );
+                }
+
+                const categorizedTasks = categorizeTasksByPriority(weekTasks);
+                
+                return (
+                  <div className="space-y-4">
+                    {/* Urgent & Important */}
+                    <PriorityQuadrant
+                      title="Urgent & Important"
+                      tasks={categorizedTasks.urgentImportant}
+                      bgColor="bg-red-500"
+                      borderColor="border-l-red-500"
+                      textColor="text-white"
+                      icon={<AlertTriangle className="h-4 w-4" />}
+                    />
+
+                    {/* Not Urgent & Important */}
+                    <PriorityQuadrant
+                      title="Not Urgent & Important"
+                      tasks={categorizedTasks.notUrgentImportant}
+                      bgColor="bg-green-500"
+                      borderColor="border-l-green-500"
+                      textColor="text-white"
+                      icon={<CheckCircle className="h-4 w-4" />}
+                    />
+
+                    {/* Urgent & Not Important */}
+                    <PriorityQuadrant
+                      title="Urgent & Not Important"
+                      tasks={categorizedTasks.urgentNotImportant}
+                      bgColor="bg-orange-500"
+                      borderColor="border-l-orange-500"
+                      textColor="text-white"
+                      icon={<Clock className="h-4 w-4" />}
+                    />
+
+                    {/* Not Urgent & Not Important */}
+                    <PriorityQuadrant
+                      title="Not Urgent & Not Important"
+                      tasks={categorizedTasks.notUrgentNotImportant}
+                      bgColor="bg-gray-500"
+                      borderColor="border-l-gray-500"
+                      textColor="text-white"
+                      icon={<X className="h-4 w-4" />}
+                    />
+                  </div>
+                );
+              })()}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modals */}
       {showGoalForm && (
