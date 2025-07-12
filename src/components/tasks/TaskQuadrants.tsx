@@ -39,7 +39,7 @@ interface TaskQuadrantsProps {
   loading: boolean;
 }
 
-type SortOption = 'date' | 'priority';
+type SortOption = 'date' | 'priority' | 'delegated';
 
 const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, domains, loading }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -155,6 +155,14 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         const bPriority = b.priority || 0;
         if (aPriority !== bPriority) {
           return bPriority - aPriority; // Higher priority first
+        }
+        return a.title.localeCompare(b.title);
+      } else if (sortBy === 'delegated') {
+        // Sort by delegated status (delegated tasks first, then by title)
+        const aDelegated = a.status === 'delegated' ? 1 : 0;
+        const bDelegated = b.status === 'delegated' ? 1 : 0;
+        if (aDelegated !== bDelegated) {
+          return bDelegated - aDelegated; // Delegated tasks first
         }
         return a.title.localeCompare(b.title);
       }
@@ -426,6 +434,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
               >
                 <option value="priority">Priority</option>
                 <option value="date">Date</option>
+                <option value="delegated">Delegated</option>
               </select>
               <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
