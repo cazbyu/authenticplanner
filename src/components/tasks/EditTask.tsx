@@ -364,8 +364,16 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
   };
 
   const handleDateSelect = (day: number) => {
-    const selectedDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
-    const dateString = selectedDate.toISOString().split('T')[0];
+    // Create date with local timezone to avoid any timezone shifts
+    const year = calendarDate.getFullYear();
+    const month = calendarDate.getMonth();
+    const selectedDate = new Date(year, month, day);
+    
+    // Format date as YYYY-MM-DD ensuring we use local date components
+    const formattedDay = String(selectedDate.getDate()).padStart(2, '0');
+    const formattedMonth = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const dateString = `${year}-${formattedMonth}-${formattedDay}`;
+    
     setForm(prev => ({ ...prev, dueDate: dateString }));
     setShowDatePicker(false);
   };
