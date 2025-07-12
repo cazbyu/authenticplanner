@@ -35,15 +35,17 @@ const AuthenticCalendar: React.FC = () => {
   // State for resizing
   const [resizing, setResizing] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(256); // Default width (64 * 4)
-  const sidebarRef = useRef<HTMLDivElement>(null);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
   
   // Resize handlers
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setResizing(true);
     
     const handleResizeMove = (e: MouseEvent) => {
       e.preventDefault();
+      e.stopPropagation();
       if (resizing && !prioritiesCollapsed) {
         // Calculate new width based on mouse position
         const newWidth = Math.max(256, Math.min(600, e.clientX));
@@ -60,11 +62,13 @@ const AuthenticCalendar: React.FC = () => {
     };
     
     document.addEventListener('mousemove', handleResizeMove);
-    document.addEventListener('mouseup', () => {
-      setResizing(false);
+    document.addEventListener('mouseup', handleResizeEnd, { once: true });
+    
+    // Cleanup function
+    return () => {
       document.removeEventListener('mousemove', handleResizeMove);
       document.removeEventListener('mouseup', handleResizeEnd);
-    }, { once: true });
+    };
   };
   
   // Apply width when component mounts or when width changes
@@ -417,7 +421,7 @@ const AuthenticCalendar: React.FC = () => {
           <>
             {/* Left Sidebar - Unscheduled Priorities with collapse functionality */}
             <div 
-              className={`${prioritiesCollapsed ? 'w-16' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200 flex-shrink-0 relative`} 
+              className={`${prioritiesCollapsed ? 'w-16' : ''} border-r border-gray-200 bg-white flex flex-col transition-all duration-200 flex-shrink-0 relative`} 
               style={prioritiesCollapsed ? 
                 { minWidth: '4rem', width: '4rem' } : 
                 { minWidth: '16rem', width: `${sidebarWidth}px`, maxWidth: '600px' }
@@ -463,34 +467,18 @@ const AuthenticCalendar: React.FC = () => {
                   </div>
 
                   {/* Unscheduled Priorities Content - FIXED: Removed overflow-hidden */}
-                  <div className="flex-1 overflow-y-auto" style={{ height: 'calc(100vh - 170px)' }}>
+                  <div className="flex-1 overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
                     <UnscheduledPriorities refreshTrigger={refreshTrigger} />
-                  </div>
-                  
-                  {/* Notes Section (collapsible/secondary) */}
-                  <div className="border-t border-gray-200 p-4">
-                    <details className="group">
-                      <summary className="text-sm font-medium text-gray-900 cursor-pointer list-none flex items-center justify-between">
-                        Notes
-                        <span className="text-gray-400 group-open:rotate-180 transition-transform">▼</span>
-                      </summary>
-                      <div className="mt-3">
-                        <textarea
-                          className="w-full h-24 resize-none rounded-md border border-gray-300 p-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                          placeholder="Add your notes here..."
-                        />
-                      </div>
-                    </details>
                   </div>
                   
                   {/* Resizer handle */}
                   {!prioritiesCollapsed && (
                     <div 
-                      className="absolute top-0 right-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-200 hover:opacity-50 z-50"
+                      className="absolute top-0 right-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-200 hover:opacity-50 z-50 resize-handle"
                       onMouseDown={handleResizeStart}
                       style={{ cursor: 'col-resize' }}
                     >
-                      <div className="absolute top-0 right-0 bottom-0 w-1 bg-gray-200 hover:bg-blue-500"></div>
+                      <div className="absolute top-0 right-0 bottom-0 w-1 bg-gray-200 hover:bg-blue-500 resize-indicator"></div>
                     </div>
                   )}
                 </div>
