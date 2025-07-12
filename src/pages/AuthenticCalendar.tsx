@@ -30,8 +30,6 @@ const AuthenticCalendar: React.FC = () => {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [isViewChanging, setIsViewChanging] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [isViewChanging, setIsViewChanging] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { user, logout } = useAuth();
 
   // State for resizing
