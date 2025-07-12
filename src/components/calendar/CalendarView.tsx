@@ -83,7 +83,22 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       try {
         const { data: tasks, error } = await supabase
           .from('0007-ap-tasks')
-          .select('id, title, start_time, end_time, is_authentic_deposit, is_twelve_week_goal')
+          .select(`
+            id, 
+            title, 
+            start_time, 
+            end_time, 
+            is_authentic_deposit, 
+            is_twelve_week_goal,
+            is_urgent,
+            is_important,
+            task_roles:0007-ap-task_roles(
+              role:0007-ap-roles(id, label)
+            ),
+            task_domains:0007-ap-task_domains(
+              domain:0007-ap-domains(id, name)
+            )
+          `)
           .eq('user_id', user.id)
           .not('start_time', 'is', null); // Only get tasks with start times
 
@@ -96,10 +111,18 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         if (tasks) {
           const calendarEvents = tasks.map((task: CalendarTask) => ({
             id: task.id,
-            title: task.title,
+            title: task.title, // We'll format this in the eventContent render
             // FullCalendar automatically converts UTC times to local time for display
             start: task.start_time, // This is stored as UTC in database
             end: task.end_time || undefined, // This is also UTC
+            extendedProps: {
+              isUrgent: task.is_urgent,
+              isImportant: task.is_important,
+              isAuthenticDeposit: task.is_authentic_deposit,
+              isTwelveWeekGoal: task.is_twelve_week_goal,
+              roles: task.task_roles?.map((tr: any) => tr.role?.label).filter(Boolean) || [],
+              domains: task.task_domains?.map((td: any) => td.domain?.name).filter(Boolean) || []
+            },
             backgroundColor: task.is_authentic_deposit
               ? '#10B981'
               : task.is_twelve_week_goal
@@ -444,10 +467,72 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         return;
       }
       
+      // Check if the click was on an action button
+      const target = info.jsEvent.target as HTMLElement;
+      if (target.classList.contains('event-action-complete')) {
+        info.jsEvent.stopPropagation();
+        handleTaskAction(info.event.id, 'complete');
+        return;
+      }
+      
+      if (target.classList.contains('event-action-delegate')) {
+        info.jsEvent.stopPropagation();
+        handleTaskAction(info.event.id, 'delegate');
+        return;
+      }
+      
+      if (target.classList.contains('event-action-cancel')) {
+        info.jsEvent.stopPropagation();
+        handleTaskAction(info.event.id, 'cancel');
+        return;
+      }
+      
       // Prevent event bubbling to avoid triggering date click
       info.jsEvent.stopPropagation();
       // Open edit modal for the clicked task
       setEditingTaskId(info.event.id);
+    };
+
+    // Handle task actions (complete, delegate, cancel)
+    const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        const updates: any = {
+          status: action === 'complete' ? 'completed' : action === 'cancel' ? 'cancelled' : 'delegated',
+        };
+        
+        if (action === 'complete') {
+          updates.completed_at = new Date().toISOString();
+        }
+        
+        const { error } = await supabase
+          .from('0007-ap-tasks')
+          .update(updates)
+          .eq('id', taskId)
+          .eq('user_id', user.id);
+        
+        if (error) {
+          console.error(`Error ${action}ing task:`, error);
+          return;
+        }
+        
+        // Remove the event from the calendar
+        if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
+          const calendarApi = fullCalendarRef.current.getApi();
+          const event = calendarApi.getEventById(taskId);
+          if (event) {
+            event.remove();
+          }
+        }
+        
+        // Refresh the tasks list
+        fetchTasks();
+        
+      } catch (err) {
+        console.error(`Error ${action}ing task:`, err);
+      }
     };
 
     const handleTaskCreated = () => {
@@ -812,6 +897,77 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-event[data-event-id="temp-event"]:hover .fc-event-resizer {
             opacity: 1 !important;
           }
+          
+          /* Custom event styling */
+          .fc-event-title {
+            font-size: 14px !important;
+            font-weight: 500 !important;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
+          
+          .fc-event-time {
+            display: none !important; /* Hide the default time display */
+          }
+          
+          .fc-event-details {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 2px;
+            margin-top: 2px;
+          }
+          
+          .event-role, .event-domain {
+            font-size: 10px;
+            padding: 1px 4px;
+            border-radius: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80px;
+          }
+          
+          .event-role {
+            background: #f3f4f6;
+            color: #4b5563;
+          }
+          
+          .event-domain {
+            background: #e0f2fe;
+            color: #0369a1;
+          }
+          
+          .fc-event-actions {
+            display: flex;
+            gap: 4px;
+            margin-top: 4px;
+          }
+          
+          .event-action-complete,
+          .event-action-delegate,
+          .event-action-cancel {
+            border: none;
+            border-radius: 4px;
+            padding: 2px 4px;
+            font-size: 10px;
+            cursor: pointer;
+          }
+          
+          .event-action-complete {
+            background: #10b981;
+            color: white;
+          }
+          
+          .event-action-delegate {
+            background: #6366f1;
+            color: white;
+          }
+          
+          .event-action-cancel {
+            background: #ef4444;
+            color: white;
+          }
         `}
         </style>
         <FullCalendar
@@ -826,6 +982,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           selectable={true}
           selectMirror={true}
           dayMaxEvents={true}
+          eventContent={renderEventContent}
           weekends={true}
           events={events}
           eventClick={handleEventClick}
@@ -911,5 +1068,48 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     );
   }
 );
+
+// Custom event rendering function to show more details
+const renderEventContent = (eventInfo: any) => {
+  const { event } = eventInfo;
+  const { extendedProps } = event;
+  
+  // Get roles and domains
+  const roles = extendedProps?.roles || [];
+  const domains = extendedProps?.domains || [];
+  
+  // Determine if we should show action buttons (only in day/week view)
+  const isTimeGridView = eventInfo.view.type.includes('timeGrid');
+  
+  return {
+    html: `
+      <div class="fc-event-main-wrapper">
+        <div class="fc-event-title-container">
+          <div class="fc-event-title fc-sticky" style="font-size: 14px; font-weight: 500; margin-bottom: 2px;">
+            ${event.title}
+          </div>
+          
+          ${isTimeGridView ? `
+            <div class="fc-event-details" style="display: flex; flex-wrap: wrap; gap: 2px; margin-top: 2px;">
+              ${roles.length > 0 ? roles.map((role: string) => 
+                `<span class="event-role" style="font-size: 10px; background: #f3f4f6; color: #4b5563; padding: 1px 4px; border-radius: 4px;">${role}</span>`
+              ).join('') : ''}
+              
+              ${domains.length > 0 ? domains.map((domain: string) => 
+                `<span class="event-domain" style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 1px 4px; border-radius: 4px;">${domain}</span>`
+              ).join('') : ''}
+            </div>
+            
+            <div class="fc-event-actions" style="display: flex; gap: 4px; margin-top: 4px;">
+              <button class="event-action-complete" title="Complete" style="background: #10b981; color: white; border: none; border-radius: 4px; padding: 2px 4px; font-size: 10px; cursor: pointer;">✓</button>
+              <button class="event-action-delegate" title="Delegate" style="background: #6366f1; color: white; border: none; border-radius: 4px; padding: 2px 4px; font-size: 10px; cursor: pointer;">→</button>
+              <button class="event-action-cancel" title="Cancel" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 4px; font-size: 10px; cursor: pointer;">✕</button>
+            </div>
+          ` : ''}
+        </div>
+      </div>
+    `
+  };
+};
 
 export default CalendarView;

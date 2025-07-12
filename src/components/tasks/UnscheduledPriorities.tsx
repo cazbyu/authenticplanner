@@ -59,6 +59,17 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     setLoading(true);
 
     try {
+      // Fetch all tasks, including scheduled ones
+      const { data: allTasks } = await supabase
+        .from('0007-ap-tasks')
+        .select(`
+          *,
+          task_roles:0007-ap-task_roles(role_id),
+          task_domains:0007-ap-task_domains(domain_id)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'pending');
+      
       // Fetch roles
       const { data: rolesData } = await supabase
         .from('0007-ap-roles')
@@ -87,16 +98,13 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
       }
 
       // Fetch ONLY unscheduled tasks (no start_time)
-      const { data: tasksData } = await supabase
-        .from('0007-ap-tasks')
-        .select(`
-          *,
-          task_roles:0007-ap-task_roles(role_id),
-          task_domains:0007-ap-task_domains(domain_id)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'pending')
-        .is('start_time', null); // Only get unscheduled tasks
+      // Filter locally to include both unscheduled tasks AND scheduled tasks
+      const tasksData = allTasks?.filter(task => 
+        // Include tasks with no start_time (unscheduled)
+        !task.start_time || 
+        // OR include tasks with start_time (scheduled)
+        task.start_time
+      );
 
       if (tasksData) {
         // Sort tasks by due_date within each category
