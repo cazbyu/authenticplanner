@@ -352,7 +352,9 @@ const MainLayout: React.FC = () => {
       {/* Main content */}
       <main className={isCalendarPage ? '' : 'lg:pl-64'}>
         <div className={isCalendarPage ? '' : 'max-w-7xl px-4 py-6 sm:px-6 md:px-8'} style={{ marginRight: activeDrawer ? '320px' : '0' }}>
-          <Outlet />
+          <div className="h-full">
+            <Outlet />
+          </div>
         </div>
       </main>
     </div>
