@@ -23,6 +23,7 @@ import OnboardingComplete from './pages/onboarding/OnboardingComplete';
 import DomainDashboard from './pages/DomainDashboard';
 import DomainDetail from './pages/DomainDetail';
 import RoleBankPage from './pages/RoleBank';
+import FullScorecard from './pages/FullScorecard';
 
 // Loading screen component
 const LoadingScreen = () => (
@@ -125,6 +126,7 @@ function App() {
         <Route path="domains" element={<DomainDashboard />} />
         <Route path="domains/:domainId" element={<DomainDetail />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="scorecard/full" element={<FullScorecard />} />
       </Route>
       
       {/* Redirect any other route to home (which is now calendar) */}
