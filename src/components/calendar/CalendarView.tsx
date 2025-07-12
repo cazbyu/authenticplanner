@@ -91,14 +91,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         const { data: tasks, error } = await supabase
           .from('0007-ap-tasks')
           .select(`
-            id, 
-            title, 
-            start_time, 
-            end_time, 
-            is_authentic_deposit, 
+            id,
+            title,
+            start_time,
+            end_time,
+            is_authentic_deposit,
             is_twelve_week_goal,
             is_urgent,
             is_important,
+            status,
             task_roles:0007-ap-task_roles(
               role:0007-ap-roles(id, label)
             ),
@@ -127,10 +128,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               isImportant: task.is_important,
               isAuthenticDeposit: task.is_authentic_deposit,
               isTwelveWeekGoal: task.is_twelve_week_goal,
+              status: task.status,
               roles: task.task_roles?.map((tr: any) => tr.role?.label).filter(Boolean) || [],
               domains: task.task_domains?.map((td: any) => td.domain?.name).filter(Boolean) || []
             },
-            backgroundColor: task.is_authentic_deposit
+            backgroundColor: task.status === 'completed' 
+              ? '#10B981' // Green for completed tasks
+              : task.status === 'delegated'
+              ? '#9CA3AF' // Gray for delegated tasks
+              : task.is_authentic_deposit
               ? '#10B981'
               : task.is_twelve_week_goal
               ? '#6366F1'
@@ -510,19 +516,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           // Show delegation form instead of immediate update
           setDelegatingTaskId(taskId);
         } else {
-          const updates: any = {
-            status: action === 'complete' ? 'completed' : 'cancelled',
-          };
-          
-          if (action === 'complete') {
-            updates.completed_at = new Date().toISOString();
-          } else if (action === 'cancel') {
-            updates.cancelled = true;
-          }
-          
           const { error } = await supabase
             .from('0007-ap-tasks')
-            .update(updates)
+            .update({
+              status: action === 'complete' ? 'completed' : action === 'delegate' ? 'delegated' : 'cancelled',
+              cancelled: action === 'cancel' ? true : undefined,
+              completed_at: action === 'complete' ? new Date().toISOString() : undefined,
+            })
             .eq('id', taskId)
             .eq('user_id', user.id);
           
@@ -536,7 +536,18 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             const calendarApi = fullCalendarRef.current.getApi();
             const event = calendarApi.getEventById(taskId);
             if (event) {
-              event.remove();
+              if (action === 'complete') {
+                // Change color to green instead of removing
+                event.setProp('backgroundColor', '#10B981');
+                event.setExtendedProp('status', 'completed');
+              } else if (action === 'delegate') {
+                // Change color to gray instead of removing
+                event.setProp('backgroundColor', '#9CA3AF');
+                event.setExtendedProp('status', 'delegated');
+              } else {
+                // Remove cancelled events
+                event.remove();
+              }
             }
           }
           
@@ -1246,9 +1257,13 @@ const renderEventContent = (eventInfo: any) => {
   // Get roles and domains
   const roles = extendedProps?.roles || [];
   const domains = extendedProps?.domains || [];
+  const status = extendedProps?.status || '';
   
   // Determine if we should show action buttons (only in day/week view)
   const isTimeGridView = eventInfo.view.type.includes('timeGrid');
+  
+  // Don't show action buttons for completed or delegated tasks
+  const showActions = isTimeGridView && status !== 'completed' && status !== 'delegated';
   
   return {
     html: `
@@ -1256,13 +1271,14 @@ const renderEventContent = (eventInfo: any) => {
         <div class="fc-event-title-container">
           <div class="fc-event-title fc-sticky" style="font-size: 14px; font-weight: 500; margin-bottom: 2px;">
             ${event.title}
+            ${status === 'completed' ? ' ✓' : status === 'delegated' ? ' →' : ''}
           </div>
           
-          <div class="fc-event-actions" style="position: absolute; top: 2px; right: 2px; display: flex; gap: 2px;">
+          ${showActions ? `<div class="fc-event-actions" style="position: absolute; top: 2px; right: 2px; display: flex; gap: 2px;">
             <button class="event-action-complete" title="Complete" style="background: #10b981; color: white; border: none; border-radius: 4px; padding: 1px 3px; font-size: 10px; cursor: pointer;">✓</button>
             <button class="event-action-delegate" title="Delegate" style="background: #6366f1; color: white; border: none; border-radius: 4px; padding: 1px 3px; font-size: 10px; cursor: pointer;">→</button>
             <button class="event-action-cancel" title="Cancel" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 1px 3px; font-size: 10px; cursor: pointer;">✕</button>
-          </div>
+          </div>` : ''}
           
           ${isTimeGridView ? `
             <div class="fc-event-details" style="display: flex; flex-wrap: wrap; gap: 2px; margin-top: 2px;">
