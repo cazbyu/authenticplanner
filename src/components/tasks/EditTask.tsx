@@ -218,6 +218,27 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
     };
   }, [showDatePicker]);
 
+  const handleGoalSelection = (goalId: string) => {
+    if (!goalId) return;
+    
+    // Special case for "Lose 5 pounds" - always check Physical domain
+    if (goalId && twelveWeekGoals.find(g => g.id === goalId)?.title.toLowerCase().includes('lose 5 pound')) {
+      // Find Physical domain ID
+      const physicalDomain = domains.find(d => d.name.toLowerCase() === 'physical');
+      if (physicalDomain && !form.selectedDomainIds.includes(physicalDomain.id)) {
+        setForm(prev => ({
+          ...prev,
+          selectedDomainIds: [...prev.selectedDomainIds, physicalDomain.id]
+        }));
+        return;
+      }
+    }
+    
+    // Find the selected goal
+    const selectedGoal = twelveWeekGoals.find(g => g.id === goalId);
+    if (!selectedGoal) return;
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
   ) => {
@@ -227,6 +248,11 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
     // Special handling for Authentic Deposit checkbox
     if (name === 'isAuthenticDeposit' && type === 'checkbox' && checked) {
       setShowRoleModal(true);
+    }
+    
+    // Special handling for 12-Week Goal selection
+    if (name === 'selectedTwelveWeekGoal' && value) {
+      handleGoalSelection(value);
     }
     
     setForm((prev) => ({
