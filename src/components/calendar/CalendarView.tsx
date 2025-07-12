@@ -195,9 +195,9 @@ const CalendarView = forwardRef<any, CalendarViewProps>(({ view, currentDate, on
   const timeSlots = generateTimeSlots();
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       {/* Calendar container with droppable time slots */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative overflow-auto">
         {/* Invisible droppable zones overlaid on calendar */}
         <div className="absolute inset-0 pointer-events-none z-10">
           {timeSlots.map((slot) => (
@@ -230,7 +230,7 @@ const CalendarView = forwardRef<any, CalendarViewProps>(({ view, currentDate, on
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView={view}
           headerToolbar={false} // We handle navigation in parent
-          height="100%"
+          height="auto"
           events={events}
           editable={true}
           droppable={true}

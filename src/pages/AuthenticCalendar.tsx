@@ -639,7 +639,7 @@ const AuthenticCalendar: React.FC = () => {
             </div>
 
             {/* Calendar Area - Takes up remaining space and expands when priorities collapsed */}
-            <div className="flex-1 flex flex-col overflow-hidden min-w-0" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
+            <div className="flex-1 flex flex-col overflow-auto min-w-0" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
               <CalendarView
                 ref={calendarRef}
                 view={view}
