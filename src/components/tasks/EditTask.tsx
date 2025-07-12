@@ -245,9 +245,12 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
     
-    // Special handling for Authentic Deposit checkbox
+    // Special handling for Authentic Deposit checkbox - only show role modal if no roles selected
     if (name === 'isAuthenticDeposit' && type === 'checkbox' && checked) {
-      setShowRoleModal(true);
+      // Only show the role modal if no roles are currently selected
+      if (form.selectedRoleIds.length === 0) {
+        setShowRoleModal(true);
+      }
     }
     
     // Special handling for 12-Week Goal selection
