@@ -63,6 +63,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+    const [delegatingTaskId, setDelegatingTaskId] = useState<string | null>(null);
+    const [delegateForm, setDelegateForm] = useState({
+      name: '',
+      email: '',
+      phone: '',
+      notes: ''
+    });
     const [showTaskForm, setShowTaskForm] = useState(false);
     const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlotSelection | null>(null);
     const [taskFormPosition, setTaskFormPosition] = useState<{ x: number; y: number } | null>(null);
@@ -499,37 +506,43 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
         
-        const updates: any = {
-          status: action === 'complete' ? 'completed' : action === 'cancel' ? 'cancelled' : 'delegated',
-        };
-        
-        if (action === 'complete') {
-          updates.completed_at = new Date().toISOString();
-        }
-        
-        const { error } = await supabase
-          .from('0007-ap-tasks')
-          .update(updates)
-          .eq('id', taskId)
-          .eq('user_id', user.id);
-        
-        if (error) {
-          console.error(`Error ${action}ing task:`, error);
-          return;
-        }
-        
-        // Remove the event from the calendar
-        if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
-          const calendarApi = fullCalendarRef.current.getApi();
-          const event = calendarApi.getEventById(taskId);
-          if (event) {
-            event.remove();
+        if (action === 'delegate') {
+          // Show delegation form instead of immediate update
+          setDelegatingTaskId(taskId);
+        } else {
+          const updates: any = {
+            status: action === 'complete' ? 'completed' : 'cancelled',
+          };
+          
+          if (action === 'complete') {
+            updates.completed_at = new Date().toISOString();
+          } else if (action === 'cancel') {
+            updates.cancelled = true;
           }
+          
+          const { error } = await supabase
+            .from('0007-ap-tasks')
+            .update(updates)
+            .eq('id', taskId)
+            .eq('user_id', user.id);
+          
+          if (error) {
+            console.error(`Error ${action}ing task:`, error);
+            return;
+          }
+          
+          // Remove the event from the calendar
+          if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
+            const calendarApi = fullCalendarRef.current.getApi();
+            const event = calendarApi.getEventById(taskId);
+            if (event) {
+              event.remove();
+            }
+          }
+          
+          // Refresh the tasks list
+          fetchTasks();
         }
-        
-        // Refresh the tasks list
-        fetchTasks();
-        
       } catch (err) {
         console.error(`Error ${action}ing task:`, err);
       }
@@ -555,6 +568,74 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       setEditingTaskId(null);
       // Refresh the calendar
       fetchTasks();
+    };
+    
+    const handleDelegateSubmit = async () => {
+      if (!delegatingTaskId || !delegateForm.name.trim()) return;
+      
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+        
+        // First, create or find the delegate in the delegates table
+        const { data: delegate, error: delegateError } = await supabase
+          .from('0007-ap-delegates')
+          .upsert({
+            user_id: user.id,
+            name: delegateForm.name.trim(),
+            email: delegateForm.email.trim() || null,
+            phone: delegateForm.phone.trim() || null,
+            notes: delegateForm.notes.trim() || null
+          }, { onConflict: 'user_id, name' })
+          .select('id')
+          .single();
+        
+        if (delegateError) {
+          console.error('Error creating delegate:', delegateError);
+          return;
+        }
+        
+        // Update the task with delegation info
+        const { error: taskError } = await supabase
+          .from('0007-ap-tasks')
+          .update({
+            status: 'delegated',
+            delegated_to_name: delegateForm.name.trim(),
+            delegated_to_email: delegateForm.email.trim() || null,
+            delegated_to_contact_id: delegate?.id || null
+          })
+          .eq('id', delegatingTaskId)
+          .eq('user_id', user.id);
+        
+        if (taskError) {
+          console.error('Error updating task with delegation:', taskError);
+          return;
+        }
+        
+        // Remove the event from the calendar
+        if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
+          const calendarApi = fullCalendarRef.current.getApi();
+          const event = calendarApi.getEventById(delegatingTaskId);
+          if (event) {
+            event.remove();
+          }
+        }
+        
+        // Reset form and close
+        setDelegateForm({
+          name: '',
+          email: '',
+          phone: '',
+          notes: ''
+        });
+        setDelegatingTaskId(null);
+        
+        // Refresh tasks
+        fetchTasks();
+        
+      } catch (err) {
+        console.error('Error delegating task:', err);
+      }
     };
 
     // FIXED: Convert selected time slot to form-compatible format with correct date/time handling
@@ -1064,6 +1145,94 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             onTaskUpdated={handleTaskUpdated}
           />
         )}
+        
+        {/* Delegate Task Modal */}
+        {delegatingTaskId && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg shadow-lg p-6 max-w-md w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-gray-900">Delegate Task</h3>
+                <button
+                  onClick={() => setDelegatingTaskId(null)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Name *
+                  </label>
+                  <input
+                    type="text"
+                    value={delegateForm.name}
+                    onChange={(e) => setDelegateForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Who are you delegating to?"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Email
+                  </label>
+                  <input
+                    type="email"
+                    value={delegateForm.email}
+                    onChange={(e) => setDelegateForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Email address (optional)"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number
+                  </label>
+                  <input
+                    type="tel"
+                    value={delegateForm.phone}
+                    onChange={(e) => setDelegateForm(prev => ({ ...prev, phone: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Phone number (optional)"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes
+                  </label>
+                  <textarea
+                    value={delegateForm.notes}
+                    onChange={(e) => setDelegateForm(prev => ({ ...prev, notes: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    placeholder="Any additional notes"
+                    rows={3}
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setDelegatingTaskId(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelegateSubmit}
+                  disabled={!delegateForm.name.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -1089,6 +1258,12 @@ const renderEventContent = (eventInfo: any) => {
             ${event.title}
           </div>
           
+          <div class="fc-event-actions" style="position: absolute; top: 2px; right: 2px; display: flex; gap: 2px;">
+            <button class="event-action-complete" title="Complete" style="background: #10b981; color: white; border: none; border-radius: 4px; padding: 1px 3px; font-size: 10px; cursor: pointer;">✓</button>
+            <button class="event-action-delegate" title="Delegate" style="background: #6366f1; color: white; border: none; border-radius: 4px; padding: 1px 3px; font-size: 10px; cursor: pointer;">→</button>
+            <button class="event-action-cancel" title="Cancel" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 1px 3px; font-size: 10px; cursor: pointer;">✕</button>
+          </div>
+          
           ${isTimeGridView ? `
             <div class="fc-event-details" style="display: flex; flex-wrap: wrap; gap: 2px; margin-top: 2px;">
               ${roles.length > 0 ? roles.map((role: string) => 
@@ -1098,12 +1273,6 @@ const renderEventContent = (eventInfo: any) => {
               ${domains.length > 0 ? domains.map((domain: string) => 
                 `<span class="event-domain" style="font-size: 10px; background: #e0f2fe; color: #0369a1; padding: 1px 4px; border-radius: 4px;">${domain}</span>`
               ).join('') : ''}
-            </div>
-            
-            <div class="fc-event-actions" style="display: flex; gap: 4px; margin-top: 4px;">
-              <button class="event-action-complete" title="Complete" style="background: #10b981; color: white; border: none; border-radius: 4px; padding: 2px 4px; font-size: 10px; cursor: pointer;">✓</button>
-              <button class="event-action-delegate" title="Delegate" style="background: #6366f1; color: white; border: none; border-radius: 4px; padding: 2px 4px; font-size: 10px; cursor: pointer;">→</button>
-              <button class="event-action-cancel" title="Cancel" style="background: #ef4444; color: white; border: none; border-radius: 4px; padding: 2px 4px; font-size: 10px; cursor: pointer;">✕</button>
             </div>
           ` : ''}
         </div>
