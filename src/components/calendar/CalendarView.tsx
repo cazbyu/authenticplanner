@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef, forwardRef } from 'react';
+import { format } from 'date-fns';
 import FullCalendar, { DatesSetArg, DateHeaderContentArg, EventClickArg, DateSelectArg, DateClickArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
-import { Droppable } from 'react-beautiful-dnd';
 import { supabase } from '../../supabaseClient';
 import TaskEditModal from './TaskEditModal';
 import TaskForm from '../tasks/TaskForm';
