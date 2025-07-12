@@ -585,13 +585,11 @@ const TwelveWeekCycle: React.FC = () => {
                         {weeks.slice(0, 6).map(weekNumber => {
                           const weekDates = getWeekDates(weekNumber);
                           const weekTasks = getTasksForWeek(goal.id, weekNumber);
-                          const weekKey = `${goal.id}-week-${weekNumber}`;
-                          const isExpanded = expandedWeeks.has(weekKey);
                           
                           return (
-                                onClick={() => handleWeekClick(goal, weekNumber)}
+                            <div key={weekNumber} className="border rounded-lg">
                               <button
-                                onClick={() => toggleWeekExpansion(weekKey)}
+                                onClick={() => handleWeekClick(goal, weekNumber)}
                                 className="w-full p-3 text-left hover:bg-gray-50 transition-colors"
                               >
                                 <div className="text-center">
