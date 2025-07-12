@@ -314,19 +314,18 @@ const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   const handleDateSelect = (day: number) => {
-    // Create date with local timezone to avoid any timezone shifts
+    // Create date with local timezone and ensure we're using the correct day
     const year = calendarDate.getFullYear();
     const month = calendarDate.getMonth();
-    const selectedDate = new Date(year, month, day);
+    // Create date at noon to avoid any timezone issues
+    const selectedDate = new Date(year, month, day, 12, 0, 0);
     
     // Format date as YYYY-MM-DD ensuring we use local date components
-    const formattedDay = String(selectedDate.getDate()).padStart(2, '0');
-    const formattedMonth = String(selectedDate.getMonth() + 1).padStart(2, '0');
+    const formattedDay = String(day).padStart(2, '0');
+    const formattedMonth = String(month + 1).padStart(2, '0');
     const dateString = `${year}-${formattedMonth}-${formattedDay}`;
     
     console.log('Selected date:', selectedDate, 'Formatted as:', dateString);
-    
-    setForm(prev => ({ ...prev, dueDate: dateString }));
     setShowDatePicker(false);
   };
 

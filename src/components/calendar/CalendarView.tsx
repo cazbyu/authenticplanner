@@ -289,34 +289,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     // FIXED: Parse the exact date and time from the clicked slot with proper timezone handling
     const parseClickedDateTime = (dateClickInfo: DateClickArg): { start: Date; end: Date } => {
       const { date, allDay } = dateClickInfo;
-      
-      console.log('Raw click data:', {
-        originalDate: date,
-        allDay,
-        view,
-        dateString: date.toISOString(),
-        localString: date.toLocaleString()
-      });
+      // Use the exact date from the click, but set hours to noon to avoid timezone issues
+      const localDate = new Date(date);
       
       if (allDay || view === 'dayGridMonth') {
         // For month view or all-day clicks, use the exact date at start of day
-        const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
-        const end = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
-        
-        console.log('All-day parsed:', { start, end });
+        const start = new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 0, 0, 0, 0);
+        const end = new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 23, 59, 59, 999);
         return { start, end };
       } else {
         // For time grid views, preserve the exact clicked time in local timezone
-        const start = new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours(), date.getMinutes(), 0, 0);
+        const start = new Date(localDate.getFullYear(), localDate.getMonth(), localDate.getDate(), 
+                              localDate.getHours(), localDate.getMinutes(), 0, 0);
         const end = new Date(start.getTime() + (60 * 60 * 1000)); // Add 1 hour
-        
-        console.log('Time grid parsed:', {
-          start: start.toLocaleString(),
-          end: end.toLocaleString(),
-          startISO: start.toISOString(),
-          endISO: end.toISOString()
-        });
-        
         return { start, end };
       }
     };
