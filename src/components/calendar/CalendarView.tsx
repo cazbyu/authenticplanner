@@ -4,6 +4,7 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 import listPlugin from '@fullcalendar/list';
+import { Droppable } from 'react-beautiful-dnd';
 import { supabase } from '../../supabaseClient';
 import TaskEditModal from './TaskEditModal';
 import TaskForm from '../tasks/TaskForm';
@@ -74,6 +75,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [selectedTimeSlot, setSelectedTimeSlot] = useState<TimeSlotSelection | null>(null);
     const [taskFormPosition, setTaskFormPosition] = useState<{ x: number; y: number } | null>(null);
     const [temporaryEvent, setTemporaryEvent] = useState<TemporaryEvent | null>(null);
+    const [dropTargets, setDropTargets] = useState<string[]>([]);
     const calendarRef = useRef<FullCalendar | null>(null);
     const [calendarReady, setCalendarReady] = useState(false);
 
@@ -321,6 +323,26 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       
       return null;
     };
+
+    // Generate drop targets for each hour of the day
+    useEffect(() => {
+      if (view === 'timeGridDay' || view === 'timeGridWeek') {
+        const targets: string[] = [];
+        const date = currentDate;
+        const dateStr = format(date, 'yyyy-MM-dd');
+        
+        // Create a drop target for each hour
+        for (let hour = 0; hour < 24; hour++) {
+          for (let minute = 0; minute < 60; minute += 30) {
+            const hourStr = hour.toString().padStart(2, '0');
+            const minuteStr = minute.toString().padStart(2, '0');
+            targets.push(`calendar-${dateStr}-${hourStr}-${minuteStr}`);
+          }
+        }
+        
+        setDropTargets(targets);
+      }
+    }, [view, currentDate]);
 
     // FIXED: Parse the exact date and time from the clicked slot with proper timezone handling
     const parseClickedDateTime = (dateClickInfo: DateClickArg): { start: Date; end: Date } => {
@@ -719,6 +741,27 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       <div className="h-full flex flex-col">
         <style>
           {`
+          /* Drag and drop styles */
+          .task-drag-preview {
+            opacity: 0.8;
+            transform: rotate(3deg);
+            z-index: 9999;
+          }
+          
+          .calendar-drop-target {
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px dashed #3B82F6;
+            border-radius: 4px;
+            min-height: 30px;
+            margin: 2px 0;
+            transition: background-color 0.2s;
+          }
+          
+          .calendar-drop-target.can-drop {
+            background-color: rgba(59, 130, 246, 0.2);
+            border: 1px solid #3B82F6;
+          }
+          
           .fc {
             height: 100% !important;
             font-family: inherit;
@@ -1062,57 +1105,90 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           }
         `}
         </style>
-        <FullCalendar
-          ref={fullCalendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
-          initialView={view}
-          initialDate={currentDate}
-          headerToolbar={false}
-          nowIndicator={true}
-          firstDay={0}
-          editable={true}
-          selectable={true}
-          selectMirror={true}
-          dayMaxEvents={true}
-          eventContent={renderEventContent}
-          weekends={true}
-          events={events}
-          eventClick={handleEventClick}
-          select={handleDateSelect}
-          dateClick={handleDateClick}
-          eventResize={handleEventResize}
-          height="100%"
-          dayMinTime="00:00:00"
-          dayMaxTime="24:00:00"
-          allDaySlot={false}
-          scrollTime={`${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}:00`}
-          scrollTimeReset={false}
-          slotLabelFormat={{
-            hour: 'numeric',
-            minute: '2-digit',
-            omitZeroMinute: true,
-            meridiem: 'short',
-          }}
-          views={{
-            dayGridMonth: { firstDay: 0, fixedWeekCount: false, showNonCurrentDates: true },
-            timeGridWeek: { firstDay: 0 },
-            timeGridDay: { firstDay: 0 },
-          }}
-          datesSet={handleDatesSet}
-          viewDidMount={handleCalendarReady}
-          dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
-          selectConstraint={{
-            start: '00:00',
-            end: '24:00',
-          }}
-          selectOverlap={false}
-          selectMinDistance={5}
-          longPressDelay={300}
-          eventLongPressDelay={300}
-          slotDuration="00:15:00"
-          snapDuration="00:15:00"
-          eventResizableFromStart={false}
-        />
+        <div className="relative h-full">
+          <FullCalendar
+            ref={fullCalendarRef}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+            initialView={view}
+            initialDate={currentDate}
+            headerToolbar={false}
+            nowIndicator={true}
+            firstDay={0}
+            editable={true}
+            selectable={true}
+            selectMirror={true}
+            dayMaxEvents={true}
+            eventContent={renderEventContent}
+            weekends={true}
+            events={events}
+            eventClick={handleEventClick}
+            select={handleDateSelect}
+            dateClick={handleDateClick}
+            eventResize={handleEventResize}
+            height="100%"
+            dayMinTime="00:00:00"
+            dayMaxTime="24:00:00"
+            allDaySlot={false}
+            scrollTime={`${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}:00`}
+            scrollTimeReset={false}
+            slotLabelFormat={{
+              hour: 'numeric',
+              minute: '2-digit',
+              omitZeroMinute: true,
+              meridiem: 'short',
+            }}
+            views={{
+              dayGridMonth: { firstDay: 0, fixedWeekCount: false, showNonCurrentDates: true },
+              timeGridWeek: { firstDay: 0 },
+              timeGridDay: { firstDay: 0 },
+            }}
+            datesSet={handleDatesSet}
+            viewDidMount={handleCalendarReady}
+            dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
+            selectConstraint={{
+              start: '00:00',
+              end: '24:00',
+            }}
+            selectOverlap={false}
+            selectMinDistance={5}
+            longPressDelay={300}
+            eventLongPressDelay={300}
+            slotDuration="00:15:00"
+            snapDuration="00:15:00"
+            eventResizableFromStart={false}
+          />
+          
+          {/* Overlay drop targets for drag and drop */}
+          {view === 'timeGridDay' && (
+            <div className="absolute inset-0 pointer-events-none">
+              <div className="absolute left-0 right-0 top-0 bottom-0" style={{ marginTop: '70px' }}>
+                {dropTargets.map(targetId => {
+                  const [_, date, hour, minute] = targetId.split('-');
+                  return (
+                    <Droppable key={targetId} droppableId={targetId} type="TASK">
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`calendar-drop-target pointer-events-auto ${snapshot.isDraggingOver ? 'can-drop' : ''}`}
+                          style={{ 
+                            position: 'absolute',
+                            top: `${(parseInt(hour) * 60 + parseInt(minute)) * 0.8}px`, 
+                            left: '60px',
+                            right: '10px',
+                            height: '30px'
+                          }}
+                        >
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
         
         {/* Compact Task Form Modal - 75% size with smart positioning */}
         {showTaskForm && (

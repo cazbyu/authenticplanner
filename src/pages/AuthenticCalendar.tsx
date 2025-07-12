@@ -4,6 +4,7 @@ import { Compass } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskForm from '../components/tasks/TaskForm';
 import CalendarView from '../components/calendar/CalendarView';
+import { DragDropContext } from 'react-beautiful-dnd';
 import TaskQuadrants from '../components/tasks/TaskQuadrants';
 import UnscheduledPriorities from '../components/tasks/UnscheduledPriorities';
 import { useAuth } from '../contexts/AuthContext';
@@ -28,8 +29,6 @@ const AuthenticCalendar: React.FC = () => {
   const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('tasks'); // Changed default to 'tasks'
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const calendarRef = useRef<FullCalendar | null>(null);
-  const [isViewChanging, setIsViewChanging] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { user, logout } = useAuth();
 
   // State for resizing
@@ -405,9 +404,21 @@ const AuthenticCalendar: React.FC = () => {
       <div className="flex-1 flex overflow-hidden">
         {activeView === 'tasks' ? (
           /* Task Priorities View - Now the default with full height */
-          <div className="flex-1 overflow-hidden h-full" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
-            <TaskQuadrants refreshTrigger={refreshTrigger} />
-          </div>
+          <DragDropContext
+            onDragEnd={(result) => {
+              if (!result.destination) return;
+              
+              // Handle task reordering or moving between quadrants
+              console.log('Drag ended:', result);
+              
+              // Refresh tasks after drag
+              setRefreshTrigger(prev => prev + 1);
+            }}
+          >
+            <div className="flex-1 overflow-hidden h-full" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
+              <TaskQuadrants refreshTrigger={refreshTrigger} />
+            </div>
+          </DragDropContext>
         ) : (
           /* Calendar View - Now secondary */
           <>
@@ -444,48 +455,63 @@ const AuthenticCalendar: React.FC = () => {
                 </div>
               ) : (
                 /* Expanded Sidebar */
-                <div className="flex flex-col h-full">
-                  {/* Unscheduled Priorities Header with Collapse Button */}
-                  <div className="p-4 border-b border-gray-200">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-gray-900">Unscheduled Priorities</h3>
-                      <button
-                        onClick={() => setPrioritiesCollapsed(true)}
-                        className="p-1 hover:bg-gray-100 rounded transition-colors"
-                        title="Collapse Unscheduled Priorities"
-                      >
-                        <ChevronLeft className="h-4 w-4 text-gray-600" />
-                      </button>
+                <DragDropContext
+                  onDragEnd={(result) => {
+                    if (!result.destination) return;
+                    
+                    // If dropping onto calendar
+                    if (result.destination.droppableId.startsWith('calendar')) {
+                      console.log('Dropped onto calendar:', result);
+                      // Calendar component will handle the update
+                    }
+                    
+                    // Refresh tasks after drag
+                    setRefreshTrigger(prev => prev + 1);
+                  }}
+                >
+                  <div className="flex flex-col h-full">
+                    {/* Unscheduled Priorities Header with Collapse Button */}
+                    <div className="p-4 border-b border-gray-200">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-900">Unscheduled Priorities</h3>
+                        <button
+                          onClick={() => setPrioritiesCollapsed(true)}
+                          className="p-1 hover:bg-gray-100 rounded transition-colors"
+                          title="Collapse Unscheduled Priorities"
+                        >
+                          <ChevronLeft className="h-4 w-4 text-gray-600" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Unscheduled Priorities Content - FIXED: Removed overflow-hidden */}
-                  <div className="flex-1 overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
-                    <UnscheduledPriorities refreshTrigger={refreshTrigger} />
-                  </div>
-                  
-                  {/* Resizer handle */}
-                  {!prioritiesCollapsed && (
-                    <div 
-                      className="absolute top-0 right-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-200 hover:opacity-50 z-50"
-                      onMouseDown={handleResizeStart}
-                      style={{ 
-                        cursor: 'col-resize',
-                        width: '16px',
-                        right: '-8px',
-                        zIndex: 100
-                      }}
-                    >
-                      <div 
-                        className="absolute top-0 right-0 bottom-0 w-1 bg-gray-200 hover:bg-blue-500"
-                        style={{
-                          right: '8px',
-                          width: '4px'
-                        }}
-                      ></div>
+                    {/* Unscheduled Priorities Content - FIXED: Removed overflow-hidden */}
+                    <div className="flex-1 overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
+                      <UnscheduledPriorities refreshTrigger={refreshTrigger} />
                     </div>
-                  )}
-                </div>
+                    
+                    {/* Resizer handle */}
+                    {!prioritiesCollapsed && (
+                      <div 
+                        className="absolute top-0 right-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-200 hover:opacity-50 z-50"
+                        onMouseDown={handleResizeStart}
+                        style={{ 
+                          cursor: 'col-resize',
+                          width: '16px',
+                          right: '-8px',
+                          zIndex: 100
+                        }}
+                      >
+                        <div 
+                          className="absolute top-0 right-0 bottom-0 w-1 bg-gray-200 hover:bg-blue-500"
+                          style={{
+                            right: '8px',
+                            width: '4px'
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </DragDropContext>
               )}
             </div>
 
@@ -496,7 +522,6 @@ const AuthenticCalendar: React.FC = () => {
                 view={view}
                 currentDate={currentDate}
                 onDateChange={handleDateChange}
-                refreshTrigger={refreshTrigger}
                 refreshTrigger={refreshTrigger}
               />
             </div>
