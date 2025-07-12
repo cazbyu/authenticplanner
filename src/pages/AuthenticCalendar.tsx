@@ -28,6 +28,7 @@ const AuthenticCalendar: React.FC = () => {
   const [activeDrawer, setActiveDrawer] = useState<'roles' | 'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('tasks'); // Changed default to 'tasks'
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const calendarRef = useRef<FullCalendar | null>(null);
   const { user, logout } = useAuth();
 
