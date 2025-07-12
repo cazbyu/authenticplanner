@@ -81,7 +81,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     selectedTwelveWeekGoal: "",
     isUrgent: false,
     isImportant: false,
-    dueDate: new Date().toISOString().split('T')[0],
+    dueDate: "",
     startTime: "",
     endTime: "",
     notes: "",
@@ -277,7 +277,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   };
 
   const formatDateDisplay = (dateStr: string) => {
-    if (!dateStr) return 'Select date';
+    if (!dateStr) return 'No date';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { 
       weekday: 'short',
@@ -291,6 +291,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
     setForm(prev => ({
       ...prev,
       schedulingType: type,
+      // Clear date and times when switching to unscheduled
+      dueDate: type === 'unscheduled' ? '' : prev.dueDate || new Date().toISOString().split('T')[0],
       startTime: type === 'unscheduled' ? '' : prev.startTime,
       endTime: type === 'unscheduled' ? '' : prev.endTime
     }));
@@ -456,7 +458,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         selectedTwelveWeekGoal: "",
         isUrgent: false,
         isImportant: false,
-        dueDate: new Date().toISOString().split('T')[0],
+        dueDate: "",
         startTime: "",
         endTime: "",
         notes: "",
