@@ -40,11 +40,13 @@ const AuthenticCalendar: React.FC = () => {
   // Resize handlers
   const handleResizeStart = (e: React.MouseEvent) => {
     e.preventDefault();
+    e.stopPropagation();
     setResizing(true);
     
     const handleResizeMove = (e: MouseEvent) => {
       if (resizing && !prioritiesCollapsed) {
-        const newWidth = Math.max(256, Math.min(600, e.clientX));
+        // Calculate new width based on mouse position
+        const newWidth = Math.max(256, Math.min(600, e.clientX - 10));
         setSidebarWidth(newWidth);
         
         if (sidebarRef.current) {
@@ -414,7 +416,11 @@ const AuthenticCalendar: React.FC = () => {
             {/* Left Sidebar - Unscheduled Priorities with collapse functionality */}
             <div 
               className={`${prioritiesCollapsed ? 'w-16' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200 flex-shrink-0 relative`} 
-              style={{ minWidth: prioritiesCollapsed ? '4rem' : '16rem' }}
+              style={{ 
+                minWidth: prioritiesCollapsed ? '4rem' : '16rem',
+                width: prioritiesCollapsed ? '4rem' : `${sidebarWidth}px`
+              }}
+              ref={sidebarRef}
               id="unscheduled-priorities-container"
             >
               {prioritiesCollapsed ? (
@@ -476,10 +482,15 @@ const AuthenticCalendar: React.FC = () => {
                   </div>
                   
                   {/* Resizer handle */}
-                  <div 
-                    className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 hover:w-1 z-10"
-                    onMouseDown={handleResizeStart}
-                  />
+                  {!prioritiesCollapsed && (
+                    <div 
+                      className="absolute top-0 right-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-200 hover:opacity-50 z-10"
+                      onMouseDown={handleResizeStart}
+                      style={{ cursor: 'col-resize' }}
+                    >
+                      <div className="absolute top-0 right-0 bottom-0 w-1 bg-gray-200"></div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>

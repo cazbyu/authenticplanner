@@ -151,6 +151,7 @@ input:checked + .slider:before {
 /* Custom scrollbar styles */
 .scrollbar-thin::-webkit-scrollbar {
   width: 6px;
+  height: 6px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-track {
@@ -161,6 +162,7 @@ input:checked + .slider:before {
 .scrollbar-thin::-webkit-scrollbar-thumb {
   background: #d1d5db;
   border-radius: 10px;
+  min-height: 30px;
 }
 
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
@@ -170,11 +172,13 @@ input:checked + .slider:before {
 /* Resizer styles */
 .cursor-col-resize {
   cursor: col-resize;
+  z-index: 50;
+  width: 8px !important;
 }
 
 /* Ensure the resizer is visible when being dragged */
 .cursor-col-resize:active,
 .cursor-col-resize:hover {
-  background-color: rgba(59, 130, 246, 0.5) !important;
-  width: 4px !important;
+  background-color: rgba(59, 130, 246, 0.3) !important;
+  width: 8px !important;
 }

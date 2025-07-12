@@ -390,9 +390,9 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
   }
 
   return (
-    <div className="h-full flex flex-col overflow-hidden">
+    <div className="h-full flex flex-col">
       {/* Quadrant sections with consistent padding from left edge and uniform spacing */}
-      <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin" style={{ height: 'calc(100vh - 120px)' }}>
+      <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin" style={{ height: 'calc(100vh - 150px)', overflowY: 'scroll' }}>
         {/* Urgent & Important - Red */}
         <QuadrantSection
           id="urgent-important"
