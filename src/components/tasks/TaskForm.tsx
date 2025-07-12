@@ -16,7 +16,7 @@ interface Domain {
 interface TaskFormValues {
   title: string;
   isAuthenticDeposit: boolean;
-  isTwelveWeekGoal: boolean;
+  selectedTwelveWeekGoal: string;
   isUrgent: boolean;
   isImportant: boolean;
   dueDate: string;
@@ -34,6 +34,11 @@ interface TaskFormValues {
     endDate?: string;
     occurrences?: number;
   };
+}
+
+interface TwelveWeekGoal {
+  id: string;
+  title: string;
 }
 
 interface TaskFormProps {
@@ -60,6 +65,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [userId, setUserId] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
+  const [twelveWeekGoals, setTwelveWeekGoals] = useState<TwelveWeekGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +79,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [form, setForm] = useState<TaskFormValues>({
     title: "",
     isAuthenticDeposit: false,
-    isTwelveWeekGoal: false,
+    selectedTwelveWeekGoal: "",
     isUrgent: false,
     isImportant: false,
     dueDate: new Date().toISOString().split('T')[0],
@@ -114,13 +120,18 @@ const TaskForm: React.FC<TaskFormProps> = ({
           return;
         }
 
-        const [roleRes, domainRes] = await Promise.all([
+        const [roleRes, domainRes, twelveWeekGoalsRes] = await Promise.all([
           supabase
             .from("0007-ap-roles")
             .select("id, label")
             .eq("user_id", userId)
             .eq("is_active", true),
           supabase.from("0007-ap-domains").select("id, name"),
+          supabase
+            .from("0007-ap-goals_12wk_main")
+            .select("id, title")
+            .eq("user_id", userId)
+            .eq("status", "active")
         ]);
 
         if (roleRes.error || domainRes.error) {
@@ -128,6 +139,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         } else {
           setRoles(roleRes.data || []);
           setDomains(domainRes.data || []);
+          setTwelveWeekGoals(twelveWeekGoalsRes.data || []);
         }
       } catch (err) {
         console.error('Error fetching roles/domains:', err);
@@ -168,8 +180,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setShowRoleModal(true);
     }
     
-    // Special handling for 12-Week Goal checkbox - PLACEHOLDER for future goal selection
-    if (name === 'isTwelveWeekGoal' && type === 'checkbox' && checked) {
+    // Special handling for 12-Week Goal dropdown - PLACEHOLDER for future goal selection
+    if (name === 'selectedTwelveWeekGoal' && value) {
       setShowGoalModal(true);
     }
     
@@ -345,7 +357,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             user_id: userId,
             title: form.title.trim(),
             is_authentic_deposit: form.isAuthenticDeposit,
-            is_twelve_week_goal: form.isTwelveWeekGoal,
+            is_twelve_week_goal: !!form.selectedTwelveWeekGoal,
             is_urgent: form.isUrgent,
             is_important: form.isImportant,
             due_date: form.dueDate || null,
@@ -409,7 +421,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setForm({
         title: "",
         isAuthenticDeposit: false,
-        isTwelveWeekGoal: false,
+        selectedTwelveWeekGoal: "",
         isUrgent: false,
         isImportant: false,
         dueDate: new Date().toISOString().split('T')[0],
@@ -539,12 +551,25 @@ const TaskForm: React.FC<TaskFormProps> = ({
               <label className="flex items-center gap-1 text-xs">
                 <input
                   type="checkbox"
-                  name="isTwelveWeekGoal"
-                  checked={form.isTwelveWeekGoal}
+                  name="selectedTwelveWeekGoal"
+                  checked={!!form.selectedTwelveWeekGoal}
                   onChange={handleChange}
                   className="h-3 w-3"
                 />
-                12-Week Goal
+                <select
+                  name="selectedTwelveWeekGoal"
+                  value={form.selectedTwelveWeekGoal}
+                  onChange={handleChange}
+                  className="text-xs border-none bg-transparent focus:outline-none"
+                  disabled={!form.selectedTwelveWeekGoal && twelveWeekGoals.length === 0}
+                >
+                  <option value="">12-Week Goal</option>
+                  {twelveWeekGoals.map(goal => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.title}
+                    </option>
+                  ))}
+                </select>
               </label>
             </div>
 
