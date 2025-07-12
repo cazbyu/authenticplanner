@@ -526,20 +526,6 @@ const AuthenticCalendar: React.FC = () => {
             <Plus className="h-5 w-5" />
           </button>
 
-          {/* Profile Icon - Hidden on desktop since we have the floating nav */}
-          <div className="relative lg:hidden">
-            <button
-              onClick={() => setActiveDrawer(activeDrawer ? null : 'roles')}
-              className="flex items-center space-x-2 p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-              aria-label="Toggle navigation"
-            >
-              <div className="h-7 w-7 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-xs font-medium text-blue-600">
-                  {user?.name?.charAt(0) || 'U'}
-                </span>
-              </div>
-            </button>
-          </div>
         </div>
       </header>
 
