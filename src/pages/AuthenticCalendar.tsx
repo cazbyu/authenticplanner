@@ -32,6 +32,44 @@ const AuthenticCalendar: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { user, logout } = useAuth();
 
+  // State for resizing
+  const [resizing, setResizing] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(256); // Default width (64 * 4)
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  
+  // Resize handlers
+  const handleResizeStart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setResizing(true);
+    
+    const handleResizeMove = (e: MouseEvent) => {
+      if (resizing && !prioritiesCollapsed) {
+        const newWidth = Math.max(256, Math.min(600, e.clientX));
+        setSidebarWidth(newWidth);
+        
+        if (sidebarRef.current) {
+          sidebarRef.current.style.width = `${newWidth}px`;
+        }
+      }
+    };
+    
+    const handleResizeEnd = () => {
+      setResizing(false);
+      document.removeEventListener('mousemove', handleResizeMove);
+      document.removeEventListener('mouseup', handleResizeEnd);
+    };
+    
+    document.addEventListener('mousemove', handleResizeMove);
+    document.addEventListener('mouseup', handleResizeEnd);
+  };
+  
+  // Apply width when component mounts or when width changes
+  useEffect(() => {
+    if (!prioritiesCollapsed && sidebarRef.current) {
+      sidebarRef.current.style.width = `${sidebarWidth}px`;
+    }
+  }, [sidebarWidth, prioritiesCollapsed]);
+  
   // Called whenever FullCalendar's visible date range changes
   const handleDateChange = (newStart: Date) => {
     if (!isViewChanging) {
@@ -374,7 +412,11 @@ const AuthenticCalendar: React.FC = () => {
           /* Calendar View - Now secondary */
           <>
             {/* Left Sidebar - Unscheduled Priorities with collapse functionality */}
-            <div className={`${prioritiesCollapsed ? 'w-16' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200 flex-shrink-0`}>
+            <div 
+              className={`${prioritiesCollapsed ? 'w-16' : 'w-64'} border-r border-gray-200 bg-white flex flex-col transition-all duration-200 flex-shrink-0 relative`} 
+              style={{ minWidth: prioritiesCollapsed ? '4rem' : '16rem' }}
+              id="unscheduled-priorities-container"
+            >
               {prioritiesCollapsed ? (
                 /* Collapsed Sidebar - Improved readability with proper case */
                 <div className="h-full flex flex-col items-center py-4">
@@ -397,7 +439,7 @@ const AuthenticCalendar: React.FC = () => {
                 </div>
               ) : (
                 /* Expanded Sidebar */
-                <>
+                <div className="flex flex-col h-full">
                   {/* Unscheduled Priorities Header with Collapse Button */}
                   <div className="p-4 border-b border-gray-200">
                     <div className="flex items-center justify-between">
@@ -413,7 +455,7 @@ const AuthenticCalendar: React.FC = () => {
                   </div>
 
                   {/* Unscheduled Priorities Content - FIXED: Removed overflow-hidden */}
-                  <div className="flex-1">
+                  <div className="flex-1 overflow-y-auto" style={{ height: 'calc(100% - 60px)' }}>
                     <UnscheduledPriorities refreshTrigger={refreshTrigger} />
                   </div>
                   
@@ -432,7 +474,13 @@ const AuthenticCalendar: React.FC = () => {
                       </div>
                     </details>
                   </div>
-                </>
+                  
+                  {/* Resizer handle */}
+                  <div 
+                    className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 hover:w-1 z-10"
+                    onMouseDown={handleResizeStart}
+                  />
+                </div>
               )}
             </div>
 

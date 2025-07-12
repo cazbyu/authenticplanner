@@ -166,3 +166,15 @@ input:checked + .slider:before {
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background: #9ca3af;
 }
+
+/* Resizer styles */
+.cursor-col-resize {
+  cursor: col-resize;
+}
+
+/* Ensure the resizer is visible when being dragged */
+.cursor-col-resize:active,
+.cursor-col-resize:hover {
+  background-color: rgba(59, 130, 246, 0.5) !important;
+  width: 4px !important;
+}
