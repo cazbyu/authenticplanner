@@ -567,25 +567,28 @@ const TwelveWeekCycle: React.FC = () => {
 
                 {expandedGoals.has(goal.id) && (
                   <div className="p-6">
-                    {/* Week Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
-                      {weeks.map(weekNumber => {
-                        const weekDates = getWeekDates(weekNumber);
-                        const weekTasks = getTasksForWeek(goal.id, weekNumber);
-                        const weekKey = `${goal.id}-week-${weekNumber}`;
-                        const isExpanded = expandedWeeks.has(weekKey);
-                        
-                        return (
-                          <div key={weekNumber} className="border rounded-lg">
-                            <button
-                              onClick={() => toggleWeekExpansion(weekKey)}
-                              className="w-full p-4 text-left hover:bg-gray-50 transition-colors"
-                            >
-                              <div className="flex items-center justify-between">
-                                <div>
-                                  <h3 className="font-medium text-gray-900">Week {weekNumber}</h3>
-                                  <p className="text-sm text-gray-500">
-                                    {weekDates.start} - {weekDates.end}
+                    {/* Weekly Progress - 6 boxes in 2 rows */}
+                    <div className="mb-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">Weekly Progress</h3>
+                      
+                      {/* Weeks 1-6 */}
+                      <div className="grid grid-cols-6 gap-3 mb-3">
+                        {weeks.slice(0, 6).map(weekNumber => {
+                          const weekDates = getWeekDates(weekNumber);
+                          const weekTasks = getTasksForWeek(goal.id, weekNumber);
+                          const weekKey = `${goal.id}-week-${weekNumber}`;
+                          const isExpanded = expandedWeeks.has(weekKey);
+                          
+                          return (
+                            <div key={weekNumber} className="border rounded-lg">
+                              <button
+                                onClick={() => toggleWeekExpansion(weekKey)}
+                                className="w-full p-3 text-left hover:bg-gray-50 transition-colors"
+                              >
+                                <div className="text-center">
+                                  <h4 className="font-medium text-gray-900 text-sm">Week {weekNumber}</h4>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    ({weekDates.start})
                                   </p>
                                   {weekTasks.length > 0 && (
                                     <p className="text-xs text-blue-600 mt-1">
@@ -593,39 +596,12 @@ const TwelveWeekCycle: React.FC = () => {
                                     </p>
                                   )}
                                 </div>
-                                <svg 
-                                  className={`h-4 w-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
-                                  fill="none" 
-                                  stroke="currentColor" 
-                                  viewBox="0 0 24 24"
-                                >
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                </svg>
-                              </div>
-                            </button>
-                            
-                            {isExpanded && (
-                              <div className="border-t p-4">
-                                <div className="flex items-center justify-between mb-4">
-                                  <h4 className="font-medium text-gray-900">Week {weekNumber} Tasks</h4>
-                                  <button
-                                    onClick={() => setShowWeeklyGoalForm({
-                                      goalId: goal.id,
-                                      weekNumber,
-                                      domains: goal.domains || [],
-                                      roles: goal.roles || []
-                                    })}
-                                    className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
-                                  >
-                                    <Plus className="h-3 w-3" />
-                                    Add Task
-                                  </button>
-                                </div>
-
-                                {weekTasks.length === 0 ? (
-                                  <div className="text-center py-6 text-gray-500">
-                                    <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                                    <p className="text-sm">No tasks for Week {weekNumber} yet.</p>
+                              </button>
+                              
+                              {isExpanded && (
+                                <div className="border-t p-4">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <h4 className="font-medium text-gray-900">Week {weekNumber} Tasks</h4>
                                     <button
                                       onClick={() => setShowWeeklyGoalForm({
                                         goalId: goal.id,
@@ -633,80 +609,218 @@ const TwelveWeekCycle: React.FC = () => {
                                         domains: goal.domains || [],
                                         roles: goal.roles || []
                                       })}
-                                      className="text-blue-600 hover:text-blue-700 text-sm mt-2"
+                                      className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
                                     >
-                                      Add your first task
+                                      <Plus className="h-3 w-3" />
+                                      Add Task
                                     </button>
                                   </div>
-                                ) : (
-                                  <div className="space-y-3">
-                                    {(() => {
-                                      const categorizedTasks = categorizeTasksByPriority(weekTasks);
-                                      
-                                      return (
-                                        <div className="space-y-3">
-                                          {/* Urgent & Important */}
-                                          <PriorityQuadrant
-                                            title="Urgent & Important"
-                                            tasks={categorizedTasks.urgentImportant}
-                                            bgColor="bg-red-500"
-                                            borderColor="border-l-red-500"
-                                            textColor="text-white"
-                                            icon={<AlertTriangle className="h-3 w-3" />}
-                                          />
 
-                                          {/* Not Urgent & Important */}
-                                          <PriorityQuadrant
-                                            title="Not Urgent & Important"
-                                            tasks={categorizedTasks.notUrgentImportant}
-                                            bgColor="bg-green-500"
-                                            borderColor="border-l-green-500"
-                                            textColor="text-white"
-                                            icon={<CheckCircle className="h-3 w-3" />}
-                                          />
+                                  {weekTasks.length === 0 ? (
+                                    <div className="text-center py-6 text-gray-500">
+                                      <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                      <p className="text-sm">No tasks for Week {weekNumber} yet.</p>
+                                      <button
+                                        onClick={() => setShowWeeklyGoalForm({
+                                          goalId: goal.id,
+                                          weekNumber,
+                                          domains: goal.domains || [],
+                                          roles: goal.roles || []
+                                        })}
+                                        className="text-blue-600 hover:text-blue-700 text-sm mt-2"
+                                      >
+                                        Add your first task
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-3">
+                                      {(() => {
+                                        const categorizedTasks = categorizeTasksByPriority(weekTasks);
+                                        
+                                        return (
+                                          <div className="space-y-3">
+                                            {/* Urgent & Important */}
+                                            <PriorityQuadrant
+                                              title="Urgent & Important"
+                                              tasks={categorizedTasks.urgentImportant}
+                                              bgColor="bg-red-500"
+                                              borderColor="border-l-red-500"
+                                              textColor="text-white"
+                                              icon={<AlertTriangle className="h-3 w-3" />}
+                                            />
 
-                                          {/* Urgent & Not Important */}
-                                          <PriorityQuadrant
-                                            title="Urgent & Not Important"
-                                            tasks={categorizedTasks.urgentNotImportant}
-                                            bgColor="bg-orange-500"
-                                            borderColor="border-l-orange-500"
-                                            textColor="text-white"
-                                            icon={<Clock className="h-3 w-3" />}
-                                          />
+                                            {/* Not Urgent & Important */}
+                                            <PriorityQuadrant
+                                              title="Not Urgent & Important"
+                                              tasks={categorizedTasks.notUrgentImportant}
+                                              bgColor="bg-green-500"
+                                              borderColor="border-l-green-500"
+                                              textColor="text-white"
+                                              icon={<CheckCircle className="h-3 w-3" />}
+                                            />
 
-                                          {/* Not Urgent & Not Important */}
-                                          <PriorityQuadrant
-                                            title="Not Urgent & Not Important"
-                                            tasks={categorizedTasks.notUrgentNotImportant}
-                                            bgColor="bg-gray-500"
-                                            borderColor="border-l-gray-500"
-                                            textColor="text-white"
-                                            icon={<X className="h-3 w-3" />}
-                                          />
-                                        </div>
-                                      );
-                                    })()}
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
+                                            {/* Urgent & Not Important */}
+                                            <PriorityQuadrant
+                                              title="Urgent & Not Important"
+                                              tasks={categorizedTasks.urgentNotImportant}
+                                              bgColor="bg-orange-500"
+                                              borderColor="border-l-orange-500"
+                                              textColor="text-white"
+                                              icon={<Clock className="h-3 w-3" />}
+                                            />
 
-                    {/* Reflection Week */}
-                    {reflectionWeekDates && (
-                      <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
-                        <div className="text-center">
-                          <h3 className="text-lg font-semibold text-purple-900 mb-1">
-                            Week 13 (Reflection Week)
-                          </h3>
-                          <p className="text-purple-700">{reflectionWeekDates}</p>
-                        </div>
+                                            {/* Not Urgent & Not Important */}
+                                            <PriorityQuadrant
+                                              title="Not Urgent & Not Important"
+                                              tasks={categorizedTasks.notUrgentNotImportant}
+                                              bgColor="bg-gray-500"
+                                              borderColor="border-l-gray-500"
+                                              textColor="text-white"
+                                              icon={<X className="h-3 w-3" />}
+                                            />
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                    )}
+                      
+                      {/* Weeks 7-12 */}
+                      <div className="grid grid-cols-6 gap-3 mb-4">
+                        {weeks.slice(6, 12).map(weekNumber => {
+                          const weekDates = getWeekDates(weekNumber);
+                          const weekTasks = getTasksForWeek(goal.id, weekNumber);
+                          const weekKey = `${goal.id}-week-${weekNumber}`;
+                          const isExpanded = expandedWeeks.has(weekKey);
+                          
+                          return (
+                            <div key={weekNumber} className="border rounded-lg">
+                              <button
+                                onClick={() => toggleWeekExpansion(weekKey)}
+                                className="w-full p-3 text-left hover:bg-gray-50 transition-colors"
+                              >
+                                <div className="text-center">
+                                  <h4 className="font-medium text-gray-900 text-sm">Week {weekNumber}</h4>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    ({weekDates.start})
+                                  </p>
+                                  {weekTasks.length > 0 && (
+                                    <p className="text-xs text-blue-600 mt-1">
+                                      {weekTasks.length} task{weekTasks.length !== 1 ? 's' : ''}
+                                    </p>
+                                  )}
+                                </div>
+                              </button>
+                              
+                              {isExpanded && (
+                                <div className="border-t p-4">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <h4 className="font-medium text-gray-900">Week {weekNumber} Tasks</h4>
+                                    <button
+                                      onClick={() => setShowWeeklyGoalForm({
+                                        goalId: goal.id,
+                                        weekNumber,
+                                        domains: goal.domains || [],
+                                        roles: goal.roles || []
+                                      })}
+                                      className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700 transition-colors flex items-center gap-1"
+                                    >
+                                      <Plus className="h-3 w-3" />
+                                      Add Task
+                                    </button>
+                                  </div>
+
+                                  {weekTasks.length === 0 ? (
+                                    <div className="text-center py-6 text-gray-500">
+                                      <Calendar className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                                      <p className="text-sm">No tasks for Week {weekNumber} yet.</p>
+                                      <button
+                                        onClick={() => setShowWeeklyGoalForm({
+                                          goalId: goal.id,
+                                          weekNumber,
+                                          domains: goal.domains || [],
+                                          roles: goal.roles || []
+                                        })}
+                                        className="text-blue-600 hover:text-blue-700 text-sm mt-2"
+                                      >
+                                        Add your first task
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="space-y-3">
+                                      {(() => {
+                                        const categorizedTasks = categorizeTasksByPriority(weekTasks);
+                                        
+                                        return (
+                                          <div className="space-y-3">
+                                            {/* Urgent & Important */}
+                                            <PriorityQuadrant
+                                              title="Urgent & Important"
+                                              tasks={categorizedTasks.urgentImportant}
+                                              bgColor="bg-red-500"
+                                              borderColor="border-l-red-500"
+                                              textColor="text-white"
+                                              icon={<AlertTriangle className="h-3 w-3" />}
+                                            />
+
+                                            {/* Not Urgent & Important */}
+                                            <PriorityQuadrant
+                                              title="Not Urgent & Important"
+                                              tasks={categorizedTasks.notUrgentImportant}
+                                              bgColor="bg-green-500"
+                                              borderColor="border-l-green-500"
+                                              textColor="text-white"
+                                              icon={<CheckCircle className="h-3 w-3" />}
+                                            />
+
+                                            {/* Urgent & Not Important */}
+                                            <PriorityQuadrant
+                                              title="Urgent & Not Important"
+                                              tasks={categorizedTasks.urgentNotImportant}
+                                              bgColor="bg-orange-500"
+                                              borderColor="border-l-orange-500"
+                                              textColor="text-white"
+                                              icon={<Clock className="h-3 w-3" />}
+                                            />
+
+                                            {/* Not Urgent & Not Important */}
+                                            <PriorityQuadrant
+                                              title="Not Urgent & Not Important"
+                                              tasks={categorizedTasks.notUrgentNotImportant}
+                                              bgColor="bg-gray-500"
+                                              borderColor="border-l-gray-500"
+                                              textColor="text-white"
+                                              icon={<X className="h-3 w-3" />}
+                                            />
+                                          </div>
+                                        );
+                                      })()}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      
+                      {/* Week 13 (Reflection Week) */}
+                      {reflectionWeekDates && (
+                        <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
+                          <div className="text-center">
+                            <h3 className="text-lg font-semibold text-purple-900 mb-1">
+                              Week 13 (Reflection Week)
+                            </h3>
+                            <p className="text-purple-700">{reflectionWeekDates}</p>
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>
