@@ -326,7 +326,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
     
     console.log('Selected date:', selectedDate, 'Formatted as:', dateString);
     
-    const dateString = selectedDate.toISOString().split('T')[0];
     setForm(prev => ({ ...prev, dueDate: dateString }));
     setShowDatePicker(false);
   };
