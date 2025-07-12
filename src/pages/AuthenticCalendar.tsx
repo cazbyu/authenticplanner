@@ -30,6 +30,8 @@ const AuthenticCalendar: React.FC = () => {
   const calendarRef = useRef<FullCalendar | null>(null);
   const [isViewChanging, setIsViewChanging] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isViewChanging, setIsViewChanging] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
   const { user, logout } = useAuth();
 
   // State for resizing
@@ -37,38 +39,30 @@ const AuthenticCalendar: React.FC = () => {
   const [sidebarWidth, setSidebarWidth] = useState(256); // Default width (64 * 4)
   const sidebarRef = useRef<HTMLDivElement | null>(null);
   
-  // Resize handlers
-  const handleResizeStart = (e: React.MouseEvent) => {
+  // Improved resize handlers
+  const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
     e.stopPropagation();
     setResizing(true);
     
-    const handleResizeMove = (e: MouseEvent) => {
+    const handleMouseMove = (e: MouseEvent) => {
       e.preventDefault();
-      e.stopPropagation();
-      if (resizing && !prioritiesCollapsed) {
-        // Calculate new width based on mouse position
-        const newWidth = Math.max(256, Math.min(600, e.clientX));
-        setSidebarWidth(newWidth);
-        
-        if (sidebarRef.current) {
-          sidebarRef.current.style.width = `${newWidth}px`;
-        }
+      
+      if (!prioritiesCollapsed) {
+        // Calculate new width based on mouse position with constraints
+        const newWidth = Math.max(256, Math.min(600, e.clientX - 0));
+        setSidebarWidth(newWidth);  
       }
     };
     
-    const handleResizeEnd = () => {
+    const handleMouseUp = () => {
       setResizing(false);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
     };
     
-    document.addEventListener('mousemove', handleResizeMove);
-    document.addEventListener('mouseup', handleResizeEnd, { once: true });
-    
-    // Cleanup function
-    return () => {
-      document.removeEventListener('mousemove', handleResizeMove);
-      document.removeEventListener('mouseup', handleResizeEnd);
-    };
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
   };
   
   // Apply width when component mounts or when width changes
@@ -422,10 +416,11 @@ const AuthenticCalendar: React.FC = () => {
             {/* Left Sidebar - Unscheduled Priorities with collapse functionality */}
             <div 
               className={`${prioritiesCollapsed ? 'w-16' : ''} border-r border-gray-200 bg-white flex flex-col transition-all duration-200 flex-shrink-0 relative`} 
-              style={prioritiesCollapsed ? 
-                { minWidth: '4rem', width: '4rem' } : 
-                { minWidth: '16rem', width: `${sidebarWidth}px`, maxWidth: '600px' }
-              }
+              style={{
+                minWidth: prioritiesCollapsed ? '4rem' : '16rem',
+                width: prioritiesCollapsed ? '4rem' : `${sidebarWidth}px`,
+                maxWidth: prioritiesCollapsed ? '4rem' : '600px'
+              }}
               ref={sidebarRef}
               id="unscheduled-priorities-container"
             >
@@ -474,11 +469,22 @@ const AuthenticCalendar: React.FC = () => {
                   {/* Resizer handle */}
                   {!prioritiesCollapsed && (
                     <div 
-                      className="absolute top-0 right-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-200 hover:opacity-50 z-50 resize-handle"
+                      className="absolute top-0 right-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-200 hover:opacity-50 z-50"
                       onMouseDown={handleResizeStart}
-                      style={{ cursor: 'col-resize' }}
+                      style={{ 
+                        cursor: 'col-resize',
+                        width: '16px',
+                        right: '-8px',
+                        zIndex: 100
+                      }}
                     >
-                      <div className="absolute top-0 right-0 bottom-0 w-1 bg-gray-200 hover:bg-blue-500 resize-indicator"></div>
+                      <div 
+                        className="absolute top-0 right-0 bottom-0 w-1 bg-gray-200 hover:bg-blue-500"
+                        style={{
+                          right: '8px',
+                          width: '4px'
+                        }}
+                      ></div>
                     </div>
                   )}
                 </div>
@@ -493,6 +499,7 @@ const AuthenticCalendar: React.FC = () => {
                 currentDate={currentDate}
                 onDateChange={handleDateChange}
                 refreshTrigger={refreshTrigger}
+                refreshTrigger={refreshTrigger}
               />
             </div>
           </>
@@ -505,7 +512,7 @@ const AuthenticCalendar: React.FC = () => {
           <div className="w-full max-w-2xl">
             <TaskForm 
               onClose={() => setShowTaskForm(false)}
-              onTaskCreated={handleTaskCreated}
+              onTaskCreated={handleTaskCreated} 
             />
           </div>
         </div>

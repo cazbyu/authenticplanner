@@ -172,29 +172,32 @@ input:checked + .slider:before {
 /* Resizer styles */
 .cursor-col-resize {
   cursor: col-resize;
-  z-index: 50;
-  width: 16px !important;
+  z-index: 100;
+  width: 16px;
 }
 
 /* Ensure the resizer is visible when being dragged */
 .cursor-col-resize:active,
 .cursor-col-resize:hover {
-  background-color: rgba(59, 130, 246, 0.3) !important;
-  width: 16px !important;
+  background-color: rgba(59, 130, 246, 0.3);
+  width: 16px;
 }
 
 /* Make resize handle more visible */
 .resize-handle {
   cursor: col-resize !important;
-  background-color: transparent;
+  background-color: rgba(59, 130, 246, 0.1);
   transition: background-color 0.2s;
+  width: 16px !important;
+  z-index: 100;
 }
 
 .resize-handle:hover {
   background-color: rgba(59, 130, 246, 0.2) !important;
+  width: 16px !important;
 }
 
 .resize-handle:hover .resize-indicator {
-  width: 3px !important;
+  width: 4px !important;
   background-color: #3b82f6 !important;
 }
