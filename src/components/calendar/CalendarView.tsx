@@ -126,14 +126,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
         const calendarApi = fullCalendarRef.current.getApi();
         
-        // Immediately set scroll to 8am without animation for day/week views
+        // Set scroll to current time for day/week views
         if (view === 'timeGridDay' || view === 'timeGridWeek') {
           // Use requestAnimationFrame to ensure DOM is ready
           requestAnimationFrame(() => {
             const scrollerEl = calendarApi.el.querySelector('.fc-scroller');
             if (scrollerEl) {
-              // Calculate 8am position (8 hours * 48px per hour slot)
-              const scrollTop = 8 * 48;
+              // Calculate current time position
+              const now = new Date();
+              const currentHour = now.getHours();
+              const currentMinute = now.getMinutes();
+              
+              // Calculate position based on current time (48px per hour, proportional for minutes)
+              const scrollTop = (currentHour + currentMinute / 60) * 48;
               scrollerEl.scrollTop = scrollTop;
             }
           });
@@ -154,7 +159,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           requestAnimationFrame(() => {
             const scrollerEl = calendarApi.el.querySelector('.fc-scroller');
             if (scrollerEl) {
-              const scrollTop = 8 * 48; // 8am position
+              // Calculate current time position
+              const now = new Date();
+              const currentHour = now.getHours();
+              const currentMinute = now.getMinutes();
+              
+              // Calculate position based on current time (48px per hour, proportional for minutes)
+              const scrollTop = (currentHour + currentMinute / 60) * 48;
               scrollerEl.scrollTop = scrollTop;
             }
           });
@@ -172,7 +183,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             const calendarApi = fullCalendarRef.current.getApi();
             const scrollerEl = calendarApi.el.querySelector('.fc-scroller');
             if (scrollerEl) {
-              const scrollTop = 8 * 48; // 8am position
+              // Calculate current time position
+              const now = new Date();
+              const currentHour = now.getHours();
+              const currentMinute = now.getMinutes();
+              
+              // Calculate position based on current time (48px per hour, proportional for minutes)
+              const scrollTop = (currentHour + currentMinute / 60) * 48;
               scrollerEl.scrollTop = scrollTop;
             }
           }
@@ -834,7 +851,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={false}
-          scrollTime="08:00:00"
+          scrollTime={`${new Date().getHours().toString().padStart(2, '0')}:${new Date().getMinutes().toString().padStart(2, '0')}:00`}
           scrollTimeReset={false}
           slotLabelFormat={{
             hour: 'numeric',
