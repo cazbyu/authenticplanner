@@ -11,6 +11,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { FullCalendar } from '@fullcalendar/core';
 import logo from '../assets/logo.svg';
+import { supabase } from '../supabaseClient';
 
 // Import drawer content components
 import RoleBank from '../components/roles/RoleBank';
@@ -18,6 +19,33 @@ import StrategicGoals from '../pages/StrategicGoals';
 import Reflections from '../pages/Reflections';
 import Scorecard from '../pages/Scorecard';
 import Tasks from '../pages/Tasks';
+
+interface Task {
+  id: string;
+  title: string;
+  due_date: string | null;
+  start_time: string | null;
+  end_time: string | null;
+  is_urgent: boolean;
+  is_important: boolean;
+  is_authentic_deposit: boolean;
+  is_twelve_week_goal: boolean;
+  status: string;
+  notes: string | null;
+  task_roles: { role_id: string }[];
+  task_domains: { domain_id: string }[];
+  priority?: number;
+}
+
+interface Role {
+  id: string;
+  label: string;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+}
 
 const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
@@ -29,6 +57,14 @@ const AuthenticCalendar: React.FC = () => {
   const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('tasks'); // Changed default to 'tasks'
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isViewChanging, setIsViewChanging] = useState(false);
+  
+  // Lifted state for tasks, roles, and domains
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [roles, setRoles] = useState<Record<string, Role>>({});
+  const [domains, setDomains] = useState<Record<string, Domain>>({});
+  const [loading, setLoading] = useState(true);
+  
   const calendarRef = useRef<FullCalendar | null>(null);
   const { user, logout } = useAuth();
 
@@ -37,6 +73,105 @@ const AuthenticCalendar: React.FC = () => {
   const [sidebarWidth, setSidebarWidth] = useState(256); // Default width (64 * 4)
   const sidebarRef = useRef<HTMLDivElement | null>(null);
   
+  // Fetch all task data
+  useEffect(() => {
+    fetchAllTaskData();
+  }, [refreshTrigger]);
+
+  const fetchAllTaskData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      console.warn('No authenticated user found when fetching tasks');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Fetch roles
+      const { data: rolesData } = await supabase
+        .from('0007-ap-roles')
+        .select('id, label')
+        .eq('user_id', user.id);
+
+      if (rolesData) {
+        const rolesMap = rolesData.reduce((acc, role) => ({
+          ...acc,
+          [role.id]: role
+        }), {});
+        setRoles(rolesMap);
+      }
+
+      // Fetch domains
+      const { data: domainsData } = await supabase
+        .from('0007-ap-domains')
+        .select('id, name');
+
+      if (domainsData) {
+        const domainsMap = domainsData.reduce((acc, domain) => ({
+          ...acc,
+          [domain.id]: domain
+        }), {});
+        setDomains(domainsMap);
+      }
+
+      // Fetch tasks with relationships
+      const { data: tasksData } = await supabase
+        .from('0007-ap-tasks')
+        .select(`
+          *,
+          task_roles:0007-ap-task_roles(role_id),
+          task_domains:0007-ap-task_domains(domain_id)
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .order('due_date', { ascending: true });
+
+      if (tasksData) {
+        setTasks(tasksData);
+      }
+    } catch (error) {
+      console.error('Error fetching task data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Consolidated drag end handler
+  const handleDragEnd = async (result: any) => {
+    if (!result.destination) return;
+    
+    // If dropping onto calendar (destination.droppableId starts with 'calendar')
+    if (result.destination.droppableId.startsWith('calendar')) {
+      const taskId = result.draggableId;
+      const task = tasks.find(t => t.id === taskId);
+        
+      if (task) {
+        // Extract date and time from the destination ID
+        // Format: calendar-YYYY-MM-DD-HH-MM
+        const [_, year, month, day, hour, minute] = result.destination.droppableId.split('-');
+        const dateStr = `${year}-${month}-${day}`;
+        const timeStr = `${hour}:${minute}`;
+        
+        // Update the task with the new date and time
+        const { error } = await supabase
+          .from('0007-ap-tasks')
+          .update({
+            due_date: dateStr,
+            start_time: new Date(`${dateStr}T${timeStr}:00`).toISOString(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', taskId);
+          
+        if (!error) {
+          // Refresh tasks after update
+          setRefreshTrigger(prev => prev + 1);
+        }
+      }
+    }
+  };
+
   // Improved resize handlers
   const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -402,24 +537,19 @@ const AuthenticCalendar: React.FC = () => {
       </header>
 
       {/* Main Content Area */}
-      <div className="flex-1 flex overflow-hidden">
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="flex-1 flex overflow-hidden">
         {activeView === 'tasks' ? (
           /* Task Priorities View - Now the default with full height */
-          <DragDropContext
-            onDragEnd={(result) => {
-              if (!result.destination) return;
-              
-              // Handle task reordering or moving between quadrants
-              console.log('Drag ended:', result);
-              
-              // Refresh tasks after drag
-              setRefreshTrigger(prev => prev + 1);
-            }}
-          >
             <div className="flex-1 overflow-hidden h-full" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
-              <TaskQuadrants refreshTrigger={refreshTrigger} />
+              <TaskQuadrants 
+                tasks={tasks}
+                setTasks={setTasks}
+                roles={roles}
+                domains={domains}
+                loading={loading}
+              />
             </div>
-          </DragDropContext>
         ) : (
           /* Calendar View - Now secondary */
           <>
@@ -456,20 +586,6 @@ const AuthenticCalendar: React.FC = () => {
                 </div>
               ) : (
                 /* Expanded Sidebar */
-                <DragDropContext
-                  onDragEnd={(result) => {
-                    if (!result.destination) return;
-                    
-                    // If dropping onto calendar
-                    if (result.destination.droppableId.startsWith('calendar')) {
-                      console.log('Dropped onto calendar:', result);
-                      // Calendar component will handle the update
-                    }
-                    
-                    // Refresh tasks after drag
-                    setRefreshTrigger(prev => prev + 1);
-                  }}
-                >
                   <div className="flex flex-col h-full">
                     {/* Unscheduled Priorities Header with Collapse Button */}
                     <div className="p-4 border-b border-gray-200">
@@ -487,7 +603,13 @@ const AuthenticCalendar: React.FC = () => {
 
                     {/* Unscheduled Priorities Content - FIXED: Removed overflow-hidden */}
                     <div className="flex-1 overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
-                      <UnscheduledPriorities refreshTrigger={refreshTrigger} />
+                      <UnscheduledPriorities 
+                        tasks={tasks}
+                        setTasks={setTasks}
+                        roles={roles}
+                        domains={domains}
+                        loading={loading}
+                      />
                     </div>
                     
                     {/* Resizer handle */}
@@ -512,7 +634,6 @@ const AuthenticCalendar: React.FC = () => {
                       </div>
                     )}
                   </div>
-                </DragDropContext>
               )}
             </div>
 
@@ -528,7 +649,8 @@ const AuthenticCalendar: React.FC = () => {
             </div>
           </>
         )}
-      </div>
+        </div>
+      </DragDropContext>
 
       {/* TaskForm Modal */}
       {showTaskForm && (

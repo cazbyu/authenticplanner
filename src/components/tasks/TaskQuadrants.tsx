@@ -3,9 +3,10 @@ import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { format, isValid, parseISO } from 'date-fns';
 import EditTask from './EditTask';
-import { Task } from '../../types';
 
-interface QuadrantTask extends Task {
+interface Task {
+  id: string;
+  title: string;
   due_date: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -31,17 +32,17 @@ interface Domain {
 }
 
 interface TaskQuadrantsProps {
-  refreshTrigger?: number;
+  tasks: Task[];
+  setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+  roles: Record<string, Role>;
+  domains: Record<string, Domain>;
+  loading: boolean;
 }
 
 type SortOption = 'date' | 'priority';
 
-const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => {
-  const [tasks, setTasks] = useState<QuadrantTask[]>([]);
-  const [roles, setRoles] = useState<Record<string, Role>>({});
-  const [domains, setDomains] = useState<Record<string, Domain>>({});
-  const [loading, setLoading] = useState(true);
-  const [editingTask, setEditingTask] = useState<QuadrantTask | null>(null);
+const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, domains, loading }) => {
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('priority');
   
   // State for collapsing quadrants
@@ -51,70 +52,6 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     'urgent-not-important': false,
     'not-urgent-not-important': false,
   });
-
-  useEffect(() => {
-    fetchTaskData();
-  }, [refreshTrigger]);
-
-  const fetchTaskData = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      console.warn('No authenticated user found when fetching quadrant tasks');
-      setLoading(false);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      // Fetch roles
-      const { data: rolesData } = await supabase
-        .from('0007-ap-roles')
-        .select('id, label')
-        .eq('user_id', user.id);
-
-      if (rolesData) {
-        const rolesMap = rolesData.reduce((acc, role) => ({
-          ...acc,
-          [role.id]: role
-        }), {});
-        setRoles(rolesMap);
-      }
-
-      // Fetch domains
-      const { data: domainsData } = await supabase
-        .from('0007-ap-domains')
-        .select('id, name');
-
-      if (domainsData) {
-        const domainsMap = domainsData.reduce((acc, domain) => ({
-          ...acc,
-          [domain.id]: domain
-        }), {});
-        setDomains(domainsMap);
-      }
-
-      // Fetch tasks with relationships
-      const { data: tasksData } = await supabase
-        .from('0007-ap-tasks')
-        .select(`
-          *,
-          task_roles:0007-ap-task_roles(role_id),
-          task_domains:0007-ap-task_domains(domain_id)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'pending')
-        .order('due_date', { ascending: true });
-
-      if (tasksData) {
-        setTasks(tasksData);
-      }
-    } catch (error) {
-      console.error('Error fetching task data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel', event?: React.MouseEvent) => {
     // Prevent event bubbling to avoid triggering edit modal
@@ -137,7 +74,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
 
     if (!error) {
       // Remove task from current view
-      setTasks(tasks.filter(t => t.id !== taskId));
+      setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
     }
   };
 
@@ -148,13 +85,13 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
     }));
   };
 
-  const handleTaskEdit = (task: QuadrantTask) => {
+  const handleTaskEdit = (task: Task) => {
     setEditingTask(task);
   };
 
   const handleTaskUpdated = () => {
     setEditingTask(null);
-    fetchTaskData(); // Refresh the task list
+    // Parent component will handle refresh via refreshTrigger
   };
 
   const handleEditCancel = () => {
@@ -202,7 +139,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   };
 
   // Sort tasks within each quadrant
-  const sortTasks = (taskList: QuadrantTask[]): QuadrantTask[] => {
+  const sortTasks = (taskList: Task[]): Task[] => {
     return [...taskList].sort((a, b) => {
       if (sortBy === 'date') {
         // Sort by date (earliest first, no date at bottom)
@@ -234,7 +171,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   // For date sorting, combine all tasks and sort chronologically
   const allTasksSorted = sortBy === 'date' ? sortTasks(tasks) : [];
 
-  const TaskCard: React.FC<{ task: QuadrantTask; showPriorityBadge?: boolean }> = ({ task, showPriorityBadge = false }) => {
+  const TaskCard: React.FC<{ task: Task; showPriorityBadge?: boolean }> = ({ task, showPriorityBadge = false }) => {
     const dateTimeDisplay = formatTaskDateTime(task.due_date, task.start_time);
     const isMobile = isMobileDevice();
     
@@ -380,7 +317,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   const QuadrantSection: React.FC<{
     id: string;
     title: string;
-    tasks: QuadrantTask[];
+    tasks: Task[];
     bgColor: string;
     textColor: string;
     icon: React.ReactNode;
@@ -430,8 +367,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ refreshTrigger = 0 }) => 
   };
 
   // Group tasks by date for date sorting view
-  const groupTasksByDate = (tasks: QuadrantTask[]) => {
-    const grouped: { [key: string]: QuadrantTask[] } = {};
+  const groupTasksByDate = (tasks: Task[]) => {
+    const grouped: { [key: string]: Task[] } = {};
     
     tasks.forEach(task => {
       let dateKey = 'No Date';

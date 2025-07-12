@@ -4,9 +4,10 @@ import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { format, isValid, parseISO } from 'date-fns';
 import EditTask from './EditTask';
-import { Task } from '../../types';
 
-interface PriorityTask extends Task {
+interface Task {
+  id: string;
+  title: string;
   due_date: string | null;
   start_time: string | null;
   end_time: string | null;
@@ -31,15 +32,15 @@ interface Domain {
 }
 
 interface UnscheduledPrioritiesProps {
-  refreshTrigger?: number;
+  tasks: Task[];
+  setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
+  roles: Record<string, Role>;
+  domains: Record<string, Domain>;
+  loading: boolean;
 }
 
-const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTrigger = 0 }) => {
-  const [tasks, setTasks] = useState<PriorityTask[]>([]);
-  const [roles, setRoles] = useState<Record<string, Role>>({});
-  const [domains, setDomains] = useState<Record<string, Domain>>({});
-  const [loading, setLoading] = useState(true);
-  const [editingTask, setEditingTask] = useState<PriorityTask | null>(null);
+const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading }) => {
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   
   // State to track if a task is being dragged
   const [isDragging, setIsDragging] = useState(false);
@@ -51,86 +52,6 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     'urgent-not-important': false,
     'not-urgent-not-important': false,
   });
-
-  useEffect(() => {
-    fetchUnscheduledTasks();
-  }, [refreshTrigger]);
-
-  const fetchUnscheduledTasks = async () => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    setLoading(true);
-
-    try {
-      // Fetch all tasks, including scheduled ones
-      const { data: allTasks } = await supabase
-        .from('0007-ap-tasks')
-        .select(`
-          *,
-          task_roles:0007-ap-task_roles(role_id),
-          task_domains:0007-ap-task_domains(domain_id)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'pending');
-      
-      // Fetch roles
-      const { data: rolesData } = await supabase
-        .from('0007-ap-roles')
-        .select('id, label')
-        .eq('user_id', user.id);
-
-      if (rolesData) {
-        const rolesMap = rolesData.reduce((acc, role) => ({
-          ...acc,
-          [role.id]: role
-        }), {});
-        setRoles(rolesMap);
-      }
-
-      // Fetch domains
-      const { data: domainsData } = await supabase
-        .from('0007-ap-domains')
-        .select('id, name');
-
-      if (domainsData) {
-        const domainsMap = domainsData.reduce((acc, domain) => ({
-          ...acc,
-          [domain.id]: domain
-        }), {});
-        setDomains(domainsMap);
-      }
-
-      // Fetch ONLY unscheduled tasks (no start_time)
-      // Filter locally to include both unscheduled tasks AND scheduled tasks
-      const tasksData = allTasks?.filter(task => 
-        // Include tasks with no start_time (unscheduled)
-        !task.start_time || 
-        // OR include tasks with start_time (scheduled)
-        task.start_time
-      );
-
-      if (tasksData) {
-        // Sort tasks by due_date within each category
-        const sortedTasks = tasksData.sort((a, b) => {
-          // Tasks with dates come first, sorted by date
-          if (a.due_date && b.due_date) {
-            return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
-          }
-          if (a.due_date && !b.due_date) return -1;
-          if (!a.due_date && b.due_date) return 1;
-          // Both have no date, sort by title
-          return a.title.localeCompare(b.title);
-        });
-        
-        setTasks(sortedTasks);
-      }
-    } catch (error) {
-      console.error('Error fetching unscheduled tasks:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel', event?: React.MouseEvent) => {
     // Prevent event bubbling to avoid triggering edit modal
@@ -153,7 +74,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
 
     if (!error) {
       // Remove task from current view
-      setTasks(tasks.filter(t => t.id !== taskId));
+      setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
     }
   };
 
@@ -165,13 +86,13 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
     }));
   };
 
-  const handleTaskEdit = (task: PriorityTask) => {
+  const handleTaskEdit = (task: Task) => {
     setEditingTask(task);
   };
 
   const handleTaskUpdated = () => {
     setEditingTask(null);
-    fetchUnscheduledTasks(); // Refresh the task list
+    // Parent component will handle refresh via refreshTrigger
   };
 
   const handleEditCancel = () => {
@@ -200,7 +121,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
   };
 
   // Categorize tasks into quadrants and sort by date within each
-  const categorizeAndSortTasks = (taskList: PriorityTask[]) => {
+  const categorizeAndSortTasks = (taskList: Task[]) => {
     const categories = {
       urgentImportant: taskList.filter(task => task.is_urgent && task.is_important),
       notUrgentImportant: taskList.filter(task => !task.is_urgent && task.is_important),
@@ -225,7 +146,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
 
   const { urgentImportant, notUrgentImportant, urgentNotImportant, notUrgentNotImportant } = categorizeAndSortTasks(tasks);
 
-  const TaskCard: React.FC<{ task: PriorityTask; quadrantColor: string; index: number }> = ({ task, quadrantColor, index }) => {
+  const TaskCard: React.FC<{ task: Task; quadrantColor: string; index: number }> = ({ task, quadrantColor, index }) => {
     const dateDisplay = formatTaskDate(task.due_date);
     const isMobile = isMobileDevice();
     
@@ -345,7 +266,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
   const QuadrantSection: React.FC<{ 
     id: string;
     title: string; 
-    tasks: PriorityTask[]; 
+    tasks: Task[]; 
     bgColor: string;
     borderColor: string;
     textColor: string;
@@ -416,42 +337,6 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
   }
 
   return (
-    <DragDropContext
-      onDragStart={() => setIsDragging(true)}
-      onDragEnd={(result) => {
-        setIsDragging(false);
-        if (!result.destination) return;
-        
-        // If dropping onto calendar (destination.droppableId starts with 'calendar')
-        if (result.destination.droppableId.startsWith('calendar')) {
-          const taskId = result.draggableId;
-          const task = [...urgentImportant, ...notUrgentImportant, ...urgentNotImportant, ...notUrgentNotImportant]
-            .find(t => t.id === taskId);
-            
-          if (task) {
-            // Extract date and time from the destination ID
-            // Format: calendar-YYYY-MM-DD-HH-MM
-            const [_, year, month, day, hour, minute] = result.destination.droppableId.split('-');
-            const dateStr = `${year}-${month}-${day}`;
-            const timeStr = `${hour}:${minute}`;
-            
-            // Update the task with the new date and time
-            supabase
-              .from('0007-ap-tasks')
-              .update({
-                due_date: dateStr,
-                start_time: new Date(`${dateStr}T${timeStr}:00`).toISOString(),
-                updated_at: new Date().toISOString()
-              })
-              .eq('id', taskId)
-              .then(() => {
-                // Refresh tasks after update
-                fetchUnscheduledTasks();
-              });
-          }
-        }
-      }}
-    >
       <div className="h-full flex flex-col overflow-visible" style={{ minHeight: '100%' }}>
         {/* Quadrant sections with consistent padding from left edge and uniform spacing */}
         <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin" style={{ height: '100%', overflowY: 'auto' }}>
@@ -513,7 +398,6 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ refreshTr
           </div>
         )}
       </div>
-    </DragDropContext>
   );
 };
 
