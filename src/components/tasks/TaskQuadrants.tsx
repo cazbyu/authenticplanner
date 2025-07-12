@@ -19,6 +19,9 @@ interface Task {
   task_roles: { role_id: string }[];
   task_domains: { domain_id: string }[];
   priority?: number;
+  delegated_to_name?: string | null;
+  delegated_to_email?: string | null;
+  delegated_to_contact_id?: string | null;
 }
 
 interface Role {
@@ -147,23 +150,30 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
         }
         if (a.due_date && !b.due_date) return -1;
-        if (!a.due_date && b.due_date) return 1;
-        return a.title.localeCompare(b.title);
-      } else if (sortBy === 'priority') {
-        // Sort by priority (higher priority first, then by title)
-        const aPriority = a.priority || 0;
+        .select(`
+          *,
+          task_roles:0007-ap-task_roles(role_id),
+          task_domains:0007-ap-task_domains(domain_id),
+          delegated_contact:0007-ap-delegates(name, email, phone)
+        `)
         const bPriority = b.priority || 0;
         if (aPriority !== bPriority) {
           return bPriority - aPriority; // Higher priority first
         }
         return a.title.localeCompare(b.title);
       } else if (sortBy === 'delegated') {
-        // Sort by delegated status (delegated tasks first, then by title)
+        // Sort by delegated status (delegated tasks first, then by due date)
         const aDelegated = a.status === 'delegated' ? 1 : 0;
         const bDelegated = b.status === 'delegated' ? 1 : 0;
         if (aDelegated !== bDelegated) {
           return bDelegated - aDelegated; // Delegated tasks first
         }
+        // Secondary sort by due date for delegated tasks
+        if (a.due_date && b.due_date) {
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        }
+        if (a.due_date && !b.due_date) return -1;
+        if (!a.due_date && b.due_date) return 1;
         return a.title.localeCompare(b.title);
       }
       return 0;
@@ -242,6 +252,21 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
                 <span>No date set</span>
               </div>
             )}
+            
+            {/* Show delegation info when sorting by delegated */}
+            {sortBy === 'delegated' && task.status === 'delegated' && (
+              <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
+                <div className="text-xs font-medium text-blue-800 mb-1">Delegated to:</div>
+                {task.delegated_to_name && (
+                  <div className="text-xs text-blue-700">{task.delegated_to_name}</div>
+                )}
+                {task.delegated_to_email && (
+                  <div className="text-xs text-blue-600">Email: {task.delegated_to_email}</div>
+                )}
+                {/* Note: Phone number would need to be added to the database schema */}
+              </div>
+            )}
+            
             {/* Show priority badge when sorting by date */}
             {showPriorityBadge && (
               <div className="mt-1">
