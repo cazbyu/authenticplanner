@@ -228,12 +228,13 @@ const AuthenticCalendar: React.FC = () => {
     setIsViewChanging(true);
     setView(newView);
     
-    setTimeout(() => {
-      if (calendarRef.current) {
-        calendarRef.current.getApi().gotoDate(currentDate);
-      }
-      setIsViewChanging(false);
-    }, 100);
+    // Force calendar to update view immediately
+    if (calendarRef.current) {
+      const api = calendarRef.current.getApi();
+      api.changeView(newView);
+      api.gotoDate(currentDate);
+    }
+    setIsViewChanging(false);
   };
 
   const handleTaskCreated = () => {
