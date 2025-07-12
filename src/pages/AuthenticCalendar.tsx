@@ -154,12 +154,18 @@ const AuthenticCalendar: React.FC = () => {
         const dateStr = `${year}-${month}-${day}`;
         const timeStr = `${hour}:${minute}`;
         
+        // Calculate end time (default to 1 hour duration)
+        const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
+        const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // Add 1 hour
+        const endTimeStr = format(endDateTime, 'HH:mm:ss');
+        
         // Update the task with the new date and time
         const { error } = await supabase
           .from('0007-ap-tasks')
           .update({
             due_date: dateStr,
-            start_time: new Date(`${dateStr}T${timeStr}:00`).toISOString(),
+            start_time: startDateTime.toISOString(),
+            end_time: endTimeStr,
             updated_at: new Date().toISOString()
           })
           .eq('id', taskId);

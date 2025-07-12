@@ -51,13 +51,33 @@ const CalendarView = forwardRef<any, CalendarViewProps>(({ view, currentDate, on
         .not('start_time', 'is', null);
 
       if (tasks) {
+        const getTaskColor = (task: Task) => {
+          // Priority-based colors matching the quadrant system
+          if (task.is_urgent && task.is_important) {
+            return { bg: '#ef4444', border: '#dc2626' }; // Red - Urgent & Important
+          } else if (!task.is_urgent && task.is_important) {
+            return { bg: '#10b981', border: '#059669' }; // Green - Not Urgent & Important
+          } else if (task.is_urgent && !task.is_important) {
+            return { bg: '#f59e0b', border: '#d97706' }; // Orange - Urgent & Not Important
+          } else {
+            return { bg: '#6b7280', border: '#4b5563' }; // Gray - Not Urgent & Not Important
+          }
+        };
+
         const calendarEvents = tasks.map((task: Task) => ({
           id: task.id,
           title: task.title,
           start: task.start_time,
           end: task.end_time ? new Date(new Date(task.start_time!).toDateString() + ' ' + task.end_time).toISOString() : undefined,
-          backgroundColor: task.is_authentic_deposit ? '#10b981' : task.is_urgent && task.is_important ? '#ef4444' : '#3b82f6',
-          borderColor: task.is_authentic_deposit ? '#059669' : task.is_urgent && task.is_important ? '#dc2626' : '#2563eb',
+          backgroundColor: (() => {
+            const colors = getTaskColor(task);
+            // Override with special color for authentic deposits
+            return task.is_authentic_deposit ? '#8b5cf6' : colors.bg; // Purple for authentic deposits
+          })(),
+          borderColor: (() => {
+            const colors = getTaskColor(task);
+            return task.is_authentic_deposit ? '#7c3aed' : colors.border;
+          })(),
           extendedProps: {
             task: task
           }
@@ -115,27 +135,38 @@ const CalendarView = forwardRef<any, CalendarViewProps>(({ view, currentDate, on
   // Handle event resize
   const handleEventResize = async (resizeInfo: any) => {
     const taskId = resizeInfo.event.id;
+    const newStart = resizeInfo.event.start;
     const newEnd = resizeInfo.event.end;
 
-    if (newEnd) {
+    if (newStart && newEnd) {
+      const startTimeStr = newStart.toISOString();
       const endTimeStr = format(newEnd, 'HH:mm:ss');
+      const dateStr = format(newStart, 'yyyy-MM-dd');
       
       try {
         const { error } = await supabase
           .from('0007-ap-tasks')
           .update({
+            due_date: dateStr,
+            start_time: startTimeStr,
             end_time: endTimeStr,
             updated_at: new Date().toISOString()
           })
           .eq('id', taskId);
 
         if (error) {
+          console.error('Error updating task:', error);
           resizeInfo.revert();
+        } else {
+          // Refresh events to show updated data
+          fetchEvents();
         }
       } catch (error) {
         console.error('Error updating task end time:', error);
         resizeInfo.revert();
       }
+    } else {
+      resizeInfo.revert();
     }
   };
 
@@ -240,10 +271,12 @@ const CalendarView = forwardRef<any, CalendarViewProps>(({ view, currentDate, on
           weekends={true}
           slotMinTime="00:00:00"
           slotMaxTime="24:00:00"
-          slotDuration="00:30:00"
+          slotDuration="00:15:00"
           slotLabelInterval="01:00:00"
+          snapDuration="00:15:00"
           allDaySlot={false}
           nowIndicator={true}
+          eventResizableFromStart={true}
           eventClick={handleEventClick}
           select={handleDateSelect}
           drop={handleDrop}
