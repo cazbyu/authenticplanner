@@ -136,6 +136,48 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     }
   };
 
+  const handleTaskAction = async (taskId: string, action: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      let updates: any = {};
+      
+      if (action === 'complete') {
+        updates.completed_at = new Date().toISOString();
+        updates.status = 'completed';
+      } else if (action === 'delegate') {
+        // For now, just mark as delegated - you can add delegation logic later
+        updates.status = 'delegated';
+      }
+
+      const { error } = await supabase
+        .from('0007-ap-tasks')
+        .update(updates)
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error updating task:', error);
+        return;
+      }
+
+      // Update local state by removing completed tasks or updating status
+      if (action === 'complete') {
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+      } else {
+        setTasks(prevTasks => 
+          prevTasks.map(task => 
+            task.id === taskId ? { ...task, ...updates } : task
+          )
+        );
+      }
+    } catch (error) {
+      console.error('Error in handleTaskAction:', error);
+    }
+  };
+
   const sortTasks = (taskList: Task[]): Task[] => {
     return [...taskList].sort((a, b) => {
       if (sortBy === 'date') {
@@ -180,11 +222,6 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       if (task.is_important) return 'Important';
       if (task.is_urgent) return 'Urgent';
       return 'Normal';
-    };
-
-    const handleTaskAction = async (taskId: string, action: string, e: React.MouseEvent) => {
-      e.stopPropagation();
-      // Handle task actions here
     };
 
     return (
