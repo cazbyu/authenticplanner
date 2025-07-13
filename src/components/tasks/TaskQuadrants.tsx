@@ -111,7 +111,9 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       }
 
       if (action === 'complete') {
+        // Remove from both regular tasks and delegated tasks
         setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+        setDelegatedTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
       } else {
         setTasks(prevTasks => 
           prevTasks.map(task => 
