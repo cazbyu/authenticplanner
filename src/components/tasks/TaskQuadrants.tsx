@@ -68,6 +68,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
   const [sortBy, setSortBy] = useState<SortOption>('priority');
   const [delegatedTasks, setDelegatedTasks] = useState<DelegatedTask[]>([]);
   const [delegatedLoading, setDelegatedLoading] = useState(false);
+  const [selectedDelegatedTask, setSelectedDelegatedTask] = useState<DelegatedTask | null>(null);
   
   // State for collapsing quadrants
   const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>({
@@ -247,7 +248,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition-shadow cursor-pointer select-none"
         onClick={handleCardClick}
         onDoubleClick={handleCardDoubleClick}
-        title={isMobile ? "Tap to edit" : "Double-click to edit"}
+        className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+        onClick={() => setSelectedDelegatedTask(task)}
       >
         <div className="flex items-start justify-between mb-2">
           <div className="flex-1 min-w-0">
@@ -273,6 +275,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
             {sortBy === 'delegated' && task.status === 'delegated' && (
               <div className="mt-2 p-2 bg-blue-50 border border-blue-200 rounded-md">
                 <div className="text-xs font-medium text-blue-800 mb-1">Delegated to:</div>
+                e.stopPropagation();
                 {task.delegated_to_name && (
                   <div className="text-xs text-blue-700">{task.delegated_to_name}</div>
                 )}
@@ -308,6 +311,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
             </button>
             <button
               onClick={(e) => handleTaskAction(task.id, 'delegate', e)}
+                e.stopPropagation();
               className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
               title="Delegate"
             >
@@ -655,6 +659,142 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         </div>
       )}
     </div>
+      {/* Delegated Task Detail Modal */}
+      {selectedDelegatedTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-6">
+                <div className="flex-1">
+                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+                    {selectedDelegatedTask.title}
+                  </h2>
+                  <div className="flex items-center space-x-4 text-sm text-gray-600">
+                    {selectedDelegatedTask.due_date && (
+                      <div className="flex items-center">
+                        <Clock className="h-4 w-4 mr-1" />
+                        <span>Due: {formatTaskDateTime(selectedDelegatedTask.due_date, null)}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center">
+                      <UserPlus className="h-4 w-4 mr-1" />
+                      <span>Delegated on: {format(new Date(selectedDelegatedTask.created_at), 'MMM d, yyyy')}</span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedDelegatedTask(null)}
+                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+
+              {/* Priority Badge */}
+              <div className="mb-4">
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  selectedDelegatedTask.is_urgent && selectedDelegatedTask.is_important
+                    ? 'bg-red-100 text-red-800'
+                    : !selectedDelegatedTask.is_urgent && selectedDelegatedTask.is_important
+                    ? 'bg-green-100 text-green-800'
+                    : selectedDelegatedTask.is_urgent && !selectedDelegatedTask.is_important
+                    ? 'bg-yellow-100 text-yellow-800'
+                    : 'bg-gray-100 text-gray-800'
+                }`}>
+                  {selectedDelegatedTask.is_urgent && selectedDelegatedTask.is_important
+                    ? 'Urgent & Important'
+                    : !selectedDelegatedTask.is_urgent && selectedDelegatedTask.is_important
+                    ? 'Important'
+                    : selectedDelegatedTask.is_urgent && !selectedDelegatedTask.is_important
+                    ? 'Urgent'
+                    : 'Low Priority'
+                  }
+                </span>
+              </div>
+
+              {/* Delegate Information */}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <h3 className="text-sm font-medium text-blue-900 mb-3 flex items-center">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Delegated To
+                </h3>
+                <div className="space-y-2">
+                  {selectedDelegatedTask.delegates?.name && (
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-blue-800 w-16">Name:</span>
+                      <span className="text-sm text-blue-700">{selectedDelegatedTask.delegates.name}</span>
+                    </div>
+                  )}
+                  {selectedDelegatedTask.delegates?.email && (
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium text-blue-800 w-16">Email:</span>
+                      <a 
+                        href={`mailto:${selectedDelegatedTask.delegates.email}`}
+                        className="text-sm text-blue-600 hover:text-blue-800 underline"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {selectedDelegatedTask.delegates.email}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Roles */}
+              {selectedDelegatedTask.task_roles && selectedDelegatedTask.task_roles.length > 0 && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">Associated Roles</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedDelegatedTask.task_roles.map((taskRole, index) => (
+                      <span 
+                        key={index}
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800"
+                      >
+                        {taskRole.role.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Notes */}
+              {selectedDelegatedTask.notes && (
+                <div className="mb-6">
+                  <h3 className="text-sm font-medium text-gray-900 mb-2">Notes</h3>
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{selectedDelegatedTask.notes}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                <button
+                  onClick={() => {
+                    handleDelegatedTaskAction(selectedDelegatedTask.id, 'cancel');
+                    setSelectedDelegatedTask(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
+                >
+                  Cancel Delegation
+                </button>
+                <button
+                  onClick={() => {
+                    handleDelegatedTaskAction(selectedDelegatedTask.id, 'complete');
+                    setSelectedDelegatedTask(null);
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-white bg-green-600 rounded-md hover:bg-green-700 transition-colors"
+                >
+                  Mark as Completed
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
   );
 };
 
