@@ -44,9 +44,30 @@ interface TaskQuadrantsProps {
 
 type SortOption = 'date' | 'priority' | 'delegated';
 
+interface DelegatedTask {
+  id: string;
+  title: string;
+  due_date: string | null;
+  is_important: boolean;
+  is_urgent: boolean;
+  notes: string | null;
+  created_at: string;
+  delegates?: {
+    name: string;
+    email: string;
+  };
+  task_roles?: Array<{
+    role: {
+      label: string;
+    };
+  }>;
+}
+
 const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, domains, loading }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('priority');
+  const [delegatedTasks, setDelegatedTasks] = useState<DelegatedTask[]>([]);
+  const [delegatedLoading, setDelegatedLoading] = useState(false);
   
   // State for collapsing quadrants
   const [collapsedQuadrants, setCollapsedQuadrants] = useState<Record<string, boolean>>({
