@@ -310,8 +310,10 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
               <Check className="h-3 w-3" />
             </button>
             <button
-              onClick={(e) => handleTaskAction(task.id, 'delegate', e)}
+              onClick={(e) => {
                 e.stopPropagation();
+                handleTaskAction(task.id, 'delegate', e);
+              }}
               className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
               title="Delegate"
             >
