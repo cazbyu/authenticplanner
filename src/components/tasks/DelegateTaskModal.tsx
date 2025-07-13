@@ -55,40 +55,26 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
         return;
       }
 
-      // Check if delegate already exists for this user (by name and email if provided)
-      let existingDelegate = null;
-      
-      if (form.email.trim()) {
-        // If email is provided, check by email first (most reliable)
-        const { data: emailMatch } = await supabase
-          .from('0007-ap-delegates')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('email', form.email.trim())
-          .single();
-        
-        existingDelegate = emailMatch;
-      }
-      
-      // If no email match, check by name
-      if (!existingDelegate) {
-        const { data: nameMatch } = await supabase
-          .from('0007-ap-delegates')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('name', form.name.trim())
-          .single();
-        
-        existingDelegate = nameMatch;
-      }
+      // Check if delegate already exists for this user by name
+      const { data: existingDelegate, error: delegateQueryError } = await supabase
+        .from('0007-ap-delegates')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('name', form.name.trim())
+        .maybeSingle();
 
+      if (delegateQueryError) {
+        console.error('Error querying delegate:', delegateQueryError);
+        setError('Failed to check existing delegate');
+        return;
+      }
       let delegateId: string;
 
       if (existingDelegate) {
-        // Use existing delegate
+        // Use existing delegate ID
         delegateId = existingDelegate.id;
         
-        // Optionally update the existing delegate with new information
+        // Update the existing delegate with new information if provided
         const updateData: any = {};
         if (form.phone.trim() && !existingDelegate.phone) {
           updateData.phone = form.phone.trim();
@@ -101,10 +87,15 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
         }
 
         if (Object.keys(updateData).length > 0) {
-          await supabase
+          const { error: updateError } = await supabase
             .from('0007-ap-delegates')
             .update(updateData)
             .eq('id', delegateId);
+          
+          if (updateError) {
+            console.error('Error updating delegate:', updateError);
+            // Don't fail the whole operation for this
+          }
         }
       } else {
         // Create new delegate
@@ -134,6 +125,7 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
         .from('0007-ap-tasks')
         .update({
           delegated_to_contact_id: delegateId,
+          completion_action: 'delegate',
           status: 'delegated',
           updated_at: new Date().toISOString()
         })
