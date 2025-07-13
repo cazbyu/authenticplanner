@@ -150,12 +150,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
         }
         if (a.due_date && !b.due_date) return -1;
-        .select(`
-          *,
-          task_roles:0007-ap-task_roles(role_id),
-          task_domains:0007-ap-task_domains(domain_id),
-          delegated_contact:0007-ap-delegates(name, email, phone)
-        `)
+        if (!a.due_date && b.due_date) return 1;
         const bPriority = b.priority || 0;
         if (aPriority !== bPriority) {
           return bPriority - aPriority; // Higher priority first
