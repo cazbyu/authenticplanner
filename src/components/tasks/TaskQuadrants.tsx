@@ -661,6 +661,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         </div>
       )}
     </div>
+
       {/* Delegated Task Detail Modal */}
       {selectedDelegatedTask && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -796,8 +797,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           </div>
         </div>
       )}
-
-  );
+    </div>
+      {/* Delegated Task Detail Modal */}
 };
 
 export default TaskQuadrants;
