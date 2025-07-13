@@ -270,19 +270,59 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     const sortedTasks = sortTasks(tasks);
 
     return (
-      <div className={`${bgColor} rounded-lg p-4 h-full`}>
+      <div className={`${bgColor} rounded-lg p-6 min-h-[400px]`}>
         <div className={`flex items-center mb-4 ${textColor}`}>
           {icon}
-          <h3 className="text-lg font-semibold ml-2">{title}</h3>
+          <h3 className="text-lg font-semibold ml-2 flex-1">{title}</h3>
           <span className="ml-2 text-sm opacity-75">({sortedTasks.length})</span>
         </div>
         
-        <div className="space-y-3 max-h-96 overflow-y-auto">
+        <div className="space-y-3">
           {sortedTasks.length === 0 ? (
-            <p className={`text-sm opacity-75 ${textColor}`}>No tasks in this category</p>
+            <p className={`text-sm opacity-75 ${textColor} text-center py-8`}>No tasks in this category</p>
           ) : (
             sortedTasks.map((task) => (
-              <TaskCard key={task.id} task={task} showPriorityBadge={sortBy === 'date'} />
+              <div key={task.id} className="bg-white p-4 rounded-lg shadow-sm border border-gray-200 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between">
+                  <div className="flex-1">
+                    <h4 className="font-medium text-gray-900 mb-2">{task.title}</h4>
+                    
+                    {task.due_date && (
+                      <div className="flex items-center text-sm text-gray-600 mb-2">
+                        <Clock className="w-4 h-4 mr-1" />
+                        {new Date(task.due_date).toLocaleDateString()}
+                      </div>
+                    )}
+
+                    {task.notes && (
+                      <p className="text-sm text-gray-600 mt-2 line-clamp-2">{task.notes}</p>
+                    )}
+                  </div>
+
+                  <div className="flex space-x-1 ml-2">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTaskAction(task.id, 'complete', e);
+                      }}
+                      className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
+                      title="Complete"
+                    >
+                      <CheckCircle className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleTaskAction(task.id, 'delegate', e);
+                      }}
+                      className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                      title="Delegate"
+                    >
+                      <User className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
             ))
           )}
         </div>
@@ -467,14 +507,14 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           )}
         </div>
       ) : (
-        /* Quadrant View */
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-[600px]">
+        /* Quadrant View - Restored Original Layout */
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <QuadrantSection
             id="urgent-important"
             title="Urgent & Important"
             tasks={urgentImportant}
-            bgColor="bg-red-50"
-            textColor="text-red-800"
+            bgColor="bg-red-50 border border-red-200"
+            textColor="text-red-700"
             icon={<AlertCircle className="w-5 h-5" />}
           />
           
@@ -482,8 +522,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
             id="not-urgent-important"
             title="Important, Not Urgent"
             tasks={notUrgentImportant}
-            bgColor="bg-green-50"
-            textColor="text-green-800"
+            bgColor="bg-green-50 border border-green-200"
+            textColor="text-green-700"
             icon={<Target className="w-5 h-5" />}
           />
           
@@ -491,8 +531,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
             id="urgent-not-important"
             title="Urgent, Not Important"
             tasks={urgentNotImportant}
-            bgColor="bg-yellow-50"
-            textColor="text-yellow-800"
+            bgColor="bg-yellow-50 border border-yellow-200"
+            textColor="text-yellow-700"
             icon={<Clock className="w-5 h-5" />}
           />
           
@@ -500,8 +540,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
             id="not-urgent-not-important"
             title="Neither Urgent nor Important"
             tasks={notUrgentNotImportant}
-            bgColor="bg-gray-50"
-            textColor="text-gray-800"
+            bgColor="bg-gray-50 border border-gray-200"
+            textColor="text-gray-700"
             icon={<Calendar className="w-5 h-5" />}
           />
         </div>
