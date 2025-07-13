@@ -56,7 +56,11 @@ interface TaskQuadrantsProps {
   loading: boolean;
 }
 
+type SortOption = 'priority' | 'due_date' | 'delegated';
+
 const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, domains, loading }) => {
+  const [sortBy, setSortBy] = useState<SortOption>('priority');
+  const [delegatedTasks, setDelegatedTasks] = useState<Task[]>([]);
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
     'urgent-important': false,
     'not-urgent-important': false,
@@ -111,6 +115,49 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     }
   };
 
+  const fetchDelegatedTasks = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data, error } = await supabase
+        .from('0007-ap-tasks')
+        .select(`
+          id,
+          title,
+          due_date,
+          time,
+          is_urgent,
+          is_important,
+          priority,
+          notes,
+          created_at,
+          delegated_to_contact_id,
+          delegates:delegated_to_contact_id(name, email),
+          0007-ap-task_roles(role_id, 0007-ap-roles:role_id(label))
+        `)
+        .eq('user_id', user.id)
+        .eq('status', 'delegated')
+        .is('completed_at', null)
+        .order('due_date', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching delegated tasks:', error);
+        return;
+      }
+
+      setDelegatedTasks(data || []);
+    } catch (error) {
+      console.error('Error fetching delegated tasks:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (sortBy === 'delegated') {
+      fetchDelegatedTasks();
+    }
+  }, [sortBy]);
+
   const formatDate = (dateStr: string | undefined) => {
     if (!dateStr) return null;
     try {
@@ -118,6 +165,25 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     } catch {
       return null;
+    }
+  };
+
+  const sortTasks = (taskList: Task[]) => {
+    switch (sortBy) {
+      case 'due_date':
+        return [...taskList].sort((a, b) => {
+          if (a.due_date && b.due_date) {
+            return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+          }
+          if (a.due_date && !b.due_date) return -1;
+          if (!a.due_date && b.due_date) return 1;
+          return a.title.localeCompare(b.title);
+        });
+      case 'delegated':
+        return delegatedTasks;
+      case 'priority':
+      default:
+        return taskList;
     }
   };
 
@@ -197,7 +263,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     const isCollapsed = collapsedQuadrants[id];
     
     return (
-      <div className="mb-4">
+      <div className="h-full flex flex-col">
         {/* Header - Always visible */}
         <button 
           className={`w-full ${bgColor} ${textColor} px-4 py-3 rounded-lg flex items-center justify-between hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
@@ -220,22 +286,24 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         
         {/* Content - Only visible when expanded */}
         {!isCollapsed && (
-          <div className="mt-2 bg-gray-50 rounded-lg p-3">
-            {tasks.length === 0 ? (
-              <p className="text-gray-500 text-sm italic text-center py-4">
-                No unscheduled tasks in this category
-              </p>
-            ) : (
-              <div className="space-y-2">
-                {tasks.map((task) => (
-                  <TaskCard 
-                    key={task.id} 
-                    task={task} 
-                    borderColor={borderColor}
-                  />
-                ))}
-              </div>
-            )}
+          <div className="flex-1 bg-gray-50 rounded-lg mt-2 overflow-hidden">
+            <div className="h-full overflow-y-auto p-3">
+              {tasks.length === 0 ? (
+                <p className="text-gray-500 text-sm italic text-center py-4">
+                  No unscheduled tasks in this category
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {tasks.map((task) => (
+                    <TaskCard 
+                      key={task.id} 
+                      task={task} 
+                      borderColor={borderColor}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -250,57 +318,111 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     );
   }
 
-  // Filter tasks by quadrant
-  const urgentImportant = tasks.filter(task => task.is_urgent && task.is_important && !task.completed_at);
-  const notUrgentImportant = tasks.filter(task => !task.is_urgent && task.is_important && !task.completed_at);
-  const urgentNotImportant = tasks.filter(task => task.is_urgent && !task.is_important && !task.completed_at);
-  const notUrgentNotImportant = tasks.filter(task => !task.is_urgent && !task.is_important && !task.completed_at);
+  const sortedTasks = sortTasks(tasks);
+
+  // Filter tasks by quadrant for priority view
+  const urgentImportant = sortedTasks.filter(task => task.is_urgent && task.is_important && !task.completed_at);
+  const notUrgentImportant = sortedTasks.filter(task => !task.is_urgent && task.is_important && !task.completed_at);
+  const urgentNotImportant = sortedTasks.filter(task => task.is_urgent && !task.is_important && !task.completed_at);
+  const notUrgentNotImportant = sortedTasks.filter(task => !task.is_urgent && !task.is_important && !task.completed_at);
 
   return (
-    <div className="space-y-4 p-4">
-      {/* Urgent & Important - Red */}
-      <QuadrantSection
-        id="urgent-important"
-        title="Urgent & Important"
-        tasks={urgentImportant}
-        bgColor="bg-red-500"
-        textColor="text-white"
-        borderColor="border-l-red-500"
-        icon={<AlertTriangle className="h-4 w-4" />}
-      />
+    <div className="h-full flex flex-col overflow-hidden">
+      {/* Header */}
+      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+        <h1 className="text-2xl font-bold text-gray-900">Task Priorities</h1>
+        <div className="flex items-center space-x-2">
+          <span className="text-sm text-gray-600">Sort by:</span>
+          <select
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="priority">Priority</option>
+            <option value="due_date">Due Date</option>
+            <option value="delegated">Delegated</option>
+          </select>
+        </div>
+      </div>
 
-      {/* Not Urgent & Important - Green */}
-      <QuadrantSection
-        id="not-urgent-important"
-        title="Not Urgent & Important"
-        tasks={notUrgentImportant}
-        bgColor="bg-green-500"
-        textColor="text-white"
-        borderColor="border-l-green-500"
-        icon={<Check className="h-4 w-4" />}
-      />
+      {/* Content Area */}
+      <div className="flex-1 overflow-hidden">
+        {sortBy === 'priority' ? (
+          /* Priority Quadrant View */
+          <div className="h-full grid grid-cols-2 gap-4 p-4 overflow-y-auto">
+            {/* Top Left - Urgent & Important */}
+            <div className="h-full">
+              <QuadrantSection
+                id="urgent-important"
+                title="Urgent & Important"
+                tasks={urgentImportant}
+                bgColor="bg-red-500"
+                textColor="text-white"
+                borderColor="border-l-red-500"
+                icon={<AlertTriangle className="h-4 w-4" />}
+              />
+            </div>
 
-      {/* Urgent & Not Important - Orange */}
-      <QuadrantSection
-        id="urgent-not-important"
-        title="Urgent & Not Important"
-        tasks={urgentNotImportant}
-        bgColor="bg-orange-500"
-        textColor="text-white"
-        borderColor="border-l-orange-500"
-        icon={<Clock className="h-4 w-4" />}
-      />
+            {/* Top Right - Not Urgent & Important */}
+            <div className="h-full">
+              <QuadrantSection
+                id="not-urgent-important"
+                title="Not Urgent & Important"
+                tasks={notUrgentImportant}
+                bgColor="bg-green-500"
+                textColor="text-white"
+                borderColor="border-l-green-500"
+                icon={<Check className="h-4 w-4" />}
+              />
+            </div>
 
-      {/* Not Urgent & Not Important - Gray */}
-      <QuadrantSection
-        id="not-urgent-not-important"
-        title="Not Urgent & Not Important"
-        tasks={notUrgentNotImportant}
-        bgColor="bg-gray-500"
-        textColor="text-white"
-        borderColor="border-l-gray-500"
-        icon={<X className="h-4 w-4" />}
-      />
+            {/* Bottom Left - Urgent & Not Important */}
+            <div className="h-full">
+              <QuadrantSection
+                id="urgent-not-important"
+                title="Urgent & Not Important"
+                tasks={urgentNotImportant}
+                bgColor="bg-orange-500"
+                textColor="text-white"
+                borderColor="border-l-orange-500"
+                icon={<Clock className="h-4 w-4" />}
+              />
+            </div>
+
+            {/* Bottom Right - Not Urgent & Not Important */}
+            <div className="h-full">
+              <QuadrantSection
+                id="not-urgent-not-important"
+                title="Not Urgent & Not Important"
+                tasks={notUrgentNotImportant}
+                bgColor="bg-gray-500"
+                textColor="text-white"
+                borderColor="border-l-gray-500"
+                icon={<X className="h-4 w-4" />}
+              />
+            </div>
+          </div>
+        ) : (
+          /* List View for Due Date and Delegated */
+          <div className="h-full overflow-y-auto p-4">
+            <div className="space-y-2">
+              {sortedTasks.length === 0 ? (
+                <p className="text-gray-500 text-center py-8">
+                  {sortBy === 'delegated' ? 'No delegated tasks found' : 'No tasks found'}
+                </p>
+              ) : (
+                sortedTasks.map((task) => (
+                  <TaskCard 
+                    key={task.id} 
+                    task={task} 
+                    borderColor="border-l-blue-500"
+                  />
+                ))
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
