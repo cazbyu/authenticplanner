@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, User, Mail, X, CheckCircle, XCircle, Users, Calendar, Target, AlertTriangle, ChevronDown, ChevronUp, Check, UserPlus } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
+import DelegateTaskModal from './DelegateTaskModal';
 
 interface Task {
   id: string;
@@ -61,6 +62,7 @@ type SortOption = 'priority' | 'due_date' | 'delegated';
 const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, domains, loading }) => {
   const [sortBy, setSortBy] = useState<SortOption>('priority');
   const [delegatedTasks, setDelegatedTasks] = useState<Task[]>([]);
+  const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
     'urgent-important': false,
     'not-urgent-important': false,
@@ -78,6 +80,15 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
   const handleTaskAction = async (taskId: string, action: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
+    // Handle delegation differently - open modal instead of direct action
+    if (action === 'delegate') {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        setDelegatingTask(task);
+      }
+      return;
+    }
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -87,8 +98,6 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       if (action === 'complete') {
         updates.completed_at = new Date().toISOString();
         updates.status = 'completed';
-      } else if (action === 'delegate') {
-        updates.status = 'delegated';
       }
 
       const { error } = await supabase
@@ -112,6 +121,14 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       }
     } catch (error) {
       console.error('Error in handleTaskAction:', error);
+    }
+  };
+
+  const handleTaskDelegated = () => {
+    setDelegatingTask(null);
+    // Remove the delegated task from the current view
+    if (delegatingTask) {
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== delegatingTask.id));
     }
   };
 
@@ -423,6 +440,16 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           </div>
         )}
       </div>
+
+      {/* Delegate Task Modal */}
+      {delegatingTask && (
+        <DelegateTaskModal
+          taskId={delegatingTask.id}
+          taskTitle={delegatingTask.title}
+          onClose={() => setDelegatingTask(null)}
+          onDelegated={handleTaskDelegated}
+        />
+      )}
     </div>
   );
 };
