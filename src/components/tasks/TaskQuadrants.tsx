@@ -520,8 +520,42 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         ) : (
           /* Priority Sorting View - Quadrant layout */
           <>
+            {/* Show Delegated Tasks List when sorting by delegated */}
+            {sortBy === 'delegated' && (
+              <div className="space-y-4 h-full overflow-y-auto">
+                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                    <UserPlus className="h-5 w-5 mr-2 text-blue-500" />
+                    Delegated Tasks
+                    <span className="ml-2 text-sm font-normal text-gray-500">
+                      ({delegatedTasks.length} tasks)
+                    </span>
+                  </h3>
+                  
+                  {delegatedLoading ? (
+                    <div className="flex items-center justify-center py-8">
+                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-500 border-t-transparent"></div>
+                    </div>
+                  ) : delegatedTasks.length === 0 ? (
+                    <div className="text-center py-8 text-gray-500">
+                      <UserPlus className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                      <p className="text-lg font-medium mb-2">No delegated tasks to show</p>
+                      <p className="text-sm">Tasks you delegate to others will appear here until completed.</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-3">
+                      {delegatedTasks.map(task => (
+                        <DelegatedTaskCard key={task.id} task={task} />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+            
             {/* Desktop: 2x2 Grid with proper scrolling */}
-            <div className="hidden md:grid md:grid-cols-2 gap-4 h-full">
+            {sortBy !== 'delegated' && (
+              <div className="hidden md:grid md:grid-cols-2 gap-4 h-full">
               {/* Urgent & Important */}
               <QuadrantSection
                 id="urgent-important"
@@ -561,10 +595,12 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
                 textColor="text-white"
                 icon={<X className="h-4 w-4 flex-shrink-0" />}
               />
-            </div>
+              </div>
+            )}
 
             {/* Mobile: Stacked Layout for priority view */}
-            <div className="md:hidden space-y-4 h-full overflow-y-auto">
+            {sortBy !== 'delegated' && (
+              <div className="md:hidden space-y-4 h-full overflow-y-auto">
               <QuadrantSection
                 id="urgent-important"
                 title="Urgent & Important"
@@ -600,7 +636,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
                 textColor="text-white"
                 icon={<X className="h-4 w-4 flex-shrink-0" />}
               />
-            </div>
+              </div>
+            )}
           </>
         )}
       </div>
