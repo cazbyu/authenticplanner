@@ -337,9 +337,3 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </button>
           </form>
         </div>
-      </div>
-    </div>
-  );
-};
-
-export default TaskForm;
