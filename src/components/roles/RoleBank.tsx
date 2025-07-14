@@ -406,32 +406,23 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {Object.entries(rolesByCategory).map(([category, categoryRoles]) => (
-                <div key={category} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                  <h2 className="text-lg font-semibold text-gray-900 mb-4 capitalize">
-                    {category} Roles
-                  </h2>
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {categoryRoles.map((role) => (
-                      <button
-                        key={role.id}
-                        onClick={() => handleRoleSelect(role)}
-                        className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="text-2xl">{role.icon || '👤'}</div>
-                          <div>
-                            <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
-                              {role.label}
-                            </h3>
-                            <p className="text-sm text-gray-500 capitalize">{category}</p>
-                          </div>
-                        </div>
-                      </button>
-                    ))}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {roles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => handleRoleSelect(role)}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group bg-white"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{role.icon || '👤'}</div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
+                        {role.label}
+                      </h3>
+                      <p className="text-sm text-gray-500 capitalize">{role.category}</p>
+                    </div>
                   </div>
-                </div>
+                </button>
               ))}
             </div>
           )}
