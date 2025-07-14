@@ -37,7 +37,6 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [uploadingImage, setUploadingImage] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [form, setForm] = useState({
