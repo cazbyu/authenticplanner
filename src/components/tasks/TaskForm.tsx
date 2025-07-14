@@ -126,7 +126,18 @@ const TaskForm: React.FC<TaskFormProps> = ({
         if (availableRoles && availableDomains) {
           setRoles(availableRoles);
           setDomains(availableDomains);
-          setKeyRelationships(availableKeyRelationships || []);
+          
+          // Fetch key relationships separately
+          try {
+            const { data: keyRelData } = await supabase
+              .from("0007-ap-key_relationships")
+              .select("id, name, role_id");
+            setKeyRelationships(keyRelData || []);
+          } catch (err) {
+            console.warn('Could not load key relationships:', err);
+            setKeyRelationships([]);
+          }
+          
           setLoading(false);
           return;
         }
@@ -984,7 +995,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
               <div>
                 <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
                 <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
-                  {keyRelationships && keyRelationships.length > 0 ? (
+                  {keyRelationships && keyRelationships.length > 0 && keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length > 0 ? (
                     keyRelationships
                       .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
                       .map((relationship) => (
