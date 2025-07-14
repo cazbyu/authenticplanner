@@ -354,7 +354,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               setShowRelationshipForm(false);
               setEditingRelationship(null);
             }}
-            onSave={handleRelationshipSaved}
+            onRelationshipCreated={handleRelationshipSaved}
           />
         )}
       </div>
