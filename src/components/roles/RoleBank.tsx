@@ -3,7 +3,6 @@ import { supabase } from '../../supabaseClient';
 import { ChevronLeft, UserPlus, Plus, Heart, Edit, Eye } from 'lucide-react';
 import KeyRelationshipForm from './KeyRelationshipForm';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
-import { getSignedImageUrl } from '../../utils/imageHelpers';
 
 interface Role {
   id: string;
