@@ -166,6 +166,25 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
     acc[role.category].push(role);
     return acc;
+  }, {} as Record<string, Role[]>);
+
+  // If a role is selected, show role details
+  if (selectedRole) {
+    return (
+      <div className="h-full flex flex-col">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-6 border-b border-gray-200">
+          <button
+            onClick={handleBack}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">{selectedRole.label}</h1>
+        </div>
+
+        {/* Role Selection */}
+        <div className="border-b border-gray-200 bg-gray-50">
           <div className="p-6">
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               {roles.map((role) => (
@@ -202,9 +221,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             </div>
             {loading ? (
               <div className="text-gray-500">Loading tasks...</div>
-            ) : pendingTasks.length > 0 ? (
+            ) : tasks.length > 0 ? (
               <div className="space-y-3">
-                {pendingTasks.map((task) => (
+                {tasks.map((task) => (
                   <div key={task.id} className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
