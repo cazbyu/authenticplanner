@@ -11,6 +11,7 @@ interface Role {
 interface KeyRelationshipFormProps {
   roleId: string;
   roleName: string;
+  existingRelationship?: KeyRelationship | null;
   onClose: () => void;
   onRelationshipCreated: () => void;
 }
@@ -28,9 +29,18 @@ interface Task {
   due_date?: string;
 }
 
+interface KeyRelationship {
+  id: string;
+  role_id: string;
+  name: string;
+  notes?: string;
+  image_url?: string;
+}
+
 const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({ 
   roleId, 
   roleName, 
+  existingRelationship,
   onClose, 
   onRelationshipCreated 
 }) => {
@@ -40,9 +50,9 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
   const [error, setError] = useState<string | null>(null);
   
   const [form, setForm] = useState({
-    name: '',
-    notes: '',
-    imageUrl: ''
+    name: existingRelationship?.name || '',
+    notes: existingRelationship?.notes || '',
+    imageUrl: existingRelationship?.image_url || ''
   });
 
   const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
@@ -51,6 +61,13 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
   const [newTask, setNewTask] = useState('');
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+
+  // Set initial image preview if editing existing relationship
+  useEffect(() => {
+    if (existingRelationship?.image_url) {
+      setImagePreview(existingRelationship.image_url);
+    }
+  }, [existingRelationship]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -207,96 +224,124 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
         }
       }
 
-      // Create the key relationship
-      const { data: relationship, error: relationshipError } = await supabase
-        .from('0007-ap-key_relationships')
-        .insert([{
-          role_id: roleId,
-          name: form.name.trim(),
-          image_url: imageUrl || null
-        }])
-        .select()
-        .single();
+      let relationship;
+      
+      if (existingRelationship) {
+        // Update existing relationship
+        const { data: updatedRelationship, error: relationshipError } = await supabase
+          .from('0007-ap-key_relationships')
+          .update({
+            name: form.name.trim(),
+            image_url: imageUrl || null
+          })
+          .eq('id', existingRelationship.id)
+          .select()
+          .single();
 
-      if (relationshipError || !relationship) {
-        console.error('Error creating relationship:', relationshipError);
-        setError('Failed to create relationship');
-        return;
-      }
-
-      // Create deposit ideas
-      if (depositIdeas.length > 0) {
-        const depositInserts = depositIdeas.map(idea => ({
-          key_relationship_id: relationship.id,
-          description: idea.description,
-          is_active: idea.is_active
-        }));
-
-        const { error: depositError } = await supabase
-          .from('0007-ap-deposit_ideas')
-          .insert(depositInserts);
-
-        if (depositError) {
-          console.error('Error creating deposit ideas:', depositError);
-          // Don't fail the whole operation for this
+        if (relationshipError || !updatedRelationship) {
+          console.error('Error updating relationship:', relationshipError);
+          setError('Failed to update relationship');
+          return;
         }
+        relationship = updatedRelationship;
+      } else {
+        // Create new relationship
+        const { data: newRelationship, error: relationshipError } = await supabase
+          .from('0007-ap-key_relationships')
+          .insert([{
+            role_id: roleId,
+            name: form.name.trim(),
+            image_url: imageUrl || null
+          }])
+          .select()
+          .single();
+
+        if (relationshipError || !newRelationship) {
+          console.error('Error creating relationship:', relationshipError);
+          setError('Failed to create relationship');
+          return;
+        }
+        relationship = newRelationship;
       }
 
-      // Create tasks
-      if (tasks.length > 0) {
-        const taskInserts = tasks.map(task => ({
-          user_id: user.id,
-          title: task.title,
-          status: task.status,
-          notes: `Related to ${form.name} (${roleName})`,
-          // Link to role instead of relationship for now
-          task_roles: [{ role_id: roleId }]
-        }));
-
-        // Create tasks first
-        const { data: createdTasks, error: taskError } = await supabase
-          .from('0007-ap-tasks')
-          .insert(taskInserts.map(t => ({
-            user_id: t.user_id,
-            title: t.title,
-            status: t.status,
-            notes: t.notes
-          })))
-          .select();
-
-        if (taskError) {
-          console.error('Error creating tasks:', taskError);
-          // Don't fail the whole operation for this
-        } else if (createdTasks) {
-          // Link tasks to role
-          const roleLinks = createdTasks.map(task => ({
-            task_id: task.id,
-            role_id: roleId
+      // Only create deposit ideas and tasks for new relationships
+      if (!existingRelationship) {
+        // Create deposit ideas
+        if (depositIdeas.length > 0) {
+          const depositInserts = depositIdeas.map(idea => ({
+            key_relationship_id: relationship.id,
+            description: idea.description,
+            is_active: idea.is_active
           }));
-          
-          await supabase
-            .from('0007-ap-task_roles')
-            .insert(roleLinks);
+
+          const { error: depositError } = await supabase
+            .from('0007-ap-deposit_ideas')
+            .insert(depositInserts);
+
+          if (depositError) {
+            console.error('Error creating deposit ideas:', depositError);
+            // Don't fail the whole operation for this
+          }
+        }
+
+        // Create tasks
+        if (tasks.length > 0) {
+          const taskInserts = tasks.map(task => ({
+            user_id: user.id,
+            title: task.title,
+            status: task.status,
+            notes: `Related to ${form.name} (${roleName})`,
+            // Link to role instead of relationship for now
+            task_roles: [{ role_id: roleId }]
+          }));
+
+          // Create tasks first
+          const { data: createdTasks, error: taskError } = await supabase
+            .from('0007-ap-tasks')
+            .insert(taskInserts.map(t => ({
+              user_id: t.user_id,
+              title: t.title,
+              status: t.status,
+              notes: t.notes
+            })))
+            .select();
+
+          if (taskError) {
+            console.error('Error creating tasks:', taskError);
+            // Don't fail the whole operation for this
+          } else if (createdTasks) {
+            // Link tasks to role
+            const roleLinks = createdTasks.map(task => ({
+              task_id: task.id,
+              role_id: roleId
+            }));
+            
+            await supabase
+              .from('0007-ap-task_roles')
+              .insert(roleLinks);
+          }
         }
       }
 
-      toast.success('Key relationship created successfully!');
+      toast.success(existingRelationship ? 'Key relationship updated successfully!' : 'Key relationship created successfully!');
       onRelationshipCreated();
 
     } catch (err) {
-      console.error('Error creating relationship:', err);
+      console.error('Error saving relationship:', err);
       setError('An unexpected error occurred');
     } finally {
       setSubmitting(false);
     }
   };
 
+  const isEditing = !!existingRelationship;
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto space-y-6 m-4 w-full">
         <div className="flex justify-between items-center">
           <h2 className="text-xl font-semibold text-gray-900">
-            Add Key Relationship for {roleName}
+            {isEditing ? 'Edit' : 'Add'} Key Relationship for {roleName}
           </h2>
           <button
             type="button"
@@ -520,7 +565,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
               disabled={submitting || uploadingImage || !form.name.trim()}
               className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              {submitting ? 'Creating...' : uploadingImage ? 'Uploading...' : 'Create Relationship'}
+              {submitting ? (isEditing ? 'Updating...' : 'Creating...') : uploadingImage ? 'Uploading...' : (isEditing ? 'Update Relationship' : 'Create Relationship')}
             </button>
           </div>
         </form>

@@ -51,6 +51,7 @@ const RoleBank: React.FC = () => {
   const [relationships, setRelationships] = useState<KeyRelationship[]>([]);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [showRelationshipForm, setShowRelationshipForm] = useState(false);
+  const [editingRelationship, setEditingRelationship] = useState<KeyRelationship | null>(null);
   const [selectedDepositIdea, setSelectedDepositIdea] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<MainView>('menu');
@@ -236,10 +237,16 @@ const RoleBank: React.FC = () => {
 
   const handleRelationshipCreated = () => {
     setShowRelationshipForm(false);
+    setEditingRelationship(null);
     // Refresh role data to show new relationship
     if (selectedRole) {
       fetchRoleData();
     }
+  };
+
+  const handleEditRelationship = (relationship: KeyRelationship) => {
+    setEditingRelationship(relationship);
+    setShowRelationshipForm(true);
   };
 
   const fetchRoleData = async () => {
@@ -485,7 +492,10 @@ const RoleBank: React.FC = () => {
                         >
                           Add your first relationship
                         </button>
-                      </div>
+                        <button 
+                          onClick={() => handleEditRelationship(rel)}
+                          className="text-xs text-gray-600 hover:text-gray-700 font-medium px-2 py-1 rounded hover:bg-gray-50 transition-colors"
+                        >
                     )}
                   </div>
                 </div>
@@ -528,6 +538,7 @@ const RoleBank: React.FC = () => {
             <KeyRelationshipForm
               roleId={selectedRole.id}
               roleName={selectedRole.label}
+              existingRelationship={editingRelationship}
               onClose={() => setShowRelationshipForm(false)}
               onRelationshipCreated={handleRelationshipCreated}
             />
