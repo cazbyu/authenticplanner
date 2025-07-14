@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, User, Mail, X, CheckCircle, XCircle, Users, Calendar, Target, AlertTriangle, ChevronDown, ChevronUp, Check, UserPlus } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import DelegateTaskModal from './DelegateTaskModal';
+import EditTask from './EditTask';
 
 interface Task {
   id: string;
@@ -63,6 +64,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
   const [sortBy, setSortBy] = useState<SortOption>('priority');
   const [delegatedTasks, setDelegatedTasks] = useState<Task[]>([]);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
     'urgent-important': false,
     'not-urgent-important': false,
@@ -124,6 +126,23 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     } catch (error) {
       console.error('Error in handleTaskAction:', error);
     }
+  };
+
+  const handleTaskEdit = (task: Task) => {
+    setEditingTask(task);
+  };
+
+  const handleTaskUpdated = () => {
+    setEditingTask(null);
+    // Refresh both task lists
+    if (sortBy === 'delegated') {
+      fetchDelegatedTasks();
+    }
+    // The parent component will handle refreshing the main tasks via refreshTrigger
+  };
+
+  const handleEditCancel = () => {
+    setEditingTask(null);
   };
 
   const handleTaskDelegated = () => {
@@ -206,8 +225,19 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     }
   };
 
-  const TaskCard: React.FC<{ task: Task; borderColor: string }> = ({ task, borderColor }) => (
-    <div className={`bg-white border-l-4 ${borderColor} border-r border-t border-b border-gray-200 rounded-r-lg p-3 mb-2 hover:shadow-md transition-all`}>
+  const TaskCard: React.FC<{ task: Task; borderColor: string }> = ({ task, borderColor }) => {
+    const handleCardDoubleClick = (event: React.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      handleTaskEdit(task);
+    };
+
+    return (
+    <div 
+      className={`bg-white border-l-4 ${borderColor} border-r border-t border-b border-gray-200 rounded-r-lg p-3 mb-2 hover:shadow-md transition-all cursor-pointer`}
+      onDoubleClick={handleCardDoubleClick}
+      title="Double-click to edit task"
+    >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
           <h4 className="font-medium text-gray-900 text-sm mb-1">{task.title}</h4>
@@ -268,7 +298,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         </div>
       </div>
     </div>
-  );
+    );
+  };
 
   const QuadrantSection: React.FC<{
     id: string;
@@ -451,6 +482,19 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           onClose={() => setDelegatingTask(null)}
           onDelegated={handleTaskDelegated}
         />
+      )}
+
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <EditTask
+              task={editingTask}
+              onTaskUpdated={handleTaskUpdated}
+              onCancel={handleEditCancel}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
