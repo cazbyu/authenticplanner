@@ -76,7 +76,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [domains, setDomains] = useState<Domain[]>([]);
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
   const [twelveWeekGoals, setTwelveWeekGoals] = useState<TwelveWeekGoal[]>([]);
-  const [roleKeyRelationships, setRoleKeyRelationships] = useState<KeyRelationship[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -132,7 +131,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
           return;
         }
 
-        const [roleRes, domainRes, twelveWeekGoalsRes] = await Promise.all([
+        const [roleRes, domainRes, twelveWeekGoalsRes, keyRelationshipsRes] = await Promise.all([
           supabase
             .from("0007-ap-roles")
             .select("id, label")
@@ -144,14 +143,18 @@ const TaskForm: React.FC<TaskFormProps> = ({
             .select("id, title")
             .eq("user_id", userId)
             .eq("status", "active"),
+          supabase
+            .from("0007-ap-key_relationships")
+            .select("id, name, role_id")
         ]);
 
-        if (roleRes.error || domainRes.error) {
+        if (roleRes.error || domainRes.error || keyRelationshipsRes.error) {
           setError("Failed to load roles/domains.");
         } else {
           setRoles(roleRes.data || []);
           setDomains(domainRes.data || []);
           setTwelveWeekGoals(twelveWeekGoalsRes.data || []);
+          setKeyRelationships(keyRelationshipsRes.data || []);
         }
       } catch (err) {
         console.error('Error fetching roles/domains:', err);
@@ -163,34 +166,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
     fetchLists();
   }, [userId, availableRoles, availableDomains, availableKeyRelationships]);
-
-  // Fetch key relationships for selected roles
-  useEffect(() => {
-    const fetchRoleKeyRelationships = async () => {
-      if (form.selectedRoleIds.length === 0) {
-        setRoleKeyRelationships([]);
-        return;
-      }
-
-      try {
-        const { data, error } = await supabase
-          .from("0007-ap-key_relationships")
-          .select("id, name, role_id")
-          .in("role_id", form.selectedRoleIds);
-
-        if (error) {
-          console.error('Error fetching role key relationships:', error);
-          return;
-        }
-
-        setRoleKeyRelationships(data || []);
-      } catch (err) {
-        console.error('Error fetching role key relationships:', err);
-      }
-    };
-
-    fetchRoleKeyRelationships();
-  }, [form.selectedRoleIds]);
 
   // Close date picker when clicking outside
   useEffect(() => {
@@ -1031,26 +1006,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
                 ))}
               </div>
             </div>
-
-            {/* Role-Specific Key Relationships Section - Only show if roles are selected */}
-            {form.selectedRoleIds.length > 0 && roleKeyRelationships.length > 0 && (
-              <div>
-                <h3 className="text-xs font-medium mb-1">Key Relationships for Selected Roles</h3>
-                <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
-                  {roleKeyRelationships.map((relationship) => (
-                    <label key={relationship.id} className="flex items-center gap-1 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
-                        onChange={() => toggleArrayField(relationship.id, "selectedKeyRelationshipIds")}
-                        className="h-3 w-3"
-                      />
-                      <span className="truncate">{relationship.name}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* Compact Notes */}
             <div>
