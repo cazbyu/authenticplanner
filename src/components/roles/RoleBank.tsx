@@ -505,42 +505,4 @@ const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relati
   );
 };
 
-// Component to handle image display with signed URLs
-const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relationship }) => {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  
-  useEffect(() => {
-    const loadImage = async () => {
-      if (relationship.image_path) {
-        const signedUrl = await getSignedImageUrl(relationship.image_path);
-        if (signedUrl) {
-          setImageUrl(signedUrl);
-        }
-      }
-    };
-    
-    loadImage();
-  }, [relationship.image_path]);
-  
-  if (imageUrl) {
-    return (
-      <div className="flex-shrink-0">
-        <img
-          src={imageUrl}
-          alt={relationship.name}
-          className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-        />
-      </div>
-    );
-  }
-  
-  return (
-    <div className="flex-shrink-0">
-      <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
-        <UserPlus className="h-8 w-8 text-gray-400" />
-      </div>
-    </div>
-  );
-};
-
 export default RoleBank;
