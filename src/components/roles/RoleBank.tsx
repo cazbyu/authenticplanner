@@ -166,33 +166,26 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
     acc[role.category].push(role);
     return acc;
-  }, {} as Record<string, Role[]>);
-
-  if (loading && !selectedRole && !selectedSection) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
-  // If a role is selected, show the role details
-  if (selectedRole) {
-    const pendingTasks = tasks.filter(task => task.status === 'pending');
-
-    return (
-      <div className="h-full flex flex-col">
-        {/* Header */}
-        <div className="flex items-center gap-3 p-6 border-b border-gray-200">
-          <button
-            onClick={handleBack}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <div className="flex items-center gap-3">
-            <div className="text-2xl">{selectedRole.icon || '👤'}</div>
-            <h1 className="text-2xl font-bold text-gray-900">{selectedRole.label}</h1>
+          <div className="p-6">
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {roles.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => handleRoleSelect(role)}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group bg-white"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{role.icon || '👤'}</div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
+                        {role.label}
+                      </h3>
+                      <p className="text-sm text-gray-500 capitalize">{role.category}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -200,25 +193,55 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           {/* Current Tasks */}
           <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Current Tasks</h2>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Current Tasks</h2>
+              <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium">
+                <Plus className="h-4 w-4" />
+                Add Task
+              </button>
+            </div>
             {loading ? (
               <div className="text-gray-500">Loading tasks...</div>
             ) : pendingTasks.length > 0 ? (
-              <div className="space-y-2">
+              <div className="space-y-3">
                 {pendingTasks.map((task) => (
-                  <div key={task.id} className="p-3 bg-gray-50 rounded-lg border">
-                    <div className="font-medium text-gray-900">{task.title}</div>
-                    {task.due_date && (
-                      <div className="text-sm text-gray-600 mt-1">
-                        Due: {new Date(task.due_date).toLocaleDateString()}
+                  <div key={task.id} className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h4 className="font-medium text-gray-900 mb-1">{task.title}</h4>
+                        {task.due_date && (
+                          <div className="text-sm text-gray-600 mb-2">
+                            Due: {new Date(task.due_date).toLocaleDateString()}
+                          </div>
+                        )}
+                        <div className="flex flex-wrap gap-1">
+                          {task.is_urgent && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">
+                              Urgent
+                            </span>
+                          )}
+                          {task.is_important && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+                              Important
+                            </span>
+                          )}
+                          {task.is_authentic_deposit && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">
+                              Deposit
+                            </span>
+                          )}
+                        </div>
                       </div>
-                    )}
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-gray-500 text-center py-8">
-                No current tasks for this role
+              <div className="text-center py-8 text-gray-500">
+                <div className="text-gray-400 mb-2">No current tasks for this role</div>
+                <button className="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                  Add your first task
+                </button>
               </div>
             )}
           </section>
