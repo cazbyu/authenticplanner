@@ -1,41 +1,32 @@
-import React, { useState, useEffect, useRef, forwardRef } from 'react';
-import FullCalendar, { DatesSetArg, DateHeaderContentArg } from '@fullcalendar/react';
+import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
+import FullCalendar, { DateSetArg, DateHeaderContentArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
-import listPlugin from '@fullcalendar/list';
 import { supabase } from '../../supabaseClient';
-
-interface Task {
-  id: string;
-  title: string;
-  start_time: string;
-  end_time: string | null;
-  is_authentic_deposit: boolean;
-  is_twelve_week_goal: boolean;
-}
+import { format } from 'date-fns';
+import { Droppable, Draggable } from 'react-beautiful-dnd';
+import TaskEditModal from './TaskEditModal';
 
 interface CalendarViewProps {
   view: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth';
   currentDate: Date;
   onDateChange: (date: Date) => void;
+  refreshTrigger: number;
 }
 
-const weekdayShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
-  html: `
-    <div class="day-name">${weekdayShort[arg.date.getDay()]}</div>
-    <div class="day-number ${isToday(arg.date) ? 'today' : ''}">${arg.date.getDate()}</div>
-  `,
-});
-
-const isToday = (date: Date) => {
-  const today = new Date();
-  return date.getDate() === today.getDate() &&
-    date.getMonth() === today.getMonth() &&
-    date.getFullYear() === today.getFullYear();
-};
+interface Task {
+  id: string;
+  title: string;
+  start_time: string | null;
+  end_time: string | null;
+  due_date: string | null;
+  is_urgent: boolean;
+  is_important: boolean;
+  is_authentic_deposit: boolean;
+  status: string;
+  notes: string | null;
+}
 
 const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
   ({ view, currentDate, onDateChange }, ref) => {
@@ -54,25 +45,22 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         }
         const { data: tasks } = await supabase
           .from('0007-ap-tasks')
-          .select('id, title, start_time, end_time, is_authentic_deposit, is_twelve_week_goal')
-          .eq('user_id', user.id);
+          .update({
+            due_date: dateStr,
+            start_time: startTimeStr,
+            end_time: endTimeStr,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', taskId);
 
-        if (tasks) {
-          const calendarEvents = tasks.map((task: Task) => ({
-            id: task.id,
-            title: task.title,
-            start: task.start_time,
-            end: task.end_time || undefined,
-            backgroundColor: task.is_authentic_deposit
-              ? '#10B981'
-              : task.is_twelve_week_goal
-              ? '#6366F1'
-              : '#3B82F6',
-            borderColor: 'transparent',
-            textColor: 'white',
-          }));
-          setEvents(calendarEvents);
+        if (error) {
+          console.error('Error updating task:', error);
+          resizeInfo.revert();
+        } else {
+          // Refresh events to show updated data
+          fetchEvents();
         }
+
         setLoading(false);
       };
       fetchTasks();
@@ -84,23 +72,63 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         calendarApi.changeView(view);
         calendarApi.gotoDate(currentDate);
       }
-    }, [view, currentDate, fullCalendarRef]);
-
-    const handleDatesSet = (arg: DatesSetArg) => {
-      onDateChange(arg.view.currentStart);
-    };
-
-    const handleEventClick = (info: any) => {
-      console.log('Event clicked:', info.event);
-    };
-
-    if (loading) {
-      return (
-        <div className="flex h-64 items-center justify-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
-        </div>
-      );
+    } else {
+      resizeInfo.revert();
     }
+  };
+
+  // Handle event drop (moving events within calendar)
+  const handleEventDrop = async (dropInfo: any) => {
+    const taskId = dropInfo.event.id;
+    const newStart = dropInfo.event.start;
+    const newEnd = dropInfo.event.end;
+
+    const dateStr = format(newStart, 'yyyy-MM-dd');
+    const startTimeStr = newStart.toISOString();
+    const endTimeStr = newEnd ? format(newEnd, 'HH:mm:ss') : null;
+
+    try {
+      const { error } = await supabase
+        .from('0007-ap-tasks')
+        .update({
+          due_date: dateStr,
+          start_time: startTimeStr,
+          end_time: endTimeStr,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', taskId);
+
+      if (error) {
+        dropInfo.revert();
+      }
+    } catch (error) {
+      console.error('Error updating task time:', error);
+      dropInfo.revert();
+    }
+  };
+
+  // Generate droppable time slots for the current view
+  const generateTimeSlots = () => {
+    const slots = [];
+    const startHour = 0;
+    const endHour = 24;
+    
+    for (let hour = startHour; hour < endHour; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        const dateStr = format(currentDate, 'yyyy-MM-dd');
+        const slotId = `calendar-${dateStr}-${hour.toString().padStart(2, '0')}-${minute.toString().padStart(2, '0')}`;
+        
+        slots.push({
+          id: slotId,
+          time: timeStr,
+          date: dateStr
+        });
+      }
+    }
+    
+    return slots;
+  };
 
     return (
       <div className="h-full">
@@ -203,18 +231,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         </style>
 
         <FullCalendar
-          ref={fullCalendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
+          ref={calendarRef}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView={view}
-          initialDate={currentDate}
-          headerToolbar={false}
-          nowIndicator={true}
-          firstDay={0}
+          headerToolbar={false} // We handle navigation in parent
+          height="auto"
+          events={events}
           editable={true}
+          droppable={true}
           selectable={true}
           selectMirror={true}
           dayMaxEvents={true}
           weekends={true}
+
           events={events}
           eventClick={handleEventClick}
           height="100%"
@@ -249,10 +278,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           }}
           datesSet={handleDatesSet}
           dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
+
         />
       </div>
-    );
-  }
-);
 
 export default CalendarView;

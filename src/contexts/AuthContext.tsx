@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { toast } from 'sonner';
+import { supabase } from '../supabaseClient'; // make sure this path is correct
 
 interface User {
   id: string;
@@ -37,30 +38,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    setIsLoading(true);
-    try {
-      // This would normally be an API call
-      // Simulating authentication for demo purposes
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      const mockUser: User = {
-        id: '1',
-        name: 'Demo User',
-        email,
-        onboardingComplete: false,
-        paymentVerified: false
-      };
-      
-      setUser(mockUser);
-      localStorage.setItem('auth_user', JSON.stringify(mockUser));
-      toast.success('Login successful');
-    } catch (error) {
-      toast.error('Login failed');
-      throw error;
-    } finally {
-      setIsLoading(false);
+  setIsLoading(true);
+  try {
+    // This is REAL Supabase login!
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data.user) {
+      throw error || new Error('Login failed');
     }
-  };
+
+    // Store the user object
+    setUser({
+      id: data.user.id,
+      name: data.user.user_metadata?.full_name || '',
+      email: data.user.email,
+      onboardingComplete: false,      // You may want to load this from your database!
+      paymentVerified: false,         // Same as above
+    });
+    localStorage.setItem('auth_user', JSON.stringify(data.user));
+    toast.success('Login successful');
+  } catch (error) {
+    toast.error('Login failed');
+    throw error;
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const logout = () => {
     setUser(null);

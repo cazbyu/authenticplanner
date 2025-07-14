@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { supabase } from '../../supabaseClient';
 
 interface OnboardingContextType {
   goToNextStep: () => void;
@@ -8,15 +9,44 @@ interface OnboardingContextType {
 }
 
 const OnboardingVision: React.FC = () => {
-  const { goToNextStep } = useOutletContext<OnboardingContextType>();
+  const { goToNextStep, goToPreviousStep } = useOutletContext<OnboardingContextType>();
   const [vision, setVision] = useState('');
+  const [saving, setSaving] = useState(false);
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // In a real app, save this to your state management or API
-    localStorage.setItem('onboarding_vision', vision);
+    if (vision.trim()) {
+      setSaving(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          // Save vision statement to Supabase
+          const { error } = await supabase
+            .from('0007-ap-onboarding_responses')
+            .upsert({
+              user_id: user.id,
+              vision_statement: vision.trim(),
+              updated_at: new Date().toISOString()
+            }, {
+              onConflict: 'user_id'
+            });
+          
+          if (error) {
+            console.error('Error saving vision statement:', error);
+          }
+        }
+      } catch (err) {
+        console.error('Error saving vision statement:', err);
+      } finally {
+        setSaving(false);
+      }
+    }
     
+    goToNextStep();
+  };
+
+  const handleSkip = () => {
     goToNextStep();
   };
   
@@ -28,7 +58,7 @@ const OnboardingVision: React.FC = () => {
     >
       <h2 className="text-xl font-bold text-gray-900">Your Five-Year Vision</h2>
       <p className="mt-2 text-sm text-gray-600">
-        Take a moment to envision where you want to be in five years. What does your ideal life look like?
+        Imagine who you are after 1,826 sunsets (5 years). Keep it simple, but what does your ideal life look like?
       </p>
       
       <form onSubmit={handleSubmit} className="mt-6">
@@ -46,24 +76,33 @@ const OnboardingVision: React.FC = () => {
           />
         </div>
         
-        <div className="mt-6">
-          <button
-            type="submit"
-            disabled={!vision.trim()}
-            className={`w-full rounded-md py-2 px-4 text-center text-sm font-medium text-white ${
-              vision.trim()
-                ? 'bg-primary-500 hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2'
-                : 'cursor-not-allowed bg-gray-300'
-            }`}
-          >
-            Continue
-          </button>
-          
-          {!vision.trim() && (
-            <p className="mt-2 text-center text-xs text-gray-500">
-              Please write your vision statement to continue
-            </p>
-          )}
+        {/* Single Navigation Row - Centered Continue button between Back and Skip */}
+        <div className="mt-6 flex items-center justify-center">
+          <div className="flex items-center space-x-8">
+            <button
+              type="button"
+              onClick={goToPreviousStep}
+              className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
+            >
+              ← Back
+            </button>
+            
+            <button
+              type="submit"
+              disabled={saving}
+              className="rounded-md bg-primary-500 px-4 py-2 text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 disabled:opacity-50"
+            >
+              {saving ? 'Saving...' : 'Continue'}
+            </button>
+            
+            <button
+              type="button"
+              onClick={handleSkip}
+              className="text-sm text-gray-600 hover:text-gray-800 hover:underline"
+            >
+              Skip for now →
+            </button>
+          </div>
         </div>
       </form>
     </motion.div>

@@ -32,57 +32,93 @@ const Settings: React.FC = () => {
 
   useEffect(() => {
     const getUser = async () => {
-      const { data } = await supabase.auth.getUser();
-      setUserId(data?.user?.id || null);
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) {
+          console.error('Auth error:', error);
+          setError('Authentication failed. Please try logging in again.');
+          setLoading(false);
+          return;
+        }
+        
+        if (data?.user?.id) {
+          setUserId(data.user.id);
+        } else {
+          setError('No user found. Please log in.');
+          setLoading(false);
+        }
+      } catch (err) {
+        console.error('Error getting user:', err);
+        setError('Failed to authenticate user.');
+        setLoading(false);
+      }
     };
     getUser();
   }, []);
 
   useEffect(() => {
     const fetchPresetRoles = async () => {
-      const { data, error } = await supabase
-        .from('0007-ap-preset-roles')
-        .select('*')
-        .order('category', { ascending: true })
-        .order('sort_order', { ascending: true });
-      if (error) {
+      try {
+        const { data, error } = await supabase
+          .from('0007-ap-preset-roles')
+          .select('*')
+          .order('category', { ascending: true })
+          .order('sort_order', { ascending: true });
+        
+        if (error) {
+          console.error('Preset roles error:', error);
+          setError('Failed to load preset roles.');
+          return;
+        }
+        
+        const sortOrder = ['Family', 'Professional', 'Community', 'Recreation'];
+        const sortedData = data?.sort((a, b) => {
+          const aIndex = sortOrder.indexOf(a.category);
+          const bIndex = sortOrder.indexOf(b.category);
+          if (aIndex === -1 && bIndex === -1) return 0;
+          if (aIndex === -1) return 1;
+          if (bIndex === -1) return -1;
+          return aIndex - bIndex;
+        });
+        setPresetRoles(sortedData || []);
+      } catch (err) {
+        console.error('Error fetching preset roles:', err);
         setError('Failed to load preset roles.');
-        return;
       }
-      const sortOrder = ['Family', 'Professional', 'Community', 'Recreation'];
-      const sortedData = data?.sort((a, b) => {
-        const aIndex = sortOrder.indexOf(a.category);
-        const bIndex = sortOrder.indexOf(b.category);
-        if (aIndex === -1 && bIndex === -1) return 0;
-        if (aIndex === -1) return 1;
-        if (bIndex === -1) return -1;
-        return aIndex - bIndex;
-      });
-      setPresetRoles(sortedData || []);
     };
     fetchPresetRoles();
   }, []);
 
   const fetchAllRoles = async () => {
     if (!userId) return;
-    setLoading(true);
-    const { data, error } = await supabase
-      .from('0007-ap-roles')
-      .select('*')
-      .eq('user_id', userId);
+    
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('0007-ap-roles')
+        .select('*')
+        .eq('user_id', userId);
 
-    if (error) {
+      if (error) {
+        console.error('User roles error:', error);
+        setError('Failed to load your roles.');
+        return;
+      }
+      
+      setUserRoles(data || []);
+      setError(null); // Clear any previous errors
+    } catch (err) {
+      console.error('Error fetching user roles:', err);
       setError('Failed to load your roles.');
+    } finally {
       setLoading(false);
-      return;
     }
-    // is_active is now always boolean
-    setUserRoles(data || []);
-    setLoading(false);
   };
 
   useEffect(() => {
-    if (userId) fetchAllRoles();
+    if (userId) {
+      fetchAllRoles();
+    }
   }, [userId]);
 
   const presetRolesByCategory: { [cat: string]: PresetRole[] } = {};
@@ -94,89 +130,105 @@ const Settings: React.FC = () => {
   // OPTIMISTIC toggle for preset roles
   const handleTogglePreset = async (role: PresetRole) => {
     if (!userId) return;
-    const match = userRoles.find(r => r.preset_role_id === role.id && r.user_id === userId);
+    
+    try {
+      const match = userRoles.find(r => r.preset_role_id === role.id && r.user_id === userId);
 
-    if (match) {
-      // Optimistically update
-      setUserRoles(prev =>
-        prev.map(r =>
-          r.id === match.id ? { ...r, is_active: !r.is_active } : r
-        )
-      );
-      // Update Supabase in background
-      await supabase
-        .from('0007-ap-roles')
-        .update({ is_active: !match.is_active })
-        .eq('id', match.id)
-        .eq('user_id', userId);
-      // Optionally re-fetch here if you want 100% server sync: await fetchAllRoles();
-    } else {
-      // Optimistically add new role
-      const tempId = `temp-${Date.now()}-${Math.random()}`;
-      const newRole = {
-        user_id: userId,
-        is_active: true,
-        preset_role_id: role.id,
-        label: role.label,
-        category: role.category,
-        id: tempId,
-      };
-      setUserRoles(prev => [...prev, newRole]);
-      // Add to Supabase, then re-fetch to sync true IDs
-      await supabase
-        .from('0007-ap-roles')
-        .insert([{
+      if (match) {
+        // Optimistically update
+        setUserRoles(prev =>
+          prev.map(r =>
+            r.id === match.id ? { ...r, is_active: !r.is_active } : r
+          )
+        );
+        // Update Supabase in background
+        await supabase
+          .from('0007-ap-roles')
+          .update({ is_active: !match.is_active })
+          .eq('id', match.id)
+          .eq('user_id', userId);
+      } else {
+        // Optimistically add new role
+        const tempId = `temp-${Date.now()}-${Math.random()}`;
+        const newRole = {
           user_id: userId,
           is_active: true,
           preset_role_id: role.id,
           label: role.label,
           category: role.category,
-        }]);
-      fetchAllRoles(); // Replace temp with real
+          id: tempId,
+        };
+        setUserRoles(prev => [...prev, newRole]);
+        // Add to Supabase, then re-fetch to sync true IDs
+        await supabase
+          .from('0007-ap-roles')
+          .insert([{
+            user_id: userId,
+            is_active: true,
+            preset_role_id: role.id,
+            label: role.label,
+            category: role.category,
+          }]);
+        fetchAllRoles(); // Replace temp with real
+      }
+    } catch (err) {
+      console.error('Error toggling preset role:', err);
+      setError('Failed to update role. Please try again.');
     }
   };
 
   // OPTIMISTIC toggle for custom roles
   const handleToggleCustomRole = async (role: UserRole) => {
     if (!role.id || !userId) return;
-    // Optimistically update
-    setUserRoles(prev =>
-      prev.map(r =>
-        r.id === role.id ? { ...r, is_active: !r.is_active } : r
-      )
-    );
-    await supabase
-      .from('0007-ap-roles')
-      .update({ is_active: false })
-      .eq('id', role.id);
-    // Optionally re-fetch: await fetchAllRoles();
+    
+    try {
+      // Optimistically update
+      setUserRoles(prev =>
+        prev.map(r =>
+          r.id === role.id ? { ...r, is_active: !r.is_active } : r
+        )
+      );
+      await supabase
+        .from('0007-ap-roles')
+        .update({ is_active: !role.is_active })
+        .eq('id', role.id);
+    } catch (err) {
+      console.error('Error toggling custom role:', err);
+      setError('Failed to update role. Please try again.');
+    }
   };
 
   const handleAddCustomRole = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!userId || !customRole.trim()) return;
-    // Optimistically add
-    const tempId = `temp-custom-${Date.now()}-${Math.random()}`;
-    setUserRoles(prev => [
-      ...prev,
-      {
+    
+    try {
+      // Optimistically add
+      const tempId = `temp-custom-${Date.now()}-${Math.random()}`;
+      setUserRoles(prev => [
+        ...prev,
+        {
+          user_id: userId,
+          is_active: true,
+          label: customRole.trim(),
+          category: customCategory.trim() || 'Other',
+          id: tempId,
+        },
+      ]);
+      // Insert in Supabase, then sync
+      await supabase.from('0007-ap-roles').insert([{
         user_id: userId,
         is_active: true,
         label: customRole.trim(),
         category: customCategory.trim() || 'Other',
-        id: tempId,
-      },
-    ]);
-    // Insert in Supabase, then sync
-    await supabase.from('0007-ap-roles').insert([{
-      user_id: userId,
-      is_active: true,
-      label: customRole.trim(),
-      category: customCategory.trim() || 'Other',
-    }]);
-    setCustomRole('');
-    setCustomCategory('');
-    fetchAllRoles();
+      }]);
+      setCustomRole('');
+      setCustomCategory('');
+      fetchAllRoles();
+    } catch (err) {
+      console.error('Error adding custom role:', err);
+      setError('Failed to add custom role. Please try again.');
+    }
   };
 
   const toggleCategory = (category: string) => {
@@ -186,8 +238,45 @@ const Settings: React.FC = () => {
     }));
   };
 
-  if (loading) return <div>Loading...</div>;
-  if (error) return <div className="error">{error}</div>;
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary-500 border-r-transparent align-[-0.125em]"></div>
+          <p className="mt-2 text-gray-600">Loading settings...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="max-w-3xl mx-auto p-6">
+        <div className="bg-red-50 border border-red-200 rounded-md p-4">
+          <div className="flex">
+            <div className="ml-3">
+              <h3 className="text-sm font-medium text-red-800">Error</h3>
+              <div className="mt-2 text-sm text-red-700">
+                <p>{error}</p>
+              </div>
+              <div className="mt-4">
+                <button
+                  onClick={() => {
+                    setError(null);
+                    setLoading(true);
+                    window.location.reload();
+                  }}
+                  className="bg-red-100 px-3 py-2 rounded-md text-sm font-medium text-red-800 hover:bg-red-200"
+                >
+                  Try Again
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-6">

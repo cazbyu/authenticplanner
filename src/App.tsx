@@ -8,7 +8,6 @@ import MainLayout from './layouts/MainLayout';
 import OnboardingLayout from './layouts/OnboardingLayout';
 
 // Pages
-import Dashboard from './pages/Dashboard';
 import AuthenticCalendar from './pages/AuthenticCalendar';
 import CycleTracker from './pages/CycleTracker';
 import TwelveWeekCycle from './pages/TwelveWeekCycle';
@@ -16,12 +15,15 @@ import Settings from './pages/Settings';
 import Login from './pages/auth/Login';
 import PaymentCheck from './pages/auth/PaymentCheck';
 import OnboardingWelcome from './pages/onboarding/OnboardingWelcome';
-import OnboardingQuestions from './pages/onboarding/OnboardingQuestions';
 import OnboardingRoles from './pages/onboarding/OnboardingRoles';
 import OnboardingVision from './pages/onboarding/OnboardingVision';
 import OnboardingGoals from './pages/onboarding/OnboardingGoals';
 import OnboardingTasks from './pages/onboarding/OnboardingTasks';
 import OnboardingComplete from './pages/onboarding/OnboardingComplete';
+import DomainDashboard from './pages/DomainDashboard';
+import DomainDetail from './pages/DomainDetail';
+import RoleBankPage from './pages/RoleBank';
+import FullScorecard from './pages/FullScorecard';
 
 // Loading screen component
 const LoadingScreen = () => (
@@ -46,7 +48,7 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login\" replace />;
   }
   
   return <>{children}</>;
@@ -61,7 +63,7 @@ const OnboardingCheck = ({ children }: { children: React.ReactNode }) => {
   }
   
   if (user && !user.onboardingComplete) {
-    return <Navigate to="/onboarding/welcome" replace />;
+    return <Navigate to="/onboarding/welcome\" replace />;
   }
   
   return <>{children}</>;
@@ -100,7 +102,6 @@ function App() {
         }
       >
         <Route path="welcome" element={<OnboardingWelcome />} />
-        <Route path="questions" element={<OnboardingQuestions />} />
         <Route path="roles" element={<OnboardingRoles />} />
         <Route path="vision" element={<OnboardingVision />} />
         <Route path="goals" element={<OnboardingGoals />} />
@@ -108,25 +109,28 @@ function App() {
         <Route path="complete" element={<OnboardingComplete />} />
       </Route>
       
-      {/* Main app routes (no more OnboardingCheck around MainLayout) */}
+      {/* Main app routes - Default to Authentic Calendar */}
       <Route
         path="/"
         element={
           <ProtectedRoute>
-            {/* REMOVED: <OnboardingCheck> */}
             <MainLayout />
-            {/* REMOVED: </OnboardingCheck> */}
           </ProtectedRoute>
         }
       >
-        <Route index element={<Dashboard />} />
+        {/* Default route now goes to calendar */}
+        <Route index element={<AuthenticCalendar />} />
         <Route path="calendar" element={<AuthenticCalendar />} />
         <Route path="twelve-week-cycle" element={<TwelveWeekCycle />} />
+        <Route path="role-bank" element={<RoleBankPage />} />
+        <Route path="domains" element={<DomainDashboard />} />
+        <Route path="domains/:domainId" element={<DomainDetail />} />
         <Route path="settings" element={<Settings />} />
+        <Route path="scorecard/full" element={<FullScorecard />} />
       </Route>
       
-      {/* Redirect any other route to home */}
-      <Route path="*" element={<Navigate to="/" replace />} />
+      {/* Redirect any other route to home (which is now calendar) */}
+      <Route path="*" element={<Navigate to="/\" replace />} />
     </Routes>
   );
 }

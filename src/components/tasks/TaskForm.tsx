@@ -1,345 +1,344 @@
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "../../supabaseClient";
 
-interface Role {
-  id: string;
-  label: string;
+interface TaskFormProps {
+  onClose: () => void;
+  onTaskCreated: () => void;
+  availableRoles?: any[];
+  availableDomains?: any[];
+  availableKeyRelationships?: any[];
 }
 
-interface Domain {
-  id: string;
-  name: string;
-}
-
-interface TaskFormValues {
+interface TaskFormData {
   title: string;
-  isAuthenticDeposit: boolean;
-  isTwelveWeekGoal: boolean;
-  isUrgent: boolean;
-  isImportant: boolean;
-  dueDate: string;
-  startTime: string;
-  endTime: string;
+  due_date: string;
+  time: string;
+  priority: number;
   notes: string;
   selectedRoleIds: string[];
   selectedDomainIds: string[];
+  selectedKeyRelationshipIds: string[];
 }
 
-interface TaskFormProps {
-  onClose?: () => void;
-}
-
-const TaskForm: React.FC<TaskFormProps> = ({ onClose }) => {
-  const [userId, setUserId] = useState<string | null>(null);
-  const [roles, setRoles] = useState<Role[]>([]);
-  const [domains, setDomains] = useState<Domain[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const [form, setForm] = useState<TaskFormValues>({
+const TaskForm: React.FC<TaskFormProps> = ({
+  onClose,
+  onTaskCreated,
+  availableRoles,
+  availableDomains,
+  availableKeyRelationships,
+}) => {
+  const [form, setForm] = useState<TaskFormData>({
     title: "",
-    isAuthenticDeposit: false,
-    isTwelveWeekGoal: false,
-    isUrgent: false,
-    isImportant: false,
-    dueDate: "",
-    startTime: "",
-    endTime: "",
+    due_date: "",
+    time: "",
+    priority: 5,
     notes: "",
     selectedRoleIds: [],
     selectedDomainIds: [],
+    selectedKeyRelationshipIds: [],
   });
 
+  const [roles, setRoles] = useState<any[]>([]);
+  const [domains, setDomains] = useState<any[]>([]);
+  const [keyRelationships, setKeyRelationships] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      setUserId(data.user?.id ?? null);
-    });
+    fetchLists();
   }, []);
 
-  useEffect(() => {
-    if (!userId) return;
+  const fetchLists = async () => {
+    setLoading(true);
 
-    const fetchLists = async () => {
-      setLoading(true);
-
-      const [roleRes, domainRes] = await Promise.all([
-        supabase
-          .from("0007-ap-roles")
-          .select("id, label")
-          .eq("user_id", userId)
-          .eq("is_active", true),
-        supabase.from("0007-ap-domains").select("id, name"),
-      ]);
-
-      if (roleRes.error || domainRes.error) {
-        setError("Failed to load roles/domains.");
-      } else {
-        setRoles(roleRes.data || []);
-        setDomains(domainRes.data || []);
+    try {
+      if (availableRoles && availableDomains) {
+        setRoles(availableRoles);
+        setDomains(availableDomains);
+        
+        // Fetch key relationships separately
+        try {
+          const { data: keyRelData, error } = await supabase
+            .from("0007-ap-key_relationships")
+            .select("id, name, role_id");
+          
+          setKeyRelationships(keyRelData || []);
+        } catch (err) {
+          console.error('Could not load key relationships:', err);
+          setKeyRelationships([]);
+        }
+        
+        setLoading(false);
+        return;
       }
 
+      const [rolesResponse, domainsResponse, keyRelResponse] = await Promise.all([
+        supabase.from("0007-ap-roles").select("id, label").eq("is_active", true),
+        supabase.from("0007-ap-domains").select("id, name"),
+        supabase.from("0007-ap-key_relationships").select("id, name, role_id"),
+      ]);
+
+      setRoles(rolesResponse.data || []);
+      setDomains(domainsResponse.data || []);
+      setKeyRelationships(keyRelResponse.data || []);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
       setLoading(false);
-    };
-
-    fetchLists();
-  }, [userId]);
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === "checkbox" ? checked : value,
-    }));
+    }
   };
 
-  const toggleArrayField = (
-    id: string,
-    field: "selectedRoleIds" | "selectedDomainIds"
-  ) => {
-    setForm((prev) => {
-      const exists = prev[field].includes(id);
-      const updated = exists
-        ? prev[field].filter((rid) => rid !== id)
-        : [...prev[field], id];
-      return { ...prev, [field]: updated };
-    });
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setForm(prev => ({ ...prev, [name]: value }));
+  };
+
+  const toggleArrayField = (id: string, field: keyof Pick<TaskFormData, 'selectedRoleIds' | 'selectedDomainIds' | 'selectedKeyRelationshipIds'>) => {
+    setForm(prev => ({
+      ...prev,
+      [field]: prev[field].includes(id)
+        ? prev[field].filter(item => item !== id)
+        : [...prev[field], id]
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!userId) return;
-
-    if (!form.title.trim()) {
-      setError("Title is required.");
-      return;
-    }
+    if (!form.title.trim()) return;
 
     setSubmitting(true);
-    setError(null);
 
-    // Create start_time timestamp if date and start time are provided
-    const startTime = form.dueDate && form.startTime
-      ? new Date(`${form.dueDate}T${form.startTime}:00Z`).toISOString()
-      : null;
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("User not authenticated");
 
-    // Only include end_time if provided
-    const endTime = form.endTime || null;
+      const taskData = {
+        user_id: userData.user.id,
+        title: form.title,
+        due_date: form.due_date || null,
+        time: form.time || null,
+        priority: form.priority,
+        notes: form.notes || null,
+        status: "pending" as const,
+      };
 
-    const { data: taskRow, error: taskErr } = await supabase
-      .from("0007-ap-tasks")
-      .insert(
-        [
-          {
-            user_id: userId,
-            title: form.title.trim(),
-            is_authentic_deposit: form.isAuthenticDeposit,
-            is_twelve_week_goal: form.isTwelveWeekGoal,
-            is_urgent: form.isUrgent,
-            is_important: form.isImportant,
-            due_date: form.dueDate || null,
-            start_time: startTime,
-            end_time: endTime,
-            notes: form.notes.trim() || null,
-            percent_complete: 0,
-          },
-        ],
-        { returning: "representation" }
-      )
-      .single();
+      const { data: task, error: taskError } = await supabase
+        .from("0007-ap-tasks")
+        .insert([taskData])
+        .select()
+        .single();
 
-    if (taskErr || !taskRow) {
-      setError("Failed to create task.");
-      setSubmitting(false);
-      return;
-    }
+      if (taskError) throw taskError;
 
-    const linkPromises: Promise<unknown>[] = [];
+      // Insert role associations
+      if (form.selectedRoleIds.length > 0) {
+        const roleAssociations = form.selectedRoleIds.map(roleId => ({
+          task_id: task.id,
+          role_id: roleId,
+        }));
 
-    if (form.selectedRoleIds.length) {
-      linkPromises.push(
-        supabase
+        const { error: roleError } = await supabase
           .from("0007-ap-task_roles")
-          .insert(
-            form.selectedRoleIds.map((rid) => ({
-              task_id: taskRow.id,
-              role_id: rid,
-            }))
-          )
-      );
-    }
+          .insert(roleAssociations);
 
-    if (form.selectedDomainIds.length) {
-      linkPromises.push(
-        supabase
+        if (roleError) throw roleError;
+      }
+
+      // Insert domain associations
+      if (form.selectedDomainIds.length > 0) {
+        const domainAssociations = form.selectedDomainIds.map(domainId => ({
+          task_id: task.id,
+          domain_id: domainId,
+        }));
+
+        const { error: domainError } = await supabase
           .from("0007-ap-task_domains")
-          .insert(
-            form.selectedDomainIds.map((did) => ({
-              task_id: taskRow.id,
-              domain_id: did,
-            }))
-          )
-      );
-    }
+          .insert(domainAssociations);
 
-    await Promise.all(linkPromises);
+        if (domainError) throw domainError;
+      }
 
-    setForm({
-      title: "",
-      isAuthenticDeposit: false,
-      isTwelveWeekGoal: false,
-      isUrgent: false,
-      isImportant: false,
-      dueDate: "",
-      startTime: "",
-      endTime: "",
-      notes: "",
-      selectedRoleIds: [],
-      selectedDomainIds: [],
-    });
-    setSubmitting(false);
-
-    if (onClose) {
+      onTaskCreated();
       onClose();
+    } catch (error) {
+      console.error("Error creating task:", error);
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  if (loading) return <div>Loading…</div>;
-  if (error) return <div className="text-red-500">{error}</div>;
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg p-6">
+          <div className="text-center">Loading...</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-lg mx-auto bg-white rounded-xl shadow-lg p-6 max-h-[85vh] overflow-y-auto space-y-6">
-      <div className="flex justify-end">
-        {onClose && (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md max-h-[90vh] overflow-hidden">
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-lg font-semibold">Create New Task</h2>
           <button
-            type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-lg"
-            aria-label="Close form"
+            className="text-gray-400 hover:text-gray-600 text-xl font-bold"
           >
-            ✕
+            ×
           </button>
-        )}
-      </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block text-sm font-medium mb-1">Task Title</label>
-          <input
-            name="title"
-            value={form.title}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-            placeholder="Enter task title"
-            required
-          />
         </div>
 
-        <div className="grid grid-cols-2 gap-4">
-          {[
-            ["isAuthenticDeposit", "Authentic Deposit"],
-            ["isTwelveWeekGoal", "12-Week Goal"],
-            ["isUrgent", "Urgent"],
-            ["isImportant", "Important"],
-          ].map(([key, label]) => (
-            <label key={key} className="flex items-center gap-2 text-sm">
+        <div className="p-4 overflow-y-auto max-h-[calc(90vh-120px)]">
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {/* Compact Title */}
+            <div>
+              <label className="block text-xs font-medium mb-1">Task Title</label>
               <input
-                type="checkbox"
-                name={key as string}
-                checked={(form as any)[key as string]}
+                type="text"
+                name="title"
+                value={form.title}
                 onChange={handleChange}
+                required
+                className="w-full border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Enter task title..."
               />
-              {label as string}
-            </label>
-          ))}
-        </div>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Date</label>
-          <input
-            name="dueDate"
-            type="date"
-            value={form.dueDate}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2"
-          />
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium mb-1">Time (optional)</label>
-          <div className="grid grid-cols-2 gap-4">
-            <input
-              name="startTime"
-              type="time"
-              value={form.startTime}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-              placeholder="Start time"
-            />
-            <input
-              name="endTime"
-              type="time"
-              value={form.endTime}
-              onChange={handleChange}
-              className="w-full border rounded px-3 py-2"
-              placeholder="End time"
-            />
-          </div>
-        </div>
-
-        <div>
-          <h3 className="font-medium mb-2">Roles</h3>
-          <div className="grid grid-cols-2 gap-2 border p-3 rounded-md max-h-40 overflow-y-auto">
-            {roles.map((role) => (
-              <label key={role.id} className="flex items-center gap-2 text-sm">
+            {/* Compact Date and Time */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <label className="block text-xs font-medium mb-1">Due Date</label>
                 <input
-                  type="checkbox"
-                  checked={form.selectedRoleIds.includes(role.id)}
-                  onChange={() => toggleArrayField(role.id, "selectedRoleIds")}
+                  type="date"
+                  name="due_date"
+                  value={form.due_date}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
-                {role.label}
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div>
-          <h3 className="font-medium mb-2">Domains</h3>
-          <div className="grid grid-cols-2 gap-2 border p-3 rounded-md max-h-40 overflow-y-auto">
-            {domains.map((domain) => (
-              <label key={domain.id} className="flex items-center gap-2 text-sm">
+              </div>
+              <div>
+                <label className="block text-xs font-medium mb-1">Time</label>
                 <input
-                  type="checkbox"
-                  checked={form.selectedDomainIds.includes(domain.id)}
-                  onChange={() => toggleArrayField(domain.id, "selectedDomainIds")}
+                  type="time"
+                  name="time"
+                  value={form.time}
+                  onChange={handleChange}
+                  className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
                 />
-                {domain.name}
-              </label>
-            ))}
-          </div>
-        </div>
+              </div>
+            </div>
 
-        <div>
-          <label className="block text-sm font-medium mb-1">Notes</label>
-          <textarea
-            name="notes"
-            value={form.notes}
-            onChange={handleChange}
-            className="w-full border rounded px-3 py-2 min-h-[80px]"
-            placeholder="Add any additional notes here..."
-          />
-        </div>
+            {/* Compact Priority */}
+            <div>
+              <label className="block text-xs font-medium mb-1">Priority (1-9)</label>
+              <input
+                type="number"
+                name="priority"
+                value={form.priority}
+                onChange={handleChange}
+                min="1"
+                max="9"
+                className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-        >
-          {submitting ? "Saving…" : "Save Task"}
-        </button>
-      </form>
+            {/* Compact Roles Section */}
+            <div>
+              <h3 className="text-xs font-medium mb-1">Roles</h3>
+              <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
+                {roles.map((role) => (
+                  <label key={role.id} className="flex items-center gap-1 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={form.selectedRoleIds.includes(role.id)}
+                      onChange={() => toggleArrayField(role.id, "selectedRoleIds")}
+                      className="h-3 w-3"
+                    />
+                    <span className="truncate">{role.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Key Relationships Section - Only show when roles are selected */}
+            <div>
+              <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
+              <div className="border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
+                {(() => {
+                  const filteredRelationships = keyRelationships.filter(rel => 
+                    form.selectedRoleIds.includes(rel.role_id)
+                  );
+                  
+                  if (filteredRelationships.length > 0) {
+                    return (
+                      <div className="grid grid-cols-2 gap-1">
+                        {filteredRelationships.map((rel) => (
+                          <label key={rel.id} className="flex items-center gap-1 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={form.selectedKeyRelationshipIds.includes(rel.id)}
+                              onChange={() => toggleArrayField(rel.id, "selectedKeyRelationshipIds")}
+                              className="h-3 w-3"
+                            />
+                            <span className="truncate">{rel.name}</span>
+                          </label>
+                        ))}
+                      </div>
+                    );
+                  } else {
+                    return (
+                      <p className="text-xs text-gray-500 text-center py-1">
+                        No key relationships for selected roles
+                      </p>
+                    );
+                  }
+                })()}
+              </div>
+            </div>
+
+            {/* Compact Domains Section */}
+            <div>
+              <h3 className="text-xs font-medium mb-1">Domains</h3>
+              <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
+                {domains.map((domain) => (
+                  <label key={domain.id} className="flex items-center gap-1 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={form.selectedDomainIds.includes(domain.id)}
+                      onChange={() => toggleArrayField(domain.id, "selectedDomainIds")}
+                      className="h-3 w-3"
+                    />
+                    <span className="truncate">{domain.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Compact Notes */}
+            <div>
+              <label className="block text-xs font-medium mb-1">Notes</label>
+              <textarea
+                name="notes"
+                value={form.notes}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-md px-2 py-1 text-xs min-h-[50px] focus:outline-none focus:ring-1 focus:ring-blue-500"
+                placeholder="Add notes..."
+              />
+            </div>
+
+            {/* Compact Submit Button */}
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full px-3 py-2 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              {submitting ? "Creating..." : "Create Task"}
+            </button>
+          </form>
+        </div>
+      </div>
     </div>
   );
 };
