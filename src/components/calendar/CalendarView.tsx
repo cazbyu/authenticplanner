@@ -1,5 +1,5 @@
 import React, { forwardRef, useImperativeHandle, useRef, useEffect, useState } from 'react';
-import FullCalendar from '@fullcalendar/react';
+import FullCalendar, { DateSetArg, DateHeaderContentArg } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
@@ -28,123 +28,22 @@ interface Task {
   notes: string | null;
 }
 
-const CalendarView = forwardRef<any, CalendarViewProps>(({ view, currentDate, onDateChange, refreshTrigger }, ref) => {
-  const calendarRef = useRef<FullCalendar>(null);
-  const [events, setEvents] = useState<any[]>([]);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
+  ({ view, currentDate, onDateChange }, ref) => {
+    const [events, setEvents] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const calendarRef = useRef<FullCalendar | null>(null);
 
-  useImperativeHandle(ref, () => ({
-    getApi: () => calendarRef.current?.getApi(),
-  }));
+    const fullCalendarRef = (ref as any) || calendarRef;
 
-  // Fetch events from database
-  const fetchEvents = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: tasks } = await supabase
-        .from('0007-ap-tasks')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('status', 'pending')
-        .not('start_time', 'is', null);
-
-      if (tasks) {
-        const getTaskColor = (task: Task) => {
-          // Priority-based colors matching the quadrant system
-          if (task.is_urgent && task.is_important) {
-            return { bg: '#ef4444', border: '#dc2626' }; // Red - Urgent & Important
-          } else if (!task.is_urgent && task.is_important) {
-            return { bg: '#10b981', border: '#059669' }; // Green - Not Urgent & Important
-          } else if (task.is_urgent && !task.is_important) {
-            return { bg: '#f59e0b', border: '#d97706' }; // Orange - Urgent & Not Important
-          } else {
-            return { bg: '#6b7280', border: '#4b5563' }; // Gray - Not Urgent & Not Important
-          }
-        };
-
-        const calendarEvents = tasks.map((task: Task) => ({
-          id: task.id,
-          title: task.title,
-          start: task.start_time,
-          end: task.end_time ? new Date(new Date(task.start_time!).toDateString() + ' ' + task.end_time).toISOString() : undefined,
-          backgroundColor: (() => {
-            const colors = getTaskColor(task);
-            // Override with special color for authentic deposits
-            return task.is_authentic_deposit ? '#8b5cf6' : colors.bg; // Purple for authentic deposits
-          })(),
-          borderColor: (() => {
-            const colors = getTaskColor(task);
-            return task.is_authentic_deposit ? '#7c3aed' : colors.border;
-          })(),
-          extendedProps: {
-            task: task
-          }
-        }));
-        setEvents(calendarEvents);
-      }
-    } catch (error) {
-      console.error('Error fetching events:', error);
-    }
-  };
-
-  useEffect(() => {
-    fetchEvents();
-  }, [refreshTrigger]);
-
-  // Handle event click
-  const handleEventClick = (clickInfo: any) => {
-    setEditingTaskId(clickInfo.event.id);
-  };
-
-  // Handle date select for creating new events
-  const handleDateSelect = (selectInfo: any) => {
-    // This could be used to create new events
-    console.log('Date selected:', selectInfo);
-  };
-
-  // Handle external drop (from unscheduled priorities)
-  const handleDrop = async (dropInfo: any) => {
-    const taskId = dropInfo.draggedEl.getAttribute('data-task-id');
-    if (!taskId) return;
-
-    const dropDate = dropInfo.date;
-    const dateStr = format(dropDate, 'yyyy-MM-dd');
-    const timeStr = format(dropDate, 'HH:mm');
-
-    try {
-      const { error } = await supabase
-        .from('0007-ap-tasks')
-        .update({
-          due_date: dateStr,
-          start_time: dropDate.toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', taskId);
-
-      if (!error) {
-        // Refresh events
-        fetchEvents();
-      }
-    } catch (error) {
-      console.error('Error updating task:', error);
-    }
-  };
-
-  // Handle event resize
-  const handleEventResize = async (resizeInfo: any) => {
-    const taskId = resizeInfo.event.id;
-    const newStart = resizeInfo.event.start;
-    const newEnd = resizeInfo.event.end;
-
-    if (newStart && newEnd) {
-      const startTimeStr = newStart.toISOString();
-      const endTimeStr = format(newEnd, 'HH:mm:ss');
-      const dateStr = format(newStart, 'yyyy-MM-dd');
-      
-      try {
-        const { error } = await supabase
+    useEffect(() => {
+      const fetchTasks = async () => {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          setLoading(false);
+          return;
+        }
+        const { data: tasks } = await supabase
           .from('0007-ap-tasks')
           .update({
             due_date: dateStr,
@@ -161,9 +60,17 @@ const CalendarView = forwardRef<any, CalendarViewProps>(({ view, currentDate, on
           // Refresh events to show updated data
           fetchEvents();
         }
-      } catch (error) {
-        console.error('Error updating task end time:', error);
-        resizeInfo.revert();
+
+        setLoading(false);
+      };
+      fetchTasks();
+    }, []);
+
+    useEffect(() => {
+      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
+        const calendarApi = fullCalendarRef.current.getApi();
+        calendarApi.changeView(view);
+        calendarApi.gotoDate(currentDate);
       }
     } else {
       resizeInfo.revert();
@@ -223,39 +130,106 @@ const CalendarView = forwardRef<any, CalendarViewProps>(({ view, currentDate, on
     return slots;
   };
 
-  const timeSlots = generateTimeSlots();
+    return (
+      <div className="h-full">
+        <style>
+          {`
+          .fc {
+            height: 100% !important;
+            font-family: inherit;
+          }
+          .fc-view-harness {
+            height: 100% !important;
+          }
+          .fc-scrollgrid-sync-inner {
+            padding: 8px 0;
+          }
+          .fc-theme-standard td, .fc-theme-standard th {
+            border-color: #e5e7eb;
+          }
+          .fc-timegrid-slot {
+            height: 48px !important;
+            border-bottom: 1px solid #f3f4f6 !important;
+          }
+          .fc-timegrid-slot-label {
+            font-size: 0.75rem;
+            color: #6B7280;
+            padding-right: 1rem;
+          }
+          .fc-timegrid-axis {
+            padding-right: 0.5rem;
+          }
+          .fc-timegrid-now-indicator-line {
+            border-color: #EF4444;
+            border-width: 1px;
+            left: 0 !important;
+            right: 0 !important;
+            margin-left: 0 !important;
+          }
+          .fc-timegrid-now-indicator-arrow {
+            display: none !important;
+          }
+          .fc-col-header-cell {
+            padding: 0;
+            background: #fff;
+          }
+          .fc-col-header-cell.fc-day-today {
+            background: transparent !important;
+          }
+          .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+            color: #4B5563;
+          }
+          .fc-col-header-cell-cushion {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            color: #4B5563;
+            font-weight: 500;
+          }
+          .fc-col-header-cell-cushion .day-name {
+            font-size: 11px;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+          }
+          .fc-col-header-cell-cushion .day-number {
+            font-size: 20px;
+            font-weight: 400;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+          }
+          .fc-col-header-cell-cushion .day-number.today {
+            background: #3B82F6;
+            color: white;
+          }
+          .fc-dayGridMonth-view .fc-col-header-cell {
+            text-align: center;
+            padding: 8px 0;
+          }
+          .fc-dayGridMonth-view .fc-daygrid-day-top {
+            justify-content: center;
+            padding-top: 4px;
+          }
+          .fc-dayGridMonth-view .fc-daygrid-day-number {
+            font-size: 14px;
+            padding: 4px 8px;
+            color: #4B5563;
+          }
+          .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number {
+            background: #3B82F6;
+            color: white;
+            border-radius: 50%;
+          }
+          .fc-header-toolbar {
+            display: none !important;
+          }
+          `}
+        </style>
 
-  return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Calendar container with droppable time slots */}
-      <div className="flex-1 relative overflow-auto">
-        {/* Invisible droppable zones overlaid on calendar */}
-        <div className="absolute inset-0 pointer-events-none z-10">
-          {timeSlots.map((slot) => (
-            <Droppable key={slot.id} droppableId={slot.id} type="TASK">
-              {(provided, snapshot) => (
-                <div
-                  ref={provided.innerRef}
-                  {...provided.droppableProps}
-                  className={`absolute pointer-events-auto ${
-                    snapshot.isDraggingOver ? 'bg-blue-200 bg-opacity-50' : ''
-                  }`}
-                  style={{
-                    left: view === 'timeGridWeek' ? '60px' : '60px', // Account for time labels
-                    right: '0',
-                    top: `${(parseInt(slot.time.split(':')[0]) * 60 + parseInt(slot.time.split(':')[1])) / 30 * 24}px`, // 24px per 30min slot
-                    height: '24px', // 30 minute slot height
-                    zIndex: snapshot.isDraggingOver ? 20 : 10
-                  }}
-                >
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          ))}
-        </div>
-
-        {/* FullCalendar component */}
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
@@ -269,48 +243,43 @@ const CalendarView = forwardRef<any, CalendarViewProps>(({ view, currentDate, on
           selectMirror={true}
           dayMaxEvents={true}
           weekends={true}
-          slotMinTime="00:00:00"
-          slotMaxTime="24:00:00"
-          slotDuration="00:15:00"
-          slotLabelInterval="01:00:00"
-          snapDuration="00:15:00"
-          allDaySlot={false}
-          nowIndicator={true}
-          eventResizableFromStart={true}
+
+          events={events}
           eventClick={handleEventClick}
-          select={handleDateSelect}
-          drop={handleDrop}
-          eventResize={handleEventResize}
-          eventDrop={handleEventDrop}
-          datesSet={(dateInfo) => {
-            onDateChange(dateInfo.start);
+          height="100%"
+          dayMinTime="00:00:00"
+          dayMaxTime="24:00:00"
+          allDaySlot={false}
+          scrollTime="07:00:00"
+          slotDuration="00:30:00"
+          slotLabelInterval="01:00"
+          slotLabelFormat={{
+            hour: 'numeric',
+            minute: '2-digit',
+            omitZeroMinute: true,
+            meridiem: 'short',
           }}
-          eventContent={(eventInfo) => (
-            <div className="p-1 text-xs">
-              <div className="font-medium truncate">{eventInfo.event.title}</div>
-              {eventInfo.event.extendedProps.task?.is_authentic_deposit && (
-                <div className="text-xs opacity-75">Authentic Deposit</div>
-              )}
-            </div>
-          )}
+          views={{
+            dayGridMonth: {
+              firstDay: 0,
+              fixedWeekCount: false,
+              showNonCurrentDates: true
+            },
+            timeGridWeek: {
+              firstDay: 0,
+              slotDuration: '00:30:00',
+              slotLabelInterval: '01:00'
+            },
+            timeGridDay: {
+              firstDay: 0,
+              slotDuration: '00:30:00',
+              slotLabelInterval: '01:00'
+            }
+          }}
+          datesSet={handleDatesSet}
+          dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
+
         />
       </div>
-
-      {/* Task Edit Modal */}
-      {editingTaskId && (
-        <TaskEditModal
-          taskId={editingTaskId}
-          onClose={() => setEditingTaskId(null)}
-          onTaskUpdated={() => {
-            setEditingTaskId(null);
-            fetchEvents();
-          }}
-        />
-      )}
-    </div>
-  );
-});
-
-CalendarView.displayName = 'CalendarView';
 
 export default CalendarView;

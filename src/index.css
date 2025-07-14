@@ -148,56 +148,50 @@ input:checked + .slider:before {
   transform: translateX(16px);
 }
 
-/* Custom scrollbar styles */
-.scrollbar-thin::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+/* Calendar specific styles */
+html, body, #root {
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
+.main-layout {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  background: #6b7280;
-  border-radius: 10px;
-  min-height: 40px;
+.calendar-container {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: #4b5563;
+/* FullCalendar overrides */
+.fc {
+  height: 100% !important;
 }
 
-/* Resizer styles */
-.cursor-col-resize {
-  cursor: col-resize;
-  z-index: 100;
-  width: 16px;
+.fc-view-harness {
+  height: 100% !important;
 }
 
-/* Ensure the resizer is visible when being dragged */
-.cursor-col-resize:active,
-.cursor-col-resize:hover {
-  background-color: rgba(59, 130, 246, 0.3);
-  width: 16px;
+.fc-scroller {
+  height: auto !important;
 }
 
-/* Make resize handle more visible */
-.resize-handle {
-  cursor: col-resize !important;
-  background-color: rgba(59, 130, 246, 0.1);
-  transition: background-color 0.2s;
-  width: 16px !important;
-  z-index: 100;
+.fc-scroller-liquid-absolute {
+  position: static !important;
 }
 
-.resize-handle:hover {
-  background-color: rgba(59, 130, 246, 0.2) !important;
-  width: 16px !important;
+.fc-timegrid-container {
+  height: auto !important;
+  min-height: 0;
+  overflow-y: auto !important;
 }
 
-.resize-handle:hover .resize-indicator {
-  width: 4px !important;
-  background-color: #3b82f6 !important;
+.fc-timegrid-body {
+  overflow: visible !important;
 }

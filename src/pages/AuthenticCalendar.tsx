@@ -51,20 +51,6 @@ const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridDay');
-  const [prioritiesCollapsed, setPrioritiesCollapsed] = useState(false);
-  const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
-  const [activeDrawer, setActiveDrawer] = useState<'roles' | 'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
-  const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('tasks'); // Changed default to 'tasks'
-  const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
-  const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [isViewChanging, setIsViewChanging] = useState(false);
-  
-  // Lifted state for tasks, roles, and domains
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [roles, setRoles] = useState<Record<string, Role>>({});
-  const [domains, setDomains] = useState<Record<string, Domain>>({});
-  const [loading, setLoading] = useState(true);
-  
   const calendarRef = useRef<FullCalendar | null>(null);
   const { user, logout } = useAuth();
 
@@ -88,130 +74,6 @@ const AuthenticCalendar: React.FC = () => {
 
     setLoading(true);
 
-    try {
-      // Fetch roles
-      const { data: rolesData } = await supabase
-        .from('0007-ap-roles')
-        .select('id, label')
-        .eq('user_id', user.id);
-
-      if (rolesData) {
-        const rolesMap = rolesData.reduce((acc, role) => ({
-          ...acc,
-          [role.id]: role
-        }), {});
-        setRoles(rolesMap);
-      }
-
-      // Fetch domains
-      const { data: domainsData } = await supabase
-        .from('0007-ap-domains')
-        .select('id, name');
-
-      if (domainsData) {
-        const domainsMap = domainsData.reduce((acc, domain) => ({
-          ...acc,
-          [domain.id]: domain
-        }), {});
-        setDomains(domainsMap);
-      }
-
-      // Fetch tasks with relationships
-      const { data: tasksData } = await supabase
-        .from('0007-ap-tasks')
-        .select(`
-          *,
-          task_roles:0007-ap-task_roles(role_id),
-          task_domains:0007-ap-task_domains(domain_id)
-        `)
-        .eq('user_id', user.id)
-        .eq('status', 'pending')
-        .order('due_date', { ascending: true });
-
-      if (tasksData) {
-        setTasks(tasksData);
-      }
-    } catch (error) {
-      console.error('Error fetching task data:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Consolidated drag end handler
-  const handleDragEnd = async (result: any) => {
-    if (!result.destination) return;
-    
-    // If dropping onto calendar (destination.droppableId starts with 'calendar')
-    if (result.destination.droppableId.startsWith('calendar')) {
-      const taskId = result.draggableId;
-      const task = tasks.find(t => t.id === taskId);
-        
-      if (task) {
-        // Extract date and time from the destination ID
-        // Format: calendar-YYYY-MM-DD-HH-MM
-        const [_, year, month, day, hour, minute] = result.destination.droppableId.split('-');
-        const dateStr = `${year}-${month}-${day}`;
-        const timeStr = `${hour}:${minute}`;
-        
-        // Calculate end time (default to 1 hour duration)
-        const startDateTime = new Date(`${dateStr}T${timeStr}:00`);
-        const endDateTime = new Date(startDateTime.getTime() + 60 * 60 * 1000); // Add 1 hour
-        const endTimeStr = format(endDateTime, 'HH:mm:ss');
-        
-        // Update the task with the new date and time
-        const { error } = await supabase
-          .from('0007-ap-tasks')
-          .update({
-            due_date: dateStr,
-            start_time: startDateTime.toISOString(),
-            end_time: endTimeStr,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', taskId);
-          
-        if (!error) {
-          // Refresh tasks after update
-          setRefreshTrigger(prev => prev + 1);
-        }
-      }
-    }
-  };
-
-  // Improved resize handlers
-  const handleResizeStart = (e: React.MouseEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setResizing(true);
-    
-    const handleMouseMove = (e: MouseEvent) => {
-      e.preventDefault();
-      
-      if (!prioritiesCollapsed) {
-        // Calculate new width based on mouse position with constraints
-        const newWidth = Math.max(256, Math.min(600, e.clientX - 0));
-        setSidebarWidth(newWidth);  
-      }
-    };
-    
-    const handleMouseUp = () => {
-      setResizing(false);
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
-  
-  // Apply width when component mounts or when width changes
-  useEffect(() => {
-    if (!prioritiesCollapsed && sidebarRef.current) {
-      sidebarRef.current.style.width = `${sidebarWidth}px`;
-    }
-  }, [sidebarWidth, prioritiesCollapsed]);
-  
-  // Called whenever FullCalendar's visible date range changes
   const handleDateChange = (newStart: Date) => {
     if (!isViewChanging) {
       setCurrentDate(newStart);
@@ -337,37 +199,17 @@ const AuthenticCalendar: React.FC = () => {
     : null;
 
   return (
-    <div className="h-screen flex flex-col bg-white">
-      {/* Mobile sidebar overlay */}
-      <AnimatePresence>
-        {(mainSidebarOpen || activeDrawer) && (
-          <motion.div 
-            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-            initial="closed"
-            animate="open"
-            exit="closed"
-            variants={overlayVariants}
-            onClick={() => {
-              closeMainSidebar();
-              setActiveDrawer(null);
-              setMobileNavExpanded(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Main Navigation Sidebar */}
-      <motion.aside
-        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:hidden"
-        initial="closed"
-        animate={mainSidebarOpen ? 'open' : 'closed'}
-        variants={sidebarVariants}
-      >
-        <div className="flex h-full flex-col">
-          <div className="flex h-16 items-center justify-between px-4">
-            <div className="flex items-center space-x-2">
-              <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
-              <span className="text-lg font-bold text-primary-600">Authentic Planner</span>
+    <div className="calendar-container">
+      {/* Main content */}
+      <div className="h-full grid grid-cols-4 gap-6">
+        {/* Left Column */}
+        <div className="flex flex-col space-y-6 overflow-auto">
+          <div className="flex-1 rounded-lg border border-gray-200 bg-white p-4">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">Priorities</h2>
+            </div>
+            <div className="space-y-2">
+              {/* Priority cards */}
             </div>
             <button 
               onClick={closeMainSidebar}
@@ -493,55 +335,14 @@ const AuthenticCalendar: React.FC = () => {
                 </button>
               </div>
 
-              {/* Current Date Display - Smaller font */}
-              <div className="text-lg font-normal text-gray-700">
-                {getDateDisplayText()}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Right Section: View Selector, New Task, Profile */}
-        <div className="flex items-center space-x-3">
-          {/* View Selector - Only show for calendar view */}
-          {activeView === 'calendar' && (
-            <select
-              value={view}
-              onChange={(e) => handleViewChange(e.target.value as typeof view)}
-              className="rounded-md border border-gray-300 bg-white px-2 py-1 text-sm font-medium text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            >
-              <option value="timeGridDay">Day</option>
-              <option value="timeGridWeek">Week</option>
-              <option value="dayGridMonth">Month</option>
-            </select>
-          )}
-
-          {/* Circular New Task Button */}
-          <button
-            onClick={() => setShowTaskForm(true)}
-            className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
-            title="Add new task"
-            aria-label="Add new task"
-          >
-            <Plus className="h-5 w-5" />
-          </button>
-
-        </div>
-      </header>
-
-      {/* Main Content Area */}
-      <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex-1 flex overflow-hidden">
-        {activeView === 'tasks' ? (
-          /* Task Priorities View - Now the default with full height */
-            <div className="flex-1 overflow-hidden h-full" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
-              <TaskQuadrants 
-                tasks={tasks}
-                setTasks={setTasks}
-                roles={roles}
-                domains={domains}
-                loading={loading}
-              />
+              <span className="text-lg font-medium">
+                {view === 'dayGridMonth'
+                  ? format(currentDate, 'MMMM yyyy')
+                  : `${format(currentDate, 'd')} – ${format(
+                      addDays(currentDate, 6),
+                      'd MMM, yyyy'
+                    )}`}
+              </span>
             </div>
         ) : (
           /* Calendar View - Now secondary */
@@ -630,18 +431,14 @@ const AuthenticCalendar: React.FC = () => {
               )}
             </div>
 
-            {/* Calendar Area - Takes up remaining space and expands when priorities collapsed */}
-            <div className="flex-1 flex flex-col overflow-auto min-w-0" style={{ marginRight: activeDrawer ? '320px' : '0' }}>
-              <CalendarView
-                ref={calendarRef}
-                view={view}
-                currentDate={currentDate}
-                onDateChange={handleDateChange}
-                refreshTrigger={refreshTrigger}
-              />
-            </div>
-          </>
-        )}
+          <div className="flex-1 min-h-0">
+            <CalendarView
+              ref={calendarRef}
+              view={view}
+              currentDate={currentDate}
+              onDateChange={handleDateChange}
+            />
+          </div>
         </div>
       </DragDropContext>
 
