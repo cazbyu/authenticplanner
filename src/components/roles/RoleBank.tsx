@@ -464,7 +464,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
         {/* Task Form Modal */}
         {showTaskForm && selectedRole && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
             <div className="w-full max-w-2xl mx-4">
               <TaskForm
                 onClose={() => setShowTaskForm(false)}
@@ -479,12 +479,27 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
         {/* Delegate Task Modal */}
         {delegatingTask && (
-          <DelegateTaskModal
-            taskId={delegatingTask.id}
-            taskTitle={delegatingTask.title}
-            onClose={() => setDelegatingTask(null)}
-            onDelegated={handleTaskDelegated}
-          />
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+            <DelegateTaskModal
+              taskId={delegatingTask.id}
+              taskTitle={delegatingTask.title}
+              onClose={() => setDelegatingTask(null)}
+              onDelegated={handleTaskDelegated}
+            />
+          </div>
+        )}
+
+        {/* Edit Task Modal */}
+        {editingTask && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <EditTask
+                task={editingTask}
+                onTaskUpdated={handleTaskUpdated}
+                onCancel={handleEditCancel}
+              />
+            </div>
+          </div>
         )}
       </div>
     );
