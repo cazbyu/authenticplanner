@@ -207,26 +207,12 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
         }
       }
 
-      // Upload image if selected
-      let imageUrl = form.imageUrl;
-      if (selectedImage) {
-        const uploadedUrl = await uploadImage();
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl;
-        } else {
-          // If image upload fails, don't proceed
-          return;
-        }
-      }
-
       // Create the key relationship
       const { data: relationship, error: relationshipError } = await supabase
         .from('0007-ap-key_relationships')
         .insert([{
           role_id: roleId,
           name: form.name.trim(),
-          notes: form.notes.trim() || null,
-          image_url: imageUrl || null
           image_url: imageUrl || null
         }])
         .select()
