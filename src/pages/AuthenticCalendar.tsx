@@ -358,70 +358,41 @@ const AuthenticCalendar: React.FC = () => {
                 <CalendarIcon className="h-4 w-4 mr-1" />
                 Calendar
               </button>
+            </div>
+
+            {/* Date Navigation */}
+            <div className="flex items-center space-x-1">
               <button
-                onClick={() => setActiveView('tasks')}
-                className={`flex items-center justify-center px-3 py-1.5 rounded-full transition-colors text-sm ${
-                  activeView === 'tasks'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
+                onClick={handlePrevious}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
               >
-                <CheckSquare className="h-4 w-4 mr-1" />
-                Priorities
+                <ChevronLeft className="h-4 w-4 text-gray-600" />
+              </button>
+              <button
+                onClick={handleNext}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <ChevronRight className="h-4 w-4 text-gray-600" />
               </button>
             </div>
 
-            {/* Date Navigation - Only show for calendar view */}
-            {activeView === 'calendar' && (
-              <>
-                <div className="flex items-center space-x-1">
-                  <button
-                    onClick={handlePrevious}
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <ChevronLeft className="h-4 w-4 text-gray-600" />
-                  </button>
-                  <button
-                    onClick={handleNext}
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <ChevronRight className="h-4 w-4 text-gray-600" />
-                  </button>
-                </div>
+            <span className="text-lg font-medium">
+              {getDateDisplayText()}
+            </span>
 
-                <span className="text-lg font-medium">
-                  {getDateDisplayText()}
-                </span>
-
-                {/* View Buttons */}
-                <div className="flex items-center space-x-1">
-                  <button
-                    onClick={() => handleViewChange('timeGridDay')}
-                    className={`px-3 py-1 text-sm rounded ${
-                      view === 'timeGridDay' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    Day
-                  </button>
-                  <button
-                    onClick={() => handleViewChange('timeGridWeek')}
-                    className={`px-3 py-1 text-sm rounded ${
-                      view === 'timeGridWeek' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    Week
-                  </button>
-                  <button
-                    onClick={() => handleViewChange('dayGridMonth')}
-                    className={`px-3 py-1 text-sm rounded ${
-                      view === 'dayGridMonth' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
-                    }`}
-                  >
-                    Month
-                  </button>
-                </div>
-              </>
-            )}
+            {/* Calendar View Dropdown */}
+            <div className="relative">
+              <select
+                value={view}
+                onChange={(e) => handleViewChange(e.target.value as 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth')}
+                className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              >
+                <option value="timeGridDay">Day View</option>
+                <option value="timeGridWeek">Week View</option>
+                <option value="dayGridMonth">Month View</option>
+              </select>
+              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+            </div>
           </div>
 
           {/* Right Section */}
@@ -437,8 +408,30 @@ const AuthenticCalendar: React.FC = () => {
         </header>
 
         {/* Main Content */}
-        <main className="h-[calc(100vh-73px)]">
-          {activeView === 'calendar' ? (
+        <main className="h-[calc(100vh-73px)] flex">
+          {/* Unscheduled Tasks Sidebar */}
+          <div className="w-80 border-r border-gray-200 bg-white flex-shrink-0">
+            <div className="h-full flex flex-col">
+              <div className="p-4 border-b border-gray-200">
+                <h2 className="text-lg font-semibold text-gray-900">Unscheduled Tasks</h2>
+                <p className="text-sm text-gray-600 mt-1">Drag tasks to calendar to schedule</p>
+              </div>
+              <div className="flex-1 overflow-hidden">
+                <DragDropContext onDragEnd={() => {}}>
+                  <UnscheduledPriorities
+                    tasks={tasks}
+                    setTasks={setTasks}
+                    roles={roles}
+                    domains={domains}
+                    loading={loading}
+                  />
+                </DragDropContext>
+              </div>
+            </div>
+          </div>
+
+          {/* Calendar View */}
+          <div className="flex-1">
             <CalendarView
               ref={calendarRef}
               view={view}
@@ -446,19 +439,7 @@ const AuthenticCalendar: React.FC = () => {
               onDateChange={handleDateChange}
               refreshTrigger={refreshTrigger}
             />
-          ) : (
-            <DragDropContext onDragEnd={() => {}}>
-              <div className="h-full">
-                <UnscheduledPriorities
-                  tasks={tasks}
-                  setTasks={setTasks}
-                  roles={roles}
-                  domains={domains}
-                  loading={loading}
-                />
-              </div>
-            </DragDropContext>
-          )}
+          </div>
         </main>
       </div>
 
