@@ -50,22 +50,20 @@ interface Domain {
 const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridDay');
+  const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isViewChanging, setIsViewChanging] = useState(false);
   const [loading, setLoading] = useState(true);
   const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
-  const [activeView, setActiveView] = useState<'day' | 'week' | 'month'>('week');
+  const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('calendar');
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [roles, setRoles] = useState<Record<string, Role>>({});
+  const [domains, setDomains] = useState<Record<string, Domain>>({});
   const calendarRef = useRef<FullCalendar | null>(null);
   const { user, logout } = useAuth();
 
-  // State for resizing
-  const [resizing, setResizing] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(256); // Default width (64 * 4)
-  const sidebarRef = useRef<HTMLDivElement | null>(null);
-  
   // Fetch all task data
   useEffect(() => {
     fetchAllTaskData();
@@ -80,6 +78,43 @@ const AuthenticCalendar: React.FC = () => {
     }
 
     setLoading(true);
+    
+    try {
+      // Fetch tasks, roles, and domains
+      const [tasksRes, rolesRes, domainsRes] = await Promise.all([
+        supabase
+          .from('0007-ap-tasks')
+          .select(`
+            *,
+            task_roles:0007-ap-task_roles(role_id),
+            task_domains:0007-ap-task_domains(domain_id)
+          `)
+          .eq('user_id', user.id)
+          .in('status', ['pending', 'in_progress']),
+        supabase
+          .from('0007-ap-roles')
+          .select('id, label')
+          .eq('user_id', user.id)
+          .eq('is_active', true),
+        supabase
+          .from('0007-ap-domains')
+          .select('id, name')
+      ]);
+
+      if (tasksRes.data) setTasks(tasksRes.data);
+      if (rolesRes.data) {
+        const rolesMap = rolesRes.data.reduce((acc, role) => ({ ...acc, [role.id]: role }), {});
+        setRoles(rolesMap);
+      }
+      if (domainsRes.data) {
+        const domainsMap = domainsRes.data.reduce((acc, domain) => ({ ...acc, [domain.id]: domain }), {});
+        setDomains(domainsMap);
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDateChange = (newStart: Date) => {
@@ -149,11 +184,11 @@ const AuthenticCalendar: React.FC = () => {
   };
 
   const navItems = [
-    { name: 'Authentic Calendar', path: '/', icon: 'Calendar' },
-    { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: 'Clock' },
-    { name: 'Role Bank', path: '/role-bank', icon: 'Users' },
-    { name: 'Domain Dashboard', path: '/domains', icon: 'Compass' },
-    { name: 'Settings', path: '/settings', icon: 'Settings' },
+    { name: 'Authentic Calendar', path: '/', icon: CalendarIcon },
+    { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: CheckSquare },
+    { name: 'Role Bank', path: '/role-bank', icon: Users },
+    { name: 'Domain Dashboard', path: '/domains', icon: Compass },
+    { name: 'Settings', path: '/settings', icon: CheckSquare },
   ];
 
   const drawerItems = [
@@ -207,31 +242,52 @@ const AuthenticCalendar: React.FC = () => {
     : null;
 
   return (
-    <div className="calendar-container">
-      {/* Main content */}
-      <div className="h-full grid grid-cols-4 gap-6">
-        {/* Left Column */}
-        <div className="flex flex-col space-y-6 overflow-auto">
-          <div className="flex-1 rounded-lg border border-gray-200 bg-white p-4">
-            <div className="mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Priorities</h2>
-            </div>
-            <div className="space-y-2">
-              {/* Priority cards */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Mobile sidebar overlay */}
+      <AnimatePresence>
+        {(mainSidebarOpen || activeDrawer) && (
+          <motion.div 
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={overlayVariants}
+            onClick={() => {
+              setMainSidebarOpen(false);
+              setActiveDrawer(null);
+              setMobileNavExpanded(false);
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Main Sidebar */}
+      <motion.aside
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:z-10 lg:shadow-none lg:static lg:translate-x-0"
+        initial="closed"
+        animate={mainSidebarOpen ? 'open' : 'closed'}
+        variants={sidebarVariants}
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex h-16 items-center justify-between px-4">
+            <div className="flex items-center space-x-2">
+              <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
+              <span className="text-lg font-bold text-primary-600">Authentic Planner</span>
             </div>
             <button 
               onClick={closeMainSidebar}
-              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
+              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600 lg:hidden"
               aria-label="Close menu"
             >
-              ✕
+              <X className="h-5 w-5" />
             </button>
           </div>
           
           <div className="flex-1 overflow-y-auto px-3 py-4">
             <nav className="space-y-1">
               {navItems.map((item) => {
-                const isActive = item.path === '/calendar' || (item.path === '/' && window.location.pathname === '/');
+                const isActive = item.path === '/' && window.location.pathname === '/';
+                const IconComponent = item.icon;
                 
                 return (
                   <a
@@ -244,9 +300,7 @@ const AuthenticCalendar: React.FC = () => {
                     }`}
                     onClick={closeMainSidebar}
                   >
-                    <span className={`mr-3 h-5 w-5 ${isActive ? 'text-primary-500' : 'text-gray-500'}`}>
-                      📅
-                    </span>
+                    <IconComponent className={`mr-3 h-5 w-5 ${isActive ? 'text-primary-500' : 'text-gray-500'}`} />
                     {item.name}
                   </a>
                 );
@@ -275,12 +329,14 @@ const AuthenticCalendar: React.FC = () => {
             </button>
           </div>
         </div>
+      </motion.aside>
 
-        {/* Google Calendar Style Header - Compact and minimal */}
-        <header className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white min-h-[56px]">
-          {/* Left Section: Menu, Logo, Toggle */}
+      {/* Main Content Area */}
+      <div className="lg:pl-64">
+        {/* Header */}
+        <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+          {/* Left Section */}
           <div className="flex items-center space-x-4">
-            {/* Hamburger Menu - Opens main navigation sidebar */}
             <button
               onClick={toggleMainSidebar}
               className="p-2 hover:bg-gray-100 rounded-full transition-colors lg:hidden"
@@ -288,39 +344,30 @@ const AuthenticCalendar: React.FC = () => {
             >
               <Menu className="h-5 w-5 text-gray-600" />
             </button>
-            
-            {/* Authentic Planner Logo & Brand - Stacked and smaller */}
-            <div className="flex items-center space-x-2">
-              <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
-              <div className="flex flex-col leading-tight">
-                <span className="text-sm font-medium text-gray-700">Authentic</span>
-                <span className="text-sm font-medium text-gray-700">Planner</span>
-              </div>
-            </div>
 
-            {/* Tasks/Calendar Toggle - Updated labels and default */}
+            {/* View Toggle */}
             <div className="flex items-center bg-gray-100 rounded-full p-1">
               <button
-                onClick={() => setActiveView('tasks')}
-                className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
-                  activeView === 'tasks'
-                    ? 'bg-white text-gray-900 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                title="Task Priorities View"
-              >
-                <CheckSquare className="h-4 w-4" />
-              </button>
-              <button
                 onClick={() => setActiveView('calendar')}
-                className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                className={`flex items-center justify-center px-3 py-1.5 rounded-full transition-colors text-sm ${
                   activeView === 'calendar'
                     ? 'bg-white text-gray-900 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
-                title="Calendar View"
               >
-                <CalendarIcon className="h-4 w-4" />
+                <CalendarIcon className="h-4 w-4 mr-1" />
+                Calendar
+              </button>
+              <button
+                onClick={() => setActiveView('tasks')}
+                className={`flex items-center justify-center px-3 py-1.5 rounded-full transition-colors text-sm ${
+                  activeView === 'tasks'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+              >
+                <CheckSquare className="h-4 w-4 mr-1" />
+                Priorities
               </button>
             </div>
 
@@ -343,27 +390,196 @@ const AuthenticCalendar: React.FC = () => {
                 </div>
 
                 <span className="text-lg font-medium">
-                  {view === 'dayGridMonth'
-                    ? format(currentDate, 'MMMM yyyy')
-                    : `${format(currentDate, 'd')} – ${format(
-                        addDays(currentDate, 6),
-                        'd MMM, yyyy'
-                      )}`}
+                  {getDateDisplayText()}
                 </span>
+
+                {/* View Buttons */}
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={() => handleViewChange('timeGridDay')}
+                    className={`px-3 py-1 text-sm rounded ${
+                      view === 'timeGridDay' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    Day
+                  </button>
+                  <button
+                    onClick={() => handleViewChange('timeGridWeek')}
+                    className={`px-3 py-1 text-sm rounded ${
+                      view === 'timeGridWeek' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    Week
+                  </button>
+                  <button
+                    onClick={() => handleViewChange('dayGridMonth')}
+                    className={`px-3 py-1 text-sm rounded ${
+                      view === 'dayGridMonth' ? 'bg-blue-100 text-blue-700' : 'text-gray-600 hover:bg-gray-100'
+                    }`}
+                  >
+                    Month
+                  </button>
+                </div>
               </>
             )}
           </div>
+
+          {/* Right Section */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setShowTaskForm(true)}
+              className="flex items-center px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-1" />
+              Add Task
+            </button>
+          </div>
         </header>
 
-        <div className="flex-1 min-h-0">
-          <CalendarView
-            ref={calendarRef}
-            view={view}
-            currentDate={currentDate}
-            onDateChange={handleDateChange}
-          />
+        {/* Main Content */}
+        <main className="h-[calc(100vh-73px)]">
+          {activeView === 'calendar' ? (
+            <CalendarView
+              ref={calendarRef}
+              view={view}
+              currentDate={currentDate}
+              onDateChange={handleDateChange}
+              refreshTrigger={refreshTrigger}
+            />
+          ) : (
+            <div className="h-full">
+              <UnscheduledPriorities
+                tasks={tasks}
+                setTasks={setTasks}
+                roles={roles}
+                domains={domains}
+                loading={loading}
+              />
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* GLOBAL FLOATING DRESSER - Desktop Navigation Bar */}
+      <div className="fixed top-1/2 right-0 transform -translate-y-1/2 z-30 hidden lg:block">
+        <div className="bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg">
+          <div className="flex flex-col">
+            {drawerItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = activeDrawer === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
+                  className={`
+                    group relative p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200
+                    ${isActive 
+                      ? 'bg-blue-50 text-blue-600 border-r-3 border-r-blue-600 shadow-sm' 
+                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    }
+                  `}
+                  title={item.title}
+                  aria-label={item.title}
+                >
+                  <IconComponent className="h-5 w-5" />
+                  
+                  {!isActive && (
+                    <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                      <div className="bg-gray-900 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap shadow-lg">
+                        {item.title}
+                        <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-900 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
+                      </div>
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
+
+      {/* GLOBAL FLOATING DRESSER - Mobile Expandable Stack */}
+      <div className="fixed bottom-4 right-4 z-30 lg:hidden">
+        {!mobileNavExpanded ? (
+          <button
+            onClick={() => setMobileNavExpanded(true)}
+            className="flex items-center justify-center w-14 h-14 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
+            aria-label="Open navigation"
+          >
+            <Archive className="h-6 w-6" />
+          </button>
+        ) : (
+          <div className="flex flex-col-reverse space-y-reverse space-y-2">
+            <button
+              onClick={() => setMobileNavExpanded(false)}
+              className="flex items-center justify-center w-12 h-12 bg-gray-600 text-white rounded-full shadow-lg hover:bg-gray-700 transition-colors"
+              aria-label="Close navigation"
+            >
+              <X className="h-5 w-5" />
+            </button>
+            
+            {drawerItems.map((item) => {
+              const IconComponent = item.icon;
+              const isActive = activeDrawer === item.id;
+              
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
+                  className={`
+                    flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-colors
+                    ${isActive 
+                      ? 'bg-blue-600 text-white' 
+                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+                    }
+                  `}
+                  title={item.title}
+                  aria-label={item.title}
+                >
+                  <IconComponent className="h-5 w-5" />
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
+      
+      {/* GLOBAL FLOATING DRESSER - Drawer Content */}
+      <AnimatePresence>
+        {activeDrawer && (
+          <motion.div
+            className="fixed inset-y-0 right-0 z-50 w-80 bg-white shadow-xl border-l border-gray-200"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={drawerVariants}
+          >
+            <div className="flex h-full flex-col">
+              <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
+                <h2 className="text-lg font-semibold text-gray-900">
+                  {drawerItems.find(item => item.id === activeDrawer)?.title}
+                </h2>
+                <button
+                  onClick={() => setActiveDrawer(null)}
+                  className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
+                  aria-label="Close drawer"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto">
+                {ActiveDrawerComponent && (
+                  <div className="p-4">
+                    <ActiveDrawerComponent />
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* TaskForm Modal */}
       {showTaskForm && (
