@@ -267,7 +267,6 @@ const AuthenticCalendar: React.FC = () => {
             </button>
           </div>
         </div>
-      </motion.aside>
 
       {/* Google Calendar Style Header - Compact and minimal */}
       <header className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white min-h-[56px]">
