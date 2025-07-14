@@ -37,15 +37,14 @@ interface UnscheduledPrioritiesProps {
   roles: Record<string, Role>;
   domains: Record<string, Domain>;
   loading: boolean;
-  viewMode: 'quadrant' | 'list';
+  viewMode?: 'quadrant' | 'list';
 }
 
-const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading }) => {
+const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode = 'quadrant' }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
   // State to track if a task is being dragged
   const [isDragging, setIsDragging] = useState(false);
-  viewMode
   
   // Simplified collapsed state - no complex initialization
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
