@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { ChevronLeft, UserPlus, Plus, Heart, Edit, Eye } from 'lucide-react';
 import KeyRelationshipForm from './KeyRelationshipForm';
+import { getSignedImageUrl } from '../../utils/imageHelpers';
 
 interface Role {
   id: string;
@@ -22,7 +23,7 @@ interface KeyRelationship {
   id: string;
   name: string;
   role_id: string;
-  image_url?: string;
+  image_path?: string;
   notes?: string;
 }
 
@@ -285,19 +286,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                 {relationships.map((rel) => (
                   <div key={rel.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0">
-                        {rel.image_url ? (
-                          <img
-                            src={rel.image_url}
-                            alt={rel.name}
-                            className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-                          />
-                        ) : (
-                          <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
-                            <UserPlus className="h-8 w-8 text-gray-400" />
-                          </div>
-                        )}
-                      </div>
+                      <RelationshipImage relationship={rel} />
                       <div className="flex-1 min-w-0">
                         <h3 className="text-lg font-semibold text-gray-900 truncate">{rel.name}</h3>
                         <p className="text-sm text-gray-600 mb-2">Key Relationship</p>
@@ -473,6 +462,44 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             </div>
           </button>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// Component to handle image display with signed URLs
+const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relationship }) => {
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  
+  useEffect(() => {
+    const loadImage = async () => {
+      if (relationship.image_path) {
+        const signedUrl = await getSignedImageUrl(relationship.image_path);
+        if (signedUrl) {
+          setImageUrl(signedUrl);
+        }
+      }
+    };
+    
+    loadImage();
+  }, [relationship.image_path]);
+  
+  if (imageUrl) {
+    return (
+      <div className="flex-shrink-0">
+        <img
+          src={imageUrl}
+          alt={relationship.name}
+          className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+        />
+      </div>
+    );
+  }
+  
+  return (
+    <div className="flex-shrink-0">
+      <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
+        <UserPlus className="h-8 w-8 text-gray-400" />
       </div>
     </div>
   );

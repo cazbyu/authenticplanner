@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
 import { X, Plus, Trash2, Check } from 'lucide-react';
+import { getSignedImageUrl } from '../../utils/imageHelpers';
 
 interface Role {
   id: string;
@@ -52,7 +53,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
   const [form, setForm] = useState({
     name: existingRelationship?.name || '',
     notes: existingRelationship?.notes || '',
-    imageUrl: existingRelationship?.image_url || ''
+    imagePath: existingRelationship?.image_path || ''
   });
 
   const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
@@ -62,11 +63,17 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Set initial image preview if editing existing relationship
+  // Load signed URL for existing image
   useEffect(() => {
-    if (existingRelationship?.image_url) {
-      setImagePreview(existingRelationship.image_url);
+    const loadImage = async () => {
+      if (existingRelationship?.image_path) {
+        const signedUrl = await getSignedImageUrl(existingRelationship.image_path);
+        if (signedUrl) {
+          setImagePreview(signedUrl);
+        }
+      }
     }
+    loadImage();
   }, [existingRelationship]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -114,7 +121,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
       const fileName = `user-${user.id}/${Date.now()}-${selectedImage.name}`;
       
       // Upload to Supabase Storage
-      const { data, error } = await supabase.storage
+      const { error } = await supabase.storage
         .from('0007-key-relationship-images')
         .upload(fileName, selectedImage);
       
@@ -123,12 +130,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
         throw error;
       }
       
-      // Get public URL
-      const { data: { publicUrl } } = supabase.storage
-        .from('0007-key-relationship-images')
-        .getPublicUrl(fileName);
-      
-      return publicUrl;
+      return fileName;
     } catch (err) {
       console.error('Error uploading image:', err);
       setError('Failed to upload image. Please try again.');
@@ -141,7 +143,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
   const removeImage = () => {
     setSelectedImage(null);
     setImagePreview(null);
-    setForm(prev => ({ ...prev, imageUrl: '' }));
+    setForm(prev => ({ ...prev, imagePath: '' }));
   };
 
   const addDepositIdea = () => {
@@ -213,11 +215,11 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
       }
 
       // Upload image if selected
-      let imageUrl = form.imageUrl;
+      let imagePath = form.imagePath;
       if (selectedImage) {
-        const uploadedUrl = await uploadImage();
-        if (uploadedUrl) {
-          imageUrl = uploadedUrl;
+        const uploadedPath = await uploadImage();
+        if (uploadedPath) {
+          imagePath = uploadedPath;
         } else {
           // If image upload fails, don't proceed
           return;
@@ -232,7 +234,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
           .from('0007-ap-key_relationships')
           .update({
             name: form.name.trim(),
-            image_url: imageUrl || null
+            image_path: imagePath || null
           })
           .eq('id', existingRelationship.id)
           .select()
@@ -251,7 +253,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
           .insert([{
             role_id: roleId,
             name: form.name.trim(),
-            image_url: imageUrl || null
+            image_path: imagePath || null
           }])
           .select()
           .single();
