@@ -488,6 +488,7 @@ const AuthenticCalendar: React.FC = () => {
                 <div className="flex-1 overflow-hidden">
                   <DragDropContext onDragEnd={() => {}}>
                     <UnscheduledPriorities
+                      viewMode={sidebarOpen ? 'quadrant' : 'list'}
                       tasks={tasks}
                       setTasks={setTasks}
                       roles={roles}

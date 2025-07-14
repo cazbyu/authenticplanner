@@ -37,6 +37,7 @@ interface UnscheduledPrioritiesProps {
   roles: Record<string, Role>;
   domains: Record<string, Domain>;
   loading: boolean;
+  viewMode: 'quadrant' | 'list';
 }
 
 const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading }) => {
@@ -44,6 +45,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   
   // State to track if a task is being dragged
   const [isDragging, setIsDragging] = useState(false);
+  viewMode
   
   // Simplified collapsed state - no complex initialization
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
@@ -144,7 +146,30 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
     return categories;
   };
 
+  // For list view, sort all tasks by priority
+  const sortTasksByPriority = (taskList: Task[]) => {
+    return [...taskList].sort((a, b) => {
+      // First by urgency and importance
+      if (a.is_urgent && a.is_important && (!b.is_urgent || !b.is_important)) return -1;
+      if (b.is_urgent && b.is_important && (!a.is_urgent || !a.is_important)) return 1;
+      if (a.is_urgent && !a.is_important && !b.is_urgent) return -1;
+      if (b.is_urgent && !b.is_important && !a.is_urgent) return 1;
+      if (a.is_important && !b.is_important) return -1;
+      if (b.is_important && !a.is_important) return 1;
+      
+      // Then by due date
+      if (a.due_date && b.due_date) {
+        return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+      }
+      if (a.due_date && !b.due_date) return -1;
+      if (!a.due_date && b.due_date) return 1;
+      
+      // Finally by title
+      return a.title.localeCompare(b.title);
+    });
+  };
   const { urgentImportant, notUrgentImportant, urgentNotImportant, notUrgentNotImportant } = categorizeAndSortTasks(tasks);
+  const prioritizedTasks = sortTasksByPriority(tasks);
 
   const TaskCard: React.FC<{ task: Task; quadrantColor: string; index: number }> = ({ task, quadrantColor, index }) => {
     const dateDisplay = formatTaskDate(task.due_date);
@@ -339,6 +364,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   return (
       <div className="h-full flex flex-col overflow-visible" style={{ minHeight: '100%' }}>
         {/* Quadrant sections with consistent padding from left edge and uniform spacing */}
+       {viewMode === 'quadrant' ? (
         <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin grid grid-cols-2 gap-4" style={{ height: '100%', overflowY: 'auto' }}>
           {/* Top Row */}
           <div>
@@ -394,6 +420,95 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
             />
           </div>
         </div>
+       ) : (
+         /* List View - Sorted by priority */
+         <div className="flex-1 overflow-y-auto p-4">
+           <div className="space-y-2">
+             {prioritizedTasks.length === 0 ? (
+               <p className="text-gray-500 text-center py-8">No unscheduled tasks found</p>
+             ) : (
+               prioritizedTasks.map((task, index) => {
+                 // Determine border color based on priority
+                 let borderColor = "border-l-gray-500";
+                 if (task.is_urgent && task.is_important) borderColor = "border-l-red-500";
+                 else if (!task.is_urgent && task.is_important) borderColor = "border-l-green-500";
+                 else if (task.is_urgent && !task.is_important) borderColor = "border-l-orange-500";
+                 
+                 return (
+                   <Draggable key={task.id} draggableId={task.id} index={index}>
+                     {(provided, snapshot) => (
+                       <div 
+                         ref={provided.innerRef}
+                         {...provided.draggableProps}
+                         {...provided.dragHandleProps}
+                         className={`bg-white border-l-4 ${borderColor} border-r border-t border-b border-gray-200 rounded-r-lg p-3 hover:shadow-md transition-all cursor-pointer select-none ${snapshot.isDragging ? 'shadow-lg' : ''}`}
+                         onDoubleClick={() => handleTaskEdit(task)}
+                         title="Double-click to edit or drag to calendar"
+                       >
+                         <div className="flex items-start justify-between mb-2">
+                           <div className="flex-1 min-w-0">
+                             <h4 className="font-medium text-gray-900 text-sm leading-tight">{task.title}</h4>
+                             {formatTaskDate(task.due_date) ? (
+                               <div className="flex items-center mt-1 text-xs text-gray-600">
+                                 <Clock className="h-3 w-3 mr-1 flex-shrink-0" />
+                                 <span>Due {formatTaskDate(task.due_date)}</span>
+                               </div>
+                             ) : null}
+                           </div>
+                           <div className="flex items-center space-x-1 ml-2 flex-shrink-0">
+                             <button
+                               onClick={(e) => handleTaskAction(task.id, 'complete', e)}
+                               className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
+                               title="Complete"
+                             >
+                               <Check className="h-3 w-3" />
+                             </button>
+                             <button
+                               onClick={(e) => handleTaskAction(task.id, 'delegate', e)}
+                               className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                               title="Delegate"
+                             >
+                               <UserPlus className="h-3 w-3" />
+                             </button>
+                             <button
+                               onClick={(e) => handleTaskAction(task.id, 'cancel', e)}
+                               className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+                               title="Cancel"
+                             >
+                               <X className="h-3 w-3" />
+                             </button>
+                           </div>
+                         </div>
+                         
+                         {/* Task badges */}
+                         <div className="flex flex-wrap gap-1">
+                           {task.is_authentic_deposit && (
+                             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                               Deposit
+                             </span>
+                           )}
+                           {task.is_twelve_week_goal && (
+                             <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                               12-Week
+                             </span>
+                           )}
+                           {task.task_roles?.slice(0, 1).map(({ role_id }) => (
+                             roles[role_id] && (
+                               <span key={role_id} className="inline-flex items-center px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-700 truncate max-w-16">
+                                 {roles[role_id].label}
+                               </span>
+                             )
+                           ))}
+                         </div>
+                       </div>
+                     )}
+                   </Draggable>
+                 );
+               })
+             )}
+           </div>
+         </div>
+       )}
 
         {/* Edit Task Modal */}
         {editingTask && (
