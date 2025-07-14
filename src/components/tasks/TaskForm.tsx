@@ -263,39 +263,40 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             {/* Key Relationships Section - Only show when roles are selected */}
-                <div className="border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
-                  {(() => {
-                    const filteredRelationships = keyRelationships.filter(rel => 
-                      form.selectedRoleIds.includes(rel.role_id)
+            <div>
+              <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
+              <div className="border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
+                {(() => {
+                  const filteredRelationships = keyRelationships.filter(rel => 
+                    form.selectedRoleIds.includes(rel.role_id)
+                  );
+                  
+                  if (filteredRelationships.length > 0) {
+                    return (
+                      <div className="grid grid-cols-2 gap-1">
+                        {filteredRelationships.map((rel) => (
+                          <label key={rel.id} className="flex items-center gap-1 text-xs">
+                            <input
+                              type="checkbox"
+                              checked={form.selectedKeyRelationshipIds.includes(rel.id)}
+                              onChange={() => toggleArrayField(rel.id, "selectedKeyRelationshipIds")}
+                              className="h-3 w-3"
+                            />
+                            <span className="truncate">{rel.name}</span>
+                          </label>
+                        ))}
+                      </div>
                     );
-                    
-                    if (filteredRelationships.length > 0) {
-                      return (
-                        <div className="grid grid-cols-2 gap-1">
-                          {filteredRelationships.map((rel) => (
-                            <label key={rel.id} className="flex items-center gap-1 text-xs">
-                              <input
-                                type="checkbox"
-                                checked={form.selectedKeyRelationshipIds.includes(rel.id)}
-                                onChange={() => toggleArrayField(rel.id, "selectedKeyRelationshipIds")}
-                                className="h-3 w-3"
-                              />
-                              <span className="truncate">{rel.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      );
-                    } else {
-                      return (
-                        <p className="text-xs text-gray-500 text-center py-1">
-                          No key relationships for selected roles
-                        </p>
-                      );
-                    }
-                  })()}
-                </div>
+                  } else {
+                    return (
+                      <p className="text-xs text-gray-500 text-center py-1">
+                        No key relationships for selected roles
+                      </p>
+                    );
+                  }
+                })()}
               </div>
-            )}
+            </div>
 
             {/* Compact Domains Section */}
             <div>
@@ -337,3 +338,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </button>
           </form>
         </div>
+      </div>
+    </div>
+  );
+};
+
+export default TaskForm;
