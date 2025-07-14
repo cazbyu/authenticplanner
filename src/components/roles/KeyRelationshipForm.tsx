@@ -385,63 +385,6 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
             </div>
           </div>
 
-          {/* Image Upload */}
-          <div>
-            <label className="block text-sm font-medium mb-3">Photo</label>
-            <div className="flex items-start space-x-4">
-              {/* Image Preview/Placeholder */}
-              <div className="flex-shrink-0">
-                <div className="w-24 h-24 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
-                  {imagePreview ? (
-                    <img 
-                      src={imagePreview} 
-                      alt="Preview" 
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <svg className="w-8 h-8 text-gray-400 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      <p className="text-xs text-gray-500">Photo</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Upload Controls */}
-              <div className="flex-1">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="hidden"
-                  id="image-upload"
-                />
-                <div className="space-y-2">
-                  <label
-                    htmlFor="image-upload"
-                    className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 cursor-pointer transition-colors"
-                  >
-                    Choose Photo
-                  </label>
-                  {imagePreview && (
-                    <button
-                      type="button"
-                      onClick={removeImage}
-                      className="block text-sm text-red-600 hover:text-red-700"
-                    >
-                      Remove Photo
-                    </button>
-                  )}
-                  <p className="text-xs text-gray-500">
-                    JPG, PNG up to 5MB
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
           {/* Current Tasks */}
           <div>
             <label className="block text-sm font-medium mb-3">Current Tasks</label>
