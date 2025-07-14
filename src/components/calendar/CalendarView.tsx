@@ -43,22 +43,23 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           setLoading(false);
           return;
         }
+        
         const { data: tasks } = await supabase
           .from('0007-ap-tasks')
-          .update({
-            due_date: dateStr,
-            start_time: startTimeStr,
-            end_time: endTimeStr,
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', taskId);
+          .select('*')
+          .eq('user_id', user.id);
 
-        if (error) {
-          console.error('Error updating task:', error);
-          resizeInfo.revert();
-        } else {
-          // Refresh events to show updated data
-          fetchEvents();
+        if (tasks) {
+          const calendarEvents = tasks.map(task => ({
+            id: task.id,
+            title: task.title,
+            start: task.start_time || task.due_date,
+            end: task.end_time,
+            allDay: !task.start_time,
+            backgroundColor: task.is_urgent ? '#ef4444' : task.is_important ? '#f59e0b' : '#3b82f6',
+            borderColor: task.is_urgent ? '#dc2626' : task.is_important ? '#d97706' : '#2563eb'
+          }));
+          setEvents(calendarEvents);
         }
 
         setLoading(false);
@@ -72,10 +73,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         calendarApi.changeView(view);
         calendarApi.gotoDate(currentDate);
       }
-    } else {
-      resizeInfo.revert();
-    }
-  };
+    }, [view, currentDate]);
 
   // Handle event drop (moving events within calendar)
   const handleEventDrop = async (dropInfo: any) => {
