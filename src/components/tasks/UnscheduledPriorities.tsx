@@ -339,50 +339,60 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   return (
       <div className="h-full flex flex-col overflow-visible" style={{ minHeight: '100%' }}>
         {/* Quadrant sections with consistent padding from left edge and uniform spacing */}
-        <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin" style={{ height: '100%', overflowY: 'auto' }}>
-          {/* Urgent & Important - Red */}
-          <QuadrantSection
-            id="urgent-important"
-            title="Urgent & Important"
-            tasks={urgentImportant}
-            bgColor="bg-red-500"
-            borderColor="border-l-red-500"
-            textColor="text-white"
-            icon={<AlertTriangle className="h-3 w-3 flex-shrink-0" />}
-          />
-
-          {/* Not Urgent & Important - Green */}
-          <QuadrantSection
-            id="not-urgent-important"
-            title="Not Urgent & Important"
-            tasks={notUrgentImportant}
-            bgColor="bg-green-500"
-            borderColor="border-l-green-500"
-            textColor="text-white"
-            icon={<Check className="h-3 w-3 flex-shrink-0" />}
-          />
-
-          {/* Urgent & Not Important - Orange */}
-          <QuadrantSection
-            id="urgent-not-important"
-            title="Urgent & Not Important"
-            tasks={urgentNotImportant}
-            bgColor="bg-orange-500"
-            borderColor="border-l-orange-500"
-            textColor="text-white"
-            icon={<Clock className="h-3 w-3 flex-shrink-0" />}
-          />
-
-          {/* Not Urgent & Not Important - Gray */}
-          <QuadrantSection
-            id="not-urgent-not-important"
-            title="Not Urgent & Not Important"
-            tasks={notUrgentNotImportant}
-            bgColor="bg-gray-500"
-            borderColor="border-l-gray-500"
-            textColor="text-white"
-            icon={<X className="h-3 w-3 flex-shrink-0" />}
-          />
+        <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin grid grid-cols-2 gap-4" style={{ height: '100%', overflowY: 'auto' }}>
+          {/* Top Row */}
+          <div>
+            {/* Urgent & Important - Red */}
+            <QuadrantSection
+              id="urgent-important"
+              title="Urgent & Important"
+              tasks={urgentImportant}
+              bgColor="bg-red-500"
+              borderColor="border-l-red-500"
+              textColor="text-white"
+              icon={<AlertTriangle className="h-3 w-3 flex-shrink-0" />}
+            />
+          </div>
+          
+          <div>
+            {/* Not Urgent & Important - Green */}
+            <QuadrantSection
+              id="not-urgent-important"
+              title="Not Urgent & Important"
+              tasks={notUrgentImportant}
+              bgColor="bg-green-500"
+              borderColor="border-l-green-500"
+              textColor="text-white"
+              icon={<Check className="h-3 w-3 flex-shrink-0" />}
+            />
+          </div>
+          
+          {/* Bottom Row */}
+          <div>
+            {/* Urgent & Not Important - Orange */}
+            <QuadrantSection
+              id="urgent-not-important"
+              title="Urgent & Not Important"
+              tasks={urgentNotImportant}
+              bgColor="bg-orange-500"
+              borderColor="border-l-orange-500"
+              textColor="text-white"
+              icon={<Clock className="h-3 w-3 flex-shrink-0" />}
+            />
+          </div>
+          
+          <div>
+            {/* Not Urgent & Not Important - Gray */}
+            <QuadrantSection
+              id="not-urgent-not-important"
+              title="Not Urgent & Not Important"
+              tasks={notUrgentNotImportant}
+              bgColor="bg-gray-500"
+              borderColor="border-l-gray-500"
+              textColor="text-white"
+              icon={<X className="h-3 w-3 flex-shrink-0" />}
+            />
+          </div>
         </div>
 
         {/* Edit Task Modal */}

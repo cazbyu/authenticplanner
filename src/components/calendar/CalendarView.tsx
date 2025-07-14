@@ -185,6 +185,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotLabelInterval: '01:00',
             },
             timeGridDay: {
+              dayCount: 1,
               firstDay: 0,
               slotDuration: '00:30:00',
               slotLabelInterval: '01:00',
