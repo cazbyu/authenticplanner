@@ -990,17 +990,35 @@ const TaskForm: React.FC<TaskFormProps> = ({
               </div>
             </div>
 
-            {/* Key Relationships - Only show if roles are selected */}
-            {true && (
+            {/* Key Relationships Section - Always show between Roles and Domains */}
+            <div>
+              <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
               <div>
-                <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
                 <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
-                  <p className="text-xs text-gray-500 col-span-2 text-center py-1">
-                    No key relationships for selected roles
-                  </p>
+                  {form.selectedRoleIds.length > 0 && keyRelationships.filter(rel => form.selectedRoleIds.includes(rel.role_id)).length > 0 ? (
+                    keyRelationships
+                      .filter(rel => form.selectedRoleIds.includes(rel.role_id))
+                      .map(rel => (
+                        <label key={rel.id} className="flex items-center gap-1 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={form.selectedKeyRelationshipIds.includes(rel.id)}
+                            onChange={() => toggleArrayField(rel.id, "selectedKeyRelationshipIds")}
+                            className="h-3 w-3"
+                          />
+                          <span className="truncate">{rel.name}</span>
+                        </label>
+                      ))
+                  ) : (
+                    <p className="text-xs text-gray-500 col-span-2 text-center py-1">
+                      {form.selectedRoleIds.length > 0 
+                        ? "No key relationships for selected roles" 
+                        : "Select a role to see key relationships"}
+                    </p>
+                  )}
                 </div>
               </div>
-            )}
+            </div>
             {/* Role-Specific Key Relationships - Only show if roles are selected */}
             {form.selectedRoleIds.length > 0 && (
               <div>
