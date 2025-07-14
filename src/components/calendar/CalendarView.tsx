@@ -117,8 +117,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           .fc-timegrid-slot { height: 48px !important; border-bottom: 1px solid #f3f4f6 !important; }
           .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
           .fc-timegrid-axis { padding-right: 0.5rem; }
-          .fc-timegrid-now-indicator-line { border-color: #EF4444; border-width: 1px; left: 0 !important; right: 0 !important; margin-left: 0 !important; }
-          .fc-timegrid-now-indicator-arrow { display: none !important; }
+          .fc-timegrid-now-indicator-line { 
+            border-color: #EF4444; 
+            border-width: 2px; 
+            left: 0 !important; 
+            right: 0 !important; 
+            margin-left: 0 !important;
+            box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
+          }
+          .fc-timegrid-now-indicator-arrow { 
+            border-color: #EF4444;
+            border-width: 6px 0 6px 8px;
+            margin-top: -6px;
+          }
           .fc-col-header-cell { padding: 0; background: #fff; }
           .fc-col-header-cell.fc-day-today { background: transparent !important; }
           .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
@@ -152,7 +163,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={false}
-          scrollTime="07:00:00"
+          scrollTime={format(new Date(), 'HH:mm:ss')}
+          nowIndicator={true}
           slotDuration="00:30:00"
           slotLabelInterval="01:00"
           slotLabelFormat={{
