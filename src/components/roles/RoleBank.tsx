@@ -59,6 +59,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
 
   useEffect(() => {
     fetchRoles();
@@ -118,6 +119,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
       if (relationshipsError) throw relationshipsError;
       setRelationships(relationshipsData || []);
+      setKeyRelationships(relationshipsData || []);
 
       // Fetch deposit ideas for all relationships
       if (relationshipsData && relationshipsData.length > 0) {
