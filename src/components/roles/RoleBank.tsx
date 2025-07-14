@@ -202,11 +202,15 @@ const RoleBank: React.FC = () => {
     if (!selectedRole) return;
 
     const fetchRoleData = async () => {
+      // Query tasks linked to this role via the many-to-many relationship
       const { data: taskData } = await supabase
         .from('0007-ap-tasks')
-        .select('*')
-        .eq('role_id', selectedRole.id)
-        .gte('due_date', new Date().toISOString().split('T')[0]);
+        .select(`
+          *,
+          task_roles:0007-ap-task_roles!inner(role_id)
+        `)
+        .eq('task_roles.role_id', selectedRole.id)
+        .eq('status', 'pending');
       
       setTasks(taskData || []);
 
@@ -241,11 +245,15 @@ const RoleBank: React.FC = () => {
   const fetchRoleData = async () => {
     if (!selectedRole) return;
 
+    // Query tasks linked to this role via the many-to-many relationship
     const { data: taskData } = await supabase
       .from('0007-ap-tasks')
-      .select('*')
-      .eq('role_id', selectedRole.id)
-      .gte('due_date', new Date().toISOString().split('T')[0]);
+      .select(`
+        *,
+        task_roles:0007-ap-task_roles!inner(role_id)
+      `)
+      .eq('task_roles.role_id', selectedRole.id)
+      .eq('status', 'pending');
     
     setTasks(taskData || []);
 
@@ -266,7 +274,8 @@ const RoleBank: React.FC = () => {
   };
 
   const getRoleStats = (roleId: string) => {
-    const roleTasks = tasks.filter(t => t.role_id === roleId);
+    // Since we're now fetching tasks per role, we can use all tasks for stats
+    const roleTasks = tasks;
     return {
       deposits: roleTasks.filter(t => t.is_deposit).length,
       tasks: roleTasks.filter(t => !t.is_deposit).length
