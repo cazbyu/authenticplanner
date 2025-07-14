@@ -284,7 +284,19 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             {relationships.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
                 {relationships.map((rel) => (
+                  <div key={rel.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                    <div className="flex items-start gap-3">
                       <RelationshipImage relationship={rel} />
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-semibold text-gray-900 truncate">{rel.name}</h3>
+                        <p className="text-sm text-gray-600 mb-2">Key Relationship</p>
+                        {rel.notes && (
+                          <div className="bg-gray-50 rounded-md p-2 mb-3">
+                            <p className="text-xs font-medium text-gray-700 mb-1">Notes:</p>
+                            <p className="text-sm text-gray-600">{rel.notes}</p>
+                          </div>
+                        )}
+                      </div>
                     </div>
                     <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
                       <button className="flex-1 text-sm text-blue-600 hover:text-blue-700 font-medium py-1 px-2 rounded hover:bg-blue-50 transition-colors flex items-center justify-center gap-1">
@@ -299,6 +311,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                         Edit
                       </button>
                     </div>
+                  </div>
                   </div>
                 ))}
               </div>
