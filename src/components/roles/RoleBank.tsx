@@ -312,7 +312,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                       </button>
                     </div>
                   </div>
-                  </div>
                 ))}
               </div>
             ) : (
