@@ -13,6 +13,12 @@ interface Domain {
   name: string;
 }
 
+interface KeyRelationship {
+  id: string;
+  name: string;
+  role_id: string;
+}
+
 interface TaskFormValues {
   title: string;
   isAuthenticDeposit: boolean;
@@ -25,6 +31,7 @@ interface TaskFormValues {
   notes: string;
   selectedRoleIds: string[];
   selectedDomainIds: string[];
+  selectedKeyRelationshipIds: string[];
   schedulingType: 'unscheduled' | 'scheduled' | 'daily' | 'weekly' | 'custom';
   customRecurrence?: {
     frequency: 'daily' | 'weekly' | 'monthly';
@@ -47,6 +54,7 @@ interface TaskFormProps {
   availableDomains?: Domain[];
   onTaskCreated?: () => void;
   initialFormData?: Partial<TaskFormValues>;
+  availableKeyRelationships?: KeyRelationship[];
   // Legacy props for compatibility
   onSave?: (taskData: any) => void;
   onDelete?: () => void;
@@ -58,6 +66,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   availableDomains, 
   onTaskCreated,
   initialFormData = {},
+  availableKeyRelationships = [],
   // Legacy props
   onSave,
   onDelete
@@ -65,6 +74,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const [userId, setUserId] = useState<string | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
+  const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
   const [twelveWeekGoals, setTwelveWeekGoals] = useState<TwelveWeekGoal[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -87,6 +97,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     notes: "",
     selectedRoleIds: [],
     selectedDomainIds: [],
+    selectedKeyRelationshipIds: [],
     schedulingType: 'unscheduled',
     customRecurrence: {
       frequency: 'weekly',
@@ -112,14 +123,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setLoading(true);
 
       try {
-        if (availableRoles && availableDomains) {
+        if (availableRoles && availableDomains && availableKeyRelationships) {
           setRoles(availableRoles);
           setDomains(availableDomains);
+          setKeyRelationships(availableKeyRelationships);
           setLoading(false);
           return;
         }
 
-        const [roleRes, domainRes, twelveWeekGoalsRes] = await Promise.all([
+        const [roleRes, domainRes, twelveWeekGoalsRes, keyRelationshipsRes] = await Promise.all([
           supabase
             .from("0007-ap-roles")
             .select("id, label")
@@ -130,15 +142,19 @@ const TaskForm: React.FC<TaskFormProps> = ({
             .from("0007-ap-goals_12wk_main")
             .select("id, title")
             .eq("user_id", userId)
-            .eq("status", "active")
+            .eq("status", "active"),
+          supabase
+            .from("0007-ap-key_relationships")
+            .select("id, name, role_id")
         ]);
 
-        if (roleRes.error || domainRes.error) {
+        if (roleRes.error || domainRes.error || keyRelationshipsRes.error) {
           setError("Failed to load roles/domains.");
         } else {
           setRoles(roleRes.data || []);
           setDomains(domainRes.data || []);
           setTwelveWeekGoals(twelveWeekGoalsRes.data || []);
+          setKeyRelationships(keyRelationshipsRes.data || []);
         }
       } catch (err) {
         console.error('Error fetching roles/domains:', err);
@@ -149,7 +165,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     };
 
     fetchLists();
-  }, [userId, availableRoles, availableDomains]);
+  }, [userId, availableRoles, availableDomains, availableKeyRelationships]);
 
   // Close date picker when clicking outside
   useEffect(() => {
@@ -216,7 +232,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   const toggleArrayField = (
     id: string,
-    field: "selectedRoleIds" | "selectedDomainIds"
+    field: "selectedRoleIds" | "selectedDomainIds" | "selectedKeyRelationshipIds"
   ) => {
     setForm((prev) => {
       const exists = prev[field].includes(id);
@@ -464,6 +480,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         notes: "",
         selectedRoleIds: [],
         selectedDomainIds: [],
+        selectedKeyRelationshipIds: [],
         schedulingType: 'unscheduled',
         customRecurrence: {
           frequency: 'weekly',
@@ -967,6 +984,24 @@ const TaskForm: React.FC<TaskFormProps> = ({
                       className="h-3 w-3"
                     />
                     <span className="truncate">{domain.name}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            {/* Key Relationships Section */}
+            <div>
+              <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
+              <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
+                {keyRelationships.map((relationship) => (
+                  <label key={relationship.id} className="flex items-center gap-1 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
+                      onChange={() => toggleArrayField(relationship.id, "selectedKeyRelationshipIds")}
+                      className="h-3 w-3"
+                    />
+                    <span className="truncate">{relationship.name}</span>
                   </label>
                 ))}
               </div>
