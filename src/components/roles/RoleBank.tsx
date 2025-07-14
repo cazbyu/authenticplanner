@@ -203,7 +203,7 @@ const RoleBank: React.FC = () => {
 
     const fetchRoleData = async () => {
       const { data: taskData } = await supabase
-        .from('tasks')
+        .from('0007-ap-tasks')
         .select('*')
         .eq('role_id', selectedRole.id)
         .gte('due_date', new Date().toISOString().split('T')[0]);
@@ -242,7 +242,7 @@ const RoleBank: React.FC = () => {
     if (!selectedRole) return;
 
     const { data: taskData } = await supabase
-      .from('tasks')
+      .from('0007-ap-tasks')
       .select('*')
       .eq('role_id', selectedRole.id)
       .gte('due_date', new Date().toISOString().split('T')[0]);
