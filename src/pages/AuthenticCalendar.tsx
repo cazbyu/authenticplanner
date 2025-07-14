@@ -53,6 +53,7 @@ const AuthenticCalendar: React.FC = () => {
   const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridDay');
   // Add this line near your other useState calls, likely near the top of the component:
 const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const calendarRef = useRef<FullCalendar | null>(null);
   const { user, logout } = useAuth();
 
