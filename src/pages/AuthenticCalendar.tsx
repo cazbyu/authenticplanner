@@ -57,11 +57,15 @@ const AuthenticCalendar: React.FC = () => {
   const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
-  const [activeView, setActiveView] = useState<'calendar' | 'tasks'>('calendar');
+  const [activeView, setActiveView] = useState<'calendar' | 'priorities'>('calendar');
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [resizing, setResizing] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const calendarRef = useRef<FullCalendar | null>(null);
+  const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
 
   // Fetch all task data
@@ -139,11 +143,16 @@ const AuthenticCalendar: React.FC = () => {
     setIsViewChanging(true);
     setView(newView);
     
+    // For day view, set to current date
+    if (newView === 'timeGridDay') {
+      setCurrentDate(new Date());
+    }
+    
     // Force calendar to update view immediately
     if (calendarRef.current) {
       const api = calendarRef.current.getApi();
       api.changeView(newView);
-      api.gotoDate(currentDate);
+      api.gotoDate(newView === 'timeGridDay' ? new Date() : currentDate);
     }
     setIsViewChanging(false);
   };
@@ -152,6 +161,36 @@ const AuthenticCalendar: React.FC = () => {
     setShowTaskForm(false);
     setRefreshTrigger(prev => prev + 1);
   };
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    setResizing(true);
+    e.preventDefault();
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizing) return;
+      
+      const newWidth = e.clientX;
+      if (newWidth >= 200 && newWidth <= 600) {
+        setSidebarWidth(newWidth);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setResizing(false);
+    };
+
+    if (resizing) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [resizing]);
 
   const toggleMainSidebar = () => setMainSidebarOpen(!mainSidebarOpen);
   const closeMainSidebar = () => setMainSidebarOpen(false);
@@ -346,53 +385,69 @@ const AuthenticCalendar: React.FC = () => {
             </button>
 
             {/* View Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-full p-1">
+            <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setActiveView('calendar')}
-                className={`flex items-center justify-center px-3 py-1.5 rounded-full transition-colors text-sm ${
+                className={`flex items-center justify-center p-2 rounded-md transition-colors ${
                   activeView === 'calendar'
-                    ? 'bg-white text-gray-900 shadow-sm'
+                    ? 'bg-white text-blue-600 shadow-sm'
                     : 'text-gray-600 hover:text-gray-900'
                 }`}
+                title="Calendar View"
               >
-                <CalendarIcon className="h-4 w-4 mr-1" />
-                Calendar
-              </button>
-            </div>
-
-            {/* Date Navigation */}
-            <div className="flex items-center space-x-1">
-              <button
-                onClick={handlePrevious}
-                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-              >
-                <ChevronLeft className="h-4 w-4 text-gray-600" />
+                <CalendarIcon className="h-5 w-5" />
               </button>
               <button
-                onClick={handleNext}
-                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                onClick={() => setActiveView('priorities')}
+                className={`flex items-center justify-center p-2 rounded-md transition-colors ${
+                  activeView === 'priorities'
+                    ? 'bg-white text-blue-600 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Priorities View"
               >
-                <ChevronRight className="h-4 w-4 text-gray-600" />
+                <CheckSquare className="h-5 w-5" />
               </button>
             </div>
 
-            <span className="text-lg font-medium">
-              {getDateDisplayText()}
-            </span>
+            {/* Calendar Controls - Only show for calendar view */}
+            {activeView === 'calendar' && (
+              <>
+                {/* Date Navigation */}
+                <div className="flex items-center space-x-1">
+                  <button
+                    onClick={handlePrevious}
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                  </button>
+                </div>
 
-            {/* Calendar View Dropdown */}
-            <div className="relative">
-              <select
-                value={view}
-                onChange={(e) => handleViewChange(e.target.value as 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth')}
-                className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="timeGridDay">Day View</option>
-                <option value="timeGridWeek">Week View</option>
-                <option value="dayGridMonth">Month View</option>
-              </select>
-              <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-            </div>
+                <span className="text-lg font-medium">
+                  {getDateDisplayText()}
+                </span>
+
+                {/* Calendar View Dropdown */}
+                <div className="relative">
+                  <select
+                    value={view}
+                    onChange={(e) => handleViewChange(e.target.value as 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth')}
+                    className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                  >
+                    <option value="timeGridDay">Day View</option>
+                    <option value="timeGridWeek">Week View</option>
+                    <option value="dayGridMonth">Month View</option>
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
+              </>
+            )}
           </div>
 
           {/* Right Section */}
@@ -409,36 +464,89 @@ const AuthenticCalendar: React.FC = () => {
 
         {/* Main Content */}
         <main className="h-[calc(100vh-73px)] flex">
-          {/* Unscheduled Tasks Sidebar */}
-          <div className="w-80 border-r border-gray-200 bg-white flex-shrink-0">
-            <div className="h-full flex flex-col">
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">Unscheduled Tasks</h2>
-                <p className="text-sm text-gray-600 mt-1">Drag tasks to calendar to schedule</p>
+          {/* Unscheduled Priorities Sidebar */}
+          {sidebarOpen && (
+            <div 
+              ref={sidebarRef}
+              className="border-r border-gray-200 bg-white flex-shrink-0 relative"
+              style={{ width: `${sidebarWidth}px` }}
+            >
+              <div className="h-full flex flex-col">
+                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-semibold text-gray-900">Unscheduled Priorities</h2>
+                    <p className="text-sm text-gray-600 mt-1">Drag tasks to calendar to schedule</p>
+                  </div>
+                  <button
+                    onClick={() => setSidebarOpen(false)}
+                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="Close sidebar"
+                  >
+                    <X className="h-4 w-4 text-gray-500" />
+                  </button>
+                </div>
+                <div className="flex-1 overflow-hidden">
+                  <DragDropContext onDragEnd={() => {}}>
+                    <UnscheduledPriorities
+                      tasks={tasks}
+                      setTasks={setTasks}
+                      roles={roles}
+                      domains={domains}
+                      loading={loading}
+                    />
+                  </DragDropContext>
+                </div>
               </div>
-              <div className="flex-1 overflow-hidden">
-                <DragDropContext onDragEnd={() => {}}>
-                  <UnscheduledPriorities
-                    tasks={tasks}
-                    setTasks={setTasks}
-                    roles={roles}
-                    domains={domains}
-                    loading={loading}
-                  />
-                </DragDropContext>
-              </div>
+              
+              {/* Resize Handle */}
+              <div
+                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+                onMouseDown={handleMouseDown}
+                title="Drag to resize"
+              />
             </div>
-          </div>
+          )}
 
-          {/* Calendar View */}
-          <div className="flex-1">
-            <CalendarView
-              ref={calendarRef}
-              view={view}
-              currentDate={currentDate}
-              onDateChange={handleDateChange}
-              refreshTrigger={refreshTrigger}
-            />
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col">
+            {/* Show sidebar toggle when closed */}
+            {!sidebarOpen && (
+              <div className="p-2 border-b border-gray-200 bg-white">
+                <button
+                  onClick={() => setSidebarOpen(true)}
+                  className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
+                  title="Show unscheduled priorities"
+                >
+                  <Menu className="h-4 w-4" />
+                  <span>Show Unscheduled Priorities</span>
+                </button>
+              </div>
+            )}
+            
+            {/* Content */}
+            <div className="flex-1">
+              {activeView === 'calendar' ? (
+                <CalendarView
+                  ref={calendarRef}
+                  view={view}
+                  currentDate={currentDate}
+                  onDateChange={handleDateChange}
+                  refreshTrigger={refreshTrigger}
+                />
+              ) : (
+                <div className="h-full p-4">
+                  <DragDropContext onDragEnd={() => {}}>
+                    <UnscheduledPriorities
+                      tasks={tasks}
+                      setTasks={setTasks}
+                      roles={roles}
+                      domains={domains}
+                      loading={loading}
+                    />
+                  </DragDropContext>
+                </div>
+              )}
+            </div>
           </div>
         </main>
       </div>
