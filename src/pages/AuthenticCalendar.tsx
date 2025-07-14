@@ -73,6 +73,7 @@ const AuthenticCalendar: React.FC = () => {
     }
 
     setLoading(true);
+  };
 
   const handleDateChange = (newStart: Date) => {
     if (!isViewChanging) {
@@ -268,178 +269,94 @@ const AuthenticCalendar: React.FC = () => {
           </div>
         </div>
 
-      {/* Google Calendar Style Header - Compact and minimal */}
-      <header className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white min-h-[56px]">
-        {/* Left Section: Menu, Logo, Toggle */}
-        <div className="flex items-center space-x-4">
-          {/* Hamburger Menu - Opens main navigation sidebar */}
-          <button
-            onClick={toggleMainSidebar}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors lg:hidden"
-            aria-label="Toggle main menu"
-          >
-            <Menu className="h-5 w-5 text-gray-600" />
-          </button>
-          
-          {/* Authentic Planner Logo & Brand - Stacked and smaller */}
-          <div className="flex items-center space-x-2">
-            <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
-            <div className="flex flex-col leading-tight">
-              <span className="text-sm font-medium text-gray-700">Authentic</span>
-              <span className="text-sm font-medium text-gray-700">Planner</span>
-            </div>
-          </div>
-
-          {/* Tasks/Calendar Toggle - Updated labels and default */}
-          <div className="flex items-center bg-gray-100 rounded-full p-1">
+        {/* Google Calendar Style Header - Compact and minimal */}
+        <header className="flex items-center justify-between px-4 py-2 border-b border-gray-200 bg-white min-h-[56px]">
+          {/* Left Section: Menu, Logo, Toggle */}
+          <div className="flex items-center space-x-4">
+            {/* Hamburger Menu - Opens main navigation sidebar */}
             <button
-              onClick={() => setActiveView('tasks')}
-              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
-                activeView === 'tasks'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Task Priorities View"
+              onClick={toggleMainSidebar}
+              className="p-2 hover:bg-gray-100 rounded-full transition-colors lg:hidden"
+              aria-label="Toggle main menu"
             >
-              <CheckSquare className="h-4 w-4" />
+              <Menu className="h-5 w-5 text-gray-600" />
             </button>
-            <button
-              onClick={() => setActiveView('calendar')}
-              className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
-                activeView === 'calendar'
-                  ? 'bg-white text-gray-900 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-              title="Calendar View"
-            >
-              <CalendarIcon className="h-4 w-4" />
-            </button>
-          </div>
-
-          {/* Date Navigation - Only show for calendar view */}
-          {activeView === 'calendar' && (
-            <>
-              <div className="flex items-center space-x-1">
-                <button
-                  onClick={handlePrevious}
-                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <ChevronLeft className="h-4 w-4 text-gray-600" />
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <ChevronRight className="h-4 w-4 text-gray-600" />
-                </button>
+            
+            {/* Authentic Planner Logo & Brand - Stacked and smaller */}
+            <div className="flex items-center space-x-2">
+              <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
+              <div className="flex flex-col leading-tight">
+                <span className="text-sm font-medium text-gray-700">Authentic</span>
+                <span className="text-sm font-medium text-gray-700">Planner</span>
               </div>
-
-              <span className="text-lg font-medium">
-                {view === 'dayGridMonth'
-                  ? format(currentDate, 'MMMM yyyy')
-                  : `${format(currentDate, 'd')} – ${format(
-                      addDays(currentDate, 6),
-                      'd MMM, yyyy'
-                    )}`}
-              </span>
             </div>
-        ) : (
-          /* Calendar View - Now secondary */
-          <>
-            {/* Left Sidebar - Unscheduled Priorities with collapse functionality */}
-            <div 
-              className={`${prioritiesCollapsed ? 'w-16' : ''} border-r border-gray-200 bg-white flex flex-col transition-all duration-200 flex-shrink-0 relative`} 
-              style={{
-                minWidth: prioritiesCollapsed ? '4rem' : '16rem',
-                width: prioritiesCollapsed ? '4rem' : `${sidebarWidth}px`,
-                maxWidth: prioritiesCollapsed ? '4rem' : '600px'
-              }}
-              ref={sidebarRef}
-              id="unscheduled-priorities-container"
-            >
-              {prioritiesCollapsed ? (
-                /* Collapsed Sidebar - Improved readability with proper case */
-                <div className="h-full flex flex-col items-center py-4">
+
+            {/* Tasks/Calendar Toggle - Updated labels and default */}
+            <div className="flex items-center bg-gray-100 rounded-full p-1">
+              <button
+                onClick={() => setActiveView('tasks')}
+                className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                  activeView === 'tasks'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Task Priorities View"
+              >
+                <CheckSquare className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setActiveView('calendar')}
+                className={`flex items-center justify-center w-8 h-8 rounded-full transition-colors ${
+                  activeView === 'calendar'
+                    ? 'bg-white text-gray-900 shadow-sm'
+                    : 'text-gray-600 hover:text-gray-900'
+                }`}
+                title="Calendar View"
+              >
+                <CalendarIcon className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Date Navigation - Only show for calendar view */}
+            {activeView === 'calendar' && (
+              <>
+                <div className="flex items-center space-x-1">
                   <button
-                    onClick={() => setPrioritiesCollapsed(false)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors mb-6"
-                    title="Expand Unscheduled Priorities"
+                    onClick={handlePrevious}
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <ChevronLeft className="h-4 w-4 text-gray-600" />
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
                   >
                     <ChevronRight className="h-4 w-4 text-gray-600" />
                   </button>
-                  
-                  {/* Vertical Text - Much more readable with proper case */}
-                  <div className="flex-1 flex items-center justify-center">
-                    <div className="transform -rotate-90 whitespace-nowrap">
-                      <span className="text-sm font-medium text-gray-600 tracking-wider">
-                        Unscheduled Priorities
-                      </span>
-                    </div>
-                  </div>
                 </div>
-              ) : (
-                /* Expanded Sidebar */
-                  <div className="flex flex-col h-full">
-                    {/* Unscheduled Priorities Header with Collapse Button */}
-                    <div className="p-4 border-b border-gray-200">
-                      <div className="flex items-center justify-between">
-                        <h3 className="text-sm font-medium text-gray-900">Unscheduled Priorities</h3>
-                        <button
-                          onClick={() => setPrioritiesCollapsed(true)}
-                          className="p-1 hover:bg-gray-100 rounded transition-colors"
-                          title="Collapse Unscheduled Priorities"
-                        >
-                          <ChevronLeft className="h-4 w-4 text-gray-600" />
-                        </button>
-                      </div>
-                    </div>
 
-                    {/* Unscheduled Priorities Content - FIXED: Removed overflow-hidden */}
-                    <div className="flex-1 overflow-y-auto" style={{ height: 'calc(100vh - 120px)' }}>
-                      <UnscheduledPriorities 
-                        tasks={tasks}
-                        setTasks={setTasks}
-                        roles={roles}
-                        domains={domains}
-                        loading={loading}
-                      />
-                    </div>
-                    
-                    {/* Resizer handle */}
-                    {!prioritiesCollapsed && (
-                      <div 
-                        className="absolute top-0 right-0 bottom-0 w-4 cursor-col-resize hover:bg-blue-200 hover:opacity-50 z-50"
-                        onMouseDown={handleResizeStart}
-                        style={{ 
-                          cursor: 'col-resize',
-                          width: '16px',
-                          right: '-8px',
-                          zIndex: 100
-                        }}
-                      >
-                        <div 
-                          className="absolute top-0 right-0 bottom-0 w-1 bg-gray-200 hover:bg-blue-500"
-                          style={{
-                            right: '8px',
-                            width: '4px'
-                          }}
-                        />
-                      </div>
-                    )}
-                  </div>
-              )}
-            </div>
-
-          <div className="flex-1 min-h-0">
-            <CalendarView
-              ref={calendarRef}
-              view={view}
-              currentDate={currentDate}
-              onDateChange={handleDateChange}
-            />
+                <span className="text-lg font-medium">
+                  {view === 'dayGridMonth'
+                    ? format(currentDate, 'MMMM yyyy')
+                    : `${format(currentDate, 'd')} – ${format(
+                        addDays(currentDate, 6),
+                        'd MMM, yyyy'
+                      )}`}
+                </span>
+              </>
+            )}
           </div>
+        </header>
+
+        <div className="flex-1 min-h-0">
+          <CalendarView
+            ref={calendarRef}
+            view={view}
+            currentDate={currentDate}
+            onDateChange={handleDateChange}
+          />
         </div>
-      </DragDropContext>
+      </div>
 
       {/* TaskForm Modal */}
       {showTaskForm && (
