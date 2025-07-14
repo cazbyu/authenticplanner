@@ -631,19 +631,6 @@ const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relati
           className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
         />
       </div>
-
-      {/* Edit Task Modal */}
-      {editingTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-2xl mx-4">
-            <EditTask
-              task={editingTask}
-              onTaskUpdated={handleTaskUpdated}
-              onCancel={() => setEditingTask(null)}
-            />
-          </div>
-        </div>
-      )}
     );
   }
   
