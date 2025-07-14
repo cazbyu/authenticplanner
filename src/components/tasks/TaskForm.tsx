@@ -123,15 +123,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
       setLoading(true);
 
       try {
-        if (availableRoles && availableDomains && availableKeyRelationships) {
+        if (availableRoles && availableDomains) {
           setRoles(availableRoles);
           setDomains(availableDomains);
-          setKeyRelationships(availableKeyRelationships);
+          setKeyRelationships(availableKeyRelationships || []);
           setLoading(false);
           return;
         }
 
-        const [roleRes, domainRes, twelveWeekGoalsRes, keyRelationshipsRes] = await Promise.all([
+        const [roleRes, domainRes, twelveWeekGoalsRes] = await Promise.all([
           supabase
             .from("0007-ap-roles")
             .select("id, label")
@@ -142,30 +142,38 @@ const TaskForm: React.FC<TaskFormProps> = ({
             .from("0007-ap-goals_12wk_main")
             .select("id, title")
             .eq("user_id", userId)
-            .eq("status", "active"),
-          supabase
-            .from("0007-ap-key_relationships")
-            .select("id, name, role_id")
+            .eq("status", "active")
         ]);
 
-        if (roleRes.error || domainRes.error || keyRelationshipsRes.error) {
+        if (roleRes.error || domainRes.error) {
           setError("Failed to load roles/domains.");
         } else {
           setRoles(roleRes.data || []);
           setDomains(domainRes.data || []);
           setTwelveWeekGoals(twelveWeekGoalsRes.data || []);
-          setKeyRelationships(keyRelationshipsRes.data || []);
+          
+          // Fetch key relationships separately to avoid blocking the form
+          try {
+            const { data: keyRelData } = await supabase
+              .from("0007-ap-key_relationships")
+              .select("id, name, role_id");
+            setKeyRelationships(keyRelData || []);
+          } catch (err) {
+            console.warn('Could not load key relationships:', err);
+            setKeyRelationships([]);
+          }
         }
       } catch (err) {
         console.error('Error fetching roles/domains:', err);
         setError("Failed to load roles/domains.");
+        setKeyRelationships([]);
       } finally {
         setLoading(false);
       }
     };
 
     fetchLists();
-  }, [userId, availableRoles, availableDomains, availableKeyRelationships]);
+  }, [userId, availableRoles, availableDomains]);
 
   // Close date picker when clicking outside
   useEffect(() => {
@@ -994,20 +1002,26 @@ const TaskForm: React.FC<TaskFormProps> = ({
               <div>
                 <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
                 <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
-                  {keyRelationships
-                    .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
-                    .map((relationship) => (
-                    <label key={relationship.id} className="flex items-center gap-1 text-xs">
-                      <input
-                        type="checkbox"
-                        checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
-                        onChange={() => toggleArrayField(relationship.id, "selectedKeyRelationshipIds")}
-                        className="h-3 w-3"
-                      />
-                      <span className="truncate">{relationship.name}</span>
-                    </label>
-                  ))}
-                  {keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 && (
+                  {keyRelationships && keyRelationships.length > 0 ? (
+                    keyRelationships
+                      .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
+                      .map((relationship) => (
+                        <label key={relationship.id} className="flex items-center gap-1 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
+                            onChange={() => toggleArrayField(relationship.id, "selectedKeyRelationshipIds")}
+                            className="h-3 w-3"
+                          />
+                          <span className="truncate">{relationship.name}</span>
+                        </label>
+                      ))
+                  ) : (
+                    <p className="text-xs text-gray-500 col-span-2 text-center py-2">
+                      No key relationships for selected roles
+                    </p>
+                  )}
+                  {keyRelationships && keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 && keyRelationships.length > 0 && (
                     <p className="text-xs text-gray-500 col-span-2 text-center py-2">
                       No key relationships for selected roles
                     </p>
