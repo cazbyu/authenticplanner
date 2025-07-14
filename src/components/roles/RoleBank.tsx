@@ -6,6 +6,7 @@ import KeyRelationshipForm from './KeyRelationshipForm';
 import TaskForm from '../tasks/TaskForm';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
+import EditTask from '../tasks/EditTask';
 
 interface Role {
   id: string;
@@ -57,6 +58,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [loading, setLoading] = useState(true);
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   useEffect(() => {
     fetchRoles();
@@ -202,6 +204,17 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
   };
 
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+  };
+
+  const handleTaskUpdated = () => {
+    setEditingTask(null);
+    if (selectedRole) {
+      fetchRoleData(selectedRole.id);
+    }
+  };
+
   const handleTaskDelegated = () => {
     setDelegatingTask(null);
     if (selectedRole) {
@@ -267,59 +280,66 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             ) : tasks.length > 0 ? (
               <div className="space-y-3">
                 {tasks.map((task) => (
-                  <div key={task.id} className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex-1">
+                  <div key={task.id} className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow relative">
+                    {/* Action buttons in top right */}
+                    <div className="absolute top-3 right-3 flex items-center space-x-1">
+                      <button
+                        onClick={() => handleTaskAction(task.id, 'complete')}
+                        className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
+                        title="Complete"
+                      >
+                        <Check className="h-4 w-4 text-green-500" />
+                      </button>
+                      <button
+                        onClick={() => handleTaskAction(task.id, 'delegate')}
+                        className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                        title="Delegate"
+                      >
+                        <UserPlus className="h-4 w-4 text-blue-500" />
+                      </button>
+                      <button
+                        onClick={() => handleEditTask(task)}
+                        className="p-1 rounded-full hover:bg-gray-100 hover:text-gray-600 transition-colors"
+                        title="Edit"
+                      >
+                        <Edit className="h-4 w-4 text-gray-500" />
+                      </button>
+                      <button
+                        onClick={() => handleTaskAction(task.id, 'cancel')}
+                        className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+                        title="Cancel"
+                      >
+                        <X className="h-4 w-4 text-red-500" />
+                      </button>
+                    </div>
+
+                    {/* Task content with padding to avoid overlap with buttons */}
+                    <div className="pr-20">
+                      <div className="mb-3">
                         <h4 className="font-medium text-gray-900 mb-1">{task.title}</h4>
                         {task.due_date && (
                           <div className="text-sm text-gray-600 mb-2">
                             Due: {new Date(task.due_date).toLocaleDateString()}
                           </div>
                         )}
-                        <div className="flex flex-wrap gap-1">
-                          {task.is_urgent && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">
-                              Urgent
-                            </span>
-                          )}
-                          {task.is_important && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
-                              Important
-                            </span>
-                          )}
-                          {task.is_authentic_deposit && (
-                            <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">
-                              Deposit
-                            </span>
-                          )}
-                        </div>
                       </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => handleTaskAction(task.id, 'complete')}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
-                        title="Complete task"
-                      >
-                        <Check className="h-3 w-3" />
-                        Complete
-                      </button>
-                      <button
-                        onClick={() => handleTaskAction(task.id, 'delegate')}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
-                        title="Delegate task"
-                      >
-                        <UserPlus className="h-3 w-3" />
-                        Delegate
-                      </button>
-                      <button
-                        onClick={() => handleTaskAction(task.id, 'cancel')}
-                        className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
-                        title="Cancel task"
-                      >
-                        <X className="h-3 w-3" />
-                        Cancel
-                      </button>
+                      <div className="flex flex-wrap gap-1">
+                        {task.is_urgent && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">
+                            Urgent
+                          </span>
+                        )}
+                        {task.is_important && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+                            Important
+                          </span>
+                        )}
+                        {task.is_authentic_deposit && (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">
+                            Deposit
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -611,6 +631,19 @@ const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relati
           className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
         />
       </div>
+
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <EditTask
+              task={editingTask}
+              onTaskUpdated={handleTaskUpdated}
+              onCancel={() => setEditingTask(null)}
+            />
+          </div>
+        </div>
+      )}
     );
   }
   
