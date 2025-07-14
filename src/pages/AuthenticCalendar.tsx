@@ -447,15 +447,17 @@ const AuthenticCalendar: React.FC = () => {
               refreshTrigger={refreshTrigger}
             />
           ) : (
-            <div className="h-full">
-              <UnscheduledPriorities
-                tasks={tasks}
-                setTasks={setTasks}
-                roles={roles}
-                domains={domains}
-                loading={loading}
-              />
-            </div>
+            <DragDropContext onDragEnd={() => {}}>
+              <div className="h-full">
+                <UnscheduledPriorities
+                  tasks={tasks}
+                  setTasks={setTasks}
+                  roles={roles}
+                  domains={domains}
+                  loading={loading}
+                />
+              </div>
+            </DragDropContext>
           )}
         </main>
       </div>
