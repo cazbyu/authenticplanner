@@ -979,6 +979,33 @@ const TaskForm: React.FC<TaskFormProps> = ({
               </div>
             </div>
 
+            {/* Key Relationships - Only show if roles are selected */}
+            {form.selectedRoleIds.length > 0 && (
+              <div>
+                <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
+                <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
+                  {keyRelationships && keyRelationships.length > 0 ? (
+                    keyRelationships
+                      .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
+                      .map((relationship) => (
+                        <label key={relationship.id} className="flex items-center gap-1 text-xs">
+                          <input
+                            type="checkbox"
+                            checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
+                            onChange={() => toggleArrayField(relationship.id, "selectedKeyRelationshipIds")}
+                            className="h-3 w-3"
+                          />
+                          <span className="truncate">{relationship.name}</span>
+                        </label>
+                      ))
+                  ) : (
+                    <p className="text-xs text-gray-500 col-span-2 text-center py-1">
+                      No key relationships for selected roles
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
             {/* Role-Specific Key Relationships - Only show if roles are selected */}
             {form.selectedRoleIds.length > 0 && (
               <div>
@@ -1025,38 +1052,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
               </div>
             </div>
 
-            {/* Role-Specific Key Relationships - Only show if roles are selected */}
-            {form.selectedRoleIds.length > 0 && (
-              <div>
-                <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
-                <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
-                  {keyRelationships && keyRelationships.length > 0 ? (
-                    keyRelationships
-                      .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
-                      .map((relationship) => (
-                        <label key={relationship.id} className="flex items-center gap-1 text-xs">
-                          <input
-                            type="checkbox"
-                            checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
-                            onChange={() => toggleArrayField(relationship.id, "selectedKeyRelationshipIds")}
-                            className="h-3 w-3"
-                          />
-                          <span className="truncate">{relationship.name}</span>
-                        </label>
-                      ))
-                  ) : (
-                    <p className="text-xs text-gray-500 col-span-2 text-center py-2">
-                      No key relationships for selected roles
-                    </p>
-                  )}
-                  {keyRelationships && keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 && keyRelationships.length > 0 && (
-                    <p className="text-xs text-gray-500 col-span-2 text-center py-2">
-                      No key relationships for selected roles
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Compact Notes */}
             <div>
