@@ -74,6 +74,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         calendarApi.gotoDate(currentDate);
       }
     }, [view, currentDate]);
+  }
 
   // Handle event drop (moving events within calendar)
   const handleEventDrop = async (dropInfo: any) => {
@@ -279,5 +280,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
         />
       </div>
+    )
+)
 
 export default CalendarView;
