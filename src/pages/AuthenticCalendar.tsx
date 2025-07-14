@@ -51,8 +51,11 @@ const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridDay');
-  // Add this line near your other useState calls, likely near the top of the component:
-const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [isViewChanging, setIsViewChanging] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
+  const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [activeView, setActiveView] = useState<'day' | 'week' | 'month'>('week');
   const calendarRef = useRef<FullCalendar | null>(null);
