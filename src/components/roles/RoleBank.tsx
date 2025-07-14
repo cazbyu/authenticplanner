@@ -186,31 +186,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <h1 className="text-2xl font-bold text-gray-900">{selectedRole.label}</h1>
         </div>
 
-        {/* Role Selection */}
-        <div className="border-b border-gray-200 bg-gray-50">
-          <div className="p-6">
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-              {roles.map((role) => (
-                <button
-                  key={role.id}
-                  onClick={() => handleRoleSelect(role)}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group bg-white"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">{role.icon || '👤'}</div>
-                    <div>
-                      <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
-                        {role.label}
-                      </h3>
-                      <p className="text-sm text-gray-500 capitalize">{role.category}</p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
           {/* Current Tasks */}
