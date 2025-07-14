@@ -991,11 +991,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             {/* Key Relationships Section - Always show between Roles and Domains */}
-            <div>
+            {form.selectedRoleIds.length > 0 && (
+              <div>
               <h3 className="text-xs font-medium mb-1">Key Relationships</h3>
               <div>
                 <div className="grid grid-cols-2 gap-1 border border-gray-200 p-2 rounded-md max-h-24 overflow-y-auto">
-                  {form.selectedRoleIds.length > 0 && keyRelationships.filter(rel => form.selectedRoleIds.includes(rel.role_id)).length > 0 ? (
+                  {keyRelationships.filter(rel => form.selectedRoleIds.includes(rel.role_id)).length > 0 ? (
                     keyRelationships
                       .filter(rel => form.selectedRoleIds.includes(rel.role_id))
                       .map(rel => (
@@ -1011,14 +1012,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
                       ))
                   ) : (
                     <p className="text-xs text-gray-500 col-span-2 text-center py-1">
-                      {form.selectedRoleIds.length > 0 
-                        ? "No key relationships for selected roles" 
-                        : "Select a role to see key relationships"}
+                      No key relationships for selected roles
                     </p>
                   )}
                 </div>
               </div>
-            </div>
+            )}
             {/* Role-Specific Key Relationships - Only show if roles are selected */}
             {form.selectedRoleIds.length > 0 && (
               <div>
