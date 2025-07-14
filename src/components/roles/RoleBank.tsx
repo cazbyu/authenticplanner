@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { ChevronLeft, UserPlus, Plus, Heart, Edit, Eye } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import KeyRelationshipForm from './KeyRelationshipForm';
+import TaskForm from '../tasks/TaskForm';
+import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 
 interface Role {
@@ -17,6 +20,10 @@ interface Task {
   due_date: string;
   status: string;
   priority: number;
+  is_urgent: boolean;
+  is_important: boolean;
+  is_authentic_deposit: boolean;
+  notes?: string;
 }
 
 interface KeyRelationship {
@@ -48,6 +55,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [showRelationshipForm, setShowRelationshipForm] = useState(false);
   const [editingRelationship, setEditingRelationship] = useState<KeyRelationship | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
 
   useEffect(() => {
     fetchRoles();
@@ -147,6 +156,58 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
   };
 
+  const handleAddTask = () => {
+    setShowTaskForm(true);
+  };
+
+  const handleTaskCreated = () => {
+    setShowTaskForm(false);
+    if (selectedRole) {
+      fetchRoleData(selectedRole.id);
+    }
+  };
+
+  const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      let updates: any = {};
+      
+      if (action === 'complete') {
+        updates.completed_at = new Date().toISOString();
+        updates.status = 'completed';
+      } else if (action === 'cancel') {
+        updates.status = 'cancelled';
+      } else if (action === 'delegate') {
+        const task = tasks.find(t => t.id === taskId);
+        if (task) {
+          setDelegatingTask(task);
+          return;
+        }
+      }
+
+      if (action !== 'delegate') {
+        const { error } = await supabase
+          .from('0007-ap-tasks')
+          .update(updates)
+          .eq('id', taskId);
+
+        if (!error && selectedRole) {
+          fetchRoleData(selectedRole.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error updating task:', error);
+    }
+  };
+
+  const handleTaskDelegated = () => {
+    setDelegatingTask(null);
+    if (selectedRole) {
+      fetchRoleData(selectedRole.id);
+    }
+  };
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
     setSelectedSection(null);
@@ -193,7 +254,10 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Current Tasks</h2>
-              <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium">
+              <button 
+                onClick={handleAddTask}
+                className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
+              >
                 <Plus className="h-4 w-4" />
                 Add Task
               </button>
@@ -204,7 +268,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               <div className="space-y-3">
                 {tasks.map((task) => (
                   <div key={task.id} className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-sm transition-shadow">
-                    <div className="flex items-start justify-between">
+                    <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900 mb-1">{task.title}</h4>
                         {task.due_date && (
@@ -231,13 +295,42 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                         </div>
                       </div>
                     </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleTaskAction(task.id, 'complete')}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-green-100 text-green-700 rounded hover:bg-green-200 transition-colors"
+                        title="Complete task"
+                      >
+                        <Check className="h-3 w-3" />
+                        Complete
+                      </button>
+                      <button
+                        onClick={() => handleTaskAction(task.id, 'delegate')}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200 transition-colors"
+                        title="Delegate task"
+                      >
+                        <UserPlus className="h-3 w-3" />
+                        Delegate
+                      </button>
+                      <button
+                        onClick={() => handleTaskAction(task.id, 'cancel')}
+                        className="flex items-center gap-1 px-2 py-1 text-xs bg-red-100 text-red-700 rounded hover:bg-red-200 transition-colors"
+                        title="Cancel task"
+                      >
+                        <X className="h-3 w-3" />
+                        Cancel
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <div className="text-gray-400 mb-2">No current tasks for this role</div>
-                <button className="text-primary-600 hover:text-primary-700 font-medium text-sm">
+                <button 
+                  onClick={handleAddTask}
+                  className="text-primary-600 hover:text-primary-700 font-medium text-sm"
+                >
                   Add your first task
                 </button>
               </div>
@@ -344,6 +437,31 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               setEditingRelationship(null);
             }}
             onRelationshipCreated={handleRelationshipSaved}
+          />
+        )}
+
+        {/* Task Form Modal */}
+        {showTaskForm && selectedRole && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <TaskForm
+                onClose={() => setShowTaskForm(false)}
+                onTaskCreated={handleTaskCreated}
+                initialFormData={{
+                  selectedRoleIds: [selectedRole.id]
+                }}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Delegate Task Modal */}
+        {delegatingTask && (
+          <DelegateTaskModal
+            taskId={delegatingTask.id}
+            taskTitle={delegatingTask.title}
+            onClose={() => setDelegatingTask(null)}
+            onDelegated={handleTaskDelegated}
           />
         )}
       </div>
