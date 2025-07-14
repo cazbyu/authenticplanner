@@ -39,6 +39,7 @@ interface RoleBankProps {
 
 const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onBack: propOnBack }) => {
   const [selectedRole, setSelectedRole] = useState<Role | null>(propSelectedRole || null);
+  const [selectedSection, setSelectedSection] = useState<'roles' | 'deposits' | 'relationships' | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [relationships, setRelationships] = useState<KeyRelationship[]>([]);
@@ -144,13 +145,17 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
+    setSelectedSection(null);
   };
 
   const handleBack = () => {
-    if (propOnBack) {
-      propOnBack();
-    } else {
+    if (selectedRole) {
       setSelectedRole(null);
+      setSelectedSection(null);
+    } else if (selectedSection) {
+      setSelectedSection(null);
+    } else if (propOnBack) {
+      propOnBack();
     }
   };
 
@@ -163,7 +168,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     return acc;
   }, {} as Record<string, Role[]>);
 
-  if (loading && !selectedRole) {
+  if (loading && !selectedRole && !selectedSection) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -317,14 +322,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               </div>
             )}
           </section>
-
-          {/* Task Notes */}
-          <section>
-            <h2 className="text-lg font-semibold text-gray-900 mb-4">Task Notes</h2>
-            <div className="text-gray-500 text-center py-8">
-              No task notes yet
-            </div>
-          </section>
         </div>
 
         {/* Key Relationship Form Modal */}
@@ -344,49 +341,127 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     );
   }
 
-  // Main role selection view
+  // If a section is selected, show section content
+  if (selectedSection === 'roles') {
+    return (
+      <div className="h-full flex flex-col">
+        <div className="flex items-center gap-3 p-6 border-b border-gray-200">
+          <button
+            onClick={handleBack}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">Active Roles</h1>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto p-6">
+          {roles.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-gray-500 mb-4">No active roles found</div>
+              <p className="text-sm text-gray-400">
+                Add roles in Settings to get started with your Role Bank
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {Object.entries(rolesByCategory).map(([category, categoryRoles]) => (
+                <div key={category} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                  <h2 className="text-lg font-semibold text-gray-900 mb-4 capitalize">
+                    {category} Roles
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {categoryRoles.map((role) => (
+                      <button
+                        key={role.id}
+                        onClick={() => handleRoleSelect(role)}
+                        className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="text-2xl">{role.icon || '👤'}</div>
+                          <div>
+                            <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
+                              {role.label}
+                            </h3>
+                            <p className="text-sm text-gray-500 capitalize">{category}</p>
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Main three boxes view
   return (
     <div className="h-full flex flex-col">
       <div className="p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Role Bank</h1>
         
-        {roles.length === 0 ? (
-          <div className="text-center py-12">
-            <div className="text-gray-500 mb-4">No active roles found</div>
-            <p className="text-sm text-gray-400">
-              Add roles in Settings to get started with your Role Bank
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-6">
-            {Object.entries(rolesByCategory).map(([category, categoryRoles]) => (
-              <div key={category} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-4 capitalize">
-                  {category} Roles
-                </h2>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {categoryRoles.map((role) => (
-                    <button
-                      key={role.id}
-                      onClick={() => handleRoleSelect(role)}
-                      className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="text-2xl">{role.icon || '👤'}</div>
-                        <div>
-                          <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
-                            {role.label}
-                          </h3>
-                          <p className="text-sm text-gray-500 capitalize">{category}</p>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Active Roles Box */}
+          <button
+            onClick={() => setSelectedSection('roles')}
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow text-left group"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                <UserPlus className="h-6 w-6 text-blue-600" />
               </div>
-            ))}
-          </div>
-        )}
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">Active Roles</h2>
+            </div>
+            <p className="text-gray-600 text-sm">
+              View and manage your life roles and their associated tasks and relationships
+            </p>
+            <div className="mt-4 text-sm text-gray-500">
+              {roles.length} active role{roles.length !== 1 ? 's' : ''}
+            </div>
+          </button>
+
+          {/* Deposit Ideas Box */}
+          <button
+            onClick={() => setSelectedSection('deposits')}
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow text-left group"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                <Plus className="h-6 w-6 text-green-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-green-600">Deposit Ideas</h2>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Authentic deposits to invest in your key relationships
+            </p>
+            <div className="mt-4 text-sm text-gray-500">
+              {depositIdeas.length} deposit idea{depositIdeas.length !== 1 ? 's' : ''}
+            </div>
+          </button>
+
+          {/* Key Relationships Box */}
+          <button
+            onClick={() => setSelectedSection('relationships')}
+            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow text-left group"
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                <Heart className="h-6 w-6 text-purple-600" />
+              </div>
+              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600">Key Relationships</h2>
+            </div>
+            <p className="text-gray-600 text-sm">
+              Important people in your life across all your roles
+            </p>
+            <div className="mt-4 text-sm text-gray-500">
+              {relationships.length} relationship{relationships.length !== 1 ? 's' : ''}
+            </div>
+          </button>
+        </div>
       </div>
     </div>
   );
