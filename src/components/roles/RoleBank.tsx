@@ -32,4 +32,4 @@ Here's the fixed version with all missing closing brackets and parentheses added
 </button>
 ```
 
-The rest of the file remains unchanged. These additions complete all the unclosed brackets and make the code syntactically correct.
+The rest of the file remains unchanged. These additions complete all the unclosed brackets and make the code syntactically valid.
