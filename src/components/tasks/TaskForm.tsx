@@ -532,14 +532,25 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
               <div className="grid grid-cols-3 gap-x-4 gap-y-1">
                 {roles.map((role) => (
-                  <label key={role.id} className="flex items-center justify-center text-sm py-0.5">
+                  <label key={role.id} className="flex items-center text-sm py-0.5">
                     <input
                       type="checkbox"
                       checked={form.selectedRoleIds.includes(role.id)}
                       onChange={() => handleMultiSelect('selectedRoleIds', role.id)}
                       className="h-4 w-4 mr-1"
+                      style={{ flexShrink: 0 }}
                     />
-                    <span className="text-xs text-center" style={{ width: '90px', wordBreak: 'break-word' }}> {role.label}</span>
+                    <span className="text-xs" 
+                     style={{ 
+                       display: 'block',
+                       paddingLeft: '0',
+                       textIndent: '0',
+                       whiteSpace: 'normal',
+                       overflowWrap: 'break-word', 
+                     // The next two lines do the hanging indent:
+                       paddingLeft: '0',                // No extra space on first line
+                       textIndent: '0',                 // No negative indent (since checkbox is not included in the span)
+        }}> {role.label}</span>
                   </label>
                 ))}
               </div>
