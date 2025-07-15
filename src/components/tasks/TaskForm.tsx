@@ -531,15 +531,15 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
             <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
               <div className="grid grid-cols-3 gap-x-4 gap-y-1">
-                {roles.map((role, index) => (
-                  <label key={role.id} className="flex flex-col items-center justify-center text-sm py-0.5">
+                {roles.map((role) => (
+                  <label key={role.id} className="flex items-center justify-center text-sm py-0.5">
                     <input
                       type="checkbox"
                       checked={form.selectedRoleIds.includes(role.id)}
                       onChange={() => handleMultiSelect('selectedRoleIds', role.id)}
-                      className="h-4 w-4 mb-1"
+                      className="h-4 w-4 mr-1"
                     />
-                    <span className="text-xs text-center">{role.label}</span>
+                    <span className="text-xs text-center" style={{ width: '90px', wordBreak: 'break-word' }}> {role.label}</span>
                   </label>
                 ))}
               </div>
