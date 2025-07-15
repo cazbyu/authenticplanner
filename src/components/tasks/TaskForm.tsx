@@ -538,7 +538,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <div className="grid grid-cols-7 gap-1">
                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
                       <div key={index} className="text-xs font-medium text-gray-500 text-center py-1">
-                  <div className="flex items-center gap-2">
+                        {day}
                       </div>
                     ))}
                     
@@ -551,7 +551,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                           text-xs p-1 rounded-full text-center transition-colors
                           ${!day.isCurrentMonth 
                             ? 'text-gray-300 hover:bg-gray-50' 
-                      className="w-32 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                            : day.isSelected
                             ? 'bg-blue-600 text-white'
                             : day.isToday
                             ? 'bg-blue-100 text-blue-600 font-medium hover:bg-blue-200'
@@ -563,7 +563,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                       </button>
                     ))}
                   </div>
-                      className="w-44 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                </div>
               )}
             </div>
 
