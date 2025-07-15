@@ -578,7 +578,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           </div>
 
           {/* Key Relationships */}
-          {form.selectedRoleIds.length > 0 && (
+{form.selectedRoleIds.length > 0 && (
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-2">Key Relationships</label>
     <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
@@ -602,6 +602,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
                 <span className="text-xs">{relationship.name}</span>
               </label>
             ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
               </div>
             </div>
           </div>
