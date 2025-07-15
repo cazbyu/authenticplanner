@@ -249,10 +249,10 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     return acc;
   }, {} as Record<string, Role[]>);
 
-  // If a role is selected, show role details
+  // --- INDIVIDUAL ROLE VIEW (with guaranteed scroll) ---
   if (selectedRole) {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-full min-h-0">
         {/* Header */}
         <div className="flex items-center gap-3 p-6 flex-shrink-0">
           <button
@@ -263,9 +263,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           </button>
           <h1 className="text-2xl font-bold text-gray-900">{selectedRole.label}</h1>
         </div>
-
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        {/* Content - scrollable */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-8" style={{ minHeight: 0 }}>
           {/* Current Tasks */}
           <section>
             <div className="flex items-center justify-between mb-4">
@@ -506,7 +505,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     );
   }
 
-  // If a section is selected, show section content
+  // --- ACTIVE ROLES VIEW (unchanged except scroll in grid) ---
   if (selectedSection === 'roles') {
     return (
       <div className="flex flex-col h-full">
@@ -519,8 +518,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           </button>
           <h1 className="text-2xl font-bold text-gray-900">Active Roles</h1>
         </div>
-
-        {/* The key change: Make the grid of roles scrollable */}
         <div className="flex-1 p-6">
           <div className="grid gap-4 grid-cols-3 max-h-[60vh] overflow-y-auto pr-2">
             {roles.length === 0 ? (
@@ -555,16 +552,16 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     );
   }
 
-  // Main three boxes view
+  // --- MAIN LANDING VIEW (three feature boxes and header) ---
   return (
     <div className="flex flex-col h-full">
       <div className="p-6 flex-1 overflow-y-auto">
         <div className="mb-6">
-  <h1 className="text-2xl font-bold text-gray-900 text-center">Role Bank</h1>
-  <p className="text-gray-600 mt-1 text-center">
-    Manage your life roles and authentic deposits
-  </p>
-</div>
+          <h1 className="text-2xl font-bold text-gray-900 text-center">Role Bank</h1>
+          <p className="text-gray-600 mt-1 text-center">
+            Manage your life roles and authentic deposits
+          </p>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Active Roles Box */}
           <button
@@ -628,7 +625,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   );
 };
 
-// Component to handle image display with signed URLs
+// --- SUPPORT COMPONENT ---
 const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relationship }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
 
