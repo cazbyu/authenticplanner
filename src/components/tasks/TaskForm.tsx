@@ -540,17 +540,16 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
                       className="h-4 w-4 mr-1"
                       style={{ flexShrink: 0 }}
                     />
-                    <span className="text-xs" 
-                     style={{ 
-                       display: 'block',
-                       paddingLeft: '0',
-                       textIndent: '0',
-                       whiteSpace: 'normal',
-                       overflowWrap: 'break-word', 
-                     // The next two lines do the hanging indent:
-                       paddingLeft: '0',                // No extra space on first line
-                       textIndent: '0',                 // No negative indent (since checkbox is not included in the span)
-        }}> {role.label}</span>
+                    <span className={
+      "text-xs" +
+      (role.label.length > 15 ? " hanging-indent" : "")
+    }
+                     style={
+      role.label.length > 15
+        ? { display: 'block', paddingLeft: '60px', textIndent: '-60px', whiteSpace: 'normal', overflowWrap: 'break-word' }
+        : { display: 'block', whiteSpace: 'normal', overflowWrap: 'break-word' }
+    }
+  > {role.label}</span>
                   </label>
                 ))}
               </div>
