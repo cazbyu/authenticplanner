@@ -570,11 +570,47 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
                       className="h-4 w-4"
                     />
                     <span className="text-xs">{domain.name}</span>
+
                   </label>
                 ))}
               </div>
             </div>
           </div>
+
+          {/* Key Relationships */}
+{form.selectedRoleIds.length > 0 && (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-2">Key Relationships</label>
+    <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+      {/* Filter relationships for selected roles */}
+      {keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 ? (
+        <div className="text-gray-400 text-sm italic px-2 py-2">
+          No Key Relationships have been selected yet.
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-2">
+          {keyRelationships
+            .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
+            .map(relationship => (
+              <label key={relationship.id} className="flex items-center gap-2 text-sm py-1">
+                <input
+                  type="checkbox"
+                  checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
+                  onChange={() => handleMultiSelect('selectedKeyRelationshipIds', relationship.id)}
+                  className="h-4 w-4"
+                />
+                <span className="text-xs">{relationship.name}</span>
+              </label>
+            ))}
+        </div>
+      )}
+    </div>
+  </div>
+)}
+              </div>
+            </div>
+          </div>
+          )}
 
           {/* Notes */}
           <div>
