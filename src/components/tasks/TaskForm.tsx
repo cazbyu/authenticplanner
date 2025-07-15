@@ -21,7 +21,8 @@ interface FormData {
   urgent?: boolean;
   important?: boolean;
   authenticDeposit?: boolean;
-  twelveWeekGoal?: string;
+  twelveWeekGoalChecked?: boolean;
+  twelveWeekGoalId?: string;
 }
 
 interface Role {
@@ -40,14 +41,17 @@ interface KeyRelationship {
   role_id: string;
 }
 
-// Utility: Calculate duration between start and end time (returns "1 hr 15 min" etc)
+interface TwelveWeekGoal {
+  id: string;
+  name: string;  // Adjust if your field is 'title' instead
+}
+
 function calculateDuration(start: string, end: string): string {
   if (!start || !end) return "";
   const [sh, sm] = start.split(":").map(Number);
   const [eh, em] = end.split(":").map(Number);
   let startMinutes = sh * 60 + sm;
   let endMinutes = eh * 60 + em;
-  // Handle overnight events
   if (endMinutes < startMinutes) endMinutes += 24 * 60;
   const diff = endMinutes - startMinutes;
   const hours = Math.floor(diff / 60);
@@ -57,6 +61,23 @@ function calculateDuration(start: string, end: string): string {
   if (minutes) result += (result ? " " : "") + `${minutes} min`;
   return result || "0 min";
 }
+
+const timeOptions = Array.from({ length: 96 }, (_, i) => {
+  const hours = Math.floor(i / 4);
+  const minutes = (i % 4) * 15;
+  const date = new Date();
+  date.setHours(hours, minutes, 0, 0);
+  const label = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return {
+    value: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+    label,
+  };
+});
+
+const monthNames = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December'
+];
 
 const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType }) => {
   const [form, setForm] = useState<FormData>({
@@ -72,43 +93,23 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
     urgent: false,
     important: false,
     authenticDeposit: false,
-    twelveWeekGoal: ''
+    twelveWeekGoalChecked: false,
+    twelveWeekGoalId: '',
   });
 
   const [roles, setRoles] = useState<Role[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
+  const [twelveWeekGoals, setTwelveWeekGoals] = useState<TwelveWeekGoal[]>([]);
   const [loading, setLoading] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const datePickerRef = useRef<HTMLDivElement>(null);
 
-  // Placeholder for 12-Week Goals dropdown. Replace with real data as needed.
-  const twelveWeekGoals = [
-    { value: '', label: '12-Week Goal' },
-    { value: 'goal1', label: 'Goal 1' },
-    { value: 'goal2', label: 'Goal 2' }
-  ];
-
-  const timeOptions = Array.from({ length: 96 }, (_, i) => {
-  const hours = Math.floor(i / 4);
-  const minutes = (i % 4) * 15;
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-  const label = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-  return {
-    value: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
-    label,
-  };
-});
-
-  const monthNames = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December'
-  ];
-
   useEffect(() => {
     fetchData();
+    fetchTwelveWeekGoals();
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
@@ -117,7 +118,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
         setShowDatePicker(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
@@ -138,6 +138,24 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
       if (relationshipsResponse.data) setKeyRelationships(relationshipsResponse.data);
     } catch (error) {
       console.error('Error fetching data:', error);
+    }
+  };
+
+  // NEW: Fetch only active 12-Week Goals for dropdown
+  const fetchTwelveWeekGoals = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data, error } = await supabase
+        .from('0007-ap-goals_12wk_main')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('active', true);
+      if (error) throw error;
+      setTwelveWeekGoals(data || []);
+    } catch (error) {
+      setTwelveWeekGoals([]);
+      console.error('Error fetching 12-Week Goals:', error);
     }
   };
 
@@ -187,13 +205,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
     });
   };
 
-  const getDaysInMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-  };
-
-  const getFirstDayOfMonth = (date: Date) => {
-    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
-  };
+  // Calendar helpers...
+  const getDaysInMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  const getFirstDayOfMonth = (date: Date) => new Date(date.getFullYear(), date.getMonth(), 1).getDay();
 
   const generateCalendarDays = () => {
     const daysInMonth = getDaysInMonth(calendarDate);
@@ -262,7 +276,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim()) return;
-
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -299,7 +312,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           urgent: form.urgent,
           important: form.important,
           authentic_deposit: form.authenticDeposit,
-          twelve_week_goal: form.twelveWeekGoal
+          twelve_week_goal_id: form.twelveWeekGoalChecked ? form.twelveWeekGoalId : null
         };
 
         const { error } = await supabase
@@ -319,7 +332,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           urgent: form.urgent,
           important: form.important,
           authentic_deposit: form.authenticDeposit,
-          twelve_week_goal: form.twelveWeekGoal
+          twelve_week_goal_id: form.twelveWeekGoalChecked ? form.twelveWeekGoalId : null
         };
 
         const { data: taskResponse, error: taskError } = await supabase
@@ -370,8 +383,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className="bg-gray-50 rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-100 rounded-t-lg">
           <h2 className="text-lg font-semibold text-gray-900">
             Create {formType === 'event' ? 'Event' : 'Task'}
           </h2>
@@ -382,7 +395,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
             <X className="h-5 w-5" />
           </button>
         </div>
-
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Title */}
           <div>
@@ -397,8 +409,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
               placeholder={`Enter ${formType} title...`}
             />
           </div>
-
-          {/* Urgent, Important, Authentic Deposit, 12-Week Goal */}
+          {/* Checkboxes row */}
           <div className="flex flex-wrap items-center gap-4 mb-2">
             <label className="flex items-center gap-1 text-sm">
               <input
@@ -430,127 +441,168 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
               />
               Authentic Deposit
             </label>
-            <select
-              name="twelveWeekGoal"
-              value={form.twelveWeekGoal || ''}
-              onChange={handleChange}
-              className="text-sm border border-gray-300 rounded-md px-2 py-1"
-            >
-              {twelveWeekGoals.map(goal => (
-                <option key={goal.value} value={goal.value}>{goal.label}</option>
-              ))}
-            </select>
+            <label className="flex items-center gap-1 text-sm">
+              <input
+                type="checkbox"
+                name="twelveWeekGoalChecked"
+                checked={form.twelveWeekGoalChecked || false}
+                onChange={handleChange}
+                className="h-4 w-4"
+              />
+              12-Week Goal
+            </label>
           </div>
-
-          {/* Date and Time */}
+          {/* 12-Week Goal Section */}
+          {form.twelveWeekGoalChecked && (
+            <div className="mb-2">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Choose 12-Week Goal</label>
+              <select
+                name="twelveWeekGoalId"
+                value={form.twelveWeekGoalId || ''}
+                onChange={handleChange}
+                className="w-full text-sm border border-gray-300 rounded-md px-2 py-1"
+              >
+                <option value="">Select Goal...</option>
+                {twelveWeekGoals.length === 0 && (
+                  <option value="" disabled>No active goals found</option>
+                )}
+                {twelveWeekGoals.map(goal => (
+                  <option key={goal.id} value={goal.id}>{goal.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+          {/* Date/Time Row */}
           <div className="flex items-center gap-2 mb-2">
-  {/* Date Picker */}
-  <div className="w-48 relative" ref={datePickerRef}>
-    {/* ...date picker code... */}
-  </div>
-
-  {/* Time */}
-  {formType === 'event' ? (
-    <div className="flex items-center gap-1">
-     <div className="flex items-center gap-2 mb-2">
-  {/* Date Picker */}
-  <div className="w-48 relative" ref={datePickerRef}>
-    <button
-      type="button"
-      onClick={() => setShowDatePicker(!showDatePicker)}
-      className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-    >
-      <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-      <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
-      <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
-    </button>
-    {showDatePicker && (
-      <div className="absolute z-10 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 p-3">
-        {/* ...calendar grid code... */}
-      </div>
-    )}
-  </div>
-
-  {/* Time Picker */}
-  <select
-    name="startTime"
-    value={form.startTime}
-    onChange={handleChange}
-    disabled={form.isAllDay}
-    className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-  >
-    {timeOptions.map(time => (
-      <option key={time.value} value={time.value}>{time.label}</option>
-    ))}
-  </select>
-</div>
-
-      {/* Start Time */}
-            <select
-        name="startTime"
-        value={form.startTime}
-        onChange={(e) => {
-          const newStartTime = e.target.value;
-          setForm(prev => ({
-            ...prev,
-            startTime: newStartTime,
-            endTime: calculateEndTime(newStartTime)
-          }));
-        }}
-        disabled={form.isAllDay}
-        className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-      >
-        {timeOptions.map(time => (
-          <option key={time.value} value={time.value}>{time.label}</option>
-        ))}
-      </select>
-      <span className="text-gray-500 px-1">–</span>
-      {/* End Time */}
-      <select
-        name="endTime"
-        value={form.endTime}
-        onChange={handleChange}
-        disabled={form.isAllDay}
-        className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-      >
-        {generateEndTimeOptions(form.startTime).map(option => (
-          <option key={option.value} value={option.value}>
-            {option.label} {option.duration ? `(${option.duration})` : ""}
-          </option>
-        ))}
-      </select>
-    </div>
-  ) : (
-    <div className="flex items-center gap-1">
-      {/* Start Time only */}
-      <select
-        name="startTime"
-        value={form.startTime}
-        onChange={handleChange}
-        disabled={form.isAllDay}
-        className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-      >
-        {timeOptions.map(time => (
-          <option key={time.value} value={time.value}>{time.label}</option>
-        ))}
-      </select>
-    </div>
-  )}
-</div>
-{/* All Day BELOW, own row */}
-<div className="mb-2">
-  <label className="flex items-center gap-2 text-sm">
-    <input
-      type="checkbox"
-      name="isAllDay"
-      checked={form.isAllDay}
-      onChange={handleChange}
-      className="h-4 w-4"
-    />
-    All Day
-  </label>
-</div>
-
+            {/* Date Picker */}
+            <div className="w-48 relative" ref={datePickerRef}>
+              <button
+                type="button"
+                onClick={() => setShowDatePicker(!showDatePicker)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+              >
+                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
+                <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              </button>
+              {showDatePicker && (
+                <div className="absolute z-10 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <button
+                      type="button"
+                      onClick={() => navigateMonth('prev')}
+                      className="text-gray-400 hover:text-gray-700"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="font-medium text-gray-700">
+                      {monthNames[calendarDate.getMonth()]} {calendarDate.getFullYear()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigateMonth('next')}
+                      className="text-gray-400 hover:text-gray-700"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-xs text-gray-500 mb-1">
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                      <span key={day} className="text-center">{day}</span>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {calendarDays.map((day, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`
+                          p-1 rounded-full transition-colors
+                          ${day.isCurrentMonth
+                          ? day.isSelected
+                            ? 'bg-blue-600 text-white'
+                            : day.isToday
+                              ? 'bg-blue-100 text-blue-600'
+                              : 'bg-white text-gray-800 hover:bg-gray-100'
+                          : 'text-gray-300'}
+                        `}
+                        onClick={() => day.isCurrentMonth && handleDateSelect(day.date)}
+                        disabled={!day.isCurrentMonth}
+                      >
+                        {day.date}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+            {/* Time Picker */}
+            {formType === 'event' ? (
+              <div className="flex items-center gap-1">
+                {/* Start Time */}
+                <select
+                  name="startTime"
+                  value={form.startTime}
+                  onChange={(e) => {
+                    const newStartTime = e.target.value;
+                    setForm(prev => ({
+                      ...prev,
+                      startTime: newStartTime,
+                      endTime: calculateEndTime(newStartTime)
+                    }));
+                  }}
+                  disabled={form.isAllDay}
+                  className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                >
+                  {timeOptions.map(time => (
+                    <option key={time.value} value={time.value}>{time.label}</option>
+                  ))}
+                </select>
+                <span className="text-gray-500 px-1">–</span>
+                {/* End Time */}
+                <select
+                  name="endTime"
+                  value={form.endTime}
+                  onChange={handleChange}
+                  disabled={form.isAllDay}
+                  className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                >
+                  {generateEndTimeOptions(form.startTime).map(option => (
+                    <option key={option.value} value={option.value}>
+                      {option.label} {option.duration ? `(${option.duration})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="flex items-center gap-1">
+                <select
+                  name="startTime"
+                  value={form.startTime}
+                  onChange={handleChange}
+                  disabled={form.isAllDay}
+                  className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                >
+                  {timeOptions.map(time => (
+                    <option key={time.value} value={time.value}>{time.label}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+          </div>
+          {/* All Day Row */}
+          <div className="mb-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                name="isAllDay"
+                checked={form.isAllDay}
+                onChange={handleChange}
+                className="h-4 w-4"
+              />
+              All Day
+            </label>
+          </div>
           {/* Roles */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
@@ -580,7 +632,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
               </div>
             </div>
           </div>
-
           {/* Domains */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Domains</label>
@@ -600,7 +651,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
               </div>
             </div>
           </div>
-
           {/* Key Relationships */}
           {form.selectedRoleIds.length > 0 && (
             <div>
@@ -630,7 +680,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
               </div>
             </div>
           )}
-
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
@@ -643,7 +692,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
               placeholder="Add any additional notes..."
             />
           </div>
-
           {/* Submit Button */}
           <div className="flex justify-end gap-2 pt-4">
             <button
