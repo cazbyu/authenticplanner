@@ -147,11 +147,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
       let durationText;
       
       if (durationMinutes < 60) {
-        durationText = `(${durationMinutes} mins)`;
+        durationText = `(${durationMinutes} min${durationMinutes !== 1 ? 's' : ''})`;
       } else {
         const hours = Math.floor(durationMinutes / 60);
         const mins = durationMinutes % 60;
-        durationText = mins === 0 ? `(${hours} hr${hours > 1 ? 's' : ''})` : `(${hours}.${mins/15*25} hrs)`;
+        durationText = mins === 0 ? `(${hours} hr${hours > 1 ? 's' : ''})` : `(${hours}.${mins === 30 ? '5' : mins === 15 ? '25' : '75'} hrs)`;
       }
       
       const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString([], { 
@@ -538,7 +538,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   <div className="grid grid-cols-7 gap-1">
                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
                       <div key={index} className="text-xs font-medium text-gray-500 text-center py-1">
-                        {day}
+                  <div className="flex items-center gap-2">
                       </div>
                     ))}
                     
@@ -551,7 +551,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                           text-xs p-1 rounded-full text-center transition-colors
                           ${!day.isCurrentMonth 
                             ? 'text-gray-300 hover:bg-gray-50' 
-                            : day.isSelected
+                      className="w-32 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
                             ? 'bg-blue-600 text-white'
                             : day.isToday
                             ? 'bg-blue-100 text-blue-600 font-medium hover:bg-blue-200'
@@ -563,7 +563,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                       </button>
                     ))}
                   </div>
-                </div>
+                      className="w-44 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
               )}
             </div>
 
@@ -583,7 +583,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                       }));
                     }}
                     disabled={form.isAllDay}
-                    className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                    className="w-32 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
                   >
                     {timeOptions.map(time => (
                       <option key={time.value} value={time.value}>{time.label}</option>
