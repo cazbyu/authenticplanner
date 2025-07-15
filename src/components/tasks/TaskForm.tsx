@@ -18,6 +18,10 @@ interface FormData {
   selectedDomainIds: string[];
   selectedKeyRelationshipIds: string[];
   notes: string;
+  urgent?: boolean;
+  important?: boolean;
+  authenticDeposit?: boolean;
+  twelveWeekGoal?: string;
 }
 
 interface Role {
@@ -35,6 +39,7 @@ interface KeyRelationship {
   name: string;
   role_id: string;
 }
+
 // Utility: Calculate duration between start and end time (returns "1 hr 15 min" etc)
 function calculateDuration(start: string, end: string): string {
   if (!start || !end) return "";
@@ -63,7 +68,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
     selectedRoleIds: [],
     selectedDomainIds: [],
     selectedKeyRelationshipIds: [],
-    notes: ''
+    notes: '',
+    urgent: false,
+    important: false,
+    authenticDeposit: false,
+    twelveWeekGoal: ''
   });
 
   const [roles, setRoles] = useState<Role[]>([]);
@@ -73,6 +82,13 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [calendarDate, setCalendarDate] = useState(new Date());
   const datePickerRef = useRef<HTMLDivElement>(null);
+
+  // Placeholder for 12-Week Goals dropdown. Replace with real data as needed.
+  const twelveWeekGoals = [
+    { value: '', label: '12-Week Goal' },
+    { value: 'goal1', label: 'Goal 1' },
+    { value: 'goal2', label: 'Goal 2' }
+  ];
 
   const timeOptions = [
     { value: '00:00', label: '12:00 AM' },
@@ -166,7 +182,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
-    
     if (type === 'checkbox') {
       const checked = (e.target as HTMLInputElement).checked;
       setForm(prev => ({ ...prev, [name]: checked }));
@@ -196,15 +211,18 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
 
   const generateEndTimeOptions = (startTime: string) => {
     const startIndex = timeOptions.findIndex(option => option.value === startTime);
-    return timeOptions.slice(startIndex + 1);
+    return timeOptions.slice(startIndex + 1).map(option => ({
+      ...option,
+      duration: calculateDuration(startTime, option.value)
+    }));
   };
 
   const formatDateDisplay = (dateString: string): string => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
     });
   };
 
@@ -220,10 +238,10 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
     const daysInMonth = getDaysInMonth(calendarDate);
     const firstDay = getFirstDayOfMonth(calendarDate);
     const days = [];
-    
+
     const prevMonth = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 0);
     const daysInPrevMonth = prevMonth.getDate();
-    
+
     for (let i = firstDay - 1; i >= 0; i--) {
       days.push({
         date: daysInPrevMonth - i,
@@ -232,10 +250,10 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
         isToday: false
       });
     }
-    
+
     const today = new Date();
     const selectedDate = new Date(form.dueDate);
-    
+
     for (let day = 1; day <= daysInMonth; day++) {
       const currentDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
       days.push({
@@ -245,7 +263,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
         isToday: currentDate.toDateString() === today.toDateString()
       });
     }
-    
+
     const remainingDays = 42 - days.length;
     for (let day = 1; day <= remainingDays; day++) {
       days.push({
@@ -255,7 +273,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
         isToday: false
       });
     }
-    
+
     return days;
   };
 
@@ -316,7 +334,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           start_time: form.isAllDay ? new Date(form.dueDate).toISOString() : startDateTime,
           end_time: form.isAllDay ? null : endTime,
           all_day: form.isAllDay,
-          description: form.notes || null
+          description: form.notes || null,
+          urgent: form.urgent,
+          important: form.important,
+          authentic_deposit: form.authenticDeposit,
+          twelve_week_goal: form.twelveWeekGoal
         };
 
         const { error } = await supabase
@@ -332,7 +354,11 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           time: form.isAllDay ? null : form.startTime,
           start_time: startDateTime,
           notes: form.notes || null,
-          status: 'pending'
+          status: 'pending',
+          urgent: form.urgent,
+          important: form.important,
+          authentic_deposit: form.authenticDeposit,
+          twelve_week_goal: form.twelveWeekGoal
         };
 
         const { data: taskResponse, error: taskError } = await supabase
@@ -411,79 +437,183 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
             />
           </div>
 
+          {/* Urgent, Important, Authentic Deposit, 12-Week Goal */}
+          <div className="flex flex-wrap items-center gap-4 mb-2">
+            <label className="flex items-center gap-1 text-sm">
+              <input
+                type="checkbox"
+                name="urgent"
+                checked={form.urgent || false}
+                onChange={handleChange}
+                className="h-4 w-4"
+              />
+              Urgent
+            </label>
+            <label className="flex items-center gap-1 text-sm">
+              <input
+                type="checkbox"
+                name="important"
+                checked={form.important || false}
+                onChange={handleChange}
+                className="h-4 w-4"
+              />
+              Important
+            </label>
+            <label className="flex items-center gap-1 text-sm">
+              <input
+                type="checkbox"
+                name="authenticDeposit"
+                checked={form.authenticDeposit || false}
+                onChange={handleChange}
+                className="h-4 w-4"
+              />
+              Authentic Deposit
+            </label>
+            <select
+              name="twelveWeekGoal"
+              value={form.twelveWeekGoal || ''}
+              onChange={handleChange}
+              className="text-sm border border-gray-300 rounded-md px-2 py-1"
+            >
+              {twelveWeekGoals.map(goal => (
+                <option key={goal.value} value={goal.value}>{goal.label}</option>
+              ))}
+            </select>
+          </div>
+
           {/* Date and Time */}
           <div className="flex items-center gap-2 mb-4">
-  {/* Date Picker */}
-  <div className="w-48 relative" ref={datePickerRef}>
-    <button
-      type="button"
-      onClick={() => setShowDatePicker(!showDatePicker)}
-      className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-    >
-      <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-      <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
-      <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
-    </button>
-    {/* ...date picker dropdown... */}
-    {showDatePicker && (
-      {/* Keep your date picker dropdown code here, unchanged */}
-    )}
-  </div>
+            {/* Date Picker */}
+            <div className="w-48 relative" ref={datePickerRef}>
+              <button
+                type="button"
+                onClick={() => setShowDatePicker(!showDatePicker)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+              >
+                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
+                <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+              </button>
+              {showDatePicker && (
+                <div className="absolute z-10 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <button
+                      type="button"
+                      onClick={() => navigateMonth('prev')}
+                      className="text-gray-400 hover:text-gray-700"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="font-medium text-gray-700">
+                      {monthNames[calendarDate.getMonth()]} {calendarDate.getFullYear()}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => navigateMonth('next')}
+                      className="text-gray-400 hover:text-gray-700"
+                    >
+                      <ChevronRight className="w-5 h-5" />
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-7 gap-1 text-xs text-gray-500 mb-1">
+                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                      <span key={day} className="text-center">{day}</span>
+                    ))}
+                  </div>
+                  <div className="grid grid-cols-7 gap-1">
+                    {calendarDays.map((day, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        className={`
+                          p-1 rounded-full transition-colors
+                          ${day.isCurrentMonth
+                          ? day.isSelected
+                            ? 'bg-blue-600 text-white'
+                            : day.isToday
+                              ? 'bg-blue-100 text-blue-600'
+                              : 'bg-white text-gray-800 hover:bg-gray-100'
+                          : 'text-gray-300'}
+                        `}
+                        onClick={() => day.isCurrentMonth && handleDateSelect(day.date)}
+                        disabled={!day.isCurrentMonth}
+                      >
+                        {day.date}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
 
-  {/* Time and All Day */}
-  <div className="flex flex-col items-center gap-1">
-  <div className="flex items-center gap-1">
-    {/* Start Time */}
-    <select
-      name="startTime"
-      value={form.startTime}
-      onChange={(e) => {
-        const newStartTime = e.target.value;
-        setForm(prev => ({
-          ...prev,
-          startTime: newStartTime,
-          endTime: calculateEndTime(newStartTime)
-        }));
-      }}
-      disabled={form.isAllDay}
-      className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-    >
-      {timeOptions.map(time => (
-        <option key={time.value} value={time.value}>{time.label}</option>
-      ))}
-    </select>
-    {/* End Time */}
-    <span className="text-gray-500 px-1">–</span>
-    <select
-      name="endTime"
-      value={form.endTime}
-      onChange={handleChange}
-      disabled={form.isAllDay}
-      className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-    >
-      {generateEndTimeOptions(form.startTime).map(time => (
-        <option key={time.value} value={time.value}>{time.label}</option>
-      ))}
-    </select>
-    {/* Duration */}
-    <span className="ml-2 text-xs text-gray-400">
-      {form.startTime && form.endTime ? `(${calculateDuration(form.startTime, form.endTime)})` : ""}
-    </span>
-  </div>
-  {/* All Day BELOW times */}
-  <label className="flex items-center gap-2 text-sm mt-1">
-    <input
-      type="checkbox"
-      name="isAllDay"
-      checked={form.isAllDay}
-      onChange={handleChange}
-      className="h-4 w-4"
-    />
-    All Day
-  </label>
-</div>
-
-</div>
+            {/* Time and All Day */}
+            <div className="flex flex-col items-center gap-1">
+              {formType === 'event' ? (
+                <div className="flex items-center gap-1">
+                  {/* Start Time */}
+                  <select
+                    name="startTime"
+                    value={form.startTime}
+                    onChange={(e) => {
+                      const newStartTime = e.target.value;
+                      setForm(prev => ({
+                        ...prev,
+                        startTime: newStartTime,
+                        endTime: calculateEndTime(newStartTime)
+                      }));
+                    }}
+                    disabled={form.isAllDay}
+                    className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                  >
+                    {timeOptions.map(time => (
+                      <option key={time.value} value={time.value}>{time.label}</option>
+                    ))}
+                  </select>
+                  <span className="text-gray-500 px-1">–</span>
+                  {/* End Time */}
+                  <select
+                    name="endTime"
+                    value={form.endTime}
+                    onChange={handleChange}
+                    disabled={form.isAllDay}
+                    className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                  >
+                    {generateEndTimeOptions(form.startTime).map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label} {option.duration ? `(${option.duration})` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  {/* Start Time (for task, no end time) */}
+                  <select
+                    name="startTime"
+                    value={form.startTime}
+                    onChange={handleChange}
+                    disabled={form.isAllDay}
+                    className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                  >
+                    {timeOptions.map(time => (
+                      <option key={time.value} value={time.value}>{time.label}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {/* All Day BELOW times */}
+              <label className="flex items-center gap-2 text-sm mt-1">
+                <input
+                  type="checkbox"
+                  name="isAllDay"
+                  checked={form.isAllDay}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                All Day
+              </label>
+            </div>
+          </div>
 
           {/* Roles */}
           <div>
@@ -500,15 +630,15 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
                       style={{ flexShrink: 0 }}
                     />
                     <span className={
-      "text-xs" +
-      (role.label.length > 15 ? " hanging-indent" : "")
-    }
-                     style={
-      role.label.length > 15
-        ? { display: 'block', paddingLeft: '12px', textIndent: '-12px', whiteSpace: 'normal', overflowWrap: 'break-word' }
-        : { display: 'block', whiteSpace: 'normal', overflowWrap: 'break-word' }
-    }
-  > {role.label}</span>
+                      "text-xs" +
+                      (role.label.length > 15 ? " hanging-indent" : "")
+                    }
+                      style={
+                        role.label.length > 15
+                          ? { display: 'block', paddingLeft: '12px', textIndent: '-12px', whiteSpace: 'normal', overflowWrap: 'break-word' }
+                          : { display: 'block', whiteSpace: 'normal', overflowWrap: 'break-word' }
+                      }
+                    > {role.label}</span>
                   </label>
                 ))}
               </div>
@@ -529,7 +659,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
                       className="h-4 w-4"
                     />
                     <span className="text-xs">{domain.name}</span>
-
                   </label>
                 ))}
               </div>
@@ -537,36 +666,35 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           </div>
 
           {/* Key Relationships */}
-{form.selectedRoleIds.length > 0 && (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-2">Key Relationships</label>
-    <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-      {/* Filter relationships for selected roles */}
-      {keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 ? (
-        <div className="text-gray-400 text-sm italic px-2 py-2">
-          No Key Relationships have been selected yet.
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          {keyRelationships
-            .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
-            .map(relationship => (
-              <label key={relationship.id} className="flex items-center gap-2 text-sm py-1">
-                <input
-                  type="checkbox"
-                  checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
-                  onChange={() => handleMultiSelect('selectedKeyRelationshipIds', relationship.id)}
-                  className="h-4 w-4"
-                />
-                <span className="text-xs">{relationship.name}</span>
-              </label>
-            ))}
-        </div>
-      )}
-    </div>
-  </div>
-)}
-             
+          {form.selectedRoleIds.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Key Relationships</label>
+              <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
+                {keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 ? (
+                  <div className="text-gray-400 text-sm italic px-2 py-2">
+                    No Key Relationships have been selected yet.
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 gap-2">
+                    {keyRelationships
+                      .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
+                      .map(relationship => (
+                        <label key={relationship.id} className="flex items-center gap-2 text-sm py-1">
+                          <input
+                            type="checkbox"
+                            checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
+                            onChange={() => handleMultiSelect('selectedKeyRelationshipIds', relationship.id)}
+                            className="h-4 w-4"
+                          />
+                          <span className="text-xs">{relationship.name}</span>
+                        </label>
+                      ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
