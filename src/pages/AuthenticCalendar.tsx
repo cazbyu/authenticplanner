@@ -465,7 +465,7 @@ const AuthenticCalendar: React.FC = () => {
         {/* Main Content */}
         <main className="h-[calc(100vh-73px)] flex">
           {/* Unscheduled Priorities Sidebar */}
-          {sidebarOpen && (
+          {sidebarOpen && activeView === 'calendar' && (
             <div 
               ref={sidebarRef}
               className="border-r border-gray-200 bg-white flex-shrink-0 relative"
@@ -513,7 +513,7 @@ const AuthenticCalendar: React.FC = () => {
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col">
             {/* Show sidebar toggle when closed */}
-            {!sidebarOpen && (
+            {!sidebarOpen && activeView === 'calendar' && (
               <div className="p-2 border-b border-gray-200 bg-white">
                 <button
                   onClick={() => setSidebarOpen(true)}
@@ -539,7 +539,7 @@ const AuthenticCalendar: React.FC = () => {
               ) : (
                 <div className="h-full p-4">
                   <TaskQuadrants
-                    tasks={tasks}
+                    tasks={tasks} // This will include ALL tasks (scheduled and unscheduled)
                     setTasks={setTasks}
                     roles={roles}
                     domains={domains}
