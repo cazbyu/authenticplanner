@@ -530,7 +530,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-              <div className="grid grid-cols-3 gap-x-4 gap-y-0.5">
+              <div className="grid grid-cols-3 gap-x-3 gap-y-0.5">
                 {roles.map((role) => (
                   <label key={role.id} className="flex items-center text-sm py-0.5 min-h-[28px]">
                     <input
