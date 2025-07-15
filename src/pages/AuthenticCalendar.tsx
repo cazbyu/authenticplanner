@@ -51,6 +51,9 @@ interface Domain {
 
 const AuthenticCalendar: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskType, setTaskType] = useState<'task' | 'event'>('task');
+  const [showTaskTypeMenu, setShowTaskTypeMenu] = useState(false);
+  const [taskTypeMenuPosition, setTaskTypeMenuPosition] = useState({ top: 0, left: 0 });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -499,11 +502,14 @@ const AuthenticCalendar: React.FC = () => {
           {/* Right Section */}
           <div className="flex items-center space-x-2">
             <button
-              onClick={() => setShowTaskForm(true)}
-              className="flex items-center px-3 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              onClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                setTaskTypeMenuPosition({ top: rect.bottom, left: rect.left });
+                setShowTaskTypeMenu(!showTaskTypeMenu);
+              }}
+              className="flex items-center justify-center w-10 h-10 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
             >
-              <Plus className="h-4 w-4 mr-1" />
-              Add Task
+              <Plus className="h-5 w-5" />
             </button>
           </div>
         </header>
@@ -720,12 +726,48 @@ const AuthenticCalendar: React.FC = () => {
       </AnimatePresence>
 
       {/* TaskForm Modal */}
+      {showTaskTypeMenu && (
+        <>
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setShowTaskTypeMenu(false)}
+          />
+          <div 
+            className="fixed z-50 bg-white rounded-md shadow-lg py-1 border border-gray-200"
+            style={{ top: taskTypeMenuPosition.top + 5, left: taskTypeMenuPosition.left }}
+          >
+            <button
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+              onClick={() => {
+                setTaskType('event');
+                setShowTaskTypeMenu(false);
+                setShowTaskForm(true);
+              }}
+            >
+              Event
+            </button>
+            <button
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+              onClick={() => {
+                setTaskType('task');
+                setShowTaskTypeMenu(false);
+                setShowTaskForm(true);
+              }}
+            >
+              Task
+            </button>
+          </div>
+        </>
+      )}
+
+      {/* Task/Event Form Modal */}
       {showTaskForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl">
             <TaskForm 
               onClose={() => setShowTaskForm(false)}
-              onTaskCreated={handleTaskCreated} 
+              onTaskCreated={handleTaskCreated}
+              formType={taskType}
             />
           </div>
         </div>

@@ -6,6 +6,7 @@ import { Calendar, Clock, ChevronDown, ChevronLeft, ChevronRight, X, Check } fro
 interface TaskFormProps {
   onClose: () => void;
   onTaskCreated: () => void;
+  formType?: 'task' | 'event';
   initialFormData?: {
     selectedRoleIds?: string[];
   };
@@ -42,6 +43,7 @@ interface TaskFormData {
   selectedTwelveWeekGoal: string;
   dueDate: string;
   startTime: string;
+  endTime: string;
   isAllDay: boolean;
   selectedRoleIds: string[];
   selectedDomainIds: string[];
@@ -52,6 +54,7 @@ interface TaskFormData {
 const TaskForm: React.FC<TaskFormProps> = ({
   onClose,
   onTaskCreated,
+  formType = 'task',
   initialFormData,
 }) => {
   const [form, setForm] = useState<TaskFormData>({
@@ -63,6 +66,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     selectedTwelveWeekGoal: "",
     dueDate: new Date().toISOString().split('T')[0],
     startTime: getDefaultTime(),
+    endTime: "",
     isAllDay: false,
     selectedRoleIds: initialFormData?.selectedRoleIds || [],
     selectedDomainIds: [],
@@ -308,6 +312,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
       const startTimeUTC = form.isAllDay ? null : convertToUTC(form.dueDate, form.startTime);
       const endTimeFormatted = form.isAllDay ? null : convertToTimeFormat(form.startTime);
 
+      // For events, also handle end time
+      const endTimeUTC = (formType === 'event' && !form.isAllDay && form.endTime) 
+        ? convertToUTC(form.dueDate, form.endTime) 
+        : null;
+
       const taskData = {
         user_id: userData.user.id,
         title: form.title.trim(),
@@ -318,6 +327,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
         due_date: form.dueDate,
         start_time: startTimeUTC,
         end_time: endTimeFormatted,
+        end_time: formType === 'event' && form.endTime ? convertToTimeFormat(form.endTime) : endTimeFormatted,
         notes: form.notes.trim() || null,
         status: "pending" as const,
       };
@@ -402,7 +412,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-4 border-b">
-          <h2 className="text-lg font-semibold">Create New Task</h2>
+          <h2 className="text-lg font-semibold">Create New {formType === 'event' ? 'Event' : 'Task'}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 text-xl font-bold"
@@ -468,25 +478,48 @@ const TaskForm: React.FC<TaskFormProps> = ({
                 />
                 <select
                   name="selectedTwelveWeekGoal"
-                  value={form.selectedTwelveWeekGoal}
-                  onChange={handleChange}
-                  disabled={!form.isTwelveWeekGoal}
-                  className="text-sm border border-gray-300 rounded px-2 py-1 disabled:bg-gray-100"
-                >
-                  <option value="">12-Week Goal</option>
-                  {twelveWeekGoals.map(goal => (
-                    <option key={goal.id} value={goal.id}>
-                      {goal.title}
-                    </option>
-                  ))}
-                </select>
+              <div>
+                <div className="flex gap-2 mb-1">
+                  <div className="relative">
+                    <select
+                      name="startTime"
+                      value={form.startTime}
+                      onChange={handleChange}
+                      disabled={form.isAllDay}
+                      className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none pr-8"
+                    >
+                      {timeOptions.map(time => (
+                        <option key={time.value} value={time.value}>{time.label}</option>
+                      ))}
+                    </select>
+                    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  </div>
+                  
+                  {formType === 'event' && (
+                    <div className="relative">
+                      <select
+                        name="endTime"
+                        value={form.endTime}
+                        onChange={handleChange}
+                        disabled={form.isAllDay}
+                        className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none pr-8"
+                      >
+                        <option value="">End time</option>
+                        {timeOptions.map(time => (
+                          <option key={time.value} value={time.value}>{time.label}</option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Date and Time Section */}
             <div className="grid grid-cols-2 gap-4">
               {/* Date Picker */}
-              <div className="relative w-full" ref={datePickerRef}>
+              <div className="relative w-48" ref={datePickerRef}>
                 <button
                   type="button"
                   onClick={() => {
