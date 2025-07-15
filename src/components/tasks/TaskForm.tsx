@@ -280,7 +280,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const generateTimeOptions = () => {
     const times = [];
     for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
+      for (let minute = 0; minute < 60; minute += 15) {
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString([], { 
           hour: 'numeric', 
@@ -293,6 +293,55 @@ const TaskForm: React.FC<TaskFormProps> = ({
     return times;
   };
 
+  const generateEndTimeOptions = (startTime: string) => {
+    if (!startTime) return [];
+    
+    const [startHour, startMinute] = startTime.split(':').map(Number);
+    const startDate = new Date();
+    startDate.setHours(startHour, startMinute, 0, 0);
+    
+    const times = [];
+    const endDate = new Date(startDate);
+    
+    // Start 15 minutes after start time
+    endDate.setMinutes(endDate.getMinutes() + 15);
+    
+    // Generate options for the next 12 hours
+    for (let i = 0; i < 48; i++) { // 48 x 15min = 12 hours
+      const hour = endDate.getHours();
+      const minute = endDate.getMinutes();
+      const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+      
+      // Calculate duration
+      const durationMs = endDate.getTime() - startDate.getTime();
+      const durationMinutes = Math.floor(durationMs / 60000);
+      let durationText;
+      
+      if (durationMinutes < 60) {
+        durationText = `(${durationMinutes} mins)`;
+      } else {
+        const hours = Math.floor(durationMinutes / 60);
+        const mins = durationMinutes % 60;
+        durationText = mins === 0 ? `(${hours} hr${hours > 1 ? 's' : ''})` : `(${hours}.${mins/15*25} hrs)`;
+      }
+      
+      const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString([], { 
+        hour: 'numeric', 
+        minute: '2-digit',
+        hour12: true 
+      });
+      
+      times.push({ 
+        value: timeString, 
+        label: `${displayTime} ${durationText}` 
+      });
+      
+      // Increment by 15 minutes
+      endDate.setMinutes(endDate.getMinutes() + 15);
+    }
+    
+    return times;
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.title.trim()) {
@@ -547,7 +596,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                           className={`
                             text-xs p-1 rounded-full text-center transition-colors
                             ${!day.isCurrentMonth 
-                              ? 'text-gray-300 hover:bg-gray-50' 
+                      className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
                               : day.isSelected
                               ? 'bg-blue-600 text-white'
                               : day.isToday
@@ -559,20 +608,20 @@ const TaskForm: React.FC<TaskFormProps> = ({
                           {day.date}
                         </button>
                       ))}
-                    </div>
+                      className="w-40 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
                   </div>
-                )}
-              </div>
+                      {generateEndTimeOptions(form.startTime).map(time => (
+                        <option key={time.value} value={time.value}>{time.label}</option>
 
               {/* Time and All Day */}
               <div className="flex flex-col gap-1">
                 <div className="relative w-full">
-                  <select
+                  <div className="flex items-center gap-2 w-full">
                     name="startTime"
                     value={form.startTime}
                     onChange={handleChange}
                     disabled={form.isAllDay}
-                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none pr-8"
+                    className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
                   >
                     {timeOptions.map(time => (
                       <option key={time.value} value={time.value}>{time.label}</option>
