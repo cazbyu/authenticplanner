@@ -484,9 +484,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             {/* Date and Time Section */}
-            <div className="grid grid-cols-5 gap-2">
+            <div className="flex items-center gap-2">
               {/* Date Picker */}
-              <div className="col-span-3 relative" ref={datePickerRef}>
+              <div className="relative flex-1" ref={datePickerRef}>
                 <button
                   type="button"
                   onClick={() => {
@@ -495,11 +495,11 @@ const TaskForm: React.FC<TaskFormProps> = ({
                       setCalendarDate(new Date(form.dueDate));
                     }
                   }}
-                  className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
-                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                   <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
-                  <ChevronDown className="h-4 w-4 text-gray-400 ml-auto" />
+                  <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
                 </button>
                 
                 {showDatePicker && (
@@ -559,25 +559,25 @@ const TaskForm: React.FC<TaskFormProps> = ({
               </div>
 
               {/* Time and All Day */}
-              <div className="col-span-2 space-y-2">
+              <div className="flex-1 flex flex-col gap-1">
                 <select
                   name="startTime"
                   value={form.startTime}
                   onChange={handleChange}
                   disabled={form.isAllDay}
-                  className="w-full text-xs border border-gray-300 rounded-md px-2 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100"
+                  className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
                 >
                   {timeOptions.map(time => (
                     <option key={time.value} value={time.value}>{time.label}</option>
                   ))}
                 </select>
-                <label className="flex items-center gap-2 text-xs">
+                <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
                     name="isAllDay"
                     checked={form.isAllDay}
                     onChange={handleChange}
-                    className="h-3 w-3"
+                    className="h-4 w-4"
                   />
                   All Day
                 </label>
