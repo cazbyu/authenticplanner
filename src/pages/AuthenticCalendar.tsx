@@ -13,49 +13,8 @@ import type { FullCalendar } from '@fullcalendar/core';
 import logo from '../assets/logo.svg';
 import { supabase } from '../supabaseClient';
 
-  // Enable external dragging for FullCalendar
-  useEffect(() => {
-    // Initialize external dragging for FullCalendar
-    const initializeExternalDragging = () => {
-      if (typeof window !== 'undefined' && window.FullCalendar) {
-        const { Draggable } = window.FullCalendar;
-        
-        // Initialize draggable for task cards
-        const taskCards = document.querySelectorAll('[data-task-id]');
-        taskCards.forEach(card => {
-          if (!card.classList.contains('fc-draggable-initialized')) {
-            new Draggable(card, {
-              eventData: function(eventEl) {
-                const taskId = eventEl.getAttribute('data-task-id');
-                const title = eventEl.textContent?.split('\n')[0] || 'Task';
-                return {
-                  id: taskId,
-                  title: title,
-                  duration: '01:00' // Default 1 hour duration
-                };
-              }
-            });
-            card.classList.add('fc-draggable-initialized');
-          }
-        });
-      }
-    };
 
-    // Initialize after a short delay to ensure DOM is ready
-    const timer = setTimeout(initializeExternalDragging, 100);
-    
-    // Re-initialize when tasks change
-    const observer = new MutationObserver(initializeExternalDragging);
-    const sidebarElement = document.querySelector('[data-task-id]')?.closest('.overflow-hidden');
-    if (sidebarElement) {
-      observer.observe(sidebarElement, { childList: true, subtree: true });
-    }
 
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-    };
-  }, [tasks, activeView]);
 // Import drawer content components
 import RoleBank from '../components/roles/RoleBank';
 import StrategicGoals from '../pages/StrategicGoals';
@@ -110,6 +69,50 @@ const AuthenticCalendar: React.FC = () => {
   const calendarRef = useRef<FullCalendar | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
+
+  // Enable external dragging for FullCalendar
+  useEffect(() => {
+    // Initialize external dragging for FullCalendar
+    const initializeExternalDragging = () => {
+      if (typeof window !== 'undefined' && window.FullCalendar) {
+        const { Draggable } = window.FullCalendar;
+        
+        // Initialize draggable for task cards
+        const taskCards = document.querySelectorAll('[data-task-id]');
+        taskCards.forEach(card => {
+          if (!card.classList.contains('fc-draggable-initialized')) {
+            new Draggable(card, {
+              eventData: function(eventEl) {
+                const taskId = eventEl.getAttribute('data-task-id');
+                const title = eventEl.textContent?.split('\n')[0] || 'Task';
+                return {
+                  id: taskId,
+                  title: title,
+                  duration: '01:00' // Default 1 hour duration
+                };
+              }
+            });
+            card.classList.add('fc-draggable-initialized');
+          }
+        });
+      }
+    };
+
+    // Initialize after a short delay to ensure DOM is ready
+    const timer = setTimeout(initializeExternalDragging, 100);
+    
+    // Re-initialize when tasks change
+    const observer = new MutationObserver(initializeExternalDragging);
+    const sidebarElement = document.querySelector('[data-task-id]')?.closest('.overflow-hidden');
+    if (sidebarElement) {
+      observer.observe(sidebarElement, { childList: true, subtree: true });
+    }
+
+    return () => {
+      clearTimeout(timer);
+      observer.disconnect();
+    };
+  }, [tasks, activeView]);
 
   // Fetch all task data
   useEffect(() => {
