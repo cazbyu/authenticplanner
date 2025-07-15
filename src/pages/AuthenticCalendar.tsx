@@ -489,6 +489,7 @@ const AuthenticCalendar: React.FC = () => {
                   <DragDropContext onDragEnd={() => {}}>
                     <UnscheduledPriorities
                       viewMode={sidebarOpen ? 'quadrant' : 'list'}
+                      viewMode={sidebarOpen ? 'quadrant' : 'list'}
                       tasks={tasks}
                       setTasks={setTasks}
                       roles={roles}

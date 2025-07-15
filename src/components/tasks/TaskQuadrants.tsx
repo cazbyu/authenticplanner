@@ -61,7 +61,7 @@ interface TaskQuadrantsProps {
 type SortOption = 'priority' | 'due_date' | 'delegated';
 
 const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, domains, loading }) => {
-  const [sortBy, setSortBy] = useState<SortOption>('priority');
+  const [sortBy, setSortBy] = useState<'priority' | 'due_date' | 'delegated' | 'completed'>('priority');
   const [delegatedTasks, setDelegatedTasks] = useState<Task[]>([]);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
@@ -136,7 +136,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     setEditingTask(null);
     // Refresh both task lists
     if (sortBy === 'delegated') {
-      fetchDelegatedTasks();
+      fetchFilteredTasks();
     }
     // The parent component will handle refreshing the main tasks via refreshTrigger
   };
@@ -153,12 +153,12 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     }
   };
 
-  const fetchDelegatedTasks = async () => {
+  const fetchFilteredTasks = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('0007-ap-tasks')
         .select(`
           id,
@@ -170,29 +170,39 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           priority,
           notes,
           created_at,
+          completed_at,
           delegated_to_contact_id,
           delegates:delegated_to_contact_id(name, email),
           0007-ap-task_roles(role_id, 0007-ap-roles:role_id(label))
         `)
-        .eq('user_id', user.id)
-        .eq('status', 'delegated')
-        .is('completed_at', null)
-        .order('due_date', { ascending: true });
+        .eq('user_id', user.id);
+        
+      if (sortBy === 'delegated') {
+        query = query.eq('status', 'delegated').is('completed_at', null);
+      } else if (sortBy === 'completed') {
+        query = query.eq('status', 'completed').not('completed_at', 'is', null);
+      }
+      
+      query = query.order('due_date', { ascending: true });
+      
+      const { data, error } = await query;
 
       if (error) {
-        console.error('Error fetching delegated tasks:', error);
+        console.error(`Error fetching ${sortBy} tasks:`, error);
         return;
       }
 
-      setDelegatedTasks(data || []);
+      if (sortBy === 'delegated' || sortBy === 'completed') {
+        setDelegatedTasks(data || []);
+      }
     } catch (error) {
-      console.error('Error fetching delegated tasks:', error);
+      console.error(`Error fetching ${sortBy} tasks:`, error);
     }
   };
 
   useEffect(() => {
-    if (sortBy === 'delegated') {
-      fetchDelegatedTasks();
+    if (sortBy === 'delegated' || sortBy === 'completed') {
+      fetchFilteredTasks();
     }
   }, [sortBy]);
 
@@ -218,6 +228,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           return a.title.localeCompare(b.title);
         });
       case 'delegated':
+      case 'completed':
         return delegatedTasks;
       case 'priority':
       default:
@@ -381,17 +392,20 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 bg-white">
         <h1 className="text-2xl font-bold text-gray-900">Task Priorities</h1>
-        <div className="flex items-center space-x-2">
-          <span className="text-sm text-gray-600">Sort by:</span>
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
-            className="border border-gray-300 rounded-md px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="priority">Priority</option>
-            <option value="due_date">Due Date</option>
-            <option value="delegated">Delegated</option>
-          </select>
+        <div className="flex items-center">
+          <div className="relative">
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as 'priority' | 'due_date' | 'delegated' | 'completed')}
+              className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="priority">Sort: Priority</option>
+              <option value="due_date">Sort: Due Date</option>
+              <option value="delegated">Sort: Delegated</option>
+              <option value="completed">Sort: Completed</option>
+            </select>
+            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+          </div>
         </div>
       </div>
 

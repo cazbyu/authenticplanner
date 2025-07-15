@@ -175,18 +175,18 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           }}
           views={{
             dayGridMonth: {
-              firstDay: 0,
+              firstDay: 0, // Start week on Sunday
               fixedWeekCount: false,
               showNonCurrentDates: true,
             },
             timeGridWeek: {
-              firstDay: 0,
+              firstDay: 0, // Start week on Sunday
               slotDuration: '00:30:00',
               slotLabelInterval: '01:00',
             },
             timeGridDay: {
               dayCount: 1,
-              firstDay: 0,
+              firstDay: 0, // Start week on Sunday
               slotDuration: '00:30:00',
               slotLabelInterval: '01:00',
             },
