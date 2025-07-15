@@ -185,9 +185,9 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
   const formatDateDisplay = (dateString: string): string => {
     const date = new Date(dateString);
     return date.toLocaleDateString('en-US', { 
-      weekday: 'short', 
       month: 'short', 
-      day: 'numeric' 
+      day: 'numeric', 
+      year: 'numeric' 
     });
   };
 
