@@ -251,9 +251,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   // If a role is selected, show role details
   if (selectedRole) {
     return (
-      <div className="h-full flex flex-col overflow-hidden" style={{ height: '100vh' }}>
+      <div className="flex flex-col h-full">
         {/* Header */}
-        <div className="flex items-center gap-3 p-6">
+        <div className="flex items-center gap-3 p-6 flex-shrink-0">
           <button
             onClick={() => setSelectedRole(null)}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -264,7 +264,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8" style={{ height: 'calc(100vh - 100px)' }}>
+        <div className="flex-1 overflow-y-auto p-6 space-y-8">
           {/* Current Tasks */}
           <section>
             <div className="flex items-center justify-between mb-4">
@@ -508,8 +508,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   // If a section is selected, show section content
   if (selectedSection === 'roles') {
     return (
-      <div className="h-full flex flex-col overflow-hidden" style={{ height: '100vh' }}>
-        <div className="flex items-center gap-3 p-6">
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-3 p-6 flex-shrink-0">
           <button
             onClick={handleBack}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -519,7 +519,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <h1 className="text-2xl font-bold text-gray-900">Active Roles</h1>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-6" style={{ height: 'calc(100vh - 100px)' }}>
+        <div className="flex-1 overflow-y-auto p-6">
           {roles.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-500 mb-4">No active roles found</div>
@@ -555,8 +555,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
   // Main three boxes view
   return (
-    <div className="h-full flex flex-col overflow-hidden" style={{ height: '100vh', overflowY: 'auto' }}>
-      <div className="p-6">
+    <div className="flex flex-col h-full">
+      <div className="p-6 flex-1 overflow-y-auto">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Active Roles Box */}
           <button
