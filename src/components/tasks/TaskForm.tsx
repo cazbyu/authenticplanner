@@ -396,135 +396,84 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
 
           {/* Date and Time */}
           <div className="flex items-center gap-2">
-            {/* Date Picker */}
-            <div className="w-36 relative" ref={datePickerRef}>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
-              <button
-                type="button"
-                onClick={() => setShowDatePicker(!showDatePicker)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
-              >
-                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
-                <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
-              </button>
-              
-              {showDatePicker && (
-                <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2 w-56">
-                  <div className="flex items-center justify-between mb-3">
-                    <button
-                      type="button"
-                      onClick={() => navigateMonth('prev')}
-                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <ChevronLeft className="h-4 w-4 text-gray-600" />
-                    </button>
-                    
-                    <h3 className="text-xs font-medium text-gray-900">
-                      {monthNames[calendarDate.getMonth()]} {calendarDate.getFullYear()}
-                    </h3>
-                    
-                    <button
-                      type="button"
-                      onClick={() => navigateMonth('next')}
-                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                    >
-                      <ChevronRight className="h-4 w-4 text-gray-600" />
-                    </button>
-                  </div>
+  {/* Date Picker */}
+  <div className="w-36 relative" ref={datePickerRef}>
+    <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+    <button
+      type="button"
+      onClick={() => setShowDatePicker(!showDatePicker)}
+      className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+    >
+      <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+      <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
+      <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+    </button>
+    {/* ...date picker dropdown... */}
+    {showDatePicker && (
+      // (Keep your date picker dropdown code here, unchanged)
+    )}
+  </div>
 
-                  <div className="grid grid-cols-7 gap-1">
-                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
-                      <div key={index} className="text-xs font-medium text-gray-500 text-center py-1">
-                        {day}
-                      </div>
-                    ))}
-                    
-                    {calendarDays.map((day, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => handleDateSelect(day.date)}
-                        className={`
-                          text-xs p-1 rounded-full text-center transition-colors
-                          ${!day.isCurrentMonth 
-                            ? 'text-gray-300 hover:bg-gray-50' 
-                            : day.isSelected
-                            ? 'bg-blue-600 text-white'
-                            : day.isToday
-                            ? 'bg-blue-100 text-blue-600 font-medium hover:bg-blue-200'
-                            : 'text-gray-700 hover:bg-gray-100'
-                          }
-                        `}
-                      >
-                        {day.date}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Time and All Day */}
-            <div className="flex flex-col gap-1 relative">
-              {formType === 'event' ? (
-                <div className="flex items-center gap-1 w-full">
-                  <select
-                    name="startTime"
-                    value={form.startTime}
-                    onChange={(e) => {
-                      const newStartTime = e.target.value;
-                      setForm(prev => ({
-                        ...prev,
-                        startTime: newStartTime,
-                        endTime: calculateEndTime(newStartTime)
-                      }));
-                    }}
-                    disabled={form.isAllDay}
-                    className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                  >
-                    {timeOptions.map(time => (
-                      <option key={time.value} value={time.value}>{time.label}</option>
-                    ))}
-                  </select>
-                  <span className="text-gray-500 px-1">–</span>
-                  <select
-                    name="endTime"
-                    value={form.endTime}
-                    onChange={handleChange}
-                    disabled={form.isAllDay}
-                    className="w-36 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                  >
-                    {generateEndTimeOptions(form.startTime).map(time => (
-                      <option key={time.value} value={time.value}>{time.label}</option>
-                    ))}
-                  </select>
-                </div>
-              ) : (
-                <select
-                  name="startTime"
-                  value={form.startTime}
-                  onChange={handleChange}
-                  disabled={form.isAllDay}
-                  className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                >
-                  {timeOptions.map(time => (
-                    <option key={time.value} value={time.value}>{time.label}</option>
-                  ))}
-                </select>
-              )}
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="isAllDay"
-                  checked={form.isAllDay}
-                  onChange={handleChange}
-                  className="h-4 w-4"
-                />
-                All Day
-              </label>
-            </div>
-          </div>
+  {/* Time and All Day */}
+  <div className="w-48 flex items-center gap-1">
+    {formType === 'event' ? (
+      <div className="flex items-center gap-1 w-full">
+        <select
+          name="startTime"
+          value={form.startTime}
+          onChange={(e) => {
+            const newStartTime = e.target.value;
+            setForm(prev => ({
+              ...prev,
+              startTime: newStartTime,
+              endTime: calculateEndTime(newStartTime)
+            }));
+          }}
+          disabled={form.isAllDay}
+          className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+        >
+          {timeOptions.map(time => (
+            <option key={time.value} value={time.value}>{time.label}</option>
+          ))}
+        </select>
+        <span className="text-gray-500 px-1">–</span>
+        <select
+          name="endTime"
+          value={form.endTime}
+          onChange={handleChange}
+          disabled={form.isAllDay}
+          className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+        >
+          {generateEndTimeOptions(form.startTime).map(time => (
+            <option key={time.value} value={time.value}>{time.label}</option>
+          ))}
+        </select>
+      </div>
+    ) : (
+      <select
+        name="startTime"
+        value={form.startTime}
+        onChange={handleChange}
+        disabled={form.isAllDay}
+        className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+      >
+        {timeOptions.map(time => (
+          <option key={time.value} value={time.value}>{time.label}</option>
+        ))}
+      </select>
+    )}
+    <label className="flex items-center gap-2 text-sm ml-2">
+      <input
+        type="checkbox"
+        name="isAllDay"
+        checked={form.isAllDay}
+        onChange={handleChange}
+        className="h-4 w-4"
+      />
+      All Day
+    </label>
+  </div>
+</div>
 
           {/* Roles */}
           <div>
