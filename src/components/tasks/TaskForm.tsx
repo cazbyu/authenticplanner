@@ -478,41 +478,16 @@ const TaskForm: React.FC<TaskFormProps> = ({
                 />
                 <select
                   name="selectedTwelveWeekGoal"
-              <div>
-                <div className="flex gap-2 mb-1">
-                  <div className="relative">
-                    <select
-                      name="startTime"
-                      value={form.startTime}
-                      onChange={handleChange}
-                      disabled={form.isAllDay}
-                      className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none pr-8"
-                    >
-                      {timeOptions.map(time => (
-                        <option key={time.value} value={time.value}>{time.label}</option>
-                      ))}
-                    </select>
-                    <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                  </div>
-                  
-                  {formType === 'event' && (
-                    <div className="relative">
-                      <select
-                        name="endTime"
-                        value={form.endTime}
-                        onChange={handleChange}
-                        disabled={form.isAllDay}
-                        className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none pr-8"
-                      >
-                        <option value="">End time</option>
-                        {timeOptions.map(time => (
-                          <option key={time.value} value={time.value}>{time.label}</option>
-                        ))}
-                      </select>
-                      <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                    </div>
-                  )}
-                </div>
+                  value={form.selectedTwelveWeekGoal}
+                  onChange={handleChange}
+                  disabled={!form.isTwelveWeekGoal}
+                  className="flex-1 text-sm border border-gray-300 rounded-md px-2 py-1 disabled:bg-gray-100"
+                >
+                  <option value="">Select Goal</option>
+                  {twelveWeekGoals.map(goal => (
+                    <option key={goal.id} value={goal.id}>{goal.title}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
