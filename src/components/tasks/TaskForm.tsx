@@ -414,64 +414,25 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
   </div>
 
   {/* Time and All Day */}
-  <div className="w-48 flex items-center gap-1">
-    {formType === 'event' ? (
-      <div className="flex items-center ml-2">
-        <select
-          name="startTime"
-          value={form.startTime}
-          onChange={(e) => {
-            const newStartTime = e.target.value;
-            setForm(prev => ({
-              ...prev,
-              startTime: newStartTime,
-              endTime: calculateEndTime(newStartTime)
-            }));
-          }}
-          disabled={form.isAllDay}
-          className="w-24 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-        >
-          {timeOptions.map(time => (
-            <option key={time.value} value={time.value}>{time.label}</option>
-          ))}
-        </select>
-        <span className="text-gray-500 px-1">–</span>
-        <select
-          name="endTime"
-          value={form.endTime}
-          onChange={handleChange}
-          disabled={form.isAllDay}
-          className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-        >
-          {generateEndTimeOptions(form.startTime).map(time => (
-            <option key={time.value} value={time.value}>{time.label}</option>
-          ))}
-        </select>
-      </div>
-    ) : (
-      <select
-        name="startTime"
-        value={form.startTime}
-        onChange={handleChange}
-        disabled={form.isAllDay}
-        className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-      >
-        {timeOptions.map(time => (
-          <option key={time.value} value={time.value}>{time.label}</option>
-        ))}
-      </select>
-    )}
-    <label className="flex items-center gap-2 text-sm mt-1">
-      <input
-        type="checkbox"
-        name="isAllDay"
-        checked={form.isAllDay}
-        onChange={handleChange}
-        className="h-4 w-4"
-      />
-      All Day
-    </label>
-  </div>
+  <div className="flex flex-col items-start gap-1">
+  <input
+    type="time"
+    value={form.startTime}
+    onChange={handleChange}
+    disabled={form.isAllDay}
+    className="w-24 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+  />
+  <label className="flex items-center gap-2 text-sm">
+    <input
+      type="checkbox"
+      name="isAllDay"
+      checked={form.isAllDay}
+      onChange={handleChange}
+      className="h-4 w-4"
+    />
+    All Day
+  </label>
+</div>
 </div>
 
           {/* Roles */}
