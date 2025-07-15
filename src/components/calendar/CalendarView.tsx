@@ -130,6 +130,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             border-width: 6px 0 6px 8px;
             margin-top: -6px;
           }
+          .fc-scroller {
+            overflow-y: auto !important;
+            height: auto !important;
+          }
+          .fc-timegrid-body {
+            min-height: 100% !important;
+          }
           .fc-col-header-cell { padding: 0; background: #fff; }
           .fc-col-header-cell.fc-day-today { background: transparent !important; }
           .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
@@ -159,11 +166,11 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           dayMaxEvents={true}
           weekends={true}
           eventClick={handleEventClick}
-          height="100%"
+          height="auto"
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
-          allDaySlot={false}
-          scrollTime={format(new Date(), 'HH:mm:ss')}
+          allDaySlot={true}
+          scrollTime="06:00:00"
           nowIndicator={true}
           slotDuration="00:30:00"
           slotLabelInterval="01:00"
@@ -183,12 +190,16 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               firstDay: 0, // Start week on Sunday
               slotDuration: '00:30:00',
               slotLabelInterval: '01:00',
+              scrollTime: format(new Date(), 'HH:mm:ss'),
+              allDaySlot: true,
             },
             timeGridDay: {
               dayCount: 1,
               firstDay: 0, // Start week on Sunday
               slotDuration: '00:30:00',
               slotLabelInterval: '01:00',
+              scrollTime: format(new Date(), 'HH:mm:ss'),
+              allDaySlot: true,
             },
           }}
           datesSet={handleDatesSet}
