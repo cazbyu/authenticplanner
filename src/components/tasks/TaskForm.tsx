@@ -201,12 +201,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   const formatDateDisplay = (dateStr: string) => {
     if (!dateStr) return 'Select date';
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric',
-      year: 'numeric'
-    });
+    try {
+      const date = new Date(dateStr);
+      return `${date.toLocaleDateString('en-US', { month: 'short' })} ${date.getDate()}, ${date.getFullYear()}`;
+    } catch (e) {
+      return dateStr;
+    }
   };
 
   const navigateMonth = (direction: 'prev' | 'next') => {
@@ -484,9 +484,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             {/* Date and Time Section */}
-            <div className="flex items-center gap-2">
+            <div className="grid grid-cols-2 gap-4">
               {/* Date Picker */}
-              <div className="relative flex-1" ref={datePickerRef}>
+              <div className="relative w-full" ref={datePickerRef}>
                 <button
                   type="button"
                   onClick={() => {
@@ -559,18 +559,21 @@ const TaskForm: React.FC<TaskFormProps> = ({
               </div>
 
               {/* Time and All Day */}
-              <div className="flex-1 flex flex-col gap-1">
-                <select
-                  name="startTime"
-                  value={form.startTime}
-                  onChange={handleChange}
-                  disabled={form.isAllDay}
-                  className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                >
-                  {timeOptions.map(time => (
-                    <option key={time.value} value={time.value}>{time.label}</option>
-                  ))}
-                </select>
+              <div className="flex flex-col gap-1">
+                <div className="relative w-full">
+                  <select
+                    name="startTime"
+                    value={form.startTime}
+                    onChange={handleChange}
+                    disabled={form.isAllDay}
+                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none pr-8"
+                  >
+                    {timeOptions.map(time => (
+                      <option key={time.value} value={time.value}>{time.label}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                </div>
                 <label className="flex items-center gap-2 text-sm">
                   <input
                     type="checkbox"
