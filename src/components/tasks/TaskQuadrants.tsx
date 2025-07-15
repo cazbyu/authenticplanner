@@ -403,7 +403,6 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
               <option value="due_date">Sort: Due Date</option>
               <option value="delegated">Sort: Delegated</option>
               <option value="completed">Sort: Completed</option>
-              <option value="completed">Sort: Completed</option>
             </select>
             <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
           </div>
