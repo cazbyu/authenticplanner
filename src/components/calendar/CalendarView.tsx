@@ -111,7 +111,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         <style>
           {`
           .fc { height: 100% !important; font-family: inherit; }
-          .fc-view-harness { height: 100% !important; }
+          .fc-view-harness { height: 100% !important; overflow: hidden !important; }
+          .fc-view-harness-active { height: 100% !important; overflow: hidden !important; }
           .fc-scrollgrid-sync-inner { padding: 8px 0; }
           .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
           .fc-timegrid-slot { height: 48px !important; border-bottom: 1px solid #f3f4f6 !important; }
@@ -130,12 +131,29 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             border-width: 6px 0 6px 8px;
             margin-top: -6px;
           }
-          .fc-scroller {
-            overflow-y: auto !important;
+          .fc-scroller { 
+            overflow-y: auto !important; 
+            overflow-x: hidden !important;
+            height: 100% !important;
+            max-height: calc(100vh - 200px) !important;
+          }
+          .fc-timegrid-body { 
+            min-height: 100% !important; 
+            overflow: visible !important;
+          }
+          .fc-timegrid-container {
+            height: 100% !important;
+            overflow: visible !important;
+          }
+          .fc-timegrid-slots {
             height: auto !important;
           }
-          .fc-timegrid-body {
-            min-height: 100% !important;
+          .fc-scrollgrid-section-body > td {
+            overflow: visible !important;
+          }
+          .fc-scrollgrid-section-body .fc-scroller {
+            overflow-y: auto !important;
+            height: 100% !important;
           }
           .fc-col-header-cell { padding: 0; background: #fff; }
           .fc-col-header-cell.fc-day-today { background: transparent !important; }
@@ -157,7 +175,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
           initialView={view}
           headerToolbar={false} // We handle navigation in parent
-          height="auto"
+          height="100%"
           events={events}
           editable={true}
           droppable={true}
@@ -166,14 +184,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           dayMaxEvents={true}
           weekends={true}
           eventClick={handleEventClick}
-          height="auto"
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={true}
-          scrollTime="06:00:00"
+          scrollTime={format(new Date(), 'HH:mm:ss')}
           nowIndicator={true}
           slotDuration="00:30:00"
           slotLabelInterval="01:00"
+          expandRows={true}
+          stickyHeaderDates={true}
           slotLabelFormat={{
             hour: 'numeric',
             minute: '2-digit',
@@ -192,6 +211,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotLabelInterval: '01:00',
               scrollTime: format(new Date(), 'HH:mm:ss'),
               allDaySlot: true,
+              expandRows: true,
             },
             timeGridDay: {
               dayCount: 1,
@@ -200,6 +220,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotLabelInterval: '01:00',
               scrollTime: format(new Date(), 'HH:mm:ss'),
               allDaySlot: true,
+              expandRows: true,
             },
           }}
           datesSet={handleDatesSet}

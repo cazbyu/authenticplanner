@@ -527,7 +527,7 @@ const AuthenticCalendar: React.FC = () => {
             )}
             
             {/* Content */}
-            <div className="flex-1">
+            <div className="flex-1 overflow-hidden">
               {activeView === 'calendar' ? (
                 <CalendarView
                   ref={calendarRef}
@@ -537,7 +537,7 @@ const AuthenticCalendar: React.FC = () => {
                   refreshTrigger={refreshTrigger}
                 />
               ) : (
-                <div className="h-full p-4">
+                <div className="h-full overflow-hidden">
                   <TaskQuadrants
                     tasks={tasks} // This will include ALL tasks (scheduled and unscheduled)
                     setTasks={setTasks}
