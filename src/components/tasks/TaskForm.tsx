@@ -416,7 +416,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
   {/* Time and All Day */}
   <div className="w-48 flex items-center gap-1">
     {formType === 'event' ? (
-      <div className="flex items-center gap-1 w-full">
+      <div className="flex items-center ml-2">
         <select
           name="startTime"
           value={form.startTime}
