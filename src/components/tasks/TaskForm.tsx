@@ -452,8 +452,41 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
   {/* Time */}
   {formType === 'event' ? (
     <div className="flex items-center gap-1">
+     <div className="flex items-center gap-2 mb-2">
+  {/* Date Picker */}
+  <div className="w-48 relative" ref={datePickerRef}>
+    <button
+      type="button"
+      onClick={() => setShowDatePicker(!showDatePicker)}
+      className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+    >
+      <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+      <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
+      <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />
+    </button>
+    {showDatePicker && (
+      <div className="absolute z-10 mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 p-3">
+        {/* ...calendar grid code... */}
+      </div>
+    )}
+  </div>
+
+  {/* Time Picker */}
+  <select
+    name="startTime"
+    value={form.startTime}
+    onChange={handleChange}
+    disabled={form.isAllDay}
+    className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+  >
+    {timeOptions.map(time => (
+      <option key={time.value} value={time.value}>{time.label}</option>
+    ))}
+  </select>
+</div>
+
       {/* Start Time */}
-      <select
+            <select
         name="startTime"
         value={form.startTime}
         onChange={(e) => {
