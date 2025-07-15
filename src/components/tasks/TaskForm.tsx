@@ -570,47 +570,43 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
                       className="h-4 w-4"
                     />
                     <span className="text-xs">{domain.name}</span>
-
-                  </label>
-                ))}
-              </div>
-            </div>
+          {/* Notes */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <textarea
+              name="notes"
+              value={form.notes}
+              onChange={handleChange}
+              rows={3}
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder="Add any additional notes..."
+            />
           </div>
 
-          {/* Key Relationships */}
-{form.selectedRoleIds.length > 0 && (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-2">Key Relationships</label>
-    <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-      {keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 ? (
-        <div className="text-gray-400 text-sm italic px-2 py-2">
-          No Key Relationships have been selected yet.
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 gap-2">
-          {keyRelationships
-            .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
-            .map(relationship => (
-              <label key={relationship.id} className="flex items-center gap-2 text-sm py-1">
-                <input
-                  type="checkbox"
-                  checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
-                  onChange={() => handleMultiSelect('selectedKeyRelationshipIds', relationship.id)}
-                  className="h-4 w-4"
-                />
-                <span className="text-xs">{relationship.name}</span>
-              </label>
-            ))}
-        </div>
-      )}
+          {/* Submit Button */}
+          <div className="flex justify-end gap-2 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+            >
+              {loading ? 'Creating...' : `Create ${formType === 'event' ? 'Event' : 'Task'}`}
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
-)}
+  );
+};
 
-              </div>
-            </div>
-          </div>
-          )}
+export default TaskForm;
 
           {/* Notes */}
           <div>
