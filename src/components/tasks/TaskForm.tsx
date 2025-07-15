@@ -195,7 +195,6 @@ const TaskForm: React.FC<TaskFormProps> = ({
     if (!dateStr) return 'Select date';
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { 
-      weekday: 'short',
       month: 'short', 
       day: 'numeric',
       year: 'numeric'
@@ -520,7 +519,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     </div>
 
                     <div className="grid grid-cols-7 gap-1">
-                      {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
                         <div key={day} className="text-xs font-medium text-gray-500 text-center py-1">
                           {day}
                         </div>
