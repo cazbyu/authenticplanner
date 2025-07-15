@@ -83,7 +83,15 @@ const TaskForm: React.FC<TaskFormProps> = ({
 
   function getDefaultTime(): string {
     const now = new Date();
+    // Add 30 minutes and round up to nearest 30-minute slot
     now.setMinutes(now.getMinutes() + 30);
+    const minutes = now.getMinutes();
+    const roundedMinutes = minutes <= 30 ? 30 : 60;
+    now.setMinutes(roundedMinutes);
+    if (roundedMinutes === 60) {
+      now.setHours(now.getHours() + 1);
+      now.setMinutes(0);
+    }
     return now.toTimeString().slice(0, 5);
   }
 
@@ -259,7 +267,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
   const generateTimeOptions = () => {
     const times = [];
     for (let hour = 0; hour < 24; hour++) {
-      for (let minute = 0; minute < 60; minute += 15) {
+      for (let minute = 0; minute < 60; minute += 30) {
         const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
         const displayTime = new Date(`2000-01-01T${timeString}`).toLocaleTimeString([], { 
           hour: 'numeric', 
@@ -476,9 +484,9 @@ const TaskForm: React.FC<TaskFormProps> = ({
             </div>
 
             {/* Date and Time Section */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-5 gap-2">
               {/* Date Picker */}
-              <div className="col-span-2 relative" ref={datePickerRef}>
+              <div className="col-span-3 relative" ref={datePickerRef}>
                 <button
                   type="button"
                   onClick={() => {
@@ -490,12 +498,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 >
                   <Calendar className="h-4 w-4 text-gray-500" />
-                  <span className="text-gray-700">{formatDateDisplay(form.dueDate)}</span>
+                  <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
                   <ChevronDown className="h-4 w-4 text-gray-400 ml-auto" />
                 </button>
                 
                 {showDatePicker && (
-                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-3 w-64">
+                  <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 p-2 w-56">
                     <div className="flex items-center justify-between mb-3">
                       <button
                         type="button"
@@ -505,7 +513,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                         <ChevronLeft className="h-4 w-4 text-gray-600" />
                       </button>
                       
-                      <h3 className="text-sm font-medium text-gray-900">
+                      <h3 className="text-xs font-medium text-gray-900">
                         {monthNames[calendarDate.getMonth()]} {calendarDate.getFullYear()}
                       </h3>
                       
@@ -519,8 +527,8 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     </div>
 
                     <div className="grid grid-cols-7 gap-1">
-                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(day => (
-                        <div key={day} className="text-xs font-medium text-gray-500 text-center py-1">
+                      {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, index) => (
+                        <div key={index} className="text-xs font-medium text-gray-500 text-center py-1">
                           {day}
                         </div>
                       ))}
@@ -531,7 +539,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                           type="button"
                           onClick={() => handleDateSelect(day.date)}
                           className={`
-                            text-xs p-1.5 rounded-full text-center transition-colors
+                            text-xs p-1 rounded-full text-center transition-colors
                             ${!day.isCurrentMonth 
                               ? 'text-gray-300 hover:bg-gray-50' 
                               : day.isSelected
@@ -546,27 +554,12 @@ const TaskForm: React.FC<TaskFormProps> = ({
                         </button>
                       ))}
                     </div>
-
-                    <div className="mt-3 pt-2 border-t border-gray-100">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const today = new Date();
-                          const todayString = today.toISOString().split('T')[0];
-                          setForm(prev => ({ ...prev, dueDate: todayString }));
-                          setShowDatePicker(false);
-                        }}
-                        className="text-xs text-blue-600 hover:text-blue-700 font-medium"
-                      >
-                        Today
-                      </button>
-                    </div>
                   </div>
                 )}
               </div>
 
               {/* Time and All Day */}
-              <div className="space-y-2">
+              <div className="col-span-2 space-y-2">
                 <select
                   name="startTime"
                   value={form.startTime}
