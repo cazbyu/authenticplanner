@@ -297,7 +297,7 @@ const TaskEditModal: React.FC<TaskEditModalProps> = ({ taskId, onClose, onTaskUp
               value={form.title}
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
-              placeholder="Enter task title"
+              placeholder="Add title"
               required
             />
           </div>
