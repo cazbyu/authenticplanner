@@ -582,7 +582,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
   <div>
     <label className="block text-sm font-medium text-gray-700 mb-2">Key Relationships</label>
     <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-      {/* Filter relationships for selected roles */}
       {keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 ? (
         <div className="text-gray-400 text-sm italic px-2 py-2">
           No Key Relationships have been selected yet.
@@ -607,6 +606,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
     </div>
   </div>
 )}
+
               </div>
             </div>
           </div>
