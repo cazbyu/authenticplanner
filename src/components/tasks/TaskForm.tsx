@@ -530,7 +530,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {roles.map((role, index) => (
                   <label key={role.id} className="flex items-center gap-2 text-sm py-1">
                     <input
@@ -550,7 +550,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Domains</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 {domains.map(domain => (
                   <label key={domain.id} className="flex items-center gap-2 text-sm py-1">
                     <input
