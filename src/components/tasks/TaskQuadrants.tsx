@@ -391,7 +391,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-        <h1 className="text-2xl font-bold text-gray-900">Task Priorities</h1>
+        <h1 className="text-2xl font-bold text-gray-900">All Task Priorities</h1>
         <div className="flex items-center">
           <div className="relative">
             <select
@@ -413,59 +413,51 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       {/* Content Area */}
       <div className="flex-1 overflow-hidden">
         {sortBy === 'priority' ? (
-          /* Priority Quadrant View */
-          <div className="h-full grid grid-cols-2 gap-4 p-4 overflow-y-auto">
-            {/* Top Left - Urgent & Important */}
-            <div className="h-full">
-              <QuadrantSection
-                id="urgent-important"
-                title="Urgent & Important"
-                tasks={urgentImportant}
-                bgColor="bg-red-500"
-                textColor="text-white"
-                borderColor="border-l-red-500"
-                icon={<AlertTriangle className="h-4 w-4" />}
-              />
-            </div>
-
-            {/* Top Right - Not Urgent & Important */}
-            <div className="h-full">
-              <QuadrantSection
-                id="not-urgent-important"
-                title="Not Urgent & Important"
-                tasks={notUrgentImportant}
-                bgColor="bg-green-500"
-                textColor="text-white"
-                borderColor="border-l-green-500"
-                icon={<Check className="h-4 w-4" />}
-              />
-            </div>
-
-            {/* Bottom Left - Urgent & Not Important */}
-            <div className="h-full">
-              <QuadrantSection
-                id="urgent-not-important"
-                title="Urgent & Not Important"
-                tasks={urgentNotImportant}
-                bgColor="bg-orange-500"
-                textColor="text-white"
-                borderColor="border-l-orange-500"
-                icon={<Clock className="h-4 w-4" />}
-              />
-            </div>
-
-            {/* Bottom Right - Not Urgent & Not Important */}
-            <div className="h-full">
-              <QuadrantSection
-                id="not-urgent-not-important"
-                title="Not Urgent & Not Important"
-                tasks={notUrgentNotImportant}
-                bgColor="bg-gray-500"
-                textColor="text-white"
-                borderColor="border-l-gray-500"
-                icon={<X className="h-4 w-4" />}
-              />
-            </div>
+          /* Priority Quadrant View - Vertical Layout */
+          <div className="h-full p-4 overflow-y-auto space-y-4">
+            {/* Urgent & Important */}
+            <QuadrantSection
+              id="urgent-important"
+              title="Urgent & Important"
+              tasks={urgentImportant}
+              bgColor="bg-red-500"
+              textColor="text-white"
+              borderColor="border-l-red-500"
+              icon={<AlertTriangle className="h-4 w-4" />}
+            />
+            
+            {/* Not Urgent & Important */}
+            <QuadrantSection
+              id="not-urgent-important"
+              title="Not Urgent & Important"
+              tasks={notUrgentImportant}
+              bgColor="bg-green-500"
+              textColor="text-white"
+              borderColor="border-l-green-500"
+              icon={<Check className="h-4 w-4" />}
+            />
+            
+            {/* Urgent & Not Important */}
+            <QuadrantSection
+              id="urgent-not-important"
+              title="Urgent & Not Important"
+              tasks={urgentNotImportant}
+              bgColor="bg-orange-500"
+              textColor="text-white"
+              borderColor="border-l-orange-500"
+              icon={<Clock className="h-4 w-4" />}
+            />
+            
+            {/* Not Urgent & Not Important */}
+            <QuadrantSection
+              id="not-urgent-not-important"
+              title="Not Urgent & Not Important"
+              tasks={notUrgentNotImportant}
+              bgColor="bg-gray-500"
+              textColor="text-white"
+              borderColor="border-l-gray-500"
+              icon={<X className="h-4 w-4" />}
+            />
           </div>
         ) : (
           /* List View for Due Date and Delegated */
