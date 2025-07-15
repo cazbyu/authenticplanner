@@ -96,7 +96,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const fetchRoleData = async (roleId: string) => {
     try {
       setLoading(true);
-      
+
       // Fetch tasks for this role using the many-to-many relationship
       const { data: tasksData, error: tasksError } = await supabase
         .from('0007-ap-tasks')
@@ -177,7 +177,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       if (!user) return;
 
       let updates: any = {};
-      
+
       if (action === 'complete') {
         updates.completed_at = new Date().toISOString();
         updates.status = 'completed';
@@ -223,6 +223,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       fetchRoleData(selectedRole.id);
     }
   };
+
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
     setSelectedSection(null);
@@ -269,7 +270,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Current Tasks</h2>
-              <button 
+              <button
                 onClick={handleAddTask}
                 className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
               >
@@ -349,7 +350,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             ) : (
               <div className="text-center py-8 text-gray-500">
                 <div className="text-gray-400 mb-2">No current tasks for this role</div>
-                <button 
+                <button
                   onClick={handleAddTask}
                   className="text-primary-600 hover:text-primary-700 font-medium text-sm"
                 >
@@ -496,7 +497,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               <EditTask
                 task={editingTask}
                 onTaskUpdated={handleTaskUpdated}
-                onCancel={handleEditCancel}
+                onCancel={() => setEditingTask(null)}
               />
             </div>
           </div>
@@ -518,18 +519,19 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           </button>
           <h1 className="text-2xl font-bold text-gray-900">Active Roles</h1>
         </div>
-        
-        <div className="flex-1 overflow-y-auto p-6">
-          {roles.length === 0 ? (
-            <div className="text-center py-12">
-              <div className="text-gray-500 mb-4">No active roles found</div>
-              <p className="text-sm text-gray-400">
-                Add roles in Settings to get started with your Role Bank
-              </p>
-            </div>
-          ) : (
-            <div className="grid gap-4 grid-cols-3">
-              {roles.map((role) => (
+
+        {/* The key change: Make the grid of roles scrollable */}
+        <div className="flex-1 p-6">
+          <div className="grid gap-4 grid-cols-3 max-h-[60vh] overflow-y-auto pr-2">
+            {roles.length === 0 ? (
+              <div className="text-center py-12 col-span-3">
+                <div className="text-gray-500 mb-4">No active roles found</div>
+                <p className="text-sm text-gray-400">
+                  Add roles in Settings to get started with your Role Bank
+                </p>
+              </div>
+            ) : (
+              roles.map((role) => (
                 <button
                   key={role.id}
                   onClick={() => handleRoleSelect(role)}
@@ -545,9 +547,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                     </div>
                   </div>
                 </button>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
       </div>
     );
@@ -623,7 +625,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 // Component to handle image display with signed URLs
 const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relationship }) => {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
-  
+
   useEffect(() => {
     const loadImage = async () => {
       if (relationship.image_path) {
@@ -633,10 +635,10 @@ const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relati
         }
       }
     };
-    
+
     loadImage();
   }, [relationship.image_path]);
-  
+
   if (imageUrl) {
     return (
       <div className="flex-shrink-0">
@@ -648,7 +650,7 @@ const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relati
       </div>
     );
   }
-  
+
   return (
     <div className="flex-shrink-0">
       <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
