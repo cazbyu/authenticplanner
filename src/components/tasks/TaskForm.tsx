@@ -504,7 +504,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     setCalendarDate(new Date(form.dueDate));
                   }
                 }}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                className="w-36 flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500"
               >
                 <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
@@ -570,7 +570,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
             {/* Time and All Day */}
             <div className="flex flex-col gap-1 relative">
               {formType === 'event' ? (
-                <div className="flex items-center gap-2 w-full">
+                <div className="flex items-center gap-1 w-full">
                   <select
                     name="startTime"
                     value={form.startTime}
@@ -583,7 +583,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                       }));
                     }}
                     disabled={form.isAllDay}
-                    className="w-32 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                    className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
                   >
                     {timeOptions.map(time => (
                       <option key={time.value} value={time.value}>{time.label}</option>
@@ -595,7 +595,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                     value={form.endTime}
                     onChange={handleChange}
                     disabled={form.isAllDay}
-                    className="w-40 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                    className="w-36 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
                   >
                     {generateEndTimeOptions(form.startTime).map(time => (
                       <option key={time.value} value={time.value}>{time.label}</option>
@@ -632,19 +632,21 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-              {roles.map(role => (
-                <label key={role.id} className="flex items-center gap-2 text-sm py-1">
-                  <input
-                    type="checkbox"
-                    checked={form.selectedRoleIds.includes(role.id)}
-                    onChange={() => handleMultiSelect('selectedRoleIds', role.id)}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
-                    {role.label}
-                  </span>
-                </label>
-              ))}
+              <div className="grid grid-cols-2 gap-2">
+                {roles.map((role, index) => (
+                  <label key={role.id} className="flex items-center gap-2 text-sm py-1">
+                    <input
+                      type="checkbox"
+                      checked={form.selectedRoleIds.includes(role.id)}
+                      onChange={() => handleMultiSelect('selectedRoleIds', role.id)}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-xs px-2 py-1 bg-gray-100 rounded-full">
+                      {role.label}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -652,41 +654,49 @@ const TaskForm: React.FC<TaskFormProps> = ({
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Domains</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-              {domains.map(domain => (
-                <label key={domain.id} className="flex items-center gap-2 text-sm py-1">
-                  <input
-                    type="checkbox"
-                    checked={form.selectedDomainIds.includes(domain.id)}
-                    onChange={() => handleMultiSelect('selectedDomainIds', domain.id)}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-xs px-2 py-1 bg-blue-100 rounded-full">
-                    {domain.name}
-                  </span>
-                </label>
-              ))}
+              <div className="grid grid-cols-2 gap-2">
+                {domains.map(domain => (
+                  <label key={domain.id} className="flex items-center gap-2 text-sm py-1">
+                    <input
+                      type="checkbox"
+                      checked={form.selectedDomainIds.includes(domain.id)}
+                      onChange={() => handleMultiSelect('selectedDomainIds', domain.id)}
+                      className="h-4 w-4"
+                    />
+                    <span className="text-xs px-2 py-1 bg-blue-100 rounded-full">
+                      {domain.name}
+                    </span>
+                  </label>
+                ))}
+              </div>
             </div>
           </div>
 
           {/* Key Relationships */}
-          <div>
+          {form.selectedRoleIds.length > 0 && (
+            <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Key Relationships</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-              {keyRelationships.map(relationship => (
-                <label key={relationship.id} className="flex items-center gap-2 text-sm py-1">
-                  <input
-                    type="checkbox"
-                    checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
-                    onChange={() => handleMultiSelect('selectedKeyRelationshipIds', relationship.id)}
-                    className="h-4 w-4"
-                  />
-                  <span className="text-xs px-2 py-1 bg-green-100 rounded-full">
-                    {relationship.name}
-                  </span>
-                </label>
-              ))}
+              <div className="grid grid-cols-2 gap-2">
+                {keyRelationships
+                  .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
+                  .map(relationship => (
+                    <label key={relationship.id} className="flex items-center gap-2 text-sm py-1">
+                      <input
+                        type="checkbox"
+                        checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
+                        onChange={() => handleMultiSelect('selectedKeyRelationshipIds', relationship.id)}
+                        className="h-4 w-4"
+                      />
+                      <span className="text-xs px-2 py-1 bg-green-100 rounded-full">
+                        {relationship.name}
+                      </span>
+                    </label>
+                  ))}
+              </div>
             </div>
           </div>
+          )}
 
           {/* Notes */}
           <div>
