@@ -251,7 +251,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   // If a role is selected, show role details
   if (selectedRole) {
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 p-6 border-b border-gray-200">
           <button
@@ -264,7 +264,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
+        <div className="flex-1 overflow-y-auto p-6 space-y-8" style={{ height: 'calc(100% - 80px)' }}>
           {/* Current Tasks */}
           <section>
             <div className="flex items-center justify-between mb-4">
@@ -508,7 +508,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   // If a section is selected, show section content
   if (selectedSection === 'roles') {
     return (
-      <div className="h-full flex flex-col">
+      <div className="h-full flex flex-col overflow-hidden">
         <div className="flex items-center gap-3 p-6 border-b border-gray-200">
           <button
             onClick={handleBack}
@@ -519,7 +519,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <h1 className="text-2xl font-bold text-gray-900">Active Roles</h1>
         </div>
         
-        <div className="flex-1 overflow-y-auto p-6 max-h-[calc(100vh-150px)]">
+        <div className="flex-1 overflow-y-auto p-6" style={{ height: 'calc(100% - 80px)' }}>
           {roles.length === 0 ? (
             <div className="text-center py-12">
               <div className="text-gray-500 mb-4">No active roles found</div>
@@ -555,7 +555,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
   // Main three boxes view
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-hidden">
       <div className="p-6">
         <h1 className="text-2xl font-bold text-gray-900 mb-6">Role Bank</h1>
         
