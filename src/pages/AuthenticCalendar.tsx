@@ -478,16 +478,17 @@ const AuthenticCalendar: React.FC = () => {
                     <p className="text-sm text-gray-600 mt-1">Drag tasks to calendar to schedule</p>
                   </div>
                   <button
-                    onClick={() => setSidebarOpen(false)}
+                    onClick={() => setSidebarOpen(false)} 
                     className="p-1 hover:bg-gray-100 rounded transition-colors"
                     title="Close sidebar"
                   >
-                    <X className="h-4 w-4 text-gray-500" />
+                    <ChevronLeft className="h-4 w-4 text-gray-500" />
                   </button>
                 </div>
                 <div className="flex-1 overflow-hidden">
                   <DragDropContext onDragEnd={() => {}}>
                     <UnscheduledPriorities
+                      viewMode="quadrant"
                       viewMode={sidebarOpen ? 'quadrant' : 'list'}
                       viewMode={sidebarOpen ? 'quadrant' : 'list'}
                       tasks={tasks}
@@ -519,7 +520,7 @@ const AuthenticCalendar: React.FC = () => {
                   className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
                   title="Show unscheduled priorities"
                 >
-                  <Menu className="h-4 w-4" />
+                  <ChevronRight className="h-4 w-4" />
                   <span>Show Unscheduled Priorities</span>
                 </button>
               </div>
@@ -537,15 +538,13 @@ const AuthenticCalendar: React.FC = () => {
                 />
               ) : (
                 <div className="h-full p-4">
-                  <DragDropContext onDragEnd={() => {}}>
-                    <UnscheduledPriorities
-                      tasks={tasks}
-                      setTasks={setTasks}
-                      roles={roles}
-                      domains={domains}
-                      loading={loading}
-                    />
-                  </DragDropContext>
+                  <TaskQuadrants
+                    tasks={tasks}
+                    setTasks={setTasks}
+                    roles={roles}
+                    domains={domains}
+                    loading={loading}
+                  />
                 </div>
               )}
             </div>
