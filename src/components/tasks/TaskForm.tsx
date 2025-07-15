@@ -461,7 +461,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
         ))}
       </select>
     )}
-    <label className="flex items-center gap-2 text-sm ml-2">
+    <label className="flex items-center gap-2 text-sm mt-1">
       <input
         type="checkbox"
         name="isAllDay"
