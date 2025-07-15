@@ -35,6 +35,23 @@ interface KeyRelationship {
   name: string;
   role_id: string;
 }
+// Utility: Calculate duration between start and end time (returns "1 hr 15 min" etc)
+function calculateDuration(start: string, end: string): string {
+  if (!start || !end) return "";
+  const [sh, sm] = start.split(":").map(Number);
+  const [eh, em] = end.split(":").map(Number);
+  let startMinutes = sh * 60 + sm;
+  let endMinutes = eh * 60 + em;
+  // Handle overnight events
+  if (endMinutes < startMinutes) endMinutes += 24 * 60;
+  const diff = endMinutes - startMinutes;
+  const hours = Math.floor(diff / 60);
+  const minutes = diff % 60;
+  let result = "";
+  if (hours) result += `${hours} hr${hours > 1 ? "s" : ""}`;
+  if (minutes) result += (result ? " " : "") + `${minutes} min`;
+  return result || "0 min";
+}
 
 const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType }) => {
   const [form, setForm] = useState<FormData>({
