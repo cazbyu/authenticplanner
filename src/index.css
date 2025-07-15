@@ -104,6 +104,18 @@ html, body, #root {
   @apply bg-gray-300 rounded-full hover:bg-gray-400;
 }
 
+/* Scrollbar utilities for Tailwind */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+}
+
+.scrollbar-track-gray-100::-webkit-scrollbar-track {
+  background-color: #f3f4f6;
+}
 /* Modern toggle switch */
 .switch {
   position: relative;

@@ -414,7 +414,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       <div className="flex-1 overflow-hidden">
         {sortBy === 'priority' ? (
           /* Priority Quadrant View - Vertical Layout */
-          <div className="h-full p-4 overflow-y-auto">
+          <div className="h-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <div className="grid grid-cols-2 gap-4 h-full">
               {/* Top Row */}
               <div className="flex flex-col">
@@ -472,7 +472,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           </div>
         ) : (
           /* List View for Due Date and Delegated */
-          <div className="h-full overflow-y-auto p-4">
+          <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <div className="space-y-2">
               {sortedTasks.length === 0 ? (
                 <p className="text-gray-500 text-center py-8">
