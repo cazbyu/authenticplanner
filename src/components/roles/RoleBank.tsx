@@ -559,6 +559,12 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   return (
     <div className="flex flex-col h-full">
       <div className="p-6 flex-1 overflow-y-auto">
+        <div className="mb-6">
+  <h1 className="text-2xl font-bold text-gray-900 text-center">Role Bank</h1>
+  <p className="text-gray-600 mt-1 text-center">
+    Manage your life roles and authentic deposits
+  </p>
+</div>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Active Roles Box */}
           <button
