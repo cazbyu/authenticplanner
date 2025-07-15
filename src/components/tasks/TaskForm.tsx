@@ -1,4 +1,408 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Calendar, ChevronDown, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { supabase } from '../../supabaseClient';
 
+interface TaskFormProps {
+  onClose: () => void;
+  onTaskCreated: () => void;
+  formType: 'task' | 'event';
+}
+
+interface FormData {
+  title: string;
+  dueDate: string;
+  startTime: string;
+  endTime: string;
+  isAllDay: boolean;
+  selectedRoleIds: string[];
+  selectedDomainIds: string[];
+  selectedKeyRelationshipIds: string[];
+  notes: string;
+}
+
+interface Role {
+  id: string;
+  label: string;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+}
+
+interface KeyRelationship {
+  id: string;
+  name: string;
+  role_id: string;
+}
+
+const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType }) => {
+  const [form, setForm] = useState<FormData>({
+    title: '',
+    dueDate: new Date().toISOString().split('T')[0],
+    startTime: '09:00',
+    endTime: '10:00',
+    isAllDay: false,
+    selectedRoleIds: [],
+    selectedDomainIds: [],
+    selectedKeyRelationshipIds: [],
+    notes: ''
+  });
+
+  const [roles, setRoles] = useState<Role[]>([]);
+  const [domains, setDomains] = useState<Domain[]>([]);
+  const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calendarDate, setCalendarDate] = useState(new Date());
+  const datePickerRef = useRef<HTMLDivElement>(null);
+
+  const timeOptions = [
+    { value: '00:00', label: '12:00 AM' },
+    { value: '00:30', label: '12:30 AM' },
+    { value: '01:00', label: '1:00 AM' },
+    { value: '01:30', label: '1:30 AM' },
+    { value: '02:00', label: '2:00 AM' },
+    { value: '02:30', label: '2:30 AM' },
+    { value: '03:00', label: '3:00 AM' },
+    { value: '03:30', label: '3:30 AM' },
+    { value: '04:00', label: '4:00 AM' },
+    { value: '04:30', label: '4:30 AM' },
+    { value: '05:00', label: '5:00 AM' },
+    { value: '05:30', label: '5:30 AM' },
+    { value: '06:00', label: '6:00 AM' },
+    { value: '06:30', label: '6:30 AM' },
+    { value: '07:00', label: '7:00 AM' },
+    { value: '07:30', label: '7:30 AM' },
+    { value: '08:00', label: '8:00 AM' },
+    { value: '08:30', label: '8:30 AM' },
+    { value: '09:00', label: '9:00 AM' },
+    { value: '09:30', label: '9:30 AM' },
+    { value: '10:00', label: '10:00 AM' },
+    { value: '10:30', label: '10:30 AM' },
+    { value: '11:00', label: '11:00 AM' },
+    { value: '11:30', label: '11:30 AM' },
+    { value: '12:00', label: '12:00 PM' },
+    { value: '12:30', label: '12:30 PM' },
+    { value: '13:00', label: '1:00 PM' },
+    { value: '13:30', label: '1:30 PM' },
+    { value: '14:00', label: '2:00 PM' },
+    { value: '14:30', label: '2:30 PM' },
+    { value: '15:00', label: '3:00 PM' },
+    { value: '15:30', label: '3:30 PM' },
+    { value: '16:00', label: '4:00 PM' },
+    { value: '16:30', label: '4:30 PM' },
+    { value: '17:00', label: '5:00 PM' },
+    { value: '17:30', label: '5:30 PM' },
+    { value: '18:00', label: '6:00 PM' },
+    { value: '18:30', label: '6:30 PM' },
+    { value: '19:00', label: '7:00 PM' },
+    { value: '19:30', label: '7:30 PM' },
+    { value: '20:00', label: '8:00 PM' },
+    { value: '20:30', label: '8:30 PM' },
+    { value: '21:00', label: '9:00 PM' },
+    { value: '21:30', label: '9:30 PM' },
+    { value: '22:00', label: '10:00 PM' },
+    { value: '22:30', label: '10:30 PM' },
+    { value: '23:00', label: '11:00 PM' },
+    { value: '23:30', label: '11:30 PM' }
+  ];
+
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (datePickerRef.current && !datePickerRef.current.contains(event.target as Node)) {
+        setShowDatePicker(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [rolesResponse, domainsResponse, relationshipsResponse] = await Promise.all([
+        supabase.from('0007-ap-roles').select('*').eq('user_id', user.id).eq('is_active', true),
+        supabase.from('0007-ap-domains').select('*'),
+        supabase.from('0007-ap-key_relationships').select('*').eq('user_id', user.id)
+      ]);
+
+      if (rolesResponse.data) setRoles(rolesResponse.data);
+      if (domainsResponse.data) setDomains(domainsResponse.data);
+      if (relationshipsResponse.data) setKeyRelationships(relationshipsResponse.data);
+    } catch (error) {
+      console.error('Error fetching data:', error);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value, type } = e.target;
+    
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setForm(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }));
+    }
+  };
+
+  const handleMultiSelect = (field: keyof FormData, value: string) => {
+    setForm(prev => {
+      const currentArray = prev[field] as string[];
+      const newArray = currentArray.includes(value)
+        ? currentArray.filter(item => item !== value)
+        : [...currentArray, value];
+      return { ...prev, [field]: newArray };
+    });
+  };
+
+  const calculateEndTime = (startTime: string): string => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const startMinutes = hours * 60 + minutes;
+    const endMinutes = startMinutes + 60;
+    const endHours = Math.floor(endMinutes / 60) % 24;
+    const endMins = endMinutes % 60;
+    return `${endHours.toString().padStart(2, '0')}:${endMins.toString().padStart(2, '0')}`;
+  };
+
+  const generateEndTimeOptions = (startTime: string) => {
+    const startIndex = timeOptions.findIndex(option => option.value === startTime);
+    return timeOptions.slice(startIndex + 1);
+  };
+
+  const formatDateDisplay = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const getDaysInMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
+  };
+
+  const getFirstDayOfMonth = (date: Date) => {
+    return new Date(date.getFullYear(), date.getMonth(), 1).getDay();
+  };
+
+  const generateCalendarDays = () => {
+    const daysInMonth = getDaysInMonth(calendarDate);
+    const firstDay = getFirstDayOfMonth(calendarDate);
+    const days = [];
+    
+    const prevMonth = new Date(calendarDate.getFullYear(), calendarDate.getMonth() - 1, 0);
+    const daysInPrevMonth = prevMonth.getDate();
+    
+    for (let i = firstDay - 1; i >= 0; i--) {
+      days.push({
+        date: daysInPrevMonth - i,
+        isCurrentMonth: false,
+        isSelected: false,
+        isToday: false
+      });
+    }
+    
+    const today = new Date();
+    const selectedDate = new Date(form.dueDate);
+    
+    for (let day = 1; day <= daysInMonth; day++) {
+      const currentDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+      days.push({
+        date: day,
+        isCurrentMonth: true,
+        isSelected: currentDate.toDateString() === selectedDate.toDateString(),
+        isToday: currentDate.toDateString() === today.toDateString()
+      });
+    }
+    
+    const remainingDays = 42 - days.length;
+    for (let day = 1; day <= remainingDays; day++) {
+      days.push({
+        date: day,
+        isCurrentMonth: false,
+        isSelected: false,
+        isToday: false
+      });
+    }
+    
+    return days;
+  };
+
+  const navigateMonth = (direction: 'prev' | 'next') => {
+    setCalendarDate(prev => {
+      const newDate = new Date(prev);
+      if (direction === 'prev') {
+        newDate.setMonth(prev.getMonth() - 1);
+      } else {
+        newDate.setMonth(prev.getMonth() + 1);
+      }
+      return newDate;
+    });
+  };
+
+  const handleDateSelect = (day: number) => {
+    const selectedDate = new Date(calendarDate.getFullYear(), calendarDate.getMonth(), day);
+    const dateString = selectedDate.toISOString().split('T')[0];
+    setForm(prev => ({ ...prev, dueDate: dateString }));
+    setShowDatePicker(false);
+  };
+
+  const calendarDays = generateCalendarDays();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.title.trim()) return;
+
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      let startDateTime = null;
+      let endTime = null;
+
+      if (formType === 'event') {
+        if (!form.isAllDay) {
+          const startDate = new Date(form.dueDate);
+          const [startHours, startMinutes] = form.startTime.split(':').map(Number);
+          startDate.setHours(startHours, startMinutes, 0, 0);
+          startDateTime = startDate.toISOString();
+          endTime = form.endTime;
+        }
+      } else {
+        if (!form.isAllDay) {
+          const startDate = new Date(form.dueDate);
+          const [startHours, startMinutes] = form.startTime.split(':').map(Number);
+          startDate.setHours(startHours, startMinutes, 0, 0);
+          startDateTime = startDate.toISOString();
+        }
+      }
+
+      if (formType === 'event') {
+        const eventData = {
+          user_id: user.id,
+          title: form.title,
+          start_time: form.isAllDay ? new Date(form.dueDate).toISOString() : startDateTime,
+          end_time: form.isAllDay ? null : endTime,
+          all_day: form.isAllDay,
+          description: form.notes || null
+        };
+
+        const { error } = await supabase
+          .from('0007-ap-calendar-events')
+          .insert([eventData]);
+
+        if (error) throw error;
+      } else {
+        const taskData = {
+          user_id: user.id,
+          title: form.title,
+          due_date: form.dueDate,
+          time: form.isAllDay ? null : form.startTime,
+          start_time: startDateTime,
+          notes: form.notes || null,
+          status: 'pending'
+        };
+
+        const { data: taskResponse, error: taskError } = await supabase
+          .from('0007-ap-tasks')
+          .insert([taskData])
+          .select()
+          .single();
+
+        if (taskError) throw taskError;
+
+        const taskId = taskResponse.id;
+
+        if (form.selectedRoleIds.length > 0) {
+          const roleLinks = form.selectedRoleIds.map(roleId => ({
+            task_id: taskId,
+            role_id: roleId
+          }));
+
+          const { error: roleError } = await supabase
+            .from('0007-ap-task_roles')
+            .insert(roleLinks);
+
+          if (roleError) throw roleError;
+        }
+
+        if (form.selectedDomainIds.length > 0) {
+          const domainLinks = form.selectedDomainIds.map(domainId => ({
+            task_id: taskId,
+            domain_id: domainId
+          }));
+
+          const { error: domainError } = await supabase
+            .from('0007-ap-task_domains')
+            .insert(domainLinks);
+
+          if (domainError) throw domainError;
+        }
+      }
+
+      onTaskCreated();
+      onClose();
+    } catch (error) {
+      console.error('Error creating task/event:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Create {formType === 'event' ? 'Event' : 'Task'}
+          </h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-4 space-y-4">
+          {/* Title */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+            <input
+              type="text"
+              name="title"
+              value={form.title}
+              onChange={handleChange}
+              required
+              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              placeholder={`Enter ${formType} title...`}
+            />
+          </div>
+
+          {/* Date and Time */}
+          <div className="flex gap-2">
+            {/* Date Picker */}
+            <div className="flex-1 relative" ref={datePickerRef}>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+              <button
+                type="button"
+                onClick={() => setShowDatePicker(!showDatePicker)}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
               >
                 <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
