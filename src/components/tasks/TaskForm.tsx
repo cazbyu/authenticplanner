@@ -607,11 +607,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
     </div>
   </div>
 )}
-              </div>
-            </div>
-          </div>
-          )}
-
+             
           {/* Notes */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
