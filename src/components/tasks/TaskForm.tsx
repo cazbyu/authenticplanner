@@ -395,7 +395,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           </div>
 
           {/* Date and Time */}
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {/* Date Picker */}
             <div className="w-36 relative" ref={datePickerRef}>
               <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
