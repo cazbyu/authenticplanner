@@ -398,7 +398,6 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           <div className="flex items-center gap-2 mb-4">
   {/* Date Picker */}
   <div className="w-48 relative" ref={datePickerRef}>
-    
     <button
       type="button"
       onClick={() => setShowDatePicker(!showDatePicker)}
