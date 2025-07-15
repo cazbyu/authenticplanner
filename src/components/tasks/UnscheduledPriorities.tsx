@@ -204,6 +204,11 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
             onDoubleClick={handleCardDoubleClick}
             title={isMobile ? "Tap to edit or drag to calendar" : "Double-click to edit or drag to calendar"}
             data-task-id={task.id}
+            style={{
+              ...provided.draggableProps.style,
+              // Make draggable for FullCalendar external events
+              cursor: snapshot.isDragging ? 'grabbing' : 'grab'
+            }}
           >
             <div className="flex items-start justify-between mb-2">
               <div className="flex-1 min-w-0">
