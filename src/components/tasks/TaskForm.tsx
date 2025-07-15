@@ -485,53 +485,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
                   onChange={handleChange}
                   className="h-4 w-4"
                 />
-              <div className="flex flex-col gap-1 relative">
-                {formType === 'event' ? (
-                  <div className="flex items-center gap-1 w-full">
-                    <select
-                      name="startTime"
-                      value={form.startTime}
-                      onChange={(e) => {
-                        const newStartTime = e.target.value;
-                        setForm(prev => ({
-                          ...prev,
-                          startTime: newStartTime,
-                          endTime: calculateEndTime(newStartTime)
-                        }));
-                      }}
-                      disabled={form.isAllDay}
-                      className="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                    >
-                      {timeOptions.map(time => (
-                        <option key={time.value} value={time.value}>{time.label}</option>
-                      ))}
-                    </select>
-                    <span className="text-gray-500 px-1">–</span>
-                    <select
-                      name="endTime"
-                      value={form.endTime}
-                      onChange={handleChange}
-                      disabled={form.isAllDay}
-                      className="flex-1 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                    >
-                      {timeOptions.map(time => (
-                        <option key={time.value} value={time.value}>{time.label}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <select
-                    name="startTime"
-                    value={form.startTime}
-                    onChange={handleChange}
-                    disabled={form.isAllDay}
-                    className="w-full text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                  >
-                    {timeOptions.map(time => (
-                      <option key={time.value} value={time.value}>{time.label}</option>
-                    ))}
-                  </select>
-                )}
+                12-Week Goal
               </div>
             </div>
 
