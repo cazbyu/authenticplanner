@@ -1,26 +1,19 @@
-@@ .. @@
- const RoleBankPage: React.FC = () => {
-   return (
-    <div className="h-full overflow-hidden">
--      <div className="mb-6">
--        <h1 className="text-2xl font-bold text-gray-900 text-center">Role Bank</h1>
--        <p className="text-gray-600 mt-1 text-center">
--          Manage your life roles and authentic deposits
--        </p>
--      <RoleBank />
-    <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 mb-4">
-        <h1 className="text-2xl font-bold text-gray-900 text-center">Role Bank</h1>
-        <p className="text-gray-600 mt-1 text-center">
-          Manage your life roles and authentic deposits
-        </p>
-      </div>
+import React from 'react';
+import RoleBank from '../components/roles/RoleBank';
+
+const RoleBankPage: React.FC = () => {
+  // Instead of using state here, we rely on RoleBank's own internal state
+  // So we only want to show the header if RoleBank is in its main state
+  // The trick: Place the header INSIDE RoleBank's main view, not here.
+  // Therefore: REMOVE the header block from this page entirely!
+
+  return (
+    <div className="h-full overflow-hidden flex flex-col">
       <div className="flex-1 overflow-hidden">
         <RoleBank />
       </div>
-+      <RoleBank />
-     </div>
-   );
- };
-   )
- }
+    </div>
+  );
+};
+
+export default RoleBankPage;
