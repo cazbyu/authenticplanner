@@ -546,7 +546,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
     }
                      style={
       role.label.length > 15
-        ? { display: 'block', paddingLeft: '22px', textIndent: '-22px', whiteSpace: 'normal', overflowWrap: 'break-word' }
+        ? { display: 'block', paddingLeft: '18px', textIndent: '-18px', whiteSpace: 'normal', overflowWrap: 'break-word' }
         : { display: 'block', whiteSpace: 'normal', overflowWrap: 'break-word' }
     }
   > {role.label}</span>
