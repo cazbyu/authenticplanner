@@ -532,7 +532,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
               <div className="grid grid-cols-3 gap-x-4 gap-y-1">
                 {roles.map((role) => (
-                  <label key={role.id} className="flex items-center text-sm py-0.5 min-h-[32px]">
+                  <label key={role.id} className="flex items-center text-sm py-0.5 min-h-[20px]">
                     <input
                       type="checkbox"
                       checked={form.selectedRoleIds.includes(role.id)}
