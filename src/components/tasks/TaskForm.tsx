@@ -410,7 +410,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
     </button>
     {/* ...date picker dropdown... */}
     {showDatePicker && (
-      // (Keep your date picker dropdown code here, unchanged)
+      {// (Keep your date picker dropdown code here, unchanged)}
     )}
   </div>
 
