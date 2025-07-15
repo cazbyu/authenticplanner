@@ -414,50 +414,61 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       <div className="flex-1 overflow-hidden">
         {sortBy === 'priority' ? (
           /* Priority Quadrant View - Vertical Layout */
-          <div className="h-full p-4 overflow-y-auto space-y-4">
-            {/* Urgent & Important */}
-            <QuadrantSection
-              id="urgent-important"
-              title="Urgent & Important"
-              tasks={urgentImportant}
-              bgColor="bg-red-500"
-              textColor="text-white"
-              borderColor="border-l-red-500"
-              icon={<AlertTriangle className="h-4 w-4" />}
-            />
-            
-            {/* Not Urgent & Important */}
-            <QuadrantSection
-              id="not-urgent-important"
-              title="Not Urgent & Important"
-              tasks={notUrgentImportant}
-              bgColor="bg-green-500"
-              textColor="text-white"
-              borderColor="border-l-green-500"
-              icon={<Check className="h-4 w-4" />}
-            />
-            
-            {/* Urgent & Not Important */}
-            <QuadrantSection
-              id="urgent-not-important"
-              title="Urgent & Not Important"
-              tasks={urgentNotImportant}
-              bgColor="bg-orange-500"
-              textColor="text-white"
-              borderColor="border-l-orange-500"
-              icon={<Clock className="h-4 w-4" />}
-            />
-            
-            {/* Not Urgent & Not Important */}
-            <QuadrantSection
-              id="not-urgent-not-important"
-              title="Not Urgent & Not Important"
-              tasks={notUrgentNotImportant}
-              bgColor="bg-gray-500"
-              textColor="text-white"
-              borderColor="border-l-gray-500"
-              icon={<X className="h-4 w-4" />}
-            />
+          <div className="h-full p-4 overflow-y-auto">
+            <div className="grid grid-cols-2 gap-4 h-full">
+              {/* Top Row */}
+              <div className="flex flex-col">
+                {/* Urgent & Important - Top Left */}
+                <QuadrantSection
+                  id="urgent-important"
+                  title="Urgent & Important"
+                  tasks={urgentImportant}
+                  bgColor="bg-red-500"
+                  textColor="text-white"
+                  borderColor="border-l-red-500"
+                  icon={<AlertTriangle className="h-4 w-4" />}
+                />
+              </div>
+              
+              <div className="flex flex-col">
+                {/* Not Urgent & Important - Top Right */}
+                <QuadrantSection
+                  id="not-urgent-important"
+                  title="Not Urgent & Important"
+                  tasks={notUrgentImportant}
+                  bgColor="bg-green-500"
+                  textColor="text-white"
+                  borderColor="border-l-green-500"
+                  icon={<Check className="h-4 w-4" />}
+                />
+              </div>
+              
+              <div className="flex flex-col">
+                {/* Urgent & Not Important - Bottom Left */}
+                <QuadrantSection
+                  id="urgent-not-important"
+                  title="Urgent & Not Important"
+                  tasks={urgentNotImportant}
+                  bgColor="bg-orange-500"
+                  textColor="text-white"
+                  borderColor="border-l-orange-500"
+                  icon={<Clock className="h-4 w-4" />}
+                />
+              </div>
+              
+              <div className="flex flex-col">
+                {/* Not Urgent & Not Important - Bottom Right */}
+                <QuadrantSection
+                  id="not-urgent-not-important"
+                  title="Not Urgent & Not Important"
+                  tasks={notUrgentNotImportant}
+                  bgColor="bg-gray-500"
+                  textColor="text-white"
+                  borderColor="border-l-gray-500"
+                  icon={<X className="h-4 w-4" />}
+                />
+              </div>
+            </div>
           </div>
         ) : (
           /* List View for Due Date and Delegated */
