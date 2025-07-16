@@ -484,7 +484,7 @@ function handle12WeekGoalToggle() {
               <button
                 type="button"
                 onClick={() => setShowDatePicker(!showDatePicker)}
-                className="w-full flex items-center gap-2 px-3 py-2 text-sm border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="w-full flex items-center gap-2 px-3 py-2 text-xs border border-gray-300 rounded-md bg-gray-50 hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-colors"
               >
                 <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
                 <span className="text-gray-700 flex-1">{formatDateDisplay(form.dueDate)}</span>
