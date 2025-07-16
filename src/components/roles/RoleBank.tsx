@@ -350,8 +350,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                 </button>
               </div>
             )}
-          </section>
-
+      
           {/* Deposit Ideas */}
           <section>
             <div className="flex items-center justify-between mb-4">
