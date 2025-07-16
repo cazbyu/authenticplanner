@@ -507,50 +507,55 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
   // --- ACTIVE ROLES VIEW (unchanged except scroll in grid) ---
   if (selectedSection === 'roles') {
-    return (
-      <div className="flex flex-col h-screen overflow-y-scroll">
-        <div className="flex items-center gap-3 p-6 flex-shrink-0">
-          <button
-            onClick={handleBack}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900">Active Roles</h1>
-        </div>
-        <div className="flex-1 p-6">
-          <div className="grid gap-4 grid-cols-3">
-            {roles.length === 0 ? (
-              <div className="text-center py-12 col-span-3">
-                <div className="text-gray-500 mb-4">No active roles found</div>
-                <p className="text-sm text-gray-400">
-                  Add roles in Settings to get started with your Role Bank
-                </p>
-              </div>
-            ) : (
-              roles.map((role) => (
-                <button
-                  key={role.id}
-                  onClick={() => handleRoleSelect(role)}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group bg-white"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">{role.icon || '👤'}</div>
-                    <div>
-                      <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
-                        {role.label}
-                      </h3>
-                      <p className="text-sm text-gray-500 capitalize">{role.category}</p>
-                    </div>
+  return (
+    <div className="flex flex-col h-full">
+      <div className="flex items-center gap-3 p-6 flex-shrink-0">
+        <button onClick={handleBack}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+        <h1 className="text-2xl font-bold text-gray-900">Active Roles</h1>
+      </div>
+
+      {/* ①  scrolling now lives here */}
+      <div className="flex-1 p-6 overflow-y-auto">
+        {/* ②  grid no longer owns the scrollbar */}
+        <div className="grid gap-4 grid-cols-3 pr-2">
+          {roles.length === 0 ? (
+            <div className="text-center py-12 col-span-3">
+              <div className="text-gray-500 mb-4">No active roles found</div>
+              <p className="text-sm text-gray-400">
+                Add roles in Settings to get started with your Role Bank
+              </p>
+            </div>
+          ) : (
+            roles.map(role => (
+              <button key={role.id}
+                      onClick={() => handleRoleSelect(role)}
+                      className="p-4 border border-gray-200 rounded-lg
+                                 hover:border-primary-300 hover:shadow-md
+                                 transition-all text-left group bg-white">
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{role.icon || '👤'}</div>
+                  <div>
+                    <h3 className="font-medium text-gray-900
+                                   group-hover:text-primary-600">
+                      {role.label}
+                    </h3>
+                    <p className="text-sm text-gray-500 capitalize">
+                      {role.category}
+                    </p>
                   </div>
-                </button>
-              ))
-            )}
-          </div>
+                </div>
+              </button>
+            ))
+          )}
         </div>
       </div>
-    );
-  }
+    </div>
+  );
+}
+
 
   // --- MAIN LANDING VIEW (three feature boxes and header) ---
   return (
