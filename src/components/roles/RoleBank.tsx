@@ -262,16 +262,19 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
           >
             <ChevronLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900">{selectedRole.label}</h1>
-        </div>
-        {/* Content - scrollable */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-8" style={{ minHeight: 0 }}>
-          {/* Current Tasks */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">Current Tasks</h2>
-              <button
+          <button
+  onClick={() => {
+    if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      setSelectedRole(null); // fallback if no history
+    }
+  }}
+  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+>
+  <ChevronLeft className="h-5 w-5" />
+</button>
+
                 onClick={handleAddTask}
                 className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
               >
