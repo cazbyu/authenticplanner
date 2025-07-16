@@ -444,8 +444,8 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
               <input
                 type="checkbox"
                 name="twelveWeekGoalChecked"
-                checked={form.twelveWeekGoalChecked || false}
-                onChange={handleChange}
+                checked={form.is12WeekGoalToggle}
+                onChange={handle12WeekGoalToggle}
                 className="h-4 w-4"
               />
               12-Week Goal
