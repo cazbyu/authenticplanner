@@ -508,7 +508,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   // --- ACTIVE ROLES VIEW (unchanged except scroll in grid) ---
   if (selectedSection === 'roles') {
     return (
-      <div className="flex flex-col h-full">
+      <div className="flex flex-col h-screen overflow-y-auto">
         <div className="flex items-center gap-3 p-6 flex-shrink-0">
           <button
             onClick={handleBack}
@@ -519,7 +519,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <h1 className="text-2xl font-bold text-gray-900">Active Roles</h1>
         </div>
         <div className="flex-1 p-6">
-          <div className="grid gap-4 grid-cols-3 max-h-[60vh] overflow-y-auto pr-2">
+          <div className="grid gap-4 grid-cols-3">
             {roles.length === 0 ? (
               <div className="text-center py-12 col-span-3">
                 <div className="text-gray-500 mb-4">No active roles found</div>
