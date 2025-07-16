@@ -269,13 +269,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 >
   <ChevronLeft className="h-5 w-5" />
 </button>
-
-                onClick={handleAddTask}
-                className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
-              >
-                <Plus className="h-4 w-4" />
-                Add Task
-              </button>
             </div>
             {loading ? (
               <div className="text-gray-500">Loading tasks...</div>
