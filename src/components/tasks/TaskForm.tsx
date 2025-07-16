@@ -454,7 +454,7 @@ function handle12WeekGoalToggle() {
                 onChange={handle12WeekGoalToggle}
                 className="h-4 w-4"
               />
-              12-Week Goal
+              12-Wk Goal
             </label>
           </div>
           {/* 12-Week Goal Section */}
