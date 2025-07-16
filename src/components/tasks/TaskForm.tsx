@@ -650,7 +650,7 @@ function handle12WeekGoalToggle() {
                       onChange={() => handleMultiSelect('selectedDomainIds', domain.id)}
                       className="h-4 w-4"
                     />
-                    <span className="text-lg">{domain.name}</span>
+                    <span className="text-xs">{domain.name}</span>
                   </label>
                 ))}
               </div>
