@@ -687,7 +687,7 @@ function handle12WeekGoalToggle() {
           )}
           {/* Notes */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-2">Notes</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
             <textarea
               name="notes"
               value={form.notes}
