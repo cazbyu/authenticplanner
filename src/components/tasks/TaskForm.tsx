@@ -438,7 +438,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
                 onChange={handleChange}
                 className="h-4 w-4"
               />
-              Authentic Deposit
+              Auth Deposit
             </label>
             <label className="flex items-center gap-1 text-sm">
               <input
