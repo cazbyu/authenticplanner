@@ -350,7 +350,8 @@ const MainLayout: React.FC = () => {
       </AnimatePresence>
       
       {/* Main content */}
-      <main className="main-layout lg:pl-64 flex-1 flex flex-col min-h-0">
+      <main className="main-layout lg:pl-64 flex-1 flex flex-col min-h-0"
+        style={{ background: 'yellow' }}>
   <div className="calendar-container flex-1 flex flex-col min-h-0 max-w-7xl px-4 sm:px-6 md:px-8"
     style={{ background: 'lightgreen' }}>
         <Outlet />
