@@ -380,6 +380,12 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
       setLoading(false);
     }
   };
+function handle12WeekGoalToggle() {
+  setForm(prev => ({
+    ...prev,
+    twelveWeekGoalChecked: !prev.twelveWeekGoalChecked,
+  }));
+}
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -444,7 +450,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
               <input
                 type="checkbox"
                 name="twelveWeekGoalChecked"
-                checked={form.is12WeekGoalToggle}
+                checked={form.twelveWeekGoalChecked}
                 onChange={handle12WeekGoalToggle}
                 className="h-4 w-4"
               />
