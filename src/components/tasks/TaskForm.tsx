@@ -472,7 +472,7 @@ function handle12WeekGoalToggle() {
                   <option value="" disabled>No active goals found</option>
                 )}
                 {twelveWeekGoals.map(goal => (
-                  <option key={goal.id} value={goal.id}>{goal.name}</option>
+                  <option key={goal.id} value={goal.id}>{goal.title}</option>
                 ))}
               </select>
             </div>
