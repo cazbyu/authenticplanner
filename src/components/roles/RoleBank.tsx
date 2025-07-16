@@ -506,7 +506,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   }
 
   // --- ACTIVE ROLES VIEW (unchanged except scroll in grid) ---
-  if (selectedSection === 'roles') {
+ if (selectedSection === 'roles') {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center gap-3 p-6 flex-shrink-0">
@@ -518,7 +518,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       </div>
 
       {/* ①  scrolling now lives here */}
-     <div className="flex-1 overflow-y-auto min-h-0 px-6 pb-6">
+      <div className="flex-1 overflow-y-auto min-h-0 px-6 pb-6">
         {/* ②  grid no longer owns the scrollbar */}
         <div className="grid gap-4 grid-cols-3 pr-2">
           {roles.length === 0 ? (
@@ -530,29 +530,34 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             </div>
           ) : (
             <>
-  {roles.map(role => (
-    <button key={role.id} onClick={() => handleRoleSelect(role)}
-      className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group bg-white">
-      <div className="flex items-center gap-3">
-        <div className="text-2xl">{role.icon || '👤'}</div>
-        <div>
-          <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
-            {role.label}
-          </h3>
-          <p className="text-sm text-gray-500 capitalize">
-            {role.category}
-          </p>
+              {roles.map(role => (
+                <button key={role.id} onClick={() => handleRoleSelect(role)}
+                  className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group bg-white">
+                  <div className="flex items-center gap-3">
+                    <div className="text-2xl">{role.icon || '👤'}</div>
+                    <div>
+                      <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
+                        {role.label}
+                      </h3>
+                      <p className="text-sm text-gray-500 capitalize">
+                        {role.category}
+                      </p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+              {Array.from({ length: 30 }).map((_, i) => (
+                <div key={`dummy-${i}`} className="p-4 border border-dashed border-blue-400 rounded-lg bg-blue-50 text-blue-800">
+                  Dummy Role {i + 1}
+                </div>
+              ))}
+            </>
+          )}
         </div>
       </div>
-    </button>
-  ))}
-  {Array.from({ length: 30 }).map((_, i) => (
-    <div key={`dummy-${i}`} className="p-4 border border-dashed border-blue-400 rounded-lg bg-blue-50 text-blue-800">
-      Dummy Role {i + 1}
     </div>
-  ))}
-</>
-    }
+  );
+}
 
   // --- MAIN LANDING VIEW (three feature boxes and header) ---
   return (
