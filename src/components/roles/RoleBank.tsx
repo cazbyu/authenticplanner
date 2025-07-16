@@ -552,6 +552,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     </div>
   ))}
 </>
+      )}
 </div>
         </div>
       </div>
