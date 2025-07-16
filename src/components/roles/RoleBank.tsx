@@ -552,13 +552,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     </div>
   ))}
 </>
-      )}
-</div>
-        </div>
-      </div>
-    </div>
-  );
-}
+    }
 
   // --- MAIN LANDING VIEW (three feature boxes and header) ---
   return (
