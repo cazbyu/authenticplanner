@@ -309,10 +309,10 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           end_time: form.isAllDay ? null : endTime,
           all_day: form.isAllDay,
           description: form.notes || null,
-          urgent: form.urgent,
-          important: form.important,
-          authentic_deposit: form.authenticDeposit,
-          twelve_week_goal_id: form.twelveWeekGoalChecked ? form.twelveWeekGoalId : null
+          is_urgent: form.urgent,
+          is_important: form.important,
+          is_authentic_deposit: form.authenticDeposit,
+          is_twelve_week_goal: form.twelveWeekGoalChecked
         };
 
         const { error } = await supabase
@@ -329,10 +329,10 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
           start_time: startDateTime,
           notes: form.notes || null,
           status: 'pending',
-          urgent: form.urgent,
-          important: form.important,
-          authentic_deposit: form.authenticDeposit,
-          twelve_week_goal_id: form.twelveWeekGoalChecked ? form.twelveWeekGoalId : null
+          is_urgent: form.urgent,
+          is_important: form.important,
+          is_authentic_deposit: form.authenticDeposit,
+          is_twelve_week_goal: form.twelveWeekGoalChecked
         };
 
         const { data: taskResponse, error: taskError } = await supabase
