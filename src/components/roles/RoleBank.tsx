@@ -529,27 +529,30 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               </p>
             </div>
           ) : (
-            roles.map(role => (
-              <button key={role.id}
-                      onClick={() => handleRoleSelect(role)}
-                      className="p-4 border border-gray-200 rounded-lg
-                                 hover:border-primary-300 hover:shadow-md
-                                 transition-all text-left group bg-white">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl">{role.icon || '👤'}</div>
-                  <div>
-                    <h3 className="font-medium text-gray-900
-                                   group-hover:text-primary-600">
-                      {role.label}
-                    </h3>
-                    <p className="text-sm text-gray-500 capitalize">
-                      {role.category}
-                    </p>
-                  </div>
-                </div>
-              </button>
-            ))
-          )}
+            <>
+  {roles.map(role => (
+    <button key={role.id} onClick={() => handleRoleSelect(role)}
+      className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group bg-white">
+      <div className="flex items-center gap-3">
+        <div className="text-2xl">{role.icon || '👤'}</div>
+        <div>
+          <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
+            {role.label}
+          </h3>
+          <p className="text-sm text-gray-500 capitalize">
+            {role.category}
+          </p>
+        </div>
+      </div>
+    </button>
+  ))}
+  {Array.from({ length: 30 }).map((_, i) => (
+    <div key={`dummy-${i}`} className="p-4 border border-dashed border-blue-400 rounded-lg bg-blue-50 text-blue-800">
+      Dummy Role {i + 1}
+    </div>
+  ))}
+</>
+
             {/* -- ADD THIS BLOCK BELOW -- */}
   {Array.from({ length: 30 }).map((_, i) => (
     <div key={`dummy-${i}`} className="p-4 border border-dashed border-blue-400 rounded-lg bg-blue-50 text-blue-800">
