@@ -258,7 +258,10 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         {/* Header */}
         <div className="flex items-center gap-3 p-6 flex-shrink-0">
           <button
-  onClick={() => setSelectedRole(null)}
+  onClick={() => {
+    setSelectedRole(null);
+    setSelectedSection('roles');
+          }}
     className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
 >
   <ChevronLeft className="h-5 w-5" />
