@@ -519,7 +519,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
       {/* ①  scrolling now lives here */}
       <div
-  className="flex-1 overflow-y-scroll min-h-0 px-6 pb-6">
+  className="flex-1 overflow-y-auto min-h-0 px-6 pb-6">
         {/* ②  grid no longer owns the scrollbar */}
         <div className="grid gap-4 grid-cols-3 pr-2">
           {roles.length === 0 ? (
