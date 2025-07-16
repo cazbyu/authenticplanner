@@ -550,7 +550,11 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               </button>
             ))
           )}
-           ))}
+            {/* -- ADD THIS BLOCK BELOW -- */}
+  {Array.from({ length: 30 }).map((_, i) => (
+    <div key={`dummy-${i}`} className="p-4 border border-dashed border-blue-400 rounded-lg bg-blue-50 text-blue-800">
+      Dummy Role {i + 1}
+    </div>
 </div>
         </div>
       </div>
