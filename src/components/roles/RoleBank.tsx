@@ -257,7 +257,12 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       <div className="flex flex-col h-full min-h-0">
         {/* Header */}
         <div className="flex items-center gap-3 p-6 flex-shrink-0">
-                    <button
+          <button
+            onClick={() => setSelectedRole(null)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          <button
   onClick={() => {
     if (window.history.length > 2) {
       navigate(-1);
@@ -269,6 +274,13 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 >
   <ChevronLeft className="h-5 w-5" />
 </button>
+
+                onClick={handleAddTask}
+                className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
+              >
+                <Plus className="h-4 w-4" />
+                Add Task
+              </button>
             </div>
             {loading ? (
               <div className="text-gray-500">Loading tasks...</div>
@@ -350,7 +362,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                 </button>
               </div>
             )}
-      
+          </section>
+
           {/* Deposit Ideas */}
           <section>
             <div className="flex items-center justify-between mb-4">
