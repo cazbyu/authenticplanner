@@ -7,6 +7,7 @@ import TaskForm from '../tasks/TaskForm';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 import EditTask from '../tasks/EditTask';
+import { useNavigate } from 'react-router-dom';
 
 interface Role {
   id: string;
@@ -47,6 +48,7 @@ interface RoleBankProps {
 }
 
 const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onBack: propOnBack }) => {
+  const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<Role | null>(propSelectedRole || null);
   const [selectedSection, setSelectedSection] = useState<'roles' | 'deposits' | 'relationships' | null>(null);
   const [roles, setRoles] = useState<Role[]>([]);
