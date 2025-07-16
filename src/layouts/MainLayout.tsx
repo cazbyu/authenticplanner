@@ -357,8 +357,6 @@ const MainLayout: React.FC = () => {
         <Outlet />
   </div>
 </main>
-
-
     </div>
   );
 };
