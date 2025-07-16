@@ -508,7 +508,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   // --- ACTIVE ROLES VIEW (unchanged except scroll in grid) ---
   if (selectedSection === 'roles') {
     return (
-      <div className="flex flex-col h-screen overflow-y-auto">
+      <div className="flex flex-col h-screen overflow-y-scroll">
         <div className="flex items-center gap-3 p-6 flex-shrink-0">
           <button
             onClick={handleBack}
