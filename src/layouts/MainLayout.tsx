@@ -110,7 +110,7 @@ const MainLayout: React.FC = () => {
   const isCalendarPage = location.pathname === '/' || location.pathname === '/calendar';
 
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
+    <div className="min-h-screen h-full flex flex-col bg-gray-50">
       {/* Mobile header - Hide on calendar page */}
       {!isCalendarPage && (
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-4 shadow-sm md:px-6 lg:hidden">
@@ -350,9 +350,9 @@ const MainLayout: React.FC = () => {
       </AnimatePresence>
       
       {/* Main content */}
-      <main className="main-layout lg:pl-64 flex-1 flex flex-col min-h-0"
+      <main className="main-layout lg:pl-64 flex-1 flex flex-col min-h-0 h-full"
         style={{ background: 'yellow' }}>
-  <div className="calendar-container flex-1 flex flex-col min-h-0 max-w-7xl px-4 sm:px-6 md:px-8"
+  <div className="calendar-container flex-1 flex flex-col min-h-0 h-full max-w-7xl px-4 sm:px-6 md:px-8"
     style={{ background: 'lightgreen' }}>
         <Outlet />
   </div>
