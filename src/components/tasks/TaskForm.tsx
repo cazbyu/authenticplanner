@@ -610,7 +610,7 @@ function handle12WeekGoalToggle() {
           </div>
           {/* Roles */}
           <div>
-            <label className="block text-xs font-medium text-gray-700 mb-2">Roles</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
               <div className="grid grid-cols-3 gap-x-4 gap-y-0.5">
                 {roles.map((role) => (
