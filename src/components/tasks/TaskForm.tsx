@@ -586,7 +586,7 @@ function handle12WeekGoalToggle() {
                   value={form.startTime}
                   onChange={handleChange}
                   disabled={form.isAllDay}
-                  className="w-24 text-sm border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
+                  className="w-24 text-xs border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
                 >
                   {timeOptions.map(time => (
                     <option key={time.value} value={time.value}>{time.label}</option>
@@ -597,7 +597,7 @@ function handle12WeekGoalToggle() {
           </div>
           {/* All Day Row */}
           <div className="mb-2">
-            <label className="flex items-center gap-2 text-sm">
+            <label className="flex items-center gap-2 text-xs">
               <input
                 type="checkbox"
                 name="isAllDay"
@@ -610,7 +610,7 @@ function handle12WeekGoalToggle() {
           </div>
           {/* Roles */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
+            <label className="block text-xs font-medium text-gray-700 mb-2">Roles</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
               <div className="grid grid-cols-3 gap-x-4 gap-y-0.5">
                 {roles.map((role) => (
@@ -639,7 +639,7 @@ function handle12WeekGoalToggle() {
           </div>
           {/* Domains */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Domains</label>
+            <label className="block text-xs font-medium text-gray-700 mb-2">Domains</label>
             <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
               <div className="grid grid-cols-3 gap-2">
                 {domains.map(domain => (
@@ -659,7 +659,7 @@ function handle12WeekGoalToggle() {
           {/* Key Relationships */}
           {form.selectedRoleIds.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Key Relationships</label>
+              <label className="block text-xs font-medium text-gray-700 mb-2">Key Relationships</label>
               <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
                 {keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 ? (
                   <div className="text-gray-400 text-sm italic px-2 py-2">
@@ -687,13 +687,13 @@ function handle12WeekGoalToggle() {
           )}
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
+            <label className="block text-xs font-medium text-gray-700 mb-2">Notes</label>
             <textarea
               name="notes"
               value={form.notes}
               onChange={handleChange}
               rows={3}
-              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
+              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
               placeholder="Add any additional notes..."
             />
           </div>
