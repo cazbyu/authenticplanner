@@ -416,7 +416,7 @@ function handle12WeekGoalToggle() {
           </div>
           {/* Checkboxes row */}
           <div className="flex flex-wrap items-center gap-4 mb-2">
-            <label className="flex items-center gap-1 text-sm">
+            <label className="flex items-center gap-1 text-xs">
               <input
                 type="checkbox"
                 name="urgent"
@@ -426,7 +426,7 @@ function handle12WeekGoalToggle() {
               />
               Urgent
             </label>
-            <label className="flex items-center gap-1 text-sm">
+            <label className="flex items-center gap-1 text-xs">
               <input
                 type="checkbox"
                 name="important"
@@ -454,7 +454,7 @@ function handle12WeekGoalToggle() {
                 onChange={handle12WeekGoalToggle}
                 className="h-4 w-4"
               />
-              12-Wk Goal
+              12-Week Goal
             </label>
           </div>
           {/* 12-Week Goal Section */}
