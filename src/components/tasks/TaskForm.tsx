@@ -436,7 +436,7 @@ function handle12WeekGoalToggle() {
               />
               Important
             </label>
-            <label className="flex items-center gap-1 text-sm">
+            <label className="flex items-center gap-1 text-xs">
               <input
                 type="checkbox"
                 name="authenticDeposit"
@@ -446,7 +446,7 @@ function handle12WeekGoalToggle() {
               />
               Auth Deposit
             </label>
-            <label className="flex items-center gap-1 text-sm">
+            <label className="flex items-center gap-1 text-xs">
               <input
                 type="checkbox"
                 name="twelveWeekGoalChecked"
