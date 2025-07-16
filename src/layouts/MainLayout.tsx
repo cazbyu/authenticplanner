@@ -110,7 +110,7 @@ const MainLayout: React.FC = () => {
   const isCalendarPage = location.pathname === '/' || location.pathname === '/calendar';
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       {/* Mobile header - Hide on calendar page */}
       {!isCalendarPage && (
         <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-4 shadow-sm md:px-6 lg:hidden">
