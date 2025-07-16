@@ -150,7 +150,7 @@ const TaskForm: React.FC<TaskFormProps> = ({ onClose, onTaskCreated, formType })
         .from('0007-ap-goals_12wk_main')
         .select('*')
         .eq('user_id', user.id)
-        .eq('active', true);
+        .eq('status', 'active');
       if (error) throw error;
       setTwelveWeekGoals(data || []);
     } catch (error) {
