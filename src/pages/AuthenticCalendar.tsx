@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Plus, ChevronLeft, ChevronRight, ChevronDown, Menu, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase, X, Archive } from 'lucide-react';
 import { Compass } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
-import TaskForm from '../components/tasks/TaskForm';
+import TaskEventForm from '../components/tasks/TaskEventForm';
 import CalendarView from '../components/calendar/CalendarView';
 import { DragDropContext } from 'react-beautiful-dnd';
 import TaskQuadrants from '../components/tasks/TaskQuadrants';
@@ -50,7 +50,7 @@ interface Domain {
 }
 
 const AuthenticCalendar: React.FC = () => {
-  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showTaskEventForm, setShowTaskEventForm] = useState(false);
   const [taskType, setTaskType] = useState<'task' | 'event'>('task');
   const [showTaskTypeMenu, setShowTaskTypeMenu] = useState(false);
   const [taskTypeMenuPosition, setTaskTypeMenuPosition] = useState({ top: 0, left: 0 });
@@ -207,7 +207,7 @@ const AuthenticCalendar: React.FC = () => {
   };
 
   const handleTaskCreated = () => {
-    setShowTaskForm(false);
+    setShowTaskEventForm(false);
     setRefreshTrigger(prev => prev + 1);
   };
 
@@ -725,7 +725,7 @@ const AuthenticCalendar: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* TaskForm Modal */}
+      {/* TaskEventForm Modal */}
       {showTaskTypeMenu && (
         <>
           <div 
@@ -741,7 +741,7 @@ const AuthenticCalendar: React.FC = () => {
               onClick={() => {
                 setTaskType('event');
                 setShowTaskTypeMenu(false);
-                setShowTaskForm(true);
+                setShowTaskEventForm(true);
               }}
             >
               Event
@@ -751,7 +751,7 @@ const AuthenticCalendar: React.FC = () => {
               onClick={() => {
                 setTaskType('task');
                 setShowTaskTypeMenu(false);
-                setShowTaskForm(true);
+                setShowTaskEventForm(true);
               }}
             >
               Task
@@ -761,11 +761,11 @@ const AuthenticCalendar: React.FC = () => {
       )}
 
       {/* Task/Event Form Modal */}
-      {showTaskForm && (
+      {showTaskEventForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl">
-            <TaskForm 
-              onClose={() => setShowTaskForm(false)}
+            <TaskEventForm 
+              onClose={() => setShowTaskEventForm(false)}
               onTaskCreated={handleTaskCreated}
               formType={taskType}
             />
