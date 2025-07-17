@@ -331,39 +331,40 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         )}
       </div>
 
-      {/* Roles */}
-      <div className="mb-2">
-        <div className="font-semibold">Roles:</div>
-        <div className="flex flex-wrap gap-2">
-          {roles.map((role) => (
-            <label key={role.id}>
-              <input
-                type="checkbox"
-                checked={form.selectedRoleIds.includes(role.id)}
-                onChange={() => handleMultiSelect("selectedRoleIds", role.id)}
-              />{" "}
-              {role.label}
-            </label>
-          ))}
-        </div>
-      </div>
+      {/* --- ROLES --- */}
+<div className="mb-4">
+  <label className="font-semibold block mb-1">Roles</label>
+  <div className="grid grid-cols-3 gap-2">
+    {roles.map((role) => (
+      <label key={role.id} className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          checked={form.selectedRoleIds.includes(role.id)}
+          onChange={() => handleMultiSelect("selectedRoleIds", role.id)}
+        />
+        <span>{role.label}</span>
+      </label>
+    ))}
+  </div>
+</div>
 
-      {/* Domains */}
-      <div className="mb-2">
-        <div className="font-semibold">Domains:</div>
-        <div className="flex flex-wrap gap-2">
-          {domains.map((domain) => (
-            <label key={domain.id}>
-              <input
-                type="checkbox"
-                checked={form.selectedDomainIds.includes(domain.id)}
-                onChange={() => handleMultiSelect("selectedDomainIds", domain.id)}
-              />{" "}
-              {domain.label}
-            </label>
-          ))}
-        </div>
-      </div>
+{/* --- DOMAINS --- */}
+<div className="mb-4">
+  <label className="font-semibold block mb-1">Domains</label>
+  <div className="grid grid-cols-3 gap-2">
+    {domains.map((domain) => (
+      <label key={domain.id} className="flex items-center space-x-2">
+        <input
+          type="checkbox"
+          checked={form.selectedDomainIds.includes(domain.id)}
+          onChange={() => handleMultiSelect("selectedDomainIds", domain.id)}
+        />
+        <span>{domain.label}</span>
+      </label>
+    ))}
+  </div>
+</div>
+
 
       {/* Notes */}
       <div className="mb-2">
