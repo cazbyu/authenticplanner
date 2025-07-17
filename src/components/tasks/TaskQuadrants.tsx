@@ -391,7 +391,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-        <h1 className="text-2xl font-bold text-gray-900">All Task Priorities</h1>
+        <h1 className="text-2xl font-bold text-gray-900">Task Priorities</h1>
         <div className="flex items-center">
           <div className="relative">
             <select
