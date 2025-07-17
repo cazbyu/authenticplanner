@@ -3,7 +3,7 @@ import { supabase } from '../../supabaseClient';
 import { ChevronLeft, UserPlus, Plus, Heart, Edit, Eye } from 'lucide-react';
 import { Check, X } from 'lucide-react';
 import KeyRelationshipForm from './KeyRelationshipForm';
-import TaskForm from '../tasks/TaskForm';
+import TaskEventForm from '../tasks/TaskEventForm';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 import EditTask from '../tasks/EditTask';
@@ -58,7 +58,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [showRelationshipForm, setShowRelationshipForm] = useState(false);
   const [editingRelationship, setEditingRelationship] = useState<KeyRelationship | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showTaskEventForm, setShowTaskEventForm] = useState(false);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
@@ -163,11 +163,11 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   };
 
   const handleAddTask = () => {
-    setShowTaskForm(true);
+    setShowTaskEventForm(true);
   };
 
   const handleTaskCreated = () => {
-    setShowTaskForm(false);
+    setShowTaskEventForm(false);
     if (selectedRole) {
       fetchRoleData(selectedRole.id);
     }
@@ -467,12 +467,12 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           />
         )}
 
-        {/* Task Form Modal */}
-        {showTaskForm && selectedRole && (
+        {/* Task Event Form Modal */}
+        {showTaskEventForm && selectedRole && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
             <div className="w-full max-w-2xl mx-4">
-              <TaskForm
-                onClose={() => setShowTaskForm(false)}
+              <TaskEventForm
+                onClose={() => setShowTaskEventForm(false)}
                 onTaskCreated={handleTaskCreated}
                 initialFormData={{
                   selectedRoleIds: [selectedRole.id]
