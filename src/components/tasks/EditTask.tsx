@@ -12,7 +12,7 @@ interface EditTaskProps {
   onTaskUpdated?: () => void;
   onCancel: () => void;
 }
-interface TaskFormValues {
+interface TaskEventFormValues {
   title: string;
   isAuthenticDeposit: boolean;
   selectedTwelveWeekGoal: string;
@@ -50,7 +50,7 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
   const [calendarDate, setCalendarDate] = useState(new Date());
   const datePickerRef = useRef<HTMLDivElement>(null);
 
-  const [form, setForm] = useState<TaskFormValues>({
+  const [form, setForm] = useState<TaskEventFormValues>({
     title: "",
     isAuthenticDeposit: false,
     selectedTwelveWeekGoal: "",
@@ -124,7 +124,7 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
         if (taskData.end_time && typeof taskData.end_time === 'string') {
           endTime = taskData.end_time.slice(0, 5);
         }
-        let schedulingType: TaskFormValues['schedulingType'] = taskData.start_time ? 'scheduled' : 'unscheduled';
+        let schedulingType: TaskEventFormValues['schedulingType'] = taskData.start_time ? 'scheduled' : 'unscheduled';
 
         setForm({
           title: taskData.title || '',
