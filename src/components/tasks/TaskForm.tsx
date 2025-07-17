@@ -350,23 +350,25 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   </div>
 </div>
 
-
-{/* --- DOMAINS --- */}
+{/* Domains Section */}
 <div className="mb-4">
   <label className="font-semibold block mb-1">Domains</label>
-  <div className="grid grid-cols-3 gap-2">
-    {domains.map((domain) => (
-      <label key={domain.id} className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          checked={form.selectedDomainIds.includes(domain.id)}
-          onChange={() => handleMultiSelect("selectedDomainIds", domain.id)}
-        />
-        <span>{domain.label}</span>
-      </label>
-    ))}
+  <div className="border rounded px-4 py-2">
+    <div className="grid grid-cols-2 gap-y-1 gap-x-4">
+      {domains.map((domain) => (
+        <label key={domain.id} className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={form.selectedDomainIds.includes(domain.id)}
+            onChange={() => handleMultiSelect("selectedDomainIds", domain.id)}
+          />
+          <span>{domain.label}</span>
+        </label>
+      ))}
+    </div>
   </div>
 </div>
+
 
 
       {/* Notes */}
