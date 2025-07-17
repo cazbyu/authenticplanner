@@ -66,7 +66,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   useEffect(() => {
     async function fetchOptions() {
       const [roleRes, domainRes, goalRes] = await Promise.all([
-        supabase.from("0007-ap-roles").select("id,label"),
+        supabase.from("0007-ap-roles").select("id,label").eq("is_active", true),
         supabase.from("0007-ap-domains").select("id,label"),
         supabase.from("0007-ap-goals").select("id,title"),
       ]);
