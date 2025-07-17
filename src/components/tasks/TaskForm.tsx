@@ -1,225 +1,219 @@
-hover:text-gray-700"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
-                    <span className="font-medium text-gray-700">
-                      {monthNames[calendarDate.getMonth()]} {calendarDate.getFullYear()}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => navigateMonth('next')}
-                      className="text-gray-400 hover:text-gray-700"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-                  <div className="grid grid-cols-7 gap-1 text-xs text-gray-500 mb-1">
-                    {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
-                      <span key={day} className="text-center">{day}</span>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-7 gap-1">
-                    {calendarDays.map((day, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        className={`
-                          p-1 rounded-full transition-colors
-                          ${day.isCurrentMonth
-                          ? day.isSelected
-                            ? 'bg-blue-600 text-white'
-                            : day.isToday
-                              ? 'bg-blue-100 text-blue-600'
-                              : 'bg-white text-gray-800 hover:bg-gray-100'
-                          : 'text-gray-300'}
-                        `}
-                        onClick={() => day.isCurrentMonth && handleDateSelect(day.date)}
-                        disabled={!day.isCurrentMonth}
-                      >
-                        {day.date}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-            {/* Time Picker */}
-            {formType === 'event' ? (
-              <div className="flex items-center gap-1">
-                {/* Start Time */}
-                <select
-                  name="startTime"
-                  value={form.startTime}
-                  onChange={(e) => {
-                    const newStartTime = e.target.value;
-                    setForm(prev => ({
-                      ...prev,
-                      startTime: newStartTime,
-                      endTime: calculateEndTime(newStartTime)
-                    }));
-                  }}
-                  disabled={form.isAllDay}
-                  className="w-24 text-xs border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                >
-                  {timeOptions.map(time => (
-                    <option key={time.value} value={time.value}>{time.label}</option>
-                  ))}
-                </select>
-                <span className="text-gray-500 px-1">–</span>
-                {/* End Time */}
-                <select
-                  name="endTime"
-                  value={form.endTime}
-                  onChange={handleChange}
-                  disabled={form.isAllDay}
-                  className="w-24 text-xs border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                >
-                  {generateEndTimeOptions(form.startTime).map(option => (
-                    <option key={option.value} value={option.value}>
-                      {option.label} {option.duration ? `(${option.duration})` : ""}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            ) : (
-              <div className="flex items-center gap-1">
-                <select
-                  name="startTime"
-                  value={form.startTime}
-                  onChange={handleChange}
-                  disabled={form.isAllDay}
-                  className="w-24 text-xs border border-gray-300 rounded-md px-3 py-2 bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:bg-gray-100 appearance-none"
-                >
-                  {timeOptions.map(time => (
-                    <option key={time.value} value={time.value}>{time.label}</option>
-                  ))}
-                </select>
-              </div>
-            )}
-          </div>
-          {/* All Day Row */}
-          <div className="mb-2">
-            <label className="flex items-center gap-2 text-xs">
-              <input
-                type="checkbox"
-                name="isAllDay"
-                checked={form.isAllDay}
-                onChange={handleChange}
-                className="h-4 w-4"
-              />
-              All Day
-            </label>
-          </div>
-          {/* Roles */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Roles</label>
-            <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-              <div className="grid grid-cols-3 gap-x-4 gap-y-0.5">
-                {roles.map((role) => (
-                  <label key={role.id} className="flex items-center text-sm py-0.5 min-h-[28px]">
-                    <input
-                      type="checkbox"
-                      checked={form.selectedRoleIds.includes(role.id)}
-                      onChange={() => handleMultiSelect('selectedRoleIds', role.id)}
-                      className="h-4 w-4 mr-1"
-                      style={{ flexShrink: 0 }}
-                    />
-                    <span className={
-                      "text-xs" +
-                      (role.label.length > 15 ? " hanging-indent" : "")
-                    }
-                      style={
-                        role.label.length > 15
-                          ? { display: 'block', paddingLeft: '12px', textIndent: '-12px', whiteSpace: 'normal', overflowWrap: 'break-word' }
-                          : { display: 'block', whiteSpace: 'normal', overflowWrap: 'break-word' }
-                      }
-                    > {role.label}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-          {/* Domains */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Domains</label>
-            <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-              <div className="grid grid-cols-3 gap-2">
-                {domains.map(domain => (
-                  <label key={domain.id} className="flex items-center gap-2 text-sm py-1">
-                    <input
-                      type="checkbox"
-                      checked={form.selectedDomainIds.includes(domain.id)}
-                      onChange={() => handleMultiSelect('selectedDomainIds', domain.id)}
-                      className="h-4 w-4"
-                    />
-                    <span className="text-xs">{domain.name}</span>
-                  </label>
-                ))}
-              </div>
-            </div>
-          </div>
-          {/* Key Relationships */}
-          {form.selectedRoleIds.length > 0 && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Key Relationships</label>
-              <div className="max-h-32 overflow-y-auto border border-gray-200 rounded-md p-2">
-                {keyRelationships.filter(relationship => form.selectedRoleIds.includes(relationship.role_id)).length === 0 ? (
-                  <div className="text-gray-400 text-xs italic px-2 py-2">
-                    No Key Relationships have been selected yet.
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-2 gap-2">
-                    {keyRelationships
-                      .filter(relationship => form.selectedRoleIds.includes(relationship.role_id))
-                      .map(relationship => (
-                        <label key={relationship.id} className="flex items-center gap-2 text-sm py-1">
-                          <input
-                            type="checkbox"
-                            checked={form.selectedKeyRelationshipIds.includes(relationship.id)}
-                            onChange={() => handleMultiSelect('selectedKeyRelationshipIds', relationship.id)}
-                            className="h-4 w-4"
-                          />
-                          <span className="text-xs">{relationship.name}</span>
-                        </label>
-                      ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Notes</label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleChange}
-              rows={3}
-              className="w-full px-3 py-2 text-xs border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-blue-500"
-              placeholder="Add any additional notes..."
+import React, { useState, useEffect } from 'react';
+import { Plus, Check, UserPlus, X } from 'lucide-react';
+import TaskForm from '../components/tasks/TaskForm';
+import { supabase } from '../supabaseClient';
+import { format } from 'date-fns';
+import { Task } from '../types';
+
+interface Role {
+  id: string;
+  label: string;
+}
+
+interface Domain {
+  id: string;
+  name: string;
+}
+
+interface DbTask extends Task {
+  date: string | null;
+  time: string | null;
+  task_roles: { role_id: string }[];
+  task_domains: { domain_id: string }[];
+}
+
+function Tasks() {
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [tasks, setTasks] = useState<DbTask[]>([]);
+  const [roles, setRoles] = useState<Record<string, Role>>({});
+  const [domains, setDomains] = useState<Record<string, Domain>>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchInitialData();
+  }, []);
+
+  const fetchInitialData = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    // Fetch roles
+    const { data: rolesData } = await supabase
+      .from('0007-ap-roles')
+      .select('id, label')
+      .eq('user_id', user.id);
+
+    if (rolesData) {
+      const rolesMap = rolesData.reduce((acc, role) => ({
+        ...acc,
+        [role.id]: role
+      }), {});
+      setRoles(rolesMap);
+    }
+
+    // Fetch domains
+    const { data: domainsData } = await supabase
+      .from('0007-ap-domains')
+      .select('id, name');
+
+    if (domainsData) {
+      const domainsMap = domainsData.reduce((acc, domain) => ({
+        ...acc,
+        [domain.id]: domain
+      }), {});
+      setDomains(domainsMap);
+    }
+
+    // Fetch tasks with relationships
+    const { data: tasksData } = await supabase
+      .from('0007-ap-tasks')
+      .select(`
+        *,
+        task_roles:0007-ap-task_roles(role_id),
+        task_domains:0007-ap-task_domains(domain_id)
+      `)
+      .eq('user_id', user.id)
+      .eq('status', 'pending')
+      .order('due_date', { ascending: true });
+
+    if (tasksData) {
+      setTasks(tasksData);
+    }
+
+    setLoading(false);
+  };
+
+  const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
+    const updates: any = {
+      status: action === 'complete' ? 'completed' : action === 'cancel' ? 'cancelled' : 'pending',
+    };
+    
+    if (action === 'complete') {
+      updates.completed_at = new Date().toISOString();
+    }
+
+    const { error } = await supabase
+      .from('0007-ap-tasks')
+      .update(updates)
+      .eq('id', taskId);
+
+    if (!error) {
+      if (action === 'complete') {
+        setTasks(tasks.filter(t => t.id !== taskId));
+      } else {
+        fetchInitialData();
+      }
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex h-64 items-center justify-center">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  // Group tasks by date
+  const tasksByDate = tasks.reduce((acc: Record<string, DbTask[]>, task) => {
+    const date = task.date ? format(new Date(task.date), 'yyyy-MM-dd') : 'No Date';
+    if (!acc[date]) acc[date] = [];
+    acc[date].push(task);
+    return acc;
+  }, {});
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold text-gray-900">Tasks</h2>
+        <button
+          onClick={() => setShowTaskForm(true)}
+          className="flex items-center rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
+        >
+          <Plus className="mr-1 h-4 w-4" />
+          Add Task
+        </button>
+      </div>
+
+      {showTaskForm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl">
+            <TaskForm
+              onClose={() => setShowTaskForm(false)}
+              availableRoles={Object.values(roles)}
+              availableDomains={Object.values(domains)}
             />
           </div>
-          {/* Submit Button */}
-          <div className="flex justify-end gap-2 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={loading}
-              className="px-4 py-2 text-sm bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
-            >
-              {loading ? 'Creating...' : `Create ${formType === 'event' ? 'Event' : 'Task'}`}
-            </button>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        {Object.entries(tasksByDate).map(([date, dateTasks]) => (
+          <div key={date} className="rounded-lg bg-white p-4 shadow-sm">
+            <h3 className="mb-3 font-medium text-gray-700">
+              {date === 'No Date' ? 'No Date' : format(new Date(date), 'MMMM d, yyyy')}
+            </h3>
+            <div className="space-y-2">
+              {dateTasks.map((task) => (
+                <div
+                  key={task.id}
+                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 px-4 py-2"
+                >
+                  <div className="flex items-center space-x-3">
+                    <button
+                      onClick={() => handleTaskAction(task.id, 'complete')}
+                      className="rounded-full border border-gray-300 p-1 hover:bg-green-100 hover:text-green-600"
+                      title="Complete"
+                    >
+                      <Check className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleTaskAction(task.id, 'delegate')}
+                      className="rounded-full border border-gray-300 p-1 hover:bg-blue-100 hover:text-blue-600"
+                      title="Delegate"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleTaskAction(task.id, 'cancel')}
+                      className="rounded-full border border-gray-300 p-1 hover:bg-red-100 hover:text-red-600"
+                      title="Cancel"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                    <div>
+                      <span className="text-sm font-medium text-gray-900">{task.title}</span>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {task.task_roles?.map(({ role_id }) => (
+                          roles[role_id] && (
+                            <span key={role_id} className="rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                              {roles[role_id].label}
+                            </span>
+                          )
+                        ))}
+                        {task.task_domains?.map(({ domain_id }) => (
+                          domains[domain_id] && (
+                            <span key={domain_id} className="rounded-full bg-blue-100 px-2 py-0.5 text-xs text-blue-600">
+                              {domains[domain_id].name}
+                            </span>
+                          )
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  {task.time && (
+                    <span className="text-sm text-gray-500">
+                      {format(new Date(`2000-01-01T${task.time}`), 'h:mm a')}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </form>
+        ))}
       </div>
     </div>
   );
-};
+}
 
-export default TaskForm;
+export default Tasks;
