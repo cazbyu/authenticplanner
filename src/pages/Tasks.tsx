@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Check, UserPlus, X } from 'lucide-react';
-import TaskForm from '../components/tasks/TaskForm';
+import TaskEventForm from '../components/tasks/TaskEventForm';
 import { supabase } from '../supabaseClient';
 import { format } from 'date-fns';
 import { Task } from '../types';
@@ -23,7 +23,7 @@ interface DbTask extends Task {
 }
 
 function Tasks() {
-  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [showTaskEventForm, setShowTaskEventForm] = useState(false);
   const [tasks, setTasks] = useState<DbTask[]>([]);
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
@@ -127,7 +127,7 @@ function Tasks() {
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">Tasks</h2>
         <button
-          onClick={() => setShowTaskForm(true)}
+          onClick={() => setShowTaskEventForm(true)}
           className="flex items-center rounded-md bg-primary-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-primary-600"
         >
           <Plus className="mr-1 h-4 w-4" />
@@ -135,11 +135,11 @@ function Tasks() {
         </button>
       </div>
 
-      {showTaskForm && (
+      {showTaskEventForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl">
-            <TaskForm
-              onClose={() => setShowTaskForm(false)}
+            <TaskEventForm
+              onClose={() => setShowTaskEventForm(false)}
               availableRoles={Object.values(roles)}
               availableDomains={Object.values(domains)}
             />
