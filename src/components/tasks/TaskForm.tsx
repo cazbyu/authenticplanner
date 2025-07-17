@@ -331,22 +331,25 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         )}
       </div>
 
-      {/* --- ROLES --- */}
+      {/* Roles Section */}
 <div className="mb-4">
   <label className="font-semibold block mb-1">Roles</label>
-  <div className="grid grid-cols-3 gap-2">
-    {roles.map((role) => (
-      <label key={role.id} className="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          checked={form.selectedRoleIds.includes(role.id)}
-          onChange={() => handleMultiSelect("selectedRoleIds", role.id)}
-        />
-        <span>{role.label}</span>
-      </label>
-    ))}
+  <div className="border rounded px-4 py-2">
+    <div className="grid grid-cols-2 gap-y-1 gap-x-4">
+      {roles.map((role) => (
+        <label key={role.id} className="flex items-center space-x-2">
+          <input
+            type="checkbox"
+            checked={form.selectedRoleIds.includes(role.id)}
+            onChange={() => handleMultiSelect("selectedRoleIds", role.id)}
+          />
+          <span>{role.label}</span>
+        </label>
+      ))}
+    </div>
   </div>
 </div>
+
 
 {/* --- DOMAINS --- */}
 <div className="mb-4">
