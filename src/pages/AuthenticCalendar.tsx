@@ -197,13 +197,7 @@ const AuthenticCalendar: React.FC = () => {
       setCurrentDate(new Date());
     }
     
-    // Force calendar to update view immediately
-    if (calendarRef.current) {
-      const api = calendarRef.current.getApi();
-      api.changeView(newView);
-      api.gotoDate(newView === 'timeGridDay' ? new Date() : currentDate);
-    }
-    setIsViewChanging(false);
+       setIsViewChanging(false);
   };
 
   const handleTaskCreated = () => {
