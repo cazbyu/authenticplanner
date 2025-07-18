@@ -265,7 +265,6 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             ×
           </button>
         </div>
-          ))}
 </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Title */}
