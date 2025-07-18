@@ -38,7 +38,7 @@ interface TwelveWeekGoal { id: string; title: string; }
 
 const defaultForm: FormData = {
   title: "",
-  dueDate: new Date().toISOString().split("T")[0],
+  dueDate: format(new Date(), "yyyy-MM-dd"),
   startTime: "09:00",
   endTime: "10:00",
   isAllDay: false,
