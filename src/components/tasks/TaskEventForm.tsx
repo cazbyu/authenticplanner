@@ -450,8 +450,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
           </div>
         </form>
       </div>
-    </div>
-  );
+      );
 };
 
 export default TaskEventForm;
