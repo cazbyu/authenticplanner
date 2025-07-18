@@ -231,7 +231,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
       if (existingRelationship) {
         // Update existing relationship
         const { data: updatedRelationship, error: relationshipError } = await supabase
-          .from('0007-ap-key_relationships')
+          .from('0007-ap-key-relationships')
           .update({
             name: form.name.trim(),
             image_path: imagePath || null
@@ -249,7 +249,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
       } else {
         // Create new relationship
         const { data: newRelationship, error: relationshipError } = await supabase
-          .from('0007-ap-key_relationships')
+          .from('0007-ap-key-relationships')
           .insert([{
             role_id: roleId,
             name: form.name.trim(),
