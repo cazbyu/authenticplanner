@@ -130,7 +130,7 @@ function getEndTimeOptions(startTime: string) {
         .eq("user_id", user.id);
 
       const { data: goalData } = await supabase
-        .from("0007-ap-goals_12wk_main")
+        .from("0007-ap-goals-12wk-main")
         .select("id,title")
         .eq("user_id", user.id)
         .eq("status", "active");
