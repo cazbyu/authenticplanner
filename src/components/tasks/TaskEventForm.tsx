@@ -257,7 +257,11 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             {form.schedulingType === "event" ? "Event" : "Task"}
           </h2>
           {/* Task/Event Selector Tabs */}
-<div className="flex gap-2 mb-4">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
+            ×
+          </button>
+        </div>
+        <div className="flex gap-2 mb-4">
   {["event", "task"].map(type => (
     <button
       key={type}
@@ -272,11 +276,6 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
     </button>
   ))}
 </div>
-
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-            ×
-          </button>
-        </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Title */}
           <input
