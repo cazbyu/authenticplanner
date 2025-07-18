@@ -162,12 +162,14 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         if (!form.isAllDay && form.endTime) {
           const [eh, em] = form.endTime.split(":").map(Number);
           endDate.setHours(eh, em, 0, 0);
-          end_time = endDate.toISOString();
+          end_time = format(endDate, "yyyy-MM-dd'T'HH:mm:ss");
         }
         record = {
           ...record,
-          start_time: form.isAllDay ? new Date(form.dueDate).toISOString() : startDate.toISOString(),
-          end_time: form.isAllDay ? null : end_time,
+          start_time: form.isAllDay
+  ? form.dueDate + "T00:00:00"
+  : format(startDate, "yyyy-MM-dd'T'HH:mm:ss"),
+end_time: form.isAllDay ? null : end_time,
           is_all_day: form.isAllDay,
           due_date: null,
         };
