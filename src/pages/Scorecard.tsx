@@ -73,7 +73,7 @@ const Scorecard: React.FC = () => {
           task_roles:0007-ap-task_roles(role_id),
           task_domains:0007-ap-task_domains(domain_id),
           goal_tasks:0007-ap-goal_tasks(
-            goal:0007-ap-goals_12wk_main(id, title, progress)
+            goal:0007-ap-goals-12wk-main(id, title, progress)
           )
         `)
         .eq('user_id', user.id)
