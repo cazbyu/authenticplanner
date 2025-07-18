@@ -189,8 +189,11 @@ const AuthenticCalendar: React.FC = () => {
   };
 
   const handleViewChange = (newView: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth') => {
-    setIsViewChanging(true);
-    setView(newView);
+  setView(newView);
+  if (newView === 'timeGridDay') {
+    setCurrentDate(new Date());
+  }
+};
     
     // For day view, set to current date
     if (newView === 'timeGridDay') {
