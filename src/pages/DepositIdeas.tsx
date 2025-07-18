@@ -82,16 +82,16 @@ const DepositIdeas: React.FC = () => {
           .from('0007-ap-domains')
           .select('id, name'),
         supabase
-          .from('0007-ap-key_relationships')
+          .from('0007-ap-key-relationships')
           .select('*')
           .eq('user_id', user.id),
         supabase
-          .from('0007-ap-deposit_ideas')
+          .from('0007-ap-deposit-ideas')
           .select(`
             *,
-            key_relationship:0007-ap-key_relationships(*),
-            deposit_idea_roles:0007-ap-deposit_idea_roles(role_id),
-            deposit_idea_domains:0007-ap-deposit_idea_domains(domain_id)
+            key_relationship:0007-ap-key-relationships(*),
+            deposit_idea_roles:0007-ap-deposit-idea-roles(role_id),
+            deposit_idea_domains:0007-ap-deposit-idea-domains(domain_id)
           `)
           .eq('user_id', user.id)
           .order('created_at', { ascending: false })
@@ -164,7 +164,7 @@ const DepositIdeas: React.FC = () => {
 
       // Create the deposit idea
       const { data: depositIdea, error: ideaError } = await supabase
-        .from('0007-ap-deposit_ideas')
+        .from('0007-ap-deposit-ideas')
         .insert([{
           user_id: user.id,
           description: form.description.trim(),
@@ -189,7 +189,7 @@ const DepositIdeas: React.FC = () => {
         }));
         
         await supabase
-          .from('0007-ap-deposit_idea_roles')
+          .from('0007-ap-deposit-idea-roles')
           .insert(roleInserts);
       }
 
@@ -201,7 +201,7 @@ const DepositIdeas: React.FC = () => {
         }));
         
         await supabase
-          .from('0007-ap-deposit_idea_domains')
+          .from('0007-ap-deposit-idea-domains')
           .insert(domainInserts);
       }
 
