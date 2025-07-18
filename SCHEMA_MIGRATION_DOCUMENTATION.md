@@ -19,15 +19,15 @@ The following tables already follow the naming convention:
 - `0007-ap-preset-roles`
 - `0007-ap-task_roles`
 - `0007-ap-custom-roles`
-- `0007-ap-task_domains`
-- `0007-ap-goals_12wk`
+- `0007-ap-task-domains`
+- `0007-ap-goals-12wk`
 - `0007-ap-users`
-- `0007-ap-task_12wkgoals`
-- `0007-ap-task_notes`
+- `0007-ap-task-12wkgoals`
+- `0007-ap-task-notes`
 - `0007-ap-global-cycles`
 - `0007-ap-calendar-events`
 - `0007-ap-roles`
-- `0007-ap-goals_12wk_weeks`
+- `0007-ap-goals-12wk-weeks`
 - `0007-ap-cycle-goals`
 
 ## Changes Made
