@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
 import { CheckCircle } from 'lucide-react';
+import './App.css';
 
 // Layouts
 import MainLayout from './layouts/MainLayout';
