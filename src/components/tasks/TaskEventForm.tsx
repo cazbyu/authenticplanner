@@ -261,9 +261,9 @@ end_time: form.isAllDay ? null : end_time,
         );
       }
       // Key Relationships
-      await supabase.from("0007-ap-task_key_relationships").delete().eq("task_id", taskId);
+      await supabase.from("0007-ap-task-key-relationships").delete().eq("task_id", taskId);
       if (form.selectedKeyRelationshipIds.length > 0) {
-        await supabase.from("0007-ap-task_key_relationships").insert(
+        await supabase.from("0007-ap-task-key-relationships").insert(
           form.selectedKeyRelationshipIds.map((krId) => ({
             task_id: taskId,
             key_relationship_id: krId,
