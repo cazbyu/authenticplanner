@@ -256,6 +256,23 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             {mode === "edit" ? "Edit" : "Create"}{" "}
             {form.schedulingType === "event" ? "Event" : "Task"}
           </h2>
+          {/* Task/Event Selector Tabs */}
+<div className="flex gap-2 mb-4">
+  {["event", "task"].map(type => (
+    <button
+      key={type}
+      type="button"
+      onClick={() => setForm(f => ({ ...f, schedulingType: type as "event" | "task" }))}
+      className={`px-3 py-1.5 rounded-full font-medium text-sm transition 
+        ${form.schedulingType === type 
+          ? "bg-blue-600 text-white shadow" 
+          : "bg-gray-100 text-gray-700 hover:bg-blue-100"}`}
+    >
+      {type === "event" ? "Event" : "Task"}
+    </button>
+  ))}
+</div>
+
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             ×
           </button>
