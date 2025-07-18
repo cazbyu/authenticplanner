@@ -2,7 +2,7 @@
   # Create 12-Week Goals System
 
   1. New Tables
-    - `0007-ap-goals_12wk` - Main 12-week goals table
+    - `0007-ap-goals-12wk` - Main 12-week goals table
     - `0007-ap-goal_domains` - Junction table for goal-domain relationships
     - `0007-ap-goal_roles` - Junction table for goal-role relationships
     - `0007-ap-goal_weekly_goals` - Weekly goals under each 12-week goal
@@ -19,7 +19,7 @@
 */
 
 -- Create main 12-week goals table
-CREATE TABLE IF NOT EXISTS "0007-ap-goals_12wk_main" (
+CREATE TABLE IF NOT EXISTS "0007-ap-goals-12wk-main" (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id uuid NOT NULL,
   title text NOT NULL,
