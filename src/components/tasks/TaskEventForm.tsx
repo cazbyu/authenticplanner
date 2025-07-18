@@ -351,34 +351,43 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 <div className="flex items-center gap-4 mb-2">
   <div>
     <label className="block text-sm mb-1">Date</label>
-    <DatePicker
-      selected={form.date ? new Date(form.date) : null}
-      onChange={date =>
-        setForm(f => ({
-          ...f,
-          date: date ? format(date, "yyyy-MM-dd") : "",
-        }))
-      }
-      dateFormat="MMM dd, yyyy"
-      className="border rounded px-2 py-1 text-base"
-      placeholderText="Select date"
-    />
+    {/* Date Picker */}
+<div className="mb-2">
+  <label className="block text-sm mb-1">Date</label>
+  <DatePicker
+    selected={form.date ? new Date(form.date) : null}
+    onChange={date =>
+      setForm(f => ({
+        ...f,
+        date: date ? format(date, "yyyy-MM-dd") : "",
+      }))
+    }
+    dateFormat="MMM dd, yyyy"
+    className="border rounded px-2 py-1 text-base w-full"
+    placeholderText="Select date"
+    showMonthDropdown
+    dropdownMode="select"
+    calendarClassName="text-xs"
+  />
+  {/* All Day BELOW date */}
+  <div className="mt-1">
+    <label className="flex items-center gap-2 text-xs">
+      <input
+        type="checkbox"
+        name="isAllDay"
+        checked={form.isAllDay}
+        onChange={handleChange}
+        className="h-4 w-4"
+      />
+      All Day
+    </label>
   </div>
-  <label className="flex items-center gap-2 text-xs mt-5">
-    <input
-      type="checkbox"
-      name="isAllDay"
-      checked={form.isAllDay}
-      onChange={handleChange}
-      className="h-4 w-4"
-    />
-    All Day
-  </label>
 </div>
 
-{/* Time Fields */}
+{/* Time fields: only shown if NOT all day */}
 {!form.isAllDay && (
   <div className="flex gap-4 mb-2">
+    {/* Always show Start Time */}
     <div>
       <label className="block text-sm mb-1">Start Time</label>
       <input
@@ -389,6 +398,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         className="border rounded px-2 py-1"
       />
     </div>
+    {/* Only show End Time for EVENTS */}
     {form.schedulingType === "event" && (
       <div>
         <label className="block text-sm mb-1">End Time</label>
@@ -403,6 +413,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
     )}
   </div>
 )}
+
 {/* Start/End Time & All Day */}
 {form.schedulingType === "event" && (
   <>
