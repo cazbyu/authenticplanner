@@ -351,15 +351,15 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 <div className="flex items-center gap-4 mb-2">
   <div>
     <label className="block text-sm mb-1">Date</label>
-    {/* Date Picker */}
+    {/* Date Picker and All Day */}
 <div className="mb-2">
   <label className="block text-sm mb-1">Date</label>
   <DatePicker
-    selected={form.date ? new Date(form.date) : null}
+    selected={form.dueDate ? new Date(form.dueDate) : null}
     onChange={date =>
       setForm(f => ({
         ...f,
-        date: date ? format(date, "yyyy-MM-dd") : "",
+        dueDate: date ? format(date, "yyyy-MM-dd") : "",
       }))
     }
     dateFormat="MMM dd, yyyy"
@@ -369,7 +369,6 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
     dropdownMode="select"
     calendarClassName="text-xs"
   />
-  {/* All Day BELOW date */}
   <div className="mt-1">
     <label className="flex items-center gap-2 text-xs">
       <input
@@ -387,73 +386,29 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 {/* Time fields: only shown if NOT all day */}
 {!form.isAllDay && (
   <div className="flex gap-4 mb-2">
-    {/* Always show Start Time */}
-    <div>
+    <div className="flex-1">
       <label className="block text-sm mb-1">Start Time</label>
       <input
         type="time"
         name="startTime"
         value={form.startTime}
         onChange={handleChange}
-        className="border rounded px-2 py-1"
+        className="border rounded px-2 py-1 w-full"
       />
     </div>
-    {/* Only show End Time for EVENTS */}
     {form.schedulingType === "event" && (
-      <div>
+      <div className="flex-1">
         <label className="block text-sm mb-1">End Time</label>
         <input
           type="time"
           name="endTime"
           value={form.endTime}
           onChange={handleChange}
-          className="border rounded px-2 py-1"
+          className="border rounded px-2 py-1 w-full"
         />
       </div>
     )}
   </div>
-)}
-
-{/* Start/End Time & All Day */}
-{form.schedulingType === "event" && (
-  <>
-    <div className="flex gap-2 mb-2">
-      <div className="flex-1">
-        <label className="block text-sm mb-1">Start Time</label>
-        <input
-          type="time"
-          name="startTime"
-          value={form.startTime}
-          onChange={handleChange}
-          disabled={form.isAllDay}
-          className="border rounded px-2 py-1 w-full"
-        />
-      </div>
-      <div className="flex-1">
-        <label className="block text-sm mb-1">End Time</label>
-        <input
-          type="time"
-          name="endTime"
-          value={form.endTime}
-          onChange={handleChange}
-          disabled={form.isAllDay}
-          className="border rounded px-2 py-1 w-full"
-        />
-      </div>
-    </div>
-    <div className="mb-2">
-      <label className="flex items-center gap-2 text-xs">
-        <input
-          type="checkbox"
-          name="isAllDay"
-          checked={form.isAllDay}
-          onChange={handleChange}
-          className="h-4 w-4"
-        />
-        All Day
-      </label>
-    </div>
-  </>
 )}
           {/* Roles */}
           <div>
