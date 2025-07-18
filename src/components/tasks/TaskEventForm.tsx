@@ -343,7 +343,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 >
   {/* Date + All Day (always visible) */}
   <div>
-    <label className="block text-sm mb-1">Date</label>
+    <label className="block text-xs mb-1">Date</label>
     <DatePicker
       selected={form.dueDate ? new Date(form.dueDate) : null}
       onChange={date =>
@@ -353,7 +353,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         }))
       }
       dateFormat="MMM dd, yyyy"
-      className="border rounded px-2 py-1 text-sm w-full"
+      className="border rounded px-2 py-1 text-xs w-full"
       placeholderText="Select date"
       showMonthDropdown
       dropdownMode="select"
@@ -375,13 +375,13 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   {/* Start Time (shown if not All Day) */}
   {!form.isAllDay && (
     <div>
-      <label className="block text-sm mb-1">Start Time</label>
+      <label className="block text-xs mb-1">Start Time</label>
       <input
         type="time"
         name="startTime"
         value={form.startTime}
         onChange={handleChange}
-        className="border rounded px-2 py-1 text-sm w-full"
+        className="border rounded px-2 py-1 text-xs w-full"
       />
     </div>
   )}
@@ -399,7 +399,6 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
     </div>
   )}
 </div>
-
 
           {/* Roles */}
           <div>
