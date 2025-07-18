@@ -295,7 +295,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
     >
       {type === "event" ? "Event" : "Task"}
     </button>
-  ))
+  
 </div>
           {/* Flags */}
           <div className="flex flex-wrap items-center gap-4 mb-2">
