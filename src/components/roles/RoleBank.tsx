@@ -115,7 +115,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
       // Fetch key relationships
       const { data: relationshipsData, error: relationshipsError } = await supabase
-        .from('0007-ap-key_relationships')
+        .from('0007-ap-key-relationships')
         .select('*')
         .eq('role_id', roleId);
 
@@ -127,7 +127,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       if (relationshipsData && relationshipsData.length > 0) {
         const relationshipIds = relationshipsData.map(rel => rel.id);
         const { data: ideasData, error: ideasError } = await supabase
-          .from('0007-ap-deposit_ideas')
+          .from('0007-ap-deposit-ideas')
           .select('*')
           .in('key_relationship_id', relationshipIds);
 
