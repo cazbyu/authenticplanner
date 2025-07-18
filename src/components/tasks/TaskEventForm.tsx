@@ -293,9 +293,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 />
 
 {/* Toggle Tabs: Centered Below Title */}
-<div className="flex justify-center items-center mb-3">
-  {["event", "task"].map(type => (
-    <button
+
       key={type}
       type="button"
       onClick={() => setForm(f => ({ ...f, schedulingType: type as "event" | "task" }))}
