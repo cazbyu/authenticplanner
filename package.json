@@ -7,6 +7,7 @@
     "@fullcalendar/timegrid": "^6.1.10",
     "@supabase/supabase-js": "^2.39.1",
     "@types/react-beautiful-dnd": "^13.1.8",
+    "@types/react-datepicker": "^7.0.0",
     "chart.js": "^4.4.1",
     "date-fns": "^2.30.0",
     "date-fns-tz": "^2.0.0",

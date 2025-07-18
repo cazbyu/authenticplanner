@@ -242,6 +242,29 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
   };
 
+  // --- DEPOSIT IDEAS VIEW ---
+  if (selectedSection === 'deposits') {
+    // Import and render the DepositIdeas component
+    const DepositIdeas = React.lazy(() => import('../../pages/DepositIdeas'));
+    
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-3 p-6 flex-shrink-0">
+          <button onClick={handleBack}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <h1 className="text-2xl font-bold text-gray-900">Deposit Ideas</h1>
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <React.Suspense fallback={<div className="flex items-center justify-center h-32"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" /></div>}>
+            <DepositIdeas />
+          </React.Suspense>
+        </div>
+      </div>
+    );
+  }
+
   // Group roles by category
   const rolesByCategory = roles.reduce((acc, role) => {
     if (!acc[role.category]) {
