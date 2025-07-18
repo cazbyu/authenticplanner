@@ -276,7 +276,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             className="w-full px-3 py-2 text-base border border-gray-300 rounded-md mt-2 mb-0"
           />
 
-          {/* Toggle Tabs: Centered Below Title */}
+          {/* Toggle Tabs: Left Justified Below Title */}
           <div className="flex justify-start items-center mb-1">
             {["event", "task"].map(type => (
               <button
