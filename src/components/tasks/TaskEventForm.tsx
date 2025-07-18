@@ -345,7 +345,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   <div>
     <label className="block text-xs mb-1">Date</label>
     <DatePicker
-  selected={form.dueDate ? new Date(form.dueDate) : null}
+  selected={form.dueDate ? new Date(form.dueDate + "T00:00:00") : null}
   onChange={date =>
     setForm(f => ({
       ...f,
