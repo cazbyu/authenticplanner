@@ -358,6 +358,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       showMonthDropdown
       dropdownMode="select"
       calendarClassName="text-xs"
+      popperClassName="small-datepicker-popup"
     />
     <div className="mt-1">
       <label className="flex items-center gap-2 text-xs">
