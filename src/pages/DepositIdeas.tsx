@@ -39,7 +39,7 @@ interface DepositIdeaFormData {
   notes: string;
   selectedRoleIds: string[];
   selectedDomainIds: string[];
-  selectedKeyRelationshipId: string;
+  selectedKeyRelationshipIds: string[];
 }
 
 const DepositIdeas: React.FC = () => {
@@ -59,7 +59,7 @@ const DepositIdeas: React.FC = () => {
     notes: '',
     selectedRoleIds: [],
     selectedDomainIds: [],
-    selectedKeyRelationshipId: ''
+    selectedKeyRelationshipIds: []
   });
 
   useEffect(() => {
@@ -150,6 +150,15 @@ const DepositIdeas: React.FC = () => {
     }));
   };
 
+  const toggleKeyRelationship = (relationshipId: string) => {
+    setForm(prev => ({
+      ...prev,
+      selectedKeyRelationshipIds: prev.selectedKeyRelationshipIds.includes(relationshipId)
+        ? prev.selectedKeyRelationshipIds.filter(id => id !== relationshipId)
+        : [...prev.selectedKeyRelationshipIds, relationshipId]
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -212,7 +221,7 @@ const DepositIdeas: React.FC = () => {
         notes: '',
         selectedRoleIds: [],
         selectedDomainIds: [],
-        selectedKeyRelationshipId: ''
+        selectedKeyRelationshipIds: []
       });
       fetchAllData();
 
@@ -524,19 +533,26 @@ const DepositIdeas: React.FC = () => {
               {/* Key Relationships (only show if roles are selected) */}
               {form.selectedRoleIds.length > 0 && (
                 <div>
-                  <label className="block text-sm font-medium mb-3">Key Relationship (Optional)</label>
-                  <select
-                    value={form.selectedKeyRelationshipId}
-                    onChange={(e) => setForm(prev => ({ ...prev, selectedKeyRelationshipId: e.target.value }))}
-                    className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                  >
-                    <option value="">Select a key relationship...</option>
-                    {getFilteredKeyRelationships().map(kr => (
-                      <option key={kr.id} value={kr.id}>
-                        {kr.name} ({roles[kr.role_id]?.label})
-                      </option>
-                    ))}
-                  </select>
+                  <label className="block text-sm font-medium mb-3">Key Relationships</label>
+                  <div className="grid grid-cols-2 gap-2 border border-gray-200 p-3 rounded-md max-h-40 overflow-y-auto">
+                    {getFilteredKeyRelationships().length > 0 ? (
+                      getFilteredKeyRelationships().map(kr => (
+                        <label key={kr.id} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={form.selectedKeyRelationshipIds.includes(kr.id)}
+                            onChange={() => toggleKeyRelationship(kr.id)}
+                            className="h-4 w-4"
+                          />
+                          <span>{kr.name}</span>
+                        </label>
+                      ))
+                    ) : (
+                      <div className="text-gray-400 text-xs italic px-2 py-2 col-span-2">
+                        No Key Relationships for selected roles yet.
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 
