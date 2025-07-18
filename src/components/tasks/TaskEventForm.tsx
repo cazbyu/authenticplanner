@@ -70,6 +70,42 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
   const [twelveWeekGoals, setTwelveWeekGoals] = useState<TwelveWeekGoal[]>([]);
   const [loading, setLoading] = useState(false);
+// Generates time options for 24 hours in 15-min increments
+const generateTimeOptions = () => {
+  const options = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 15) {
+      const value = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+      const hour12 = h % 12 === 0 ? 12 : h % 12;
+      const ampm = h < 12 ? 'AM' : 'PM';
+      const label = `${hour12}:${m.toString().padStart(2, '0')} ${ampm}`;
+      options.push({ value, label });
+    }
+  }
+  return options;
+};
+const timeOptions = generateTimeOptions();
+
+// Builds end time options, showing duration in parentheses
+function getEndTimeOptions(startTime: string) {
+  if (!startTime) return [];
+  const startIdx = timeOptions.findIndex(opt => opt.value === startTime);
+  return timeOptions.slice(startIdx + 1).map(opt => {
+    const [sh, sm] = startTime.split(':').map(Number);
+    const [eh, em] = opt.value.split(':').map(Number);
+    const minutes = (eh * 60 + em) - (sh * 60 + sm);
+    const hrs = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    let dur = '';
+    if (hrs > 0) dur += `${hrs} hr${hrs > 1 ? 's' : ''}`;
+    if (mins > 0) dur += `${hrs > 0 ? ' ' : ''}${mins} min${mins > 1 ? 's' : ''}`;
+    if (!dur) dur = '0 min';
+    return {
+      value: opt.value,
+      label: `${opt.label} (${dur})`,
+    };
+  });
+}
 
   // ----- FETCH OPTIONS -----
   useEffect(() => {
