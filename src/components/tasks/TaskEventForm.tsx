@@ -411,31 +411,41 @@ end_time: form.isAllDay ? null : end_time,
     </div>
   </div>
   {/* Start Time (shown if not All Day) */}
-  {!form.isAllDay && (
-    <div>
-      <label className="block text-xs mb-1">Start Time</label>
-      <input
-        type="time"
-        name="startTime"
-        value={form.startTime}
-        onChange={handleChange}
-        className="border rounded px-2 py-1 text-xs w-full"
-      />
-    </div>
-  )}
-  {/* End Time (shown if Event and not All Day) */}
-  {form.schedulingType === "event" && !form.isAllDay && (
-    <div>
-      <label className="block text-xs mb-1">End Time</label>
-      <input
-        type="time"
-        name="endTime"
-        value={form.endTime}
-        onChange={handleChange}
-        className="border rounded px-2 py-1 text-xs w-full"
-      />
-    </div>
-  )}
+{!form.isAllDay && (
+  <div>
+    <label className="block text-xs mb-1">Start Time</label>
+    <select
+      name="startTime"
+      value={form.startTime}
+      onChange={handleChange}
+      className="border rounded px-2 py-1 text-xs w-full"
+    >
+      <option value="">--</option>
+      {timeOptions.map(opt => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  </div>
+)}
+{/* End Time (shown if Event and not All Day) */}
+{form.schedulingType === "event" && !form.isAllDay && (
+  <div>
+    <label className="block text-xs mb-1">End Time</label>
+    <select
+      name="endTime"
+      value={form.endTime}
+      onChange={handleChange}
+      className="border rounded px-2 py-1 text-xs w-full"
+      disabled={!form.startTime}
+    >
+      <option value="">--</option>
+      {getEndTimeOptions(form.startTime).map(opt => (
+        <option key={opt.value} value={opt.value}>{opt.label}</option>
+      ))}
+    </select>
+  </div>
+)}
+
 </div>
 
           {/* Roles */}
