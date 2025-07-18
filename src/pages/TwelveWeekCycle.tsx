@@ -172,7 +172,7 @@ const TwelveWeekCycle: React.FC = () => {
         .from('0007-ap-goal_weekly_goals')
         .select(`
           *,
-          goal:0007-ap-goals_12wk_main!inner(user_id)
+          goal:0007-ap-goals-12wk-main!inner(user_id)
         `)
         .eq('goal.user_id', user.id)
         .order('week_number', { ascending: true });
