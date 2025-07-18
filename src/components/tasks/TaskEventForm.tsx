@@ -125,7 +125,7 @@ function getEndTimeOptions(startTime: string) {
         .select("id,name");
 
       const { data: relationshipData } = await supabase
-        .from("0007-ap-key_relationships")
+        .from("0007-ap-key-relationships")
         .select("id,name,role_id")
         .eq("user_id", user.id);
 
