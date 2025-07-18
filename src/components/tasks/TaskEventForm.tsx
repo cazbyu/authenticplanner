@@ -4,7 +4,6 @@ import DatePicker from "react-datepicker";
 import { format } from "date-fns";
 import "react-datepicker/dist/react-datepicker.css";
 
-
 // ----- TYPES -----
 interface TaskEventFormProps {
   mode: "create" | "edit";
@@ -265,38 +264,37 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             ×
           </button>
         </div>
-</div>
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Title */}
-<input
-  type="text"
-  name="title"
-  value={form.title}
-  onChange={handleChange}
-  required
-  placeholder={form.schedulingType === "event" ? "Enter event title..." : "Enter task title..."}
-  className="w-full px-3 py-2 text-base border border-gray-300 rounded-md mt-2 mb-2"
-/>
+          <input
+            type="text"
+            name="title"
+            value={form.title}
+            onChange={handleChange}
+            required
+            placeholder={form.schedulingType === "event" ? "Enter event title..." : "Enter task title..."}
+            className="w-full px-3 py-2 text-base border border-gray-300 rounded-md mt-2 mb-2"
+          />
 
-{/* Toggle Tabs: Centered Below Title */}
-<div className="flex justify-center items-center mb-3">
-  {["event", "task"].map(type => (
-    <button
-      key={type}
-      type="button"
-      onClick={() => setForm(f => ({ ...f, schedulingType: type as "event" | "task" }))}
-      className={`
-        px-4 py-1 rounded-full mx-1 text-sm font-medium transition
-        ${form.schedulingType === type 
-          ? "bg-blue-600 text-white shadow"
-          : "bg-gray-100 text-gray-700 hover:bg-blue-200"}
-      `}
-      style={{ minWidth: "70px" }}
-    >
-      {type === "event" ? "Event" : "Task"}
-    </button>
-  
-</div>
+          {/* Toggle Tabs: Centered Below Title */}
+          <div className="flex justify-center items-center mb-3">
+            {["event", "task"].map(type => (
+              <button
+                key={type}
+                type="button"
+                onClick={() => setForm(f => ({ ...f, schedulingType: type as "event" | "task" }))}
+                className={`
+                  px-4 py-1 rounded-full mx-1 text-sm font-medium transition
+                  ${form.schedulingType === type
+                    ? "bg-blue-600 text-white shadow"
+                    : "bg-gray-100 text-gray-700 hover:bg-blue-200"}
+                `}
+                style={{ minWidth: "70px" }}
+              >
+                {type === "event" ? "Event" : "Task"}
+              </button>
+            ))}
+          </div>
           {/* Flags */}
           <div className="flex flex-wrap items-center gap-4 mb-2">
             <label className="flex items-center gap-1 text-xs">
@@ -334,64 +332,63 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             </div>
           )}
           {/* Date Picker and All Day */}
-<div className="mb-2">
-  <label className="block text-sm mb-1">Date</label>
-  <DatePicker
-    selected={form.dueDate ? new Date(form.dueDate) : null}
-    onChange={date =>
-      setForm(f => ({
-        ...f,
-        dueDate: date ? format(date, "yyyy-MM-dd") : "",
-      }))
-    }
-    dateFormat="MMM dd, yyyy"
-    className="border rounded px-2 py-1 text-base w-full"
-    placeholderText="Select date"
-    showMonthDropdown
-    dropdownMode="select"
-    calendarClassName="text-xs"
-  />
-  <div className="mt-1">
-    <label className="flex items-center gap-2 text-xs">
-      <input
-        type="checkbox"
-        name="isAllDay"
-        checked={form.isAllDay}
-        onChange={handleChange}
-        className="h-4 w-4"
-      />
-      All Day
-    </label>
-  </div>
-</div>
-
-{/* Time fields: only shown if NOT all day */}
-{!form.isAllDay && (
-  <div className="flex gap-4 mb-2">
-    <div className="flex-1">
-      <label className="block text-sm mb-1">Start Time</label>
-      <input
-        type="time"
-        name="startTime"
-        value={form.startTime}
-        onChange={handleChange}
-        className="border rounded px-2 py-1 w-full"
-      />
-    </div>
-    {form.schedulingType === "event" && (
-      <div className="flex-1">
-        <label className="block text-sm mb-1">End Time</label>
-        <input
-          type="time"
-          name="endTime"
-          value={form.endTime}
-          onChange={handleChange}
-          className="border rounded px-2 py-1 w-full"
-        />
-      </div>
-    )}
-  </div>
-)}
+          <div className="mb-2">
+            <label className="block text-sm mb-1">Date</label>
+            <DatePicker
+              selected={form.dueDate ? new Date(form.dueDate) : null}
+              onChange={date =>
+                setForm(f => ({
+                  ...f,
+                  dueDate: date ? format(date, "yyyy-MM-dd") : "",
+                }))
+              }
+              dateFormat="MMM dd, yyyy"
+              className="border rounded px-2 py-1 text-base w-full"
+              placeholderText="Select date"
+              showMonthDropdown
+              dropdownMode="select"
+              calendarClassName="text-xs"
+            />
+            <div className="mt-1">
+              <label className="flex items-center gap-2 text-xs">
+                <input
+                  type="checkbox"
+                  name="isAllDay"
+                  checked={form.isAllDay}
+                  onChange={handleChange}
+                  className="h-4 w-4"
+                />
+                All Day
+              </label>
+            </div>
+          </div>
+          {/* Time fields: only shown if NOT all day */}
+          {!form.isAllDay && (
+            <div className="flex gap-4 mb-2">
+              <div className="flex-1">
+                <label className="block text-sm mb-1">Start Time</label>
+                <input
+                  type="time"
+                  name="startTime"
+                  value={form.startTime}
+                  onChange={handleChange}
+                  className="border rounded px-2 py-1 w-full"
+                />
+              </div>
+              {form.schedulingType === "event" && (
+                <div className="flex-1">
+                  <label className="block text-sm mb-1">End Time</label>
+                  <input
+                    type="time"
+                    name="endTime"
+                    value={form.endTime}
+                    onChange={handleChange}
+                    className="border rounded px-2 py-1 w-full"
+                  />
+                </div>
+              )}
+            </div>
+          )}
           {/* Roles */}
           <div>
             <label className="block text-sm mb-1">Roles</label>
@@ -449,7 +446,8 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
           </div>
         </form>
       </div>
-      );
+    </div>
+  );
 };
 
 export default TaskEventForm;
