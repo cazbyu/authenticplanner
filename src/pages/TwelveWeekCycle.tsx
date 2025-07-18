@@ -203,7 +203,7 @@ const TwelveWeekCycle: React.FC = () => {
             domain:0007-ap-domains(id, name)
           ),
           goal_tasks:0007-ap-goal_tasks(
-            goal:0007-ap-goals_12wk_main(id, global_cycle_id)
+            goal:0007-ap-goals-12wk-main(id, global_cycle_id)
           )
         `)
         .eq('user_id', user.id)
