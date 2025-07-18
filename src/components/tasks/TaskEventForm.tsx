@@ -355,8 +355,6 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   dateFormat="MMM dd, yyyy"
   className="border rounded px-2 py-1 text-xs w-full"
   placeholderText="Select date"
-  showMonthDropdown
-  dropdownMode="select"
   calendarClassName="text-xs"
   popperClassName="small-datepicker-popup"
   formatWeekDay={name => name.charAt(0)}
