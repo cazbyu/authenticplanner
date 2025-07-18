@@ -277,7 +277,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
           }));
 
           const { error: depositError } = await supabase
-            .from('0007-ap-deposit_ideas')
+            .from('0007-ap-deposit-ideas')
             .insert(depositInserts);
 
           if (depositError) {
