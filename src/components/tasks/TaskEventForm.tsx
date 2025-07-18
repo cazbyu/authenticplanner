@@ -388,13 +388,13 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   {/* End Time (shown if Event and not All Day) */}
   {form.schedulingType === "event" && !form.isAllDay && (
     <div>
-      <label className="block text-sm mb-1">End Time</label>
+      <label className="block text-xs mb-1">End Time</label>
       <input
         type="time"
         name="endTime"
         value={form.endTime}
         onChange={handleChange}
-        className="border rounded px-2 py-1 text-sm w-full"
+        className="border rounded px-2 py-1 text-xs w-full"
       />
     </div>
   )}
