@@ -161,11 +161,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     // Update calendar view and date
     useEffect(() => {
-      if (
-        fullCalendarRef &&
-        'current' in fullCalendarRef &&
-        fullCalendarRef.current
-      ) {
+      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
         const calendarApi = fullCalendarRef.current.getApi();
         calendarApi.changeView(view);
         calendarApi.gotoDate(currentDate);
@@ -283,9 +279,10 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         </style>
 
         <FullCalendar
-          ref={calendarRef}
-          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView={view}
+  key={view}                      // ← ADD THIS LINE! (anywhere in the tag's props)
+  ref={calendarRef}
+  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+  initialView={view}
           headerToolbar={false} // We handle navigation in parent
           height="100%"
           events={events}
