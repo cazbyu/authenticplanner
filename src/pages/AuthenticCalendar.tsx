@@ -194,14 +194,6 @@ const AuthenticCalendar: React.FC = () => {
     setCurrentDate(new Date());
   }
 };
-    
-    // For day view, set to current date
-    if (newView === 'timeGridDay') {
-      setCurrentDate(new Date());
-    }
-    
-       setIsViewChanging(false);
-  };
 
   const handleTaskCreated = () => {
     setShowTaskEventForm(false);
