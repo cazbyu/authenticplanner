@@ -324,19 +324,60 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             </div>
           )}
           {/* Date, Time, All Day */}
-          <div className="flex items-center gap-2 mb-2">
-            <input type="date" name="dueDate" value={form.dueDate} onChange={handleChange} className="border rounded px-2 py-1" />
-            {form.schedulingType === "event" && (
-              <>
-                <input type="time" name="startTime" value={form.startTime} onChange={handleChange} disabled={form.isAllDay} className="border rounded px-2 py-1" />
-                <input type="time" name="endTime" value={form.endTime} onChange={handleChange} disabled={form.isAllDay} className="border rounded px-2 py-1" />
-              </>
-            )}
-            <label className="flex items-center gap-2 text-xs">
-              <input type="checkbox" name="isAllDay" checked={form.isAllDay} onChange={handleChange} className="h-4 w-4" />
-              All Day
-            </label>
-          </div>
+          {/* Date */}
+<div className="mb-2">
+  <label className="block text-sm mb-1">
+    {form.schedulingType === "event" ? "Event Date" : "Due Date"}
+  </label>
+  <input
+    type="date"
+    name="dueDate"
+    value={form.dueDate}
+    onChange={handleChange}
+    className="border rounded px-2 py-1 w-full"
+  />
+</div>
+{/* Start/End Time & All Day */}
+{form.schedulingType === "event" && (
+  <>
+    <div className="flex gap-2 mb-2">
+      <div className="flex-1">
+        <label className="block text-sm mb-1">Start Time</label>
+        <input
+          type="time"
+          name="startTime"
+          value={form.startTime}
+          onChange={handleChange}
+          disabled={form.isAllDay}
+          className="border rounded px-2 py-1 w-full"
+        />
+      </div>
+      <div className="flex-1">
+        <label className="block text-sm mb-1">End Time</label>
+        <input
+          type="time"
+          name="endTime"
+          value={form.endTime}
+          onChange={handleChange}
+          disabled={form.isAllDay}
+          className="border rounded px-2 py-1 w-full"
+        />
+      </div>
+    </div>
+    <div className="mb-2">
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          name="isAllDay"
+          checked={form.isAllDay}
+          onChange={handleChange}
+          className="h-4 w-4"
+        />
+        All Day
+      </label>
+    </div>
+  </>
+)}
           {/* Roles */}
           <div>
             <label className="block text-sm mb-1">Roles</label>
