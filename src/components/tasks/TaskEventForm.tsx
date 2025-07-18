@@ -347,10 +347,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
               </select>
             </div>
           )}
-          {/* Date + All Day */}
-<div className="flex items-center gap-4 mb-2">
-  <div>
-        {/* Date Picker and All Day */}
+          {/* Date Picker and All Day */}
 <div className="mb-2">
   <label className="block text-sm mb-1">Date</label>
   <DatePicker
