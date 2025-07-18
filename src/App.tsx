@@ -136,10 +136,4 @@ function App() {
 }
 
 export default App;
-/* Make the react-datepicker popup smaller (75% size) */
-.small-datepicker-popup {
-  transform: scale(0.75);
-  transform-origin: top left;
-  /* Optional: tweak position if needed */
-  z-index: 9999;
-}
+
