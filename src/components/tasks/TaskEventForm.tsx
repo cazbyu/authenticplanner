@@ -331,9 +331,17 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
               </select>
             </div>
           )}
-          {/* Date, All Day, and Time fields on one row */}
-<div className="flex items-end gap-x-3 mb-2">
-  {/* Date */}
+          {/* Date, All Day, and Time fields - aligned grid layout */}
+<div
+  className={
+    form.schedulingType === "event" && !form.isAllDay
+      ? "grid grid-cols-3 gap-x-4 mb-2"
+      : !form.isAllDay
+      ? "grid grid-cols-2 gap-x-4 mb-2"
+      : "grid grid-cols-1 mb-2"
+  }
+>
+  {/* Date + All Day (always visible) */}
   <div>
     <label className="block text-sm mb-1">Date</label>
     <DatePicker
@@ -345,13 +353,12 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         }))
       }
       dateFormat="MMM dd, yyyy"
-      className="border rounded px-2 py-1 text-sm w-32"
+      className="border rounded px-2 py-1 text-sm w-full"
       placeholderText="Select date"
       showMonthDropdown
       dropdownMode="select"
       calendarClassName="text-xs"
     />
-    {/* All Day checkbox just below date */}
     <div className="mt-1">
       <label className="flex items-center gap-2 text-xs">
         <input
@@ -365,35 +372,34 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       </label>
     </div>
   </div>
-
-  {/* Show time pickers in same row if NOT all day */}
+  {/* Start Time (shown if not All Day) */}
   {!form.isAllDay && (
-    <div className="flex flex-row gap-x-3 flex-1">
-      <div>
-        <label className="block text-sm mb-1">Start Time</label>
-        <input
-          type="time"
-          name="startTime"
-          value={form.startTime}
-          onChange={handleChange}
-          className="border rounded px-2 py-1 text-sm w-28"
-        />
-      </div>
-      {form.schedulingType === "event" && (
-        <div>
-          <label className="block text-sm mb-1">End Time</label>
-          <input
-            type="time"
-            name="endTime"
-            value={form.endTime}
-            onChange={handleChange}
-            className="border rounded px-2 py-1 text-sm w-28"
-          />
-        </div>
-      )}
+    <div>
+      <label className="block text-sm mb-1">Start Time</label>
+      <input
+        type="time"
+        name="startTime"
+        value={form.startTime}
+        onChange={handleChange}
+        className="border rounded px-2 py-1 text-sm w-full"
+      />
+    </div>
+  )}
+  {/* End Time (shown if Event and not All Day) */}
+  {form.schedulingType === "event" && !form.isAllDay && (
+    <div>
+      <label className="block text-sm mb-1">End Time</label>
+      <input
+        type="time"
+        name="endTime"
+        value={form.endTime}
+        onChange={handleChange}
+        className="border rounded px-2 py-1 text-sm w-full"
+      />
     </div>
   )}
 </div>
+
 
           {/* Roles */}
           <div>
