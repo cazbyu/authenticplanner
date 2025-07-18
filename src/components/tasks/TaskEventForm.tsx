@@ -345,21 +345,22 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   <div>
     <label className="block text-xs mb-1">Date</label>
     <DatePicker
-      selected={form.dueDate ? new Date(form.dueDate) : null}
-      onChange={date =>
-        setForm(f => ({
-          ...f,
-          dueDate: date ? format(date, "yyyy-MM-dd") : "",
-        }))
-      }
-      dateFormat="MMM dd, yyyy"
-      className="border rounded px-2 py-1 text-xs w-full"
-      placeholderText="Select date"
-      showMonthDropdown
-      dropdownMode="select"
-      calendarClassName="text-xs"
-      popperClassName="small-datepicker-popup"
-    />
+  selected={form.dueDate ? new Date(form.dueDate) : null}
+  onChange={date =>
+    setForm(f => ({
+      ...f,
+      dueDate: date ? format(date, "yyyy-MM-dd") : "",
+    }))
+  }
+  dateFormat="MMM dd, yyyy"
+  className="border rounded px-2 py-1 text-xs w-full"
+  placeholderText="Select date"
+  showMonthDropdown
+  dropdownMode="select"
+  calendarClassName="text-xs"
+  popperClassName="small-datepicker-popup"
+  formatWeekDay={name => name.charAt(0)}
+/>
     <div className="mt-1">
       <label className="flex items-center gap-2 text-xs">
         <input
