@@ -460,14 +460,14 @@ const DepositIdeas: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Description */}
               <div>
-                <label className="block text-sm font-medium mb-2">Deposit Idea *</label>
+                <label className="block text-sm font-medium mb-2">Deposit Idea Title *</label>
                 <textarea
                   name="description"
                   value={form.description}
                   onChange={handleFormChange}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   rows={3}
-                  placeholder="Describe your authentic deposit idea..."
+                  placeholder="Enter deposit idea title..."
                   required
                 />
               </div>
@@ -481,7 +481,7 @@ const DepositIdeas: React.FC = () => {
                   onChange={handleFormChange}
                   className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
                   rows={2}
-                  placeholder="Add any additional notes..."
+                  placeholder="Describe your authentic deposit idea..."
                 />
               </div>
 
