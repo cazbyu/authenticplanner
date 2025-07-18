@@ -273,7 +273,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             onChange={handleChange}
             required
             placeholder={form.schedulingType === "event" ? "Enter event title..." : "Enter task title..."}
-            className="w-full px-3 py-2 text-base border border-gray-300 rounded-md mt-2 mb-2"
+            className="w-full px-3 py-2 text-base border border-gray-300 rounded-md mt-2 mb-0"
           />
 
           {/* Toggle Tabs: Centered Below Title */}
@@ -284,12 +284,12 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
                 type="button"
                 onClick={() => setForm(f => ({ ...f, schedulingType: type as "event" | "task" }))}
                 className={`
-                  px-4 py-1 rounded-full mx-1 text-sm font-medium transition
+                  px-2 py-0.5 rounded-full mx-1 text-xs font-medium transition
                   ${form.schedulingType === type
                     ? "bg-blue-600 text-white shadow"
                     : "bg-gray-100 text-gray-700 hover:bg-blue-200"}
                 `}
-                style={{ minWidth: "70px" }}
+                style={{ minWidth: "35px" }}
               >
                 {type === "event" ? "Event" : "Task"}
               </button>
