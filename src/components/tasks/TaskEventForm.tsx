@@ -331,84 +331,69 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
               </select>
             </div>
           )}
-          {/* Date, Time Row - aligned grid style */}
-<div className="mb-2">
-  <div className="flex gap-x-4">
-    <div>
-      <label className="block text-sm mb-1">&nbsp;Date</label>
+          {/* Date, All Day, and Time fields on one row */}
+<div className="flex items-end gap-x-3 mb-2">
+  {/* Date */}
+  <div>
+    <label className="block text-sm mb-1">Date</label>
+    <DatePicker
+      selected={form.dueDate ? new Date(form.dueDate) : null}
+      onChange={date =>
+        setForm(f => ({
+          ...f,
+          dueDate: date ? format(date, "yyyy-MM-dd") : "",
+        }))
+      }
+      dateFormat="MMM dd, yyyy"
+      className="border rounded px-2 py-1 text-sm w-32"
+      placeholderText="Select date"
+      showMonthDropdown
+      dropdownMode="select"
+      calendarClassName="text-xs"
+    />
+    {/* All Day checkbox just below date */}
+    <div className="mt-1">
+      <label className="flex items-center gap-2 text-xs">
+        <input
+          type="checkbox"
+          name="isAllDay"
+          checked={form.isAllDay}
+          onChange={handleChange}
+          className="h-4 w-4"
+        />
+        All Day
+      </label>
     </div>
-    {!form.isAllDay && (
-      <>
-        <div>
-          <label className="block text-sm mb-1">Start Time</label>
-        </div>
-        {form.schedulingType === "event" && (
-          <div>
-            <label className="block text-sm mb-1">End Time</label>
-          </div>
-        )}
-      </>
-    )}
   </div>
-  <div className="flex gap-x-4 items-end">
-    {/* Date */}
-    <div>
-      <DatePicker
-        selected={form.dueDate ? new Date(form.dueDate) : null}
-        onChange={date =>
-          setForm(f => ({
-            ...f,
-            dueDate: date ? format(date, "yyyy-MM-dd") : "",
-          }))
-        }
-        dateFormat="MMM dd, yyyy"
-        className="border rounded px-2 py-1 text-sm w-32"
-        placeholderText="Select date"
-        showMonthDropdown
-        dropdownMode="select"
-        calendarClassName="text-xs"
-      />
-      <div className="mt-1">
-        <label className="flex items-center gap-2 text-xs">
-          <input
-            type="checkbox"
-            name="isAllDay"
-            checked={form.isAllDay}
-            onChange={handleChange}
-            className="h-4 w-4"
-          />
-          All Day
-        </label>
+
+  {/* Show time pickers in same row if NOT all day */}
+  {!form.isAllDay && (
+    <div className="flex flex-row gap-x-3 flex-1">
+      <div>
+        <label className="block text-sm mb-1">Start Time</label>
+        <input
+          type="time"
+          name="startTime"
+          value={form.startTime}
+          onChange={handleChange}
+          className="border rounded px-2 py-1 text-sm w-28"
+        />
       </div>
-    </div>
-    {/* Start/End Time Inputs */}
-    {!form.isAllDay && (
-      <>
+      {form.schedulingType === "event" && (
         <div>
+          <label className="block text-sm mb-1">End Time</label>
           <input
             type="time"
-            name="startTime"
-            value={form.startTime}
+            name="endTime"
+            value={form.endTime}
             onChange={handleChange}
             className="border rounded px-2 py-1 text-sm w-28"
           />
         </div>
-        {form.schedulingType === "event" && (
-          <div>
-            <input
-              type="time"
-              name="endTime"
-              value={form.endTime}
-              onChange={handleChange}
-              className="border rounded px-2 py-1 text-sm w-28"
-            />
-          </div>
-        )}
-      </>
-    )}
-  </div>
+      )}
+    </div>
+  )}
 </div>
-
 
           {/* Roles */}
           <div>
