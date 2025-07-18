@@ -765,9 +765,10 @@ const AuthenticCalendar: React.FC = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl">
             <TaskEventForm 
-              onClose={() => setShowTaskEventForm(false)}
-              onTaskCreated={handleTaskCreated}
-              formType={taskType}
+              mode="create"
+        initialData={{ schedulingType: taskType }}
+        onSubmitSuccess={handleTaskCreated}
+        onClose={() => setShowTaskEventForm(false)}
             />
           </div>
         </div>
