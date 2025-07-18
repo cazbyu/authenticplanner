@@ -103,7 +103,7 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
         const [roleRes, domainRes, goalRes] = await Promise.all([
           supabase.from("0007-ap-roles").select("id, label").eq("user_id", userId).eq("is_active", true),
           supabase.from("0007-ap-domains").select("id, name"),
-          supabase.from("0007-ap-goals_12wk_main").select("id, title").eq("user_id", userId).eq("status", "active")
+          supabase.from("0007-ap-goals-12wk-main").select("id, title").eq("user_id", userId).eq("status", "active")
         ]);
 
         setRoles(roleRes.data || []);
