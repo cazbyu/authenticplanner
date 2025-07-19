@@ -75,6 +75,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [domains, setDomains] = useState<Record<string, Domain>>({});
 
   useEffect(() => {
+     console.log("Domains passed to DepositIdeaForm in RoleBank:", domains);
     fetchRoles();
     fetchDomains();
   }, []);
