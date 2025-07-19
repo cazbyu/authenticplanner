@@ -212,7 +212,7 @@ const TaskEditModal: React.FC<TaskEditModalProps> = ({ taskId, onClose, onTaskUp
           task_id: taskId,
           domain_id: domainId,
         }));
-        await supabase.from('0007-ap-task_domains').insert(domainInserts);
+        await supabase.from('0007-ap-task-domains').insert(domainInserts);
       }
 
       toast.success('Task updated successfully!');
