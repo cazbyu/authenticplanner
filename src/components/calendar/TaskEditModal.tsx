@@ -202,7 +202,7 @@ const TaskEditModal: React.FC<TaskEditModalProps> = ({ taskId, onClose, onTaskUp
           task_id: taskId,
           role_id: roleId,
         }));
-        await supabase.from('0007-ap-task_roles').insert(roleInserts);
+        await supabase.from('0007-ap-task-roles').insert(roleInserts);
       }
 
       // Update domain relationships
