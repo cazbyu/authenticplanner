@@ -1,9 +1,9 @@
-// DepositIdeaForm.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { toast } from 'sonner';
 import { Users, Heart } from 'lucide-react';
 
+// ----------- INTERFACES -----------
 interface Role {
   id: string;
   label: string;
@@ -21,36 +21,69 @@ interface KeyRelationship {
   role_id: string;
 }
 
+interface DepositIdea {
+  id: string;
+  description: string;
+  notes?: string;
+  is_active: boolean;
+  key_relationship_id?: string;
+  key_relationship?: KeyRelationship;
+  deposit_idea_roles?: Array<{ role_id: string }>;
+  deposit_idea_domains?: Array<{ domain_id: string }>;
+}
+
 interface DepositIdeaFormProps {
   open: boolean;
   onClose: () => void;
+  onSuccess: () => void;
   roles: Record<string, Role>;
   domains: Record<string, Domain>;
   keyRelationships: KeyRelationship[];
-  onCreated: () => void;
-  defaultRoleId?: string; // Optional for context-aware default
+  idea?: DepositIdea | null; // If provided, triggers "edit" mode
+  defaultRoleId?: string;
   defaultKeyRelationshipId?: string;
 }
 
+// ----------- COMPONENT -----------
 const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
   open,
   onClose,
+  onSuccess,
   roles,
   domains,
   keyRelationships,
-  onCreated,
+  idea,
   defaultRoleId,
   defaultKeyRelationshipId
 }) => {
-  // Add initial selection logic for context
+  // ----------- STATE INIT -----------
   const [form, setForm] = useState({
-    description: '',
-    notes: '',
-    selectedRoleIds: defaultRoleId ? [defaultRoleId] : [],
-    selectedDomainIds: [],
-    selectedKeyRelationshipIds: defaultKeyRelationshipId ? [defaultKeyRelationshipId] : [],
+    description: idea?.description || '',
+    notes: idea?.notes || '',
+    selectedRoleIds: idea?.deposit_idea_roles?.map(r => r.role_id)
+      || (defaultRoleId ? [defaultRoleId] : []),
+    selectedDomainIds: idea?.deposit_idea_domains?.map(d => d.domain_id) || [],
+    selectedKeyRelationshipIds: idea?.key_relationship_id
+      ? [idea.key_relationship_id]
+      : (defaultKeyRelationshipId ? [defaultKeyRelationshipId] : []),
   });
+  const [loading, setLoading] = useState(false);
 
+  // Reset state on open or when editing a different idea
+  useEffect(() => {
+    setForm({
+      description: idea?.description || '',
+      notes: idea?.notes || '',
+      selectedRoleIds: idea?.deposit_idea_roles?.map(r => r.role_id)
+        || (defaultRoleId ? [defaultRoleId] : []),
+      selectedDomainIds: idea?.deposit_idea_domains?.map(d => d.domain_id) || [],
+      selectedKeyRelationshipIds: idea?.key_relationship_id
+        ? [idea.key_relationship_id]
+        : (defaultKeyRelationshipId ? [defaultKeyRelationshipId] : []),
+    });
+  }, [idea, open, defaultRoleId, defaultKeyRelationshipId]);
+
+  // ----------- HANDLERS -----------
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
@@ -84,59 +117,101 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
   };
 
   const getFilteredKeyRelationships = () => {
-    return keyRelationships.filter(kr => 
-      form.selectedRoleIds.includes(kr.role_id)
-    );
+    return keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id));
   };
 
+  // ----------- SUBMIT (ADD/EDIT) -----------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.description.trim()) {
       toast.error('Description is required');
       return;
     }
+    setLoading(true);
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Insert new deposit idea
-      const { data: depositIdea, error: ideaError } = await supabase
-        .from('0007-ap-deposit-ideas')
-        .insert([{
-          user_id: user.id,
-          description: form.description.trim(),
-          notes: form.notes.trim() || null,
-          key_relationship_id: form.selectedKeyRelationshipIds.length > 0 ? form.selectedKeyRelationshipIds[0] : null,
-          is_active: true
-        }])
-        .select()
-        .single();
-
-      if (ideaError || !depositIdea) {
-        console.error('Error creating deposit idea:', ideaError);
-        toast.error('Failed to create deposit idea');
+      if (!user) {
+        setLoading(false);
         return;
       }
 
-      // Add roles
-      if (form.selectedRoleIds.length > 0) {
-        const roleInserts = form.selectedRoleIds.map(roleId => ({
-          deposit_idea_id: depositIdea.id,
-          role_id: roleId
-        }));
-        await supabase.from('0007-ap-deposit-idea-roles').insert(roleInserts);
+      if (!idea) {
+        // ---------- ADD MODE ----------
+        const { data: depositIdea, error: ideaError } = await supabase
+          .from('0007-ap-deposit-ideas')
+          .insert([{
+            user_id: user.id,
+            description: form.description.trim(),
+            notes: form.notes.trim() || null,
+            key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
+            is_active: true
+          }])
+          .select()
+          .single();
+
+        if (ideaError || !depositIdea) {
+          toast.error('Failed to create deposit idea');
+          setLoading(false);
+          return;
+        }
+
+        // Roles
+        if (form.selectedRoleIds.length > 0) {
+          const roleInserts = form.selectedRoleIds.map(roleId => ({
+            deposit_idea_id: depositIdea.id, role_id: roleId
+          }));
+          await supabase.from('0007-ap-deposit-idea-roles').insert(roleInserts);
+        }
+        // Domains
+        if (form.selectedDomainIds.length > 0) {
+          const domainInserts = form.selectedDomainIds.map(domainId => ({
+            deposit_idea_id: depositIdea.id, domain_id: domainId
+          }));
+          await supabase.from('0007-ap-deposit-idea-domains').insert(domainInserts);
+        }
+
+        toast.success('Deposit idea created!');
+      } else {
+        // ---------- EDIT MODE ----------
+        // 1. Update idea
+        const { error: updateError } = await supabase
+          .from('0007-ap-deposit-ideas')
+          .update({
+            description: form.description.trim(),
+            notes: form.notes.trim() || null,
+            key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', idea.id)
+          .eq('user_id', user.id);
+
+        if (updateError) {
+          toast.error('Failed to update deposit idea');
+          setLoading(false);
+          return;
+        }
+
+        // 2. Replace roles
+        await supabase.from('0007-ap-deposit-idea-roles').delete().eq('deposit_idea_id', idea.id);
+        if (form.selectedRoleIds.length > 0) {
+          await supabase.from('0007-ap-deposit-idea-roles')
+            .insert(form.selectedRoleIds.map(roleId => ({
+              deposit_idea_id: idea.id, role_id: roleId
+            })));
+        }
+        // 3. Replace domains
+        await supabase.from('0007-ap-deposit-idea-domains').delete().eq('deposit_idea_id', idea.id);
+        if (form.selectedDomainIds.length > 0) {
+          await supabase.from('0007-ap-deposit-idea-domains')
+            .insert(form.selectedDomainIds.map(domainId => ({
+              deposit_idea_id: idea.id, domain_id: domainId
+            })));
+        }
+
+        toast.success('Deposit idea updated!');
       }
 
-      // Add domains
-      if (form.selectedDomainIds.length > 0) {
-        const domainInserts = form.selectedDomainIds.map(domainId => ({
-          deposit_idea_id: depositIdea.id,
-          domain_id: domainId
-        }));
-        await supabase.from('0007-ap-deposit-idea-domains').insert(domainInserts);
-      }
-
-      toast.success('Deposit idea created successfully!');
       setForm({
         description: '',
         notes: '',
@@ -144,24 +219,29 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
         selectedDomainIds: [],
         selectedKeyRelationshipIds: defaultKeyRelationshipId ? [defaultKeyRelationshipId] : [],
       });
-      onCreated();
+      onSuccess();
       onClose();
+
     } catch (error) {
-      console.error('Error creating deposit idea:', error);
-      toast.error('Failed to create deposit idea');
+      toast.error('Something went wrong');
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ----------- RENDER -----------
   if (!open) return null;
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto space-y-6 m-4 w-full">
         <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">Add Deposit Idea</h2>
+          <h2 className="text-xl font-semibold text-gray-900">
+            {idea ? 'Edit Deposit Idea' : 'Add Deposit Idea'}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600"
+            disabled={loading}
           >
             ×
           </button>
@@ -179,6 +259,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
               rows={3}
               placeholder="Enter deposit idea title..."
               required
+              disabled={loading}
             />
           </div>
           {/* Notes */}
@@ -191,6 +272,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               rows={2}
               placeholder="Describe your authentic deposit idea..."
+              disabled={loading}
             />
           </div>
           {/* Roles */}
@@ -204,6 +286,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
                     checked={form.selectedRoleIds.includes(role.id)}
                     onChange={() => toggleRole(role.id)}
                     className="h-4 w-4"
+                    disabled={loading}
                   />
                   <span>{role.label}</span>
                 </label>
@@ -221,6 +304,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
                     checked={form.selectedDomainIds.includes(domain.id)}
                     onChange={() => toggleDomain(domain.id)}
                     className="h-4 w-4"
+                    disabled={loading}
                   />
                   <span>{domain.name}</span>
                 </label>
@@ -240,6 +324,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
                         checked={form.selectedKeyRelationshipIds.includes(kr.id)}
                         onChange={() => toggleKeyRelationship(kr.id)}
                         className="h-4 w-4"
+                        disabled={loading}
                       />
                       <span>{kr.name}</span>
                     </label>
@@ -252,20 +337,22 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
               </div>
             </div>
           )}
-          {/* Submit Button */}
+          {/* Buttons */}
           <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+              disabled={loading}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
+              disabled={loading}
             >
-              Create Deposit Idea
+              {loading ? (idea ? 'Updating...' : 'Creating...') : (idea ? 'Update' : 'Create')} Deposit Idea
             </button>
           </div>
         </form>
