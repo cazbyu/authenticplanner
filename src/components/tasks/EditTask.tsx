@@ -226,7 +226,7 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
       // Update roles/domains
       await supabase.from('0007-ap-task-roles').delete().eq('task_id', task.id);
       if (form.selectedRoleIds.length > 0) {
-        await supabase.from('0007-ap-task_roles').insert(form.selectedRoleIds.map(roleId => ({
+        await supabase.from('0007-ap-task-roles').insert(form.selectedRoleIds.map(roleId => ({
           task_id: task.id, role_id: roleId,
         })));
       }
