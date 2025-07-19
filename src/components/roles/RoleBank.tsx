@@ -106,7 +106,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           *,
           task_roles:0007-ap-task-roles!task_id(role_id, 0007-ap-roles:role_id(label))
         `)
-        .eq('0007-ap-task-roles!task_id.role_id', roleId)
+        .filter('task_roles.role_id', 'eq', roleId)
         .in('status', ['pending', 'in_progress']);
 
       if (tasksError) throw tasksError;
