@@ -44,6 +44,11 @@ interface DepositIdea {
   key_relationship_id: string;
 }
 
+interface Domain {
+  id: string;
+  label: string;
+}
+
 interface RoleBankProps {
   selectedRole?: Role | null;
   onBack?: () => void;
@@ -65,6 +70,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
   const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
+  const [domains, setDomains] = useState<Record<string, Domain>>({});
 
   useEffect(() => {
     fetchRoles();
@@ -475,7 +481,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                     key={idea.id}
                     idea={idea}
                     roles={roles.reduce((acc, role) => ({ ...acc, [role.id]: role }), {})}
-                    domains={domains.reduce((acc, domain) => ({ ...acc, [domain.id]: domain }), {})}
+                    domains={domains}
                     onEdit={handleEditDepositIdea}
                     showEditButton={true}
                     className="bg-blue-50 border-blue-200"
