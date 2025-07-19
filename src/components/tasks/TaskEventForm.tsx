@@ -185,6 +185,7 @@ function getEndTimeOptions(startTime: string) {
         is_authentic_deposit: !!form.authenticDeposit,
         is_twelve_week_goal: !!form.twelveWeekGoalChecked,
         type: form.schedulingType || "task",
+        deposit_idea: !!form.isFromDepositIdea,
       };
 
       // Date/time logic
