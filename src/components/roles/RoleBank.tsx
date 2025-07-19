@@ -104,6 +104,24 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     } finally {
       setLoading(false);
     }
+    const fetchDomains = async () => {
+  try {
+    const { data: domainData, error } = await supabase
+      .from('0007-ap-domains')
+      .select('id, name');
+    if (error) throw error;
+    // Normalize to { id, label }
+    setDomains(
+      (domainData || []).reduce((acc, d) => {
+        acc[d.id] = { id: d.id, label: d.name };
+        return acc;
+      }, {} as Record<string, Domain>)
+    );
+  } catch (err) {
+    setDomains({});
+  }
+};
+
   };
 
   const fetchRoleData = async (roleId: string) => {
