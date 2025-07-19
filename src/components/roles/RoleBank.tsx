@@ -7,6 +7,7 @@ import TaskEventForm from '../tasks/TaskEventForm';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 import EditTask from '../tasks/EditTask';
+import DepositIdeaForm from '../shared/DepositIdeaForm';
 import DepositIdeaCard from '../shared/DepositIdeaCard';
 import DepositIdeaEditForm from '../shared/DepositIdeaEditForm';
 import { useNavigate } from 'react-router-dom';
