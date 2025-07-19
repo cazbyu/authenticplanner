@@ -69,6 +69,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
+  const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
   const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
   const [domains, setDomains] = useState<Record<string, Domain>>({});
 
