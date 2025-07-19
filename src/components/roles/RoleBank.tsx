@@ -499,6 +499,20 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               </div>
             )}
           </section>
+{showAddDepositIdeaForm && selectedRole && (
+  <DepositIdeaForm
+    open={showAddDepositIdeaForm}
+    onClose={() => setShowAddDepositIdeaForm(false)}
+    onSuccess={() => {
+      setShowAddDepositIdeaForm(false);
+      fetchRoleData(selectedRole.id);
+    }}
+    roles={roles.reduce((acc, role) => ({ ...acc, [role.id]: role }), {})}
+    domains={domains}
+    keyRelationships={keyRelationships}
+    defaultRoleId={selectedRole.id}
+  />
+)}
 
           {/* Key Relationships */}
           <section>
