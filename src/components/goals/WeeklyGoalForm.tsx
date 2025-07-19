@@ -229,7 +229,7 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
         }));
         
         const { error: domainError } = await supabase
-          .from('0007-ap-task_domains')
+          .from('0007-ap-task-domains')
           .insert(domainInserts);
 
         if (domainError) {
