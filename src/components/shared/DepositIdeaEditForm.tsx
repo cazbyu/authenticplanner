@@ -144,7 +144,7 @@ const DepositIdeaEditForm: React.FC<DepositIdeaEditFormProps> = ({
       const { error: updateError } = await supabase
         .from('0007-ap-deposit-ideas')
         .update({
-          description: form.description.trim(),
+          idea: form.description.trim(),
           notes: form.notes.trim() || null,
           key_relationship_id: form.selectedKeyRelationshipId || null,
           updated_at: new Date().toISOString()
