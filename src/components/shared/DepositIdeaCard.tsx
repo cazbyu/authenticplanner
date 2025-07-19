@@ -18,7 +18,7 @@ interface KeyRelationship {
 
 interface DepositIdea {
   id: string;
-  description: string;
+  title: string;
   notes?: string;
   is_active: boolean;
   key_relationship_id?: string;
@@ -85,7 +85,7 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
     >
       <div className="mb-3">
         <div className="flex items-start justify-between mb-2">
-          <p className="text-gray-900 font-medium flex-1">{idea.description}</p>
+          <p className="text-gray-900 font-medium flex-1">{idea.title}</p>
           {showEditButton && onEdit && (
             <button
               onClick={handleEdit}

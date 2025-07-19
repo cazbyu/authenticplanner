@@ -23,7 +23,7 @@ interface KeyRelationship {
 
 interface DepositIdea {
   id: string;
-  description: string;
+  title: string;
   notes?: string;
   is_active: boolean;
   key_relationship_id?: string;
@@ -58,7 +58,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
 }) => {
   // ----------- STATE INIT -----------
   const [form, setForm] = useState({
-    description: idea?.description || '',
+    title: idea?.title || '',
     notes: idea?.notes || '',
     selectedRoleIds: idea?.deposit_idea_roles?.map(r => r.role_id)
       || (defaultRoleId ? [defaultRoleId] : []),
@@ -72,7 +72,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
   // Reset state on open or when editing a different idea
   useEffect(() => {
     setForm({
-      description: idea?.description || '',
+      title: idea?.title || '',
       notes: idea?.notes || '',
       selectedRoleIds: idea?.deposit_idea_roles?.map(r => r.role_id)
         || (defaultRoleId ? [defaultRoleId] : []),
@@ -123,8 +123,8 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
   // ----------- SUBMIT (ADD/EDIT) -----------
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.description.trim()) {
-      toast.error('Description is required');
+    if (!form.title.trim()) {
+      toast.error('Title is required');
       return;
     }
     setLoading(true);
@@ -142,7 +142,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
           .from('0007-ap-deposit-ideas')
           .insert([{
             user_id: user.id,
-            description: form.description.trim(),
+            title: form.title.trim(),
             notes: form.notes.trim() || null,
             key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
             is_active: true
@@ -178,7 +178,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
         const { error: updateError } = await supabase
           .from('0007-ap-deposit-ideas')
           .update({
-            description: form.description.trim(),
+            title: form.title.trim(),
             notes: form.notes.trim() || null,
             key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
             updated_at: new Date().toISOString(),
@@ -213,7 +213,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
       }
 
       setForm({
-        description: '',
+        title: '',
         notes: '',
         selectedRoleIds: defaultRoleId ? [defaultRoleId] : [],
         selectedDomainIds: [],
@@ -250,10 +250,10 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
         <form onSubmit={handleSubmit} className="space-y-6">
           {/* Description */}
           <div>
-            <label className="block text-sm font-medium mb-2">Deposit Idea Title *</label>
+            <label className="block text-sm font-medium mb-2">Title *</label>
             <textarea
-              name="description"
-              value={form.description}
+              name="title"
+              value={form.title}
               onChange={handleFormChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
               rows={3}

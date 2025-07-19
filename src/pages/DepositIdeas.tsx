@@ -26,7 +26,7 @@ interface KeyRelationship {
 
 interface DepositIdea {
   id: string;
-  description: string;
+  title: string;
   notes?: string;
   is_active: boolean;
   key_relationship_id?: string;
