@@ -105,7 +105,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     } finally {
       setLoading(false);
     }
-    const fetchDomains = async () => {
+      };
+  const fetchDomains = async () => {
   try {
     const { data: domainData, error } = await supabase
       .from('0007-ap-domains')
@@ -122,8 +123,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     setDomains({});
   }
 };
-
-  };
 
   const fetchRoleData = async (roleId: string) => {
     try {
