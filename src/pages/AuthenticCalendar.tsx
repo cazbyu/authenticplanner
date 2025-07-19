@@ -139,8 +139,8 @@ const AuthenticCalendar: React.FC = () => {
           .from('0007-ap-tasks')
           .select(`
             *,
-            task_roles:0007-ap-task_roles(role_id),
-            task_domains:0007-ap-task_domains(domain_id)
+            task_roles:0007-ap-task-roles(role_id),
+            task_domains:0007-ap-task-domains(domain_id)
           `)
           .eq('user_id', user.id)
           .in('status', ['pending', 'in_progress']),
