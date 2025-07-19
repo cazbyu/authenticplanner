@@ -319,7 +319,7 @@ const KeyRelationshipForm: React.FC<KeyRelationshipFormProps> = ({
             }));
             
             await supabase
-              .from('0007-ap-task_roles')
+              .from('0007-ap-task-roles')
               .insert(roleLinks);
           }
         }
