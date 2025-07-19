@@ -73,6 +73,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
   const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
   const [domains, setDomains] = useState<Record<string, Domain>>({});
+  const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
   
   useEffect(() => {
      console.log("Domains passed to DepositIdeaForm in RoleBank:", domains);
@@ -312,6 +313,16 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     setEditingDepositIdea(idea);
   };
 
+  const handleActivateDepositIdea = (idea: DepositIdea) => {
+    setActivatingDepositIdea(idea);
+  };
+
+  const handleDepositIdeaActivated = () => {
+    setActivatingDepositIdea(null);
+    if (selectedRole) {
+      fetchRoleData(selectedRole.id);
+    }
+  };
   const handleDepositIdeaUpdated = () => {
     setEditingDepositIdea(null);
     if (selectedRole) {
@@ -509,7 +520,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                     roles={roles.reduce((acc, role) => ({ ...acc, [role.id]: role }), {})}
                     domains={domains}
                     onEdit={handleEditDepositIdea}
+                    onActivate={handleActivateDepositIdea}
                     showEditButton={true}
+                    showActivateButton={true}
                     className="bg-blue-50 border-blue-200"
                   />
                 ))}
@@ -620,16 +633,38 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
             <div className="w-full max-w-2xl mx-4">
               <TaskEventForm
-                onClose={() => setShowTaskEventForm(false)}
-                onTaskCreated={handleTaskCreated}
-                initialFormData={{
+                mode="create"
+                initialData={{
+                  schedulingType: 'task',
                   selectedRoleIds: [selectedRole.id]
                 }}
+                onSubmitSuccess={handleTaskCreated}
+                onClose={() => setShowTaskEventForm(false)}
               />
             </div>
           </div>
         )}
 
+        {/* Activate Deposit Idea Form Modal */}
+        {activatingDepositIdea && selectedRole && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <TaskEventForm
+                mode="create"
+                initialData={{
+                  title: activatingDepositIdea.title,
+                  notes: activatingDepositIdea.notes || '',
+                  authenticDeposit: true,
+                  schedulingType: 'task',
+                  selectedRoleIds: activatingDepositIdea.deposit_idea_roles?.map(r => r.role_id) || [selectedRole.id],
+                  selectedDomainIds: activatingDepositIdea.deposit_idea_domains?.map(d => d.domain_id) || []
+                }}
+                onSubmitSuccess={handleDepositIdeaActivated}
+                onClose={() => setActivatingDepositIdea(null)}
+              />
+            </div>
+          </div>
+        )}
         {/* Delegate Task Modal */}
         {delegatingTask && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">

@@ -50,6 +50,7 @@ const DepositIdeas: React.FC = () => {
   // Modal state for add/edit form
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
+  const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
 
   // --- FETCH ALL DATA ---
   useEffect(() => {
@@ -57,6 +58,14 @@ const DepositIdeas: React.FC = () => {
     // eslint-disable-next-line
   }, []);
 
+  const handleActivateDepositIdea = (idea: DepositIdea) => {
+    setActivatingDepositIdea(idea);
+  };
+
+  const handleDepositIdeaActivated = () => {
+    setActivatingDepositIdea(null);
+    fetchAllData(); // Refresh the data
+  };
   const fetchAllData = async () => {
     setLoading(true);
     try {
@@ -275,7 +284,9 @@ const DepositIdeas: React.FC = () => {
                         roles={roles}
                         domains={domains}
                         onEdit={(idea) => setEditingDepositIdea(idea)}
+                        onActivate={handleActivateDepositIdea}
                         showEditButton={true}
+                        showActivateButton={true}
                         className="text-sm"
                       />
                     ))}
@@ -307,6 +318,27 @@ const DepositIdeas: React.FC = () => {
         keyRelationships={keyRelationships}
         idea={editingDepositIdea || undefined}
       />
+
+      {/* Activate Deposit Idea Form Modal */}
+      {activatingDepositIdea && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="create"
+              initialData={{
+                title: activatingDepositIdea.title,
+                notes: activatingDepositIdea.notes || '',
+                authenticDeposit: true,
+                schedulingType: 'task',
+                selectedRoleIds: activatingDepositIdea.deposit_idea_roles?.map(r => r.role_id) || [],
+                selectedDomainIds: activatingDepositIdea.deposit_idea_domains?.map(d => d.domain_id) || []
+              }}
+              onSubmitSuccess={handleDepositIdeaActivated}
+              onClose={() => setActivatingDepositIdea(null)}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 };

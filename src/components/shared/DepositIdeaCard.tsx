@@ -34,6 +34,7 @@ interface DepositIdeaCardProps {
   onEdit?: (idea: DepositIdea) => void;
   onActivate?: (idea: DepositIdea) => void;
   showEditButton?: boolean;
+  showActivateButton?: boolean;
   className?: string;
 }
 
@@ -44,6 +45,7 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
   onEdit,
   onActivate,
   showEditButton = true,
+  showActivateButton = true,
   className = ''
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -133,7 +135,38 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
         )}
       </div>
 
-      {onActivate && (
+      <div className="flex gap-2">
+        {showActivateButton && onActivate && (
+          <button
+            onClick={handleActivate}
+            className={`
+              flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2
+              ${isHovered ? 'bg-green-700' : ''}
+            `}
+          >
+            <Target className="h-4 w-4" />
+            Activate
+          </button>
+        )}
+        
+        {showEditButton && onEdit && (
+          <button
+            onClick={handleEdit}
+            className={`
+              ${showActivateButton && onActivate ? 'flex-1' : 'w-full'} bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2
+              ${isHovered ? 'bg-blue-700' : ''}
+            `}
+          >
+            <Edit className="h-4 w-4" />
+            Update
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default DepositIdeaCard;
         <button
           onClick={handleActivate}
           className={`
