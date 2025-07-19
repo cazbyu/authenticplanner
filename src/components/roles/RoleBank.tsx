@@ -121,6 +121,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       }, {} as Record<string, Domain>)
     );
   } catch (err) {
+    console.log("domainData from Supabase:", domainData);
     setDomains({});
   }
 };
