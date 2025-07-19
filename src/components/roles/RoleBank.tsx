@@ -470,10 +470,14 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-gray-900">Deposit Ideas</h2>
-              <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium">
-                <Plus className="h-4 w-4" />
-                Add Deposit Idea
-              </button>
+              <button
+  onClick={() => setShowAddDepositIdeaForm(true)}
+  className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
+>
+  <Plus className="h-4 w-4" />
+  Add Deposit Idea
+</button>
+
             </div>
             {roleDepositIdeas.length > 0 ? (
               <div className="space-y-2">
