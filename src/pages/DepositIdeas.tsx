@@ -188,7 +188,7 @@ const DepositIdeas: React.FC = () => {
           user_id: user.id,
           description: form.description.trim(),
           notes: form.notes.trim() || null,
-          key_relationship_id: form.selectedKeyRelationshipId || null,
+          key_relationship_id: form.selectedKeyRelationshipIds.length > 0 ? form.selectedKeyRelationshipIds[0] : null,
           is_active: true
         }])
         .select()
