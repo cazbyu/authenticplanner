@@ -99,14 +99,14 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     try {
       setLoading(true);
 
-      // Fetch tasks for this role using the many-to-many relationship
+      // Fetch tasks for this specific role only
       const { data: tasksData, error: tasksError } = await supabase
         .from('0007-ap-tasks')
         .select(`
           *,
-          task_roles:0007-ap-task-roles!task_id(role_id, 0007-ap-roles:role_id(label))
+          task_roles:0007-ap-task-roles!task_id(role_id)
         `)
-        .filter('task_roles.role_id', 'eq', roleId)
+        .eq('task_roles.role_id', roleId)
         .in('status', ['pending', 'in_progress']);
 
       if (tasksError) throw tasksError;
