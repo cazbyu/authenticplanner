@@ -519,6 +519,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             )}
           </section>
 {showAddDepositIdeaForm && selectedRole && (
+  console.log("Domains passed to DepositIdeaForm in RoleBank:", domains);
   <DepositIdeaForm
     open={showAddDepositIdeaForm}
     onClose={() => setShowAddDepositIdeaForm(false)}
