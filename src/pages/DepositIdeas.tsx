@@ -4,6 +4,7 @@ import { Plus, Users, Heart, ChevronDown, ChevronUp, Star, Target } from 'lucide
 import { toast } from 'sonner';
 import DepositIdeaCard from '../components/shared/DepositIdeaCard';
 import DepositIdeaForm from '../components/shared/DepositIdeaForm';
+import TaskEventForm from '../components/tasks/TaskEventForm';
 
 // ----- INTERFACES (reuse these or your project's types) -----
 interface Role {
