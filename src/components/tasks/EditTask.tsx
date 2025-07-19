@@ -230,9 +230,9 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
           task_id: task.id, role_id: roleId,
         })));
       }
-      await supabase.from('0007-ap-task_domains').delete().eq('task_id', task.id);
+      await supabase.from('0007-ap-task-domains').delete().eq('task_id', task.id);
       if (form.selectedDomainIds.length > 0) {
-        await supabase.from('0007-ap-task_domains').insert(form.selectedDomainIds.map(domainId => ({
+        await supabase.from('0007-ap-task-domains').insert(form.selectedDomainIds.map(domainId => ({
           task_id: task.id, domain_id: domainId,
         })));
       }
