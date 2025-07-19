@@ -192,7 +192,7 @@ const WeeklyGoalForm: React.FC<WeeklyGoalFormProps> = ({
 
       // Link task to the 12-week goal
       const { error: goalLinkError } = await supabase
-        .from('0007-ap-goal_tasks')
+        .from('0007-ap-goal-tasks')
         .insert([{
           goal_id: twelveWeekGoalId,
           task_id: task.id,
