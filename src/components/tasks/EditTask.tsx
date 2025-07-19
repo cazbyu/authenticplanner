@@ -89,7 +89,7 @@ const EditTask: React.FC<EditTaskProps> = ({ task, onTaskUpdated, onCancel }) =>
           .from('0007-ap-tasks')
           .select(`
             *,
-            task_roles:0007-ap-task-roles!fk_task(role_id),
+            task_roles:0007-ap-task-roles!task_id(role_id),
             task_domains:0007-ap-task-domains(domain_id)
           `)
           .eq('id', task.id)

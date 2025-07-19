@@ -173,8 +173,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           completed_at,
           delegated_to_contact_id,
           delegates:delegated_to_contact_id(name, email),
-          0007-ap-task-roles!fk_task(role_id, 0007-ap-roles:role_id(label))
-        `)
+          0007-ap-task-roles!task_id!inner(role_id),
+          task_roles:0007-ap-task-roles!task_id(role_id, 0007-ap-roles:role_id(label))
         .eq('user_id', user.id);
         
       if (sortBy === 'delegated') {
