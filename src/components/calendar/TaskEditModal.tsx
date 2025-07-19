@@ -54,8 +54,8 @@ const TaskEditModal: React.FC<TaskEditModalProps> = ({ taskId, onClose, onTaskUp
           .from('0007-ap-tasks')
           .select(`
             *,
-            task_roles:0007-ap-task_roles(role_id),
-            task_domains:0007-ap-task_domains(domain_id)
+            task_roles:0007-ap-task-roles(role_id),
+            task_domains:0007-ap-task-domains(domain_id)
           `)
           .eq('id', taskId)
           .eq('user_id', user.id)
@@ -196,7 +196,7 @@ const TaskEditModal: React.FC<TaskEditModalProps> = ({ taskId, onClose, onTaskUp
       }
 
       // Update role relationships
-      await supabase.from('0007-ap-task_roles').delete().eq('task_id', taskId);
+      await supabase.from('0007-ap-task-roles').delete().eq('task_id', taskId);
       if (form.selectedRoleIds.length > 0) {
         const roleInserts = form.selectedRoleIds.map(roleId => ({
           task_id: taskId,
