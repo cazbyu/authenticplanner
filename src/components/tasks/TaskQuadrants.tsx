@@ -521,3 +521,7 @@ export default TaskQuadrants;
     }
   }
 }
+        )
+    }
+  }
+}
