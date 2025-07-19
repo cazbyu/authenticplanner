@@ -3,10 +3,10 @@
 
   1. New Tables
     - `0007-ap-goals-12wk` - Main 12-week goals table
-    - `0007-ap-goal_domains` - Junction table for goal-domain relationships
-    - `0007-ap-goal_roles` - Junction table for goal-role relationships
-    - `0007-ap-goal_weekly_goals` - Weekly goals under each 12-week goal
-    - `0007-ap-goal_tasks` - Tasks associated with goals
+    - `0007-ap-goal-domains` - Junction table for goal-domain relationships
+    - `0007-ap-goal-roles` - Junction table for goal-role relationships
+    - `0007-ap-goal-weekly-goals` - Weekly goals under each 12-week goal
+    - `0007-ap-goal-tasks` - Tasks associated with goals
 
   2. Security
     - Enable RLS on all new tables
