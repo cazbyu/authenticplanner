@@ -388,7 +388,7 @@ const DepositIdeaEditForm: React.FC<DepositIdeaEditFormProps> = ({
           <div className="bg-white rounded-lg p-6 max-w-md mx-4">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Deposit Idea</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to delete this deposit idea: "{idea.description}"? This action cannot be undone.
+              Are you sure you want to delete this deposit idea: "{idea.title}"? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
               <button
