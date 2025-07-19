@@ -518,3 +518,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
 };
 
 export default TaskQuadrants;
+        )
+    }
+  }
+}
