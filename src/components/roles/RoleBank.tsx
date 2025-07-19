@@ -113,15 +113,15 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       .from('0007-ap-domains')
       .select('id, name');
     if (error) throw error;
-    // Normalize to { id, label }
+    // Store domains as Record<string, Domain> for consistency
     setDomains(
-      (domainData || []).reduce((acc, d) => {
-        acc[d.id] = { id: d.id, label: d.name };
-        return acc;
-      }, {} as Record<string, Domain>)
+      (domainData || []).reduce((acc, d) => ({ 
+        ...acc, 
+        [d.id]: { id: d.id, name: d.name } 
+      }), {} as Record<string, Domain>)
     );
   } catch (err) {
-    console.log("domainData from Supabase:", domainData);
+    console.error("Error fetching domains:", err);
     setDomains({});
   }
 };
