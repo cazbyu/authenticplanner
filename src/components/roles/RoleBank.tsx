@@ -76,6 +76,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
   useEffect(() => {
     fetchRoles();
+    fetchDomains();
   }, []);
 
   useEffect(() => {
