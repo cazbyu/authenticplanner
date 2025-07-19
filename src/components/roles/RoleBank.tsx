@@ -99,15 +99,31 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     try {
       setLoading(true);
 
-      // Fetch tasks for this specific role only
-      const { data: tasksData, error: tasksError } = await supabase
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // First get task IDs that are linked to this specific role
+      const { data: taskRoleLinks, error: taskRoleError } = await supabase
+        .from('0007-ap-task-roles')
+        .select('task_id')
+        .eq('role_id', roleId);
+
+      if (taskRoleError) throw taskRoleError;
+
+      const taskIds = taskRoleLinks?.map(link => link.task_id) || [];
+
+      // Now fetch only those tasks
+      const { data: tasksData, error: tasksError } = taskIds.length > 0 
+        ? await supabase
         .from('0007-ap-tasks')
         .select(`
           *,
           task_roles:0007-ap-task-roles!task_id(role_id)
         `)
-        .eq('task_roles.role_id', roleId)
-        .in('status', ['pending', 'in_progress']);
+        .eq('user_id', user.id)
+        .in('id', taskIds)
+        .in('status', ['pending', 'in_progress'])
+        : { data: [], error: null };
 
       if (tasksError) throw tasksError;
       setTasks(tasksData || []);
