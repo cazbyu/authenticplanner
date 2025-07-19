@@ -54,7 +54,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [roles, setRoles] = useState<Role[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [relationships, setRelationships] = useState<KeyRelationship[]>([]);
-  const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
+  const [roleDepositIdeas, setRoleDepositIdeas] = useState<DepositIdea[]>([]);
   const [showRelationshipForm, setShowRelationshipForm] = useState(false);
   const [editingRelationship, setEditingRelationship] = useState<KeyRelationship | null>(null);
   const [loading, setLoading] = useState(true);
@@ -138,18 +138,54 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       setRelationships(relationshipsData || []);
       setKeyRelationships(relationshipsData || []);
 
-      // Fetch deposit ideas for all relationships
+      // Fetch deposit ideas specifically associated with this role
+      const { data: roleDepositIdeaLinks, error: roleDepositError } = await supabase
+        .from('0007-ap-deposit-idea-roles')
+        .select('deposit_idea_id')
+        .eq('role_id', roleId);
+
+      if (roleDepositError) throw roleDepositError;
+
+      const depositIdeaIds = roleDepositIdeaLinks?.map(link => link.deposit_idea_id) || [];
+
+      // Now fetch the actual deposit ideas
+      const { data: roleDepositIdeasData, error: depositIdeasError } = depositIdeaIds.length > 0
+        ? await supabase
+            .from('0007-ap-deposit-ideas')
+            .select('*')
+            .in('id', depositIdeaIds)
+            .eq('is_active', true)
+        : { data: [], error: null };
+
+      if (depositIdeasError) throw depositIdeasError;
+      setRoleDepositIdeas(roleDepositIdeasData || []);
+
+      // Also fetch deposit ideas for key relationships (existing functionality)
       if (relationshipsData && relationshipsData.length > 0) {
         const relationshipIds = relationshipsData.map(rel => rel.id);
-        const { data: ideasData, error: ideasError } = await supabase
+        const { data: relationshipDepositIdeas, error: relationshipDepositError } = await supabase
           .from('0007-ap-deposit-ideas')
           .select('*')
-          .in('key_relationship_id', relationshipIds);
+          .in('key_relationship_id', relationshipIds)
+          .eq('is_active', true);
 
-        if (ideasError) throw ideasError;
-        setDepositIdeas(ideasData || []);
+        if (relationshipDepositError) throw relationshipDepositError;
+        
+        // Combine role-specific deposit ideas with relationship deposit ideas
+        const allDepositIdeas = [
+          ...(roleDepositIdeasData || []),
+          ...(relationshipDepositIdeas || [])
+        ];
+        
+        // Remove duplicates based on ID
+        const uniqueDepositIdeas = allDepositIdeas.filter((idea, index, self) => 
+          index === self.findIndex(i => i.id === idea.id)
+        );
+        
+        setRoleDepositIdeas(uniqueDepositIdeas);
       } else {
-        setDepositIdeas([]);
+        // If no relationships, just use role-specific deposit ideas
+        setRoleDepositIdeas(roleDepositIdeasData || []);
       }
 
     } catch (error) {
@@ -411,9 +447,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                 Add Deposit Idea
               </button>
             </div>
-            {depositIdeas.length > 0 ? (
+            {roleDepositIdeas.length > 0 ? (
               <div className="space-y-2">
-                {depositIdeas.map((idea) => (
+                {roleDepositIdeas.map((idea) => (
                   <div key={idea.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
                     <div className="text-gray-900">{idea.description}</div>
                   </div>
@@ -643,7 +679,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               Authentic deposits to invest in your key relationships
             </p>
             <div className="mt-4 text-sm text-gray-500">
-              {depositIdeas.length} deposit idea{depositIdeas.length !== 1 ? 's' : ''}
+              {roleDepositIdeas.length} deposit idea{roleDepositIdeas.length !== 1 ? 's' : ''}
             </div>
           </button>
 
