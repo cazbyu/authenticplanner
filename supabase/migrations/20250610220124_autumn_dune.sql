@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS "0007-ap-goals-12wk-main" (
 );
 
 -- Create goal-domain junction table
-CREATE TABLE IF NOT EXISTS "0007-ap-goal_domains" (
+CREATE TABLE IF NOT EXISTS "0007-ap-goal-domains" (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   goal_id uuid NOT NULL,
   domain_id uuid NOT NULL,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS "0007-ap-goal_domains" (
 );
 
 -- Create goal-role junction table
-CREATE TABLE IF NOT EXISTS "0007-ap-goal_roles" (
+CREATE TABLE IF NOT EXISTS "0007-ap-goal-roles" (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   goal_id uuid NOT NULL,
   role_id uuid NOT NULL,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS "0007-ap-goal_roles" (
 );
 
 -- Create weekly goals table
-CREATE TABLE IF NOT EXISTS "0007-ap-goal_weekly_goals" (
+CREATE TABLE IF NOT EXISTS "0007-ap-goal-weekly-goals" (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   goal_id uuid NOT NULL,
   week_number integer NOT NULL CHECK (week_number >= 1 AND week_number <= 13),
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS "0007-ap-goal_weekly_goals" (
 );
 
 -- Create goal tasks table
-CREATE TABLE IF NOT EXISTS "0007-ap-goal_tasks" (
+CREATE TABLE IF NOT EXISTS "0007-ap-goal-tasks" (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   goal_id uuid NOT NULL,
   weekly_goal_id uuid,
@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS "0007-ap-goal_tasks" (
 );
 
 -- Add foreign key constraints
-ALTER TABLE "0007-ap-goal_domains" 
+ALTER TABLE "0007-ap-goal-domains" 
 ADD CONSTRAINT fk_goal_domains_goal 
 FOREIGN KEY (goal_id) REFERENCES "0007-ap-goals-12wk-main"(id) ON DELETE CASCADE;
 
