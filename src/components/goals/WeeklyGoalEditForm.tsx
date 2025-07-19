@@ -78,7 +78,7 @@ const WeeklyGoalEditForm: React.FC<WeeklyGoalEditFormProps> = ({
 
       // Update the weekly goal
       const { error: goalError } = await supabase
-        .from('0007-ap-goal_weekly_goals')
+        .from('0007-ap-goal-weekly-goals')
         .update({
           title: form.title.trim(),
           description: form.description.trim() || null,
@@ -117,7 +117,7 @@ const WeeklyGoalEditForm: React.FC<WeeklyGoalEditFormProps> = ({
       }
 
       const { error } = await supabase
-        .from('0007-ap-goal_weekly_goals')
+        .from('0007-ap-goal-weekly-goals')
         .delete()
         .eq('id', weeklyGoal.id);
 
