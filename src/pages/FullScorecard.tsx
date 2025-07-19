@@ -66,7 +66,7 @@ const FullScorecard: React.FC = () => {
         .from('0007-ap-tasks')
         .select(`
           *,
-          task_domains:0007-ap-task_domains(
+          task_domains:0007-ap-task-domains(
             domain:0007-ap-domains(id, name)
           )
         `)
