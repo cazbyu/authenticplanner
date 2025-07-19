@@ -206,7 +206,7 @@ const TaskEditModal: React.FC<TaskEditModalProps> = ({ taskId, onClose, onTaskUp
       }
 
       // Update domain relationships
-      await supabase.from('0007-ap-task_domains').delete().eq('task_id', taskId);
+      await supabase.from('0007-ap-task-domains').delete().eq('task_id', taskId);
       if (form.selectedDomainIds.length > 0) {
         const domainInserts = form.selectedDomainIds.map(domainId => ({
           task_id: taskId,
