@@ -241,9 +241,9 @@ end_time: form.isAllDay ? null : end_time,
 
       // --- Pivot tables (roles, domains, relationships, 12-week goals) ---
       // Roles
-      await supabase.from("0007-ap-task_roles").delete().eq("task_id", taskId);
+      await supabase.from("0007-ap-task-roles").delete().eq("task_id", taskId);
       if (form.selectedRoleIds.length > 0) {
-        await supabase.from("0007-ap-task_roles").insert(
+        await supabase.from("0007-ap-task-roles").insert(
           form.selectedRoleIds.map((roleId) => ({
             task_id: taskId,
             role_id: roleId,
@@ -251,9 +251,9 @@ end_time: form.isAllDay ? null : end_time,
         );
       }
       // Domains
-      await supabase.from("0007-ap-task_domains").delete().eq("task_id", taskId);
+      await supabase.from("0007-ap-task-domains").delete().eq("task_id", taskId);
       if (form.selectedDomainIds.length > 0) {
-        await supabase.from("0007-ap-task_domains").insert(
+        await supabase.from("0007-ap-task-domains").insert(
           form.selectedDomainIds.map((domainId) => ({
             task_id: taskId,
             domain_id: domainId,
