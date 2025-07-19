@@ -134,10 +134,10 @@ const TwelveWeekCycle: React.FC = () => {
         .from('0007-ap-goals-12wk-main')
         .select(`
           *,
-          goal_domains:0007-ap-goal_domains(
+          goal_domains:0007-ap-goal-domains(
             domain:0007-ap-domains(id, name)
           ),
-          goal_roles:0007-ap-goal_roles(
+          goal_roles:0007-ap-goal-roles(
             role:0007-ap-roles(id, label, category)
           )
         `)
@@ -169,7 +169,7 @@ const TwelveWeekCycle: React.FC = () => {
 
     try {
       const { data, error } = await supabase
-        .from('0007-ap-goal_weekly_goals')
+        .from('0007-ap-goal-weekly-goals')
         .select(`
           *,
           goal:0007-ap-goals-12wk-main!inner(user_id)
