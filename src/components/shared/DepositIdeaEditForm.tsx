@@ -136,7 +136,7 @@ const DepositIdeaEditForm: React.FC<DepositIdeaEditFormProps> = ({
     }
 
     setSubmitting(true);
-    setError(null);
+          idea: formData.description,
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
