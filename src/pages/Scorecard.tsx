@@ -70,14 +70,12 @@ const Scorecard: React.FC = () => {
         .from('0007-ap-tasks')
         .select(`
           *,
-          0007-ap-task-roles!task_id!inner(role_id),
           task_roles:0007-ap-task-roles!task_id(role_id, 0007-ap-roles:role_id(label))
           goal_tasks:0007-ap-goal-tasks(
             goal:0007-ap-goals-12wk-main(id, title, progress)
           )
         `)
         .eq('user_id', user.id)
-        .eq('0007-ap-task-roles!task_id.role_id', roleId)
         .lte('due_date', endOfWeek.toISOString().split('T')[0]);
 
       if (!tasks) {
