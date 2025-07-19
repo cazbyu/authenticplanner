@@ -271,9 +271,9 @@ end_time: form.isAllDay ? null : end_time,
         );
       }
       // 12-week goal link
-      await supabase.from("0007-ap-goal_tasks").delete().eq("task_id", taskId);
+      await supabase.from("0007-ap-goal-tasks").delete().eq("task_id", taskId);
       if (form.twelveWeekGoalChecked && form.twelveWeekGoalId) {
-        await supabase.from("0007-ap-goal_tasks").insert({
+        await supabase.from("0007-ap-goal-tasks").insert({
           goal_id: form.twelveWeekGoalId,
           task_id: taskId,
         });
