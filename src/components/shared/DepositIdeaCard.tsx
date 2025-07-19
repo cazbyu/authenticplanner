@@ -167,19 +167,3 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
 };
 
 export default DepositIdeaCard;
-        <button
-          onClick={handleActivate}
-          className={`
-            w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2
-            ${isHovered ? 'bg-green-700' : ''}
-          `}
-        >
-          <Target className="h-4 w-4" />
-          Activate
-        </button>
-      )}
-    </div>
-  );
-};
-
-export default DepositIdeaCard;
