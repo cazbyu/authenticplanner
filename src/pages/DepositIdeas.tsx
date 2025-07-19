@@ -389,46 +389,35 @@ const DepositIdeas: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {Object.entries(groupedIdeas).map(([groupName, ideas]) => (
-              <div key={groupName} className="bg-white rounded-lg border border-gray-200">
-                <button
-                  onClick={() => toggleSection(groupName)}
-                  className="w-full flex items-center justify-between p-4 hover:bg-gray-50 transition-colors"
-                >
-                  <div className="flex items-center gap-3">
-                    {sortBy === 'roles' ? (
-                      <Users className="h-5 w-5 text-gray-600" />
-                    ) : (
-                      <Heart className="h-5 w-5 text-gray-600" />
-                    )}
-                    <h3 className="text-lg font-semibold text-gray-900">{groupName}</h3>
-                    <span className="text-sm text-gray-500">({ideas.length})</span>
-                  </div>
-                  {expandedSections.has(groupName) ? (
-                    <ChevronUp className="h-5 w-5 text-gray-400" />
+              <div key={groupName} className="bg-white rounded-lg border border-gray-200 p-6 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-4">
+                  {sortBy === 'roles' ? (
+                    <Users className="h-6 w-6 text-blue-600" />
                   ) : (
-                    <ChevronDown className="h-5 w-5 text-gray-400" />
+                    <Heart className="h-6 w-6 text-pink-600" />
                   )}
-                </button>
-
-                {expandedSections.has(groupName) && (
-                  <div className="border-t border-gray-200 p-4">
-                    <div className="grid gap-4 md:grid-cols-2">
-                      {ideas.map(idea => (
-                        <DepositIdeaCard
-                          key={idea.id}
-                          idea={idea}
-                          roles={roles}
-                          domains={domains}
-                          onEdit={handleEditDepositIdea}
-                          onActivate={handleActivate}
-                          showEditButton={true}
-                        />
-                      ))}
-                    </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900">{groupName}</h3>
+                    <span className="text-sm text-gray-500">{ideas.length} idea{ideas.length !== 1 ? 's' : ''}</span>
                   </div>
-                )}
+                </div>
+                
+                <div className="space-y-3">
+                  {ideas.map(idea => (
+                    <DepositIdeaCard
+                      key={idea.id}
+                      idea={idea}
+                      roles={roles}
+                      domains={domains}
+                      onEdit={handleEditDepositIdea}
+                      onActivate={handleActivate}
+                      showEditButton={true}
+                      className="text-sm"
+                    />
+                  ))}
+                </div>
               </div>
             ))}
           </div>
