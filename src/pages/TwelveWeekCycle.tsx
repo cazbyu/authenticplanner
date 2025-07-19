@@ -196,7 +196,7 @@ const TwelveWeekCycle: React.FC = () => {
         .from('0007-ap-tasks')
         .select(`
           *,
-          task_roles:0007-ap-task-roles(
+          task_roles:0007-ap-task-roles!fk_task(
             role:0007-ap-roles(id, label, category)
           ),
           task_domains:0007-ap-task-domains(
