@@ -7,6 +7,8 @@ import TaskEventForm from '../tasks/TaskEventForm';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 import EditTask from '../tasks/EditTask';
+import DepositIdeaCard from '../shared/DepositIdeaCard';
+import DepositIdeaEditForm from '../shared/DepositIdeaEditForm';
 import { useNavigate } from 'react-router-dom';
 
 interface Role {
@@ -62,6 +64,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
+  const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
 
   useEffect(() => {
     fetchRoles();
@@ -277,6 +280,24 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
   };
 
+  const handleEditDepositIdea = (idea: DepositIdea) => {
+    setEditingDepositIdea(idea);
+  };
+
+  const handleDepositIdeaUpdated = () => {
+    setEditingDepositIdea(null);
+    if (selectedRole) {
+      fetchRoleData(selectedRole.id);
+    }
+  };
+
+  const handleDepositIdeaDeleted = () => {
+    setEditingDepositIdea(null);
+    if (selectedRole) {
+      fetchRoleData(selectedRole.id);
+    }
+  };
+
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
     setSelectedSection(null);
@@ -450,9 +471,15 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             {roleDepositIdeas.length > 0 ? (
               <div className="space-y-2">
                 {roleDepositIdeas.map((idea) => (
-                  <div key={idea.id} className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                    <div className="text-gray-900">{idea.description}</div>
-                  </div>
+                  <DepositIdeaCard
+                    key={idea.id}
+                    idea={idea}
+                    roles={roles.reduce((acc, role) => ({ ...acc, [role.id]: role }), {})}
+                    domains={domains.reduce((acc, domain) => ({ ...acc, [domain.id]: domain }), {})}
+                    onEdit={handleEditDepositIdea}
+                    showEditButton={true}
+                    className="bg-blue-50 border-blue-200"
+                  />
                 ))}
               </div>
             ) : (
@@ -579,6 +606,16 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               />
             </div>
           </div>
+        )}
+
+        {/* Edit Deposit Idea Form Modal */}
+        {editingDepositIdea && (
+          <DepositIdeaEditForm
+            idea={editingDepositIdea}
+            onClose={() => setEditingDepositIdea(null)}
+            onUpdated={handleDepositIdeaUpdated}
+            onDeleted={handleDepositIdeaDeleted}
+          />
         )}
       </div>
     );

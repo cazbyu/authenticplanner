@@ -3,6 +3,8 @@ import { supabase } from '../supabaseClient';
 import { Plus, Users, Heart, ChevronDown, ChevronUp, Star, Target, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import TaskEventForm from '../components/tasks/TaskEventForm';
+import DepositIdeaCard from '../components/shared/DepositIdeaCard';
+import DepositIdeaEditForm from '../components/shared/DepositIdeaEditForm';
 
 interface Role {
   id: string;
@@ -53,6 +55,7 @@ const DepositIdeas: React.FC = () => {
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [selectedDepositIdea, setSelectedDepositIdea] = useState<DepositIdea | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
+  const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
 
   const [form, setForm] = useState<DepositIdeaFormData>({
     description: '',
@@ -242,6 +245,20 @@ const DepositIdeas: React.FC = () => {
     toast.success('Task created from deposit idea!');
   };
 
+  const handleEditDepositIdea = (idea: DepositIdea) => {
+    setEditingDepositIdea(idea);
+  };
+
+  const handleDepositIdeaUpdated = () => {
+    setEditingDepositIdea(null);
+    fetchAllData();
+  };
+
+  const handleDepositIdeaDeleted = () => {
+    setEditingDepositIdea(null);
+    fetchAllData();
+  };
+
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev => {
       const newSet = new Set(prev);
@@ -399,49 +416,15 @@ const DepositIdeas: React.FC = () => {
                   <div className="border-t border-gray-200 p-4">
                     <div className="grid gap-4 md:grid-cols-2">
                       {ideas.map(idea => (
-                        <div key={idea.id} className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                          <div className="mb-3">
-                            <p className="text-gray-900 font-medium mb-2">{idea.description}</p>
-                            {idea.notes && (
-                              <p className="text-sm text-gray-600 mb-2">{idea.notes}</p>
-                            )}
-                            
-                            {/* Show associated roles and domains */}
-                            <div className="flex flex-wrap gap-1 mb-3">
-                              {idea.deposit_idea_roles?.map(({ role_id }) => (
-                                roles[role_id] && (
-                                  <span key={role_id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                                    {roles[role_id].label}
-                                  </span>
-                                )
-                              ))}
-                              {idea.deposit_idea_domains?.map(({ domain_id }) => (
-                                domains[domain_id] && (
-                                  <span key={domain_id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
-                                    {domains[domain_id].name}
-                                  </span>
-                                )
-                              ))}
-                            </div>
-
-                            {idea.key_relationship && (
-                              <div className="flex items-center gap-2 mb-3">
-                                <Heart className="h-4 w-4 text-pink-500" />
-                                <span className="text-sm text-gray-600">
-                                  For: {idea.key_relationship.name}
-                                </span>
-                              </div>
-                            )}
-                          </div>
-
-                          <button
-                            onClick={() => handleActivate(idea)}
-                            className="w-full bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2"
-                          >
-                            <Target className="h-4 w-4" />
-                            Activate
-                          </button>
-                        </div>
+                        <DepositIdeaCard
+                          key={idea.id}
+                          idea={idea}
+                          roles={roles}
+                          domains={domains}
+                          onEdit={handleEditDepositIdea}
+                          onActivate={handleActivate}
+                          showEditButton={true}
+                        />
                       ))}
                     </div>
                   </div>
@@ -599,6 +582,16 @@ const DepositIdeas: React.FC = () => {
             />
           </div>
         </div>
+      )}
+
+      {/* Edit Deposit Idea Form Modal */}
+      {editingDepositIdea && (
+        <DepositIdeaEditForm
+          idea={editingDepositIdea}
+          onClose={() => setEditingDepositIdea(null)}
+          onUpdated={handleDepositIdeaUpdated}
+          onDeleted={handleDepositIdeaDeleted}
+        />
       )}
     </div>
   );
