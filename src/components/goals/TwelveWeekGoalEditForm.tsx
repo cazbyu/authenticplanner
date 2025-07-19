@@ -170,7 +170,7 @@ const TwelveWeekGoalEditForm: React.FC<TwelveWeekGoalEditFormProps> = ({
       // Update domain relationships
       // First, delete existing domain relationships
       await supabase
-        .from('0007-ap-goal_domains')
+        .from('0007-ap-goal-domains')
         .delete()
         .eq('goal_id', goal.id);
 
@@ -194,7 +194,7 @@ const TwelveWeekGoalEditForm: React.FC<TwelveWeekGoalEditFormProps> = ({
         }));
 
         const { error: domainLinkError } = await supabase
-          .from('0007-ap-goal_domains')
+          .from('0007-ap-goal-domains')
           .insert(domainInserts);
 
         if (domainLinkError) {
@@ -207,7 +207,7 @@ const TwelveWeekGoalEditForm: React.FC<TwelveWeekGoalEditFormProps> = ({
       // Update role relationships
       // First, delete existing role relationships
       await supabase
-        .from('0007-ap-goal_roles')
+        .from('0007-ap-goal-roles')
         .delete()
         .eq('goal_id', goal.id);
 
@@ -219,7 +219,7 @@ const TwelveWeekGoalEditForm: React.FC<TwelveWeekGoalEditFormProps> = ({
         }));
 
         const { error: roleLinkError } = await supabase
-          .from('0007-ap-goal_roles')
+          .from('0007-ap-goal-roles')
           .insert(roleInserts);
 
         if (roleLinkError) {
