@@ -163,7 +163,7 @@ const TwelveWeekGoalForm: React.FC<TwelveWeekGoalFormProps> = ({ onClose, onGoal
         }));
 
         const { error: domainLinkError } = await supabase
-          .from('0007-ap-goal_domains')
+          .from('0007-ap-goal-domains')
           .insert(domainInserts);
 
         if (domainLinkError) {
@@ -181,7 +181,7 @@ const TwelveWeekGoalForm: React.FC<TwelveWeekGoalFormProps> = ({ onClose, onGoal
         }));
 
         const { error: roleLinkError } = await supabase
-          .from('0007-ap-goal_roles')
+          .from('0007-ap-goal-roles')
           .insert(roleInserts);
 
         if (roleLinkError) {
