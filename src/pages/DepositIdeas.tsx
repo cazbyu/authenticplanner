@@ -335,7 +335,7 @@ const DepositIdeas: React.FC = () => {
   const groupedIdeas = groupDepositIdeas();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="h-screen overflow-y-auto bg-gray-50">
       {/* Header */}
       <div className="sticky top-0 z-10 p-6 border-b border-gray-200 bg-white shadow-sm">
         <div className="flex items-center justify-between mb-4">
