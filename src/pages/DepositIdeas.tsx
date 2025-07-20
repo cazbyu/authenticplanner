@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
-import { Plus, Users, Heart, ChevronDown, ChevronUp, Star, Target } from 'lucide-react';
+import { Plus, Users, Heart, ChevronDown, ChevronUp, Star, Target, ChevronLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import DepositIdeaCard from '../components/shared/DepositIdeaCard';
 import DepositIdeaForm from '../components/shared/DepositIdeaForm';
@@ -295,10 +295,18 @@ const DepositIdeas: React.FC = () => {
 
   return (
     <div className="h-screen overflow-y-auto bg-gray-50">
-      {/* Header */}
-      <div className="sticky top-0 z-10 p-6 border-b border-gray-200 bg-white shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">Deposit Ideas</h1>
+      {/* Content */}
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => window.history.back()}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+            <h1 className="text-2xl font-bold text-gray-900">Deposit Ideas</h1>
+          </div>
           <button
             onClick={() => setShowAddForm(true)}
             className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
@@ -308,7 +316,7 @@ const DepositIdeas: React.FC = () => {
           </button>
         </div>
         {/* Sort Toggle */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-4 mb-6">
           <span className="text-sm font-medium text-gray-700">Sort by:</span>
           <div className="flex bg-gray-100 rounded-lg p-1">
             <button
@@ -345,10 +353,7 @@ const DepositIdeas: React.FC = () => {
             </button>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="p-6">
         {sortBy === 'archived' ? (
           /* Archived View - Simple List */
           depositIdeas.length === 0 ? (
