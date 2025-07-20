@@ -723,7 +723,47 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     <div className="flex flex-col h-full">
       {/* Header with Sort Bar */}
       <div className="flex items-center justify-between p-6 flex-shrink-0">
-        <div>
+        <div className="flex-1">
+          <h1 className="text-2xl font-bold text-gray-900 text-center">Role Bank</h1>
+          <p className="text-gray-600 mt-1 text-center">
+            Manage your life roles and authentic deposits
+          </p>
+        </div>
+        <div className="flex items-center gap-4 absolute right-6">
+          {/* Sort Bar */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setSortBy('active')}
+              className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                sortBy === 'active'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Active Roles
+            </button>
+            <button
+              onClick={() => setSortBy('inactive')}
+              className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                sortBy === 'inactive'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Not Activated
+            </button>
+          </div>
+          
+          {/* Add Deposit Idea Button */}
+          <button
+            onClick={() => setShowAddDepositIdeaForm(true)}
+            className="flex items-center gap-2 bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors text-sm"
+          >
+            <Plus className="h-4 w-4" />
+            Add Deposit Idea
+          </button>
+        </div>
+      </div>
           <h1 className="text-2xl font-bold text-gray-900">Role Bank</h1>
           <p className="text-gray-600 mt-1">
             Manage your life roles and authentic deposits
