@@ -251,12 +251,12 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
           {/* Description */}
           <div>
             <label className="block text-sm font-medium mb-2">Title *</label>
-            <textarea
+            <input
+              type="text"
               name="title"
               value={form.title}
               onChange={handleFormChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              rows={3}
               placeholder="Enter deposit idea title..."
               required
               disabled={loading}
@@ -270,7 +270,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
               value={form.notes}
               onChange={handleFormChange}
               className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              rows={2}
+              rows={4}
               placeholder="Describe your authentic deposit idea..."
               disabled={loading}
             />
