@@ -33,8 +33,10 @@ interface DepositIdeaCardProps {
   domains: Record<string, Domain>;
   onEdit?: (idea: DepositIdea) => void;
   onActivate?: (idea: DepositIdea) => void;
+  onDelete?: (idea: DepositIdea) => void;
   showEditButton?: boolean;
   showActivateButton?: boolean;
+  showDeleteButton?: boolean;
   className?: string;
 }
 
@@ -44,8 +46,10 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
   domains,
   onEdit,
   onActivate,
+  onDelete,
   showEditButton = true,
   showActivateButton = true,
+  showDeleteButton = false,
   className = ''
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -70,6 +74,13 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
     e.stopPropagation();
     if (onEdit) {
       onEdit(idea);
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onDelete) {
+      onDelete(idea);
     }
   };
 
@@ -140,7 +151,7 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
           <button
             onClick={handleActivate}
             className={`
-              flex-1 bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2
+              ${showDeleteButton ? 'flex-1' : showEditButton ? 'flex-1' : 'w-full'} bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2
               ${isHovered ? 'bg-green-700' : ''}
             `}
           >
@@ -153,12 +164,24 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
           <button
             onClick={handleEdit}
             className={`
-              ${showActivateButton && onActivate ? 'flex-1' : 'w-full'} bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2
+              ${(showActivateButton && onActivate) || (showDeleteButton && onDelete) ? 'flex-1' : 'w-full'} bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2
               ${isHovered ? 'bg-blue-700' : ''}
             `}
           >
             <Edit className="h-4 w-4" />
             Update
+          </button>
+        )}
+        
+        {showDeleteButton && onDelete && (
+          <button
+            onClick={handleDelete}
+            className={`
+              ${(showActivateButton && onActivate) || (showEditButton && onEdit) ? 'flex-1' : 'w-full'} bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2
+              ${isHovered ? 'bg-red-700' : ''}
+            `}
+          >
+            🗑️ Delete
           </button>
         )}
       </div>

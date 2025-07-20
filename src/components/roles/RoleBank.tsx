@@ -319,8 +319,35 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
   const handleDepositIdeaActivated = () => {
     setActivatingDepositIdea(null);
-    if (selectedRole) {
-      fetchRoleData(selectedRole.id);
+    // Mark the deposit idea as activated
+    if (activatingDepositIdea && selectedRole) {
+      markDepositIdeaAsActivated(activatingDepositIdea.id);
+    }
+  };
+
+  const markDepositIdeaAsActivated = async (depositIdeaId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .update({
+          activated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', depositIdeaId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error marking deposit idea as activated:', error);
+      } else {
+        if (selectedRole) {
+          fetchRoleData(selectedRole.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error marking deposit idea as activated:', error);
     }
   };
   const handleDepositIdeaUpdated = () => {

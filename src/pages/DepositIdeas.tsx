@@ -45,13 +45,16 @@ const DepositIdeas: React.FC = () => {
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sortBy, setSortBy] = useState<'roles' | 'relationships'>('roles');
+  const [sortBy, setSortBy] = useState<'roles' | 'relationships' | 'archived'>('roles');
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
 
   // Modal state for add/edit form
   const [showAddForm, setShowAddForm] = useState(false);
   const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
   const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
+
+  // Add delete confirmation state
+  const [deletingDepositIdea, setDeletingDepositIdea] = useState<DepositIdea | null>(null);
 
   // --- FETCH ALL DATA ---
   useEffect(() => {
@@ -65,8 +68,108 @@ const DepositIdeas: React.FC = () => {
 
   const handleDepositIdeaActivated = () => {
     setActivatingDepositIdea(null);
-    fetchAllData(); // Refresh the data
+    // Mark the deposit idea as activated
+    if (activatingDepositIdea) {
+      markDepositIdeaAsActivated(activatingDepositIdea.id);
+    }
   };
+
+  const markDepositIdeaAsActivated = async (depositIdeaId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .update({
+          activated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', depositIdeaId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error marking deposit idea as activated:', error);
+        toast.error('Failed to mark deposit idea as activated');
+      } else {
+        toast.success('Deposit idea activated successfully!');
+        fetchAllData(); // Refresh the data
+      }
+    } catch (error) {
+      console.error('Error marking deposit idea as activated:', error);
+      toast.error('Failed to mark deposit idea as activated');
+    }
+  };
+
+  const handleDeleteDepositIdea = async (depositIdea: DepositIdea) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .delete()
+        .eq('id', depositIdea.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting deposit idea:', error);
+        toast.error('Failed to delete deposit idea');
+      } else {
+        toast.success('Deposit idea deleted successfully!');
+        setDeletingDepositIdea(null);
+        fetchAllData(); // Refresh the data
+      }
+    } catch (error) {
+      console.error('Error deleting deposit idea:', error);
+      toast.error('Failed to delete deposit idea');
+    }
+  };
+
+  // Fetch archived deposit ideas
+  const fetchArchivedDepositIdeas = async () => {
+    setLoading(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        setLoading(false);
+        return;
+      }
+
+      const { data: archivedIdeas, error } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .select(`
+          *,
+          key_relationship:0007-ap-key-relationships(*),
+          deposit_idea_roles:0007-ap-deposit-idea-roles(role_id),
+          deposit_idea_domains:0007-ap-deposit-idea-domains(domain_id)
+        `)
+        .eq('user_id', user.id)
+        .eq('archived', true)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching archived deposit ideas:', error);
+        toast.error('Failed to load archived deposit ideas');
+      } else {
+        setDepositIdeas(archivedIdeas || []);
+      }
+    } catch (error) {
+      console.error('Error fetching archived deposit ideas:', error);
+      toast.error('Failed to load archived deposit ideas');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Handle sort change
+  useEffect(() => {
+    if (sortBy === 'archived') {
+      fetchArchivedDepositIdeas();
+    } else {
+      fetchAllData();
+    }
+  }, [sortBy]);
   const fetchAllData = async () => {
     setLoading(true);
     try {
@@ -99,7 +202,8 @@ const DepositIdeas: React.FC = () => {
             deposit_idea_domains:0007-ap-deposit-idea-domains(domain_id)
           `)
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false }),
+          .order('created_at', { ascending: false })
+          .is('activated_at', null), // Only show non-activated deposit ideas
       ]);
 
       // Build maps/arrays
@@ -229,13 +333,78 @@ const DepositIdeas: React.FC = () => {
               <Heart className="h-4 w-4 inline mr-1" />
               Key Relationships
             </button>
+            <button
+              onClick={() => setSortBy('archived')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                sortBy === 'archived'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              📁 Archived
+            </button>
           </div>
         </div>
       </div>
 
       {/* Content */}
       <div className="p-6">
-        {Object.keys(groupedIdeas).length === 0 ? (
+        {sortBy === 'archived' ? (
+          /* Archived View - Simple List */
+          depositIdeas.length === 0 ? (
+            <div className="text-center py-12">
+              <Star className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No Archived Deposit Ideas</h3>
+              <p className="text-gray-600">
+                Completed deposit ideas will appear here when archived.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Archived Deposit Ideas</h2>
+              {depositIdeas.map(idea => (
+                <div key={idea.id} className="bg-white rounded-lg border border-gray-200 p-4">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h3 className="font-medium text-gray-900 mb-2">{idea.title}</h3>
+                      {idea.notes && (
+                        <p className="text-sm text-gray-600 mb-2">{idea.notes}</p>
+                      )}
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {idea.deposit_idea_roles?.map(({ role_id }) => (
+                          roles[role_id] && (
+                            <span key={role_id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
+                              <Users className="h-3 w-3 mr-1" />
+                              {roles[role_id].label}
+                            </span>
+                          )
+                        ))}
+                        {idea.deposit_idea_domains?.map(({ domain_id }) => (
+                          domains[domain_id] && (
+                            <span key={domain_id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+                              {domains[domain_id].name}
+                            </span>
+                          )
+                        ))}
+                      </div>
+                      {idea.key_relationship && (
+                        <div className="flex items-center gap-2 mb-2">
+                          <Heart className="h-4 w-4 text-pink-500" />
+                          <span className="text-sm text-gray-600">
+                            For: {idea.key_relationship.name}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      Created: {new Date(idea.created_at).toLocaleDateString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )
+        ) : Object.keys(groupedIdeas).length === 0 ? (
           <div className="text-center py-12">
             <Star className="h-16 w-16 text-gray-300 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">No Deposit Ideas Yet</h3>
@@ -286,8 +455,10 @@ const DepositIdeas: React.FC = () => {
                         domains={domains}
                         onEdit={(idea) => setEditingDepositIdea(idea)}
                         onActivate={handleActivateDepositIdea}
+                        onDelete={(idea) => setDeletingDepositIdea(idea)}
                         showEditButton={true}
                         showActivateButton={true}
+                        showDeleteButton={true}
                         className="text-sm"
                       />
                     ))}
@@ -339,6 +510,32 @@ const DepositIdeas: React.FC = () => {
               onSubmitSuccess={handleDepositIdeaActivated}
               onClose={() => setActivatingDepositIdea(null)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deletingDepositIdea && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Deposit Idea</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete "{deletingDepositIdea.title}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setDeletingDepositIdea(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDeleteDepositIdea(deletingDepositIdea)}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
