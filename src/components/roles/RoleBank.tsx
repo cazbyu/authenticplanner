@@ -667,154 +667,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                 initialData={{
                   title: activatingDepositIdea.title,
                   notes: activatingDepositIdea.notes || '',
-                  authenticDeposit: true,
-                  schedulingType: 'task',
-                  selectedRoleIds: activatingDepositIdea.deposit_idea_roles?.map(r => r.role_id) || [selectedRole.id],
-                  selectedDomainIds: activatingDepositIdea.deposit_idea_domains?.map(d => d.domain_id) || [],
-                  selectedKeyRelationshipIds: activatingDepositIdea.key_relationship_id ? [activatingDepositIdea.key_relationship_id] : [],
-                  isFromDepositIdea: true
-                }}
-                onSubmitSuccess={handleDepositIdeaActivated}
-                onClose={() => setActivatingDepositIdea(null)}
-              />
-            </div>
-          </div>
-        )}
-        {/* Delegate Task Modal */}
-        {delegatingTask && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
-            <DelegateTaskModal
-              taskId={delegatingTask.id}
-              taskTitle={delegatingTask.title}
-              onClose={() => setDelegatingTask(null)}
-              onDelegated={handleTaskDelegated}
-            />
-          </div>
-        )}
-
-        {/* Edit Task Modal */}
-        {editingTask && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
-            <div className="w-full max-w-2xl mx-4">
-              <EditTask
-                task={editingTask}
-                onTaskUpdated={handleTaskUpdated}
-                onCancel={() => setEditingTask(null)}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Edit Deposit Idea Form Modal */}
-        {editingDepositIdea && (
-          <DepositIdeaEditForm
-            idea={editingDepositIdea}
-            onClose={() => setEditingDepositIdea(null)}
-            onUpdated={handleDepositIdeaUpdated}
-            onDeleted={handleDepositIdeaDeleted}
-          />
-        )}
-      </div>
-    );
-  }
-
-  // --- MAIN ROLES VIEW WITH SORT BAR ---
-  return (
-    <div className="flex flex-col h-full">
-      {/* Header with Sort Bar */}
-      <div className="flex items-center justify-between p-6 flex-shrink-0">
-        <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 text-center">Role Bank</h1>
-          <p className="text-gray-600 mt-1 text-center">
-            Manage your life roles and authentic deposits
-          </p>
-        </div>
-        <div className="flex items-center gap-4 absolute right-6">
-          {/* Sort Bar */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setSortBy('active')}
-              className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                sortBy === 'active'
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Active Roles
-            </button>
-            <button
-              onClick={() => setSortBy('inactive')}
-              className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                sortBy === 'inactive'
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Not Activated
-            </button>
-          </div>
-          
-          {/* Add Deposit Idea Button */}
-          <button
-            onClick={() => setShowAddDepositIdeaForm(true)}
-            className="flex items-center gap-2 bg-primary-600 text-white px-3 py-1.5 rounded-lg hover:bg-primary-700 transition-colors text-sm"
-          >
-            <Plus className="h-4 w-4" />
-            Add Deposit Idea
-          </button>
-        </div>
-      </div>
-          <h1 className="text-2xl font-bold text-gray-900">Role Bank</h1>
-          <p className="text-gray-600 mt-1">
-            Manage your life roles and authentic deposits
-          </p>
-        </div>
-        <div className="flex items-center gap-4">
-          {/* Sort Bar */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setSortBy('active')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                sortBy === 'active'
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Active Roles
-            </button>
-            <button
-              onClick={() => setSortBy('inactive')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                sortBy === 'inactive'
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Not Activated
-            </button>
-            <button
-              onClick={() => setSortBy('archived')}
-              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                sortBy === 'archived'
-                  ? 'bg-white text-primary-600 shadow-sm'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Archived
-            </button>
-          </div>
-          
-          {/* Add Deposit Idea Button */}
-          <button
-            onClick={() => setShowAddDepositIdeaForm(true)}
-            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
-          >
-            <Plus className="h-4 w-4" />
-            Add Deposit Idea
-          </button>
-        </div>
-      </div>
-
       {/* Roles Grid */}
       <div className="flex-1 overflow-y-auto min-h-0 px-6 pb-6">
         <div className="grid gap-4 grid-cols-3 pr-2">
@@ -823,12 +675,10 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               <div className="text-gray-500 mb-4">
                 {sortBy === 'active' && 'No active roles found'}
                 {sortBy === 'inactive' && 'No inactive roles found'}
-                {sortBy === 'archived' && 'No archived roles found'}
               </div>
               <p className="text-sm text-gray-400">
                 {sortBy === 'active' && 'Add roles in Settings to get started with your Role Bank'}
                 {sortBy === 'inactive' && 'All your roles are currently active'}
-                {sortBy === 'archived' && 'No roles have been archived yet'}
               </p>
             </div>
           ) : (
