@@ -48,10 +48,10 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   
   // Simplified collapsed state - no complex initialization
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
-    'urgent-important': false,
-    'not-urgent-important': false,
-    'urgent-not-important': false,
-    'not-urgent-not-important': false,
+    'urgent-important': true,
+    'not-urgent-important': true,
+    'urgent-not-important': true,
+    'not-urgent-not-important': true,
   });
 
   const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel', event?: React.MouseEvent) => {
