@@ -202,7 +202,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             .in('id', depositIdeaIds)
             .eq('is_active', true)
             .is('activated_at', null)
-            .eq('archived', false)
+            .eq('archived', false)  // Only show non-archived ideas
         : { data: [], error: null };
 
       if (depositIdeasError) throw depositIdeasError;
@@ -330,18 +330,19 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   };
 
   const handleActivateDepositIdea = (idea: DepositIdea) => {
+    // Show selection dialog for Task vs Event
     setActivatingDepositIdea(idea);
   };
 
   const handleDepositIdeaActivated = () => {
     setActivatingDepositIdea(null);
-    // Mark the deposit idea as activated
+    // Archive the deposit idea and refresh data
     if (activatingDepositIdea && selectedRole) {
-      markDepositIdeaAsActivated(activatingDepositIdea.id);
+      archiveDepositIdea(activatingDepositIdea.id);
     }
   };
 
-  const markDepositIdeaAsActivated = async (depositIdeaId: string) => {
+  const archiveDepositIdea = async (depositIdeaId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -350,20 +351,24 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         .from('0007-ap-deposit-ideas')
         .update({
           activated_at: new Date().toISOString(),
+          archived: true,
           updated_at: new Date().toISOString()
         })
         .eq('id', depositIdeaId)
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error marking deposit idea as activated:', error);
+        console.error('Error archiving deposit idea:', error);
+        toast.error('Failed to archive deposit idea');
       } else {
+        toast.success('Deposit idea activated and archived successfully!');
         if (selectedRole) {
           fetchRoleData(selectedRole.id);
         }
       }
     } catch (error) {
-      console.error('Error marking deposit idea as activated:', error);
+      console.error('Error archiving deposit idea:', error);
+      toast.error('Failed to archive deposit idea');
     }
   };
   const handleDepositIdeaUpdated = () => {
