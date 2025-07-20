@@ -68,38 +68,10 @@ const DepositIdeas: React.FC = () => {
 
   const handleDepositIdeaActivated = () => {
     setActivatingDepositIdea(null);
-    // Mark the deposit idea as activated
-    if (activatingDepositIdea) {
-      markDepositIdeaAsActivated(activatingDepositIdea.id);
-    }
+    // Refresh the data to remove the activated deposit idea from the list
+    fetchAllData();
   };
 
-  const markDepositIdeaAsActivated = async (depositIdeaId: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { error } = await supabase
-        .from('0007-ap-deposit-ideas')
-        .update({
-          activated_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', depositIdeaId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error marking deposit idea as activated:', error);
-        toast.error('Failed to mark deposit idea as activated');
-      } else {
-        toast.success('Deposit idea activated successfully!');
-        fetchAllData(); // Refresh the data
-      }
-    } catch (error) {
-      console.error('Error marking deposit idea as activated:', error);
-      toast.error('Failed to mark deposit idea as activated');
-    }
-  };
 
   const handleDeleteDepositIdea = async (depositIdea: DepositIdea) => {
     try {
@@ -202,7 +174,7 @@ const DepositIdeas: React.FC = () => {
             deposit_idea_domains:0007-ap-deposit-idea-domains(domain_id)
           `)
           .eq('user_id', user.id)
-          .order('created_at', { ascending: false })
+          .eq('archived', true)
           .is('activated_at', null), // Only show non-activated deposit ideas
       ]);
 
@@ -510,7 +482,8 @@ const DepositIdeas: React.FC = () => {
                 selectedRoleIds: activatingDepositIdea.deposit_idea_roles?.map(r => r.role_id) || [],
                 selectedDomainIds: activatingDepositIdea.deposit_idea_domains?.map(d => d.domain_id) || [],
                 selectedKeyRelationshipIds: activatingDepositIdea.key_relationship_id ? [activatingDepositIdea.key_relationship_id] : [],
-                isFromDepositIdea: true
+                isFromDepositIdea: true,
+                depositIdeaId: activatingDepositIdea.id
               }}
               onSubmitSuccess={handleDepositIdeaActivated}
               onClose={() => setActivatingDepositIdea(null)}

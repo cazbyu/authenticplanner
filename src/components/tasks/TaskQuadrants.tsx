@@ -112,6 +112,26 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         return;
       }
 
+      // If this was a deposit idea task that was completed, archive the original deposit idea
+      if (action === 'complete') {
+        const completedTask = tasks.find(t => t.id === taskId);
+        if (completedTask && completedTask.deposit_idea) {
+          // Find and archive the original deposit idea
+          const { error: archiveError } = await supabase
+            .from('0007-ap-deposit-ideas')
+            .update({
+              archived: true,
+              updated_at: new Date().toISOString()
+            })
+            .eq('activated_at', 'not', null) // Only archive activated deposit ideas
+            .eq('archived', false); // Only archive non-archived items
+          
+          if (archiveError) {
+            console.error('Error archiving deposit idea:', archiveError);
+          }
+        }
+      }
+
       if (action === 'complete') {
         // Remove from both regular tasks and delegated tasks
         setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
