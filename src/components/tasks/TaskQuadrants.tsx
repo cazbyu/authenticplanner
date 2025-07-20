@@ -164,7 +164,6 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           id,
           title,
           due_date,
-          time,
           is_urgent,
           is_important,
           priority,
