@@ -549,4 +549,86 @@ const DepositIdeas: React.FC = () => {
   );
 };
 
+// --- ACTIVATION TYPE SELECTOR COMPONENT ---
+const ActivationTypeSelector: React.FC<{
+  depositIdea: DepositIdea;
+  onClose: () => void;
+  onActivated: () => void;
+}> = ({ depositIdea, onClose, onActivated }) => {
+  const [selectedType, setSelectedType] = useState<'task' | 'event' | null>(null);
+  const [showTaskEventForm, setShowTaskEventForm] = useState(false);
+
+  const handleTypeSelect = (type: 'task' | 'event') => {
+    setSelectedType(type);
+    setShowTaskEventForm(true);
+  };
+
+  const handleFormSuccess = () => {
+    setShowTaskEventForm(false);
+    onActivated();
+  };
+
+  if (showTaskEventForm && selectedType) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+        <div className="w-full max-w-2xl mx-4">
+          <TaskEventForm
+            mode="create"
+            initialData={{
+              title: depositIdea.title,
+              notes: depositIdea.notes || '',
+              schedulingType: selectedType,
+              selectedRoleIds: depositIdea.deposit_idea_roles?.map(r => r.role_id) || [],
+              selectedDomainIds: depositIdea.deposit_idea_domains?.map(d => d.domain_id) || [],
+              selectedKeyRelationshipIds: depositIdea.key_relationship_id ? [depositIdea.key_relationship_id] : [],
+              authenticDeposit: true,
+              isFromDepositIdea: true
+            }}
+            onSubmitSuccess={handleFormSuccess}
+            onClose={() => {
+              setShowTaskEventForm(false);
+              setSelectedType(null);
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Activate Deposit Idea</h3>
+        <p className="text-sm text-gray-600 mb-4">
+          How would you like to activate "{depositIdea.title}"?
+        </p>
+        <div className="space-y-3">
+          <button
+            onClick={() => handleTypeSelect('task')}
+            className="w-full p-4 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+          >
+            <div className="font-medium text-gray-900">Create as Task</div>
+            <div className="text-sm text-gray-600">Add to your task list with optional due date</div>
+          </button>
+          <button
+            onClick={() => handleTypeSelect('event')}
+            className="w-full p-4 text-left border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-colors"
+          >
+            <div className="font-medium text-gray-900">Create as Event</div>
+            <div className="text-sm text-gray-600">Schedule on your calendar with specific date and time</div>
+          </button>
+        </div>
+        <div className="flex justify-end mt-6">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 export default DepositIdeas;
