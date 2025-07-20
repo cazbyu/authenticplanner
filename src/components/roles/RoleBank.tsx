@@ -667,6 +667,92 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                 initialData={{
                   title: activatingDepositIdea.title,
                   notes: activatingDepositIdea.notes || '',
+                  schedulingType: 'task',
+                  selectedRoleIds: [selectedRole.id]
+                }}
+                onSubmitSuccess={handleDepositIdeaActivated}
+                onClose={() => setActivatingDepositIdea(null)}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Delegate Task Modal */}
+        {delegatingTask && (
+          <DelegateTaskModal
+            task={delegatingTask}
+            onClose={() => setDelegatingTask(null)}
+            onTaskDelegated={handleTaskDelegated}
+          />
+        )}
+
+        {/* Edit Task Modal */}
+        {editingTask && (
+          <EditTask
+            task={editingTask}
+            onClose={() => setEditingTask(null)}
+            onTaskUpdated={handleTaskUpdated}
+          />
+        )}
+
+        {/* Edit Deposit Idea Modal */}
+        {editingDepositIdea && (
+          <DepositIdeaEditForm
+            depositIdea={editingDepositIdea}
+            onClose={() => setEditingDepositIdea(null)}
+            onUpdated={handleDepositIdeaUpdated}
+            onDeleted={handleDepositIdeaDeleted}
+            roles={roles.reduce((acc, role) => ({ ...acc, [role.id]: role }), {})}
+            domains={domains}
+            keyRelationships={keyRelationships}
+          />
+        )}
+      </div>
+    );
+  }
+
+  // --- ROLES GRID VIEW ---
+  return (
+    <div className="flex flex-col h-full min-h-0">
+      {/* Header */}
+      <div className="flex items-center justify-between p-6 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          {propOnBack && (
+            <button
+              onClick={propOnBack}
+              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <ChevronLeft className="h-5 w-5" />
+            </button>
+          )}
+          <h1 className="text-2xl font-bold text-gray-900">Role Bank</h1>
+        </div>
+        
+        {/* Sort Filter */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setSortBy('active')}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              sortBy === 'active'
+                ? 'bg-primary-100 text-primary-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            Active
+          </button>
+          <button
+            onClick={() => setSortBy('inactive')}
+            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+              sortBy === 'inactive'
+                ? 'bg-primary-100 text-primary-700'
+                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            Inactive
+          </button>
+        </div>
+      </div>
+
       {/* Roles Grid */}
       <div className="flex-1 overflow-y-auto min-h-0 px-6 pb-6">
         <div className="grid gap-4 grid-cols-3 pr-2">
