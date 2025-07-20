@@ -29,7 +29,6 @@ interface FormData {
   twelveWeekGoalChecked?: boolean;
   twelveWeekGoalId?: string;
   schedulingType?: "task" | "event";
-  depositIdeaId?: string;
 }
 
 interface Role { id: string; label: string; }
@@ -186,7 +185,7 @@ function getEndTimeOptions(startTime: string) {
         is_authentic_deposit: !!form.authenticDeposit,
         is_twelve_week_goal: !!form.twelveWeekGoalChecked,
         type: form.schedulingType || "task",
-        deposit_idea: !!form.isFromDepositIdea
+        deposit_idea: !!form.isFromDepositIdea,
       };
 
       // Date/time logic
@@ -233,17 +232,6 @@ end_time: form.isAllDay ? null : end_time,
           .single();
         if (error) throw error;
         taskId = data.id;
-        
-        // If this task was created from a deposit idea, mark the deposit idea as activated
-        if (form.isFromDepositIdea && form.depositIdeaId) {
-          await supabase
-            .from('0007-ap-deposit-ideas')
-            .update({
-              activated_at: new Date().toISOString(),
-              updated_at: new Date().toISOString()
-            })
-            .eq('id', form.depositIdeaId);
-        }
       } else if (mode === "edit" && form.id) {
         const { error } = await supabase
           .from("0007-ap-tasks")

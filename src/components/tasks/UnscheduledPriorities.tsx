@@ -74,22 +74,6 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
       .eq('id', taskId);
 
     if (!error) {
-      // If this was a deposit idea task that was completed, archive the original deposit idea
-      if (action === 'complete') {
-        const completedTask = tasks.find(t => t.id === taskId);
-        if (completedTask && completedTask.deposit_idea) {
-          // Find and archive the original deposit idea
-          await supabase
-            .from('0007-ap-deposit-ideas')
-            .update({
-              archived: true,
-              updated_at: new Date().toISOString()
-            })
-            .not('activated_at', 'is', null) // Only archive activated deposit ideas
-            .eq('archived', false); // Only archive non-archived items
-        }
-      }
-      
       // Remove task from current view
       setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
     }

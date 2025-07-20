@@ -56,8 +56,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             start: task.start_time || task.due_date,
             end: task.end_time,
             allDay: !task.start_time,
-            backgroundColor: task.status === 'completed' ? '#9ca3af' : task.is_urgent ? '#ef4444' : task.is_important ? '#f59e0b' : '#3b82f6',
-            borderColor: task.status === 'completed' ? '#6b7280' : task.is_urgent ? '#dc2626' : task.is_important ? '#d97706' : '#2563eb',
+            backgroundColor: task.is_urgent ? '#ef4444' : task.is_important ? '#f59e0b' : '#3b82f6',
+            borderColor: task.is_urgent ? '#dc2626' : task.is_important ? '#d97706' : '#2563eb',
           }));
           setEvents(calendarEvents);
         }
