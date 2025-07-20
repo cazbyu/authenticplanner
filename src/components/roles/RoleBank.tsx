@@ -215,7 +215,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           .from('0007-ap-deposit-ideas')
           .select('*')
           .in('key_relationship_id', relationshipIds)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .is('activated_at', null)
+          .eq('archived', false);  // Only show non-archived ideas
 
         if (relationshipDepositError) throw relationshipDepositError;
         
