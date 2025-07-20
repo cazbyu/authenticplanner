@@ -316,8 +316,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
             <div>
               <label className="block text-sm font-medium mb-3">Key Relationships</label>
               <div className="grid grid-cols-2 gap-2 border border-gray-200 p-3 rounded-md max-h-40 overflow-y-auto">
-                {keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id)).length > 0 ? (
-                  keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id)).map(kr => (
+                {keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id)).map(kr => (
                     <label key={kr.id} className="flex items-center gap-2 text-sm">
                       <input
                         type="checkbox"
@@ -328,8 +327,8 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
                       />
                       <span>{kr.name}</span>
                     </label>
-                  ))
-                ) : (
+                ))}
+                {keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id)).length === 0 && (
                   <div className="text-gray-400 text-xs italic px-2 py-2 col-span-2">
                     No Key Relationships for selected roles yet.
                   </div>
