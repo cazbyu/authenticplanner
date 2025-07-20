@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
-import { Users, Heart } from 'lucide-react';
 
 // ----------- INTERFACES -----------
 interface Role {
@@ -38,7 +37,6 @@ interface DepositIdeaFormProps {
   onSuccess: () => void;
   roles: Record<string, Role>;
   domains: Record<string, Domain>;
-  keyRelationships: KeyRelationship[];
   idea?: DepositIdea | null; // If provided, triggers "edit" mode
   defaultRoleId?: string;
   defaultKeyRelationshipId?: string;
@@ -51,7 +49,6 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
   onSuccess,
   roles,
   domains,
-  keyRelationships,
   idea,
   defaultRoleId,
   defaultKeyRelationshipId
@@ -69,7 +66,26 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
   });
   const [loading, setLoading] = useState(false);
 
-  // Reset state on open or when editing a different idea
+  // Internal state for key relationships
+  const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
+
+  // Fetch active key relationships for the user whenever modal opens
+  useEffect(() => {
+    if (!open) return;
+    const fetchKeyRelationships = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: relationshipData } = await supabase
+        .from("0007-ap-key-relationships")
+        .select("id,name,role_id")
+        .eq("user_id", user.id)
+        .eq("is_active", true);
+      setKeyRelationships(relationshipData || []);
+    };
+    fetchKeyRelationships();
+  }, [open]);
+
+  // Reset form state on open or when editing a different idea
   useEffect(() => {
     setForm({
       title: idea?.title || '',
@@ -112,12 +128,8 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
       ...prev,
       selectedKeyRelationshipIds: prev.selectedKeyRelationshipIds.includes(relationshipId)
         ? prev.selectedKeyRelationshipIds.filter(id => id !== relationshipId)
-        : [...prev.selectedKeyRelationshipIds, relationshipId]
+        : [relationshipId] // Only allow one selected
     }));
-  };
-
-  const getFilteredKeyRelationships = () => {
-    return keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id));
   };
 
   // ----------- SUBMIT (ADD/EDIT) -----------
@@ -248,7 +260,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Description */}
+          {/* Title */}
           <div>
             <label className="block text-sm font-medium mb-2">Title *</label>
             <input
@@ -311,7 +323,6 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
               ))}
             </div>
           </div>
-          {/* Key Relationships */}
           {/* Key Relationships */}
           {form.selectedRoleIds.length > 0 && (
             <div>
