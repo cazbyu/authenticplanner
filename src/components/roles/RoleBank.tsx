@@ -547,19 +547,22 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             )}
           </section>
 {showAddDepositIdeaForm && selectedRole && (
- 
-  <DepositIdeaForm
-    open={showAddDepositIdeaForm}
-    onClose={() => setShowAddDepositIdeaForm(false)}
-    onSuccess={() => {
-      setShowAddDepositIdeaForm(false);
-      fetchRoleData(selectedRole.id);
-    }}
-    roles={roles.reduce((acc, role) => ({ ...acc, [role.id]: role }), {})}
-    domains={domains}
-    keyRelationships={keyRelationships}
-    defaultRoleId={selectedRole.id}
-  />
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <TaskEventForm
+                mode="create"
+                initialData={{
+                  schedulingType: 'depositIdea',
+                  selectedRoleIds: [selectedRole.id]
+                }}
+                onSubmitSuccess={() => {
+                  setShowAddDepositIdeaForm(false);
+                  fetchRoleData(selectedRole.id);
+                }}
+                onClose={() => setShowAddDepositIdeaForm(false)}
+              />
+            </div>
+          </div>
 )}
 
           {/* Key Relationships */}
@@ -695,17 +698,35 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           />
         )}
 
-        {/* Edit Deposit Idea Modal */}
-        {editingDepositIdea && (
-          <DepositIdeaEditForm
-            depositIdea={editingDepositIdea}
-            onClose={() => setEditingDepositIdea(null)}
-            onUpdated={handleDepositIdeaUpdated}
-            onDeleted={handleDepositIdeaDeleted}
-            roles={roles.reduce((acc, role) => ({ ...acc, [role.id]: role }), {})}
-            domains={domains}
-            keyRelationships={keyRelationships}
-          />
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <TaskEventForm
+                mode="create"
+                initialData={{
+                  schedulingType: 'depositIdea'
+                }}
+                onSubmitSuccess={() => {
+                  setShowAddDepositIdeaForm(false);
+                  // Refresh data if needed
+                }}
+                onClose={() => setShowAddDepositIdeaForm(false)}
+              />
+            </div>
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <TaskEventForm
+                mode="create"
+                initialData={{
+                  schedulingType: 'depositIdea'
+                }}
+                onSubmitSuccess={() => {
+                  setShowAddDepositIdeaForm(false);
+                  // Refresh data if needed
+                }}
+                onClose={() => setShowAddDepositIdeaForm(false)}
+              />
+            </div>
+          </div>
         )}
       </div>
     );

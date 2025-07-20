@@ -751,6 +751,16 @@ const AuthenticCalendar: React.FC = () => {
             >
               Task
             </button>
+            <button
+              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
+              onClick={() => {
+                setTaskType('depositIdea');
+                setShowTaskTypeMenu(false);
+                setShowTaskEventForm(true);
+              }}
+            >
+              Deposit Idea
+            </button>
           </div>
         </>
       )}
@@ -761,7 +771,7 @@ const AuthenticCalendar: React.FC = () => {
           <div className="w-full max-w-2xl">
             <TaskEventForm 
               mode="create"
-        initialData={{ schedulingType: taskType }}
+        initialData={{ schedulingType: taskType as "task" | "event" | "depositIdea" }}
         onSubmitSuccess={handleTaskCreated}
         onClose={() => setShowTaskEventForm(false)}
             />

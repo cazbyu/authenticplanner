@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { supabase } from "../../supabaseClient";
 import DatePicker from "react-datepicker";
 import { format } from "date-fns";
+import { toast } from "sonner";
 import "react-datepicker/dist/react-datepicker.css";
 
 // ----- TYPES -----
@@ -28,7 +29,7 @@ interface FormData {
   authenticDeposit?: boolean;
   twelveWeekGoalChecked?: boolean;
   twelveWeekGoalId?: string;
-  schedulingType?: "task" | "event";
+  schedulingType?: "task" | "event" | "depositIdea";
 }
 
 interface Role { id: string; label: string; }
@@ -70,6 +71,8 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
   const [twelveWeekGoals, setTwelveWeekGoals] = useState<TwelveWeekGoal[]>([]);
   const [loading, setLoading] = useState(false);
+  const [showRoleError, setShowRoleError] = useState(false);
+
 // Generates time options for 24 hours in 15-min increments
 const generateTimeOptions = () => {
   const options = [];
@@ -167,15 +170,72 @@ function getEndTimeOptions(startTime: string) {
     });
   };
 
+  // Hide role error when roles are selected
+  useEffect(() => {
+    if (form.selectedRoleIds.length > 0) {
+      setShowRoleError(false);
+    }
+  }, [form.selectedRoleIds]);
+
   // ----- SUBMIT -----
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
-      // Task/event logic
+      // Validate deposit idea requirements
+      if (form.schedulingType === "depositIdea") {
+        if (form.selectedRoleIds.length === 0) {
+          setShowRoleError(true);
+          setLoading(false);
+          return;
+        }
+        
+        // Handle deposit idea creation
+        const { data: depositIdea, error: depositError } = await supabase
+          .from('0007-ap-deposit-ideas')
+          .insert([{
+            user_id: user.id,
+            title: form.title.trim(),
+            notes: form.notes.trim() || null,
+            key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
+            is_active: true
+          }])
+          .select()
+          .single();
+
+        if (depositError || !depositIdea) {
+          throw new Error('Failed to create deposit idea');
+        }
+
+        // Create role relationships
+        if (form.selectedRoleIds.length > 0) {
+          const roleInserts = form.selectedRoleIds.map(roleId => ({
+            deposit_idea_id: depositIdea.id, 
+            role_id: roleId
+          }));
+          await supabase.from('0007-ap-deposit-idea-roles').insert(roleInserts);
+        }
+
+        // Create domain relationships
+        if (form.selectedDomainIds.length > 0) {
+          const domainInserts = form.selectedDomainIds.map(domainId => ({
+            deposit_idea_id: depositIdea.id, 
+            domain_id: domainId
+          }));
+          await supabase.from('0007-ap-deposit-idea-domains').insert(domainInserts);
+        }
+
+        toast.success('Deposit idea created successfully!');
+        onSubmitSuccess();
+        onClose();
+        return;
+      }
+
+      // Handle task/event creation (existing logic)
       let record: any = {
         user_id: user.id,
         title: form.title,
@@ -283,7 +343,7 @@ end_time: form.isAllDay ? null : end_time,
       onSubmitSuccess();
       onClose();
     } catch (err) {
-      alert("Error saving: " + (err instanceof Error ? err.message : String(err)));
+      toast.error("Error saving: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
     }
@@ -296,13 +356,13 @@ end_time: form.isAllDay ? null : end_time,
         <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-100 rounded-t-lg">
           <h2 className="text-lg font-semibold text-gray-900">
             {mode === "edit" ? "Edit" : "Create"}{" "}
-            {form.schedulingType === "event" ? "Event" : "Task"}
+            {form.schedulingType === "event" ? "Event" : form.schedulingType === "depositIdea" ? "Deposit Idea" : "Task"}
           </h2>
-          {/* Task/Event Selector Tabs */}
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             ×
           </button>
         </div>
+        
         <form onSubmit={handleSubmit} className="p-4 space-y-4">
           {/* Title */}
           <input
@@ -311,17 +371,21 @@ end_time: form.isAllDay ? null : end_time,
             value={form.title}
             onChange={handleChange}
             required
-            placeholder={form.schedulingType === "event" ? "Enter event title..." : "Enter task title..."}
+            placeholder={
+              form.schedulingType === "event" ? "Enter event title..." : 
+              form.schedulingType === "depositIdea" ? "Enter deposit idea title..." : 
+              "Enter task title..."
+            }
             className="w-full px-3 py-2 text-base border border-gray-300 rounded-md mt-2 mb-0"
           />
 
           {/* Toggle Tabs: Left Justified Below Title */}
           <div className="flex justify-start items-center mb-1">
-            {["event", "task"].map(type => (
+            {["event", "task", "depositIdea"].map(type => (
               <button
                 key={type}
                 type="button"
-                onClick={() => setForm(f => ({ ...f, schedulingType: type as "event" | "task" }))}
+                onClick={() => setForm(f => ({ ...f, schedulingType: type as "event" | "task" | "depositIdea" }))}
                 className={`
                   px-2 py-0.5 rounded-full mx-1 text-xs font-medium transition
                   ${form.schedulingType === type
@@ -330,31 +394,43 @@ end_time: form.isAllDay ? null : end_time,
                 `}
                 style={{ minWidth: "35px" }}
               >
-                {type === "event" ? "Event" : "Task"}
+                {type === "event" ? "Event" : type === "depositIdea" ? "Deposit Idea" : "Task"}
               </button>
             ))}
           </div>
-          {/* Flags */}
-          <div className="flex flex-wrap items-center gap-4 mb-2">
-            <label className="flex items-center gap-1 text-xs">
-              <input type="checkbox" name="urgent" checked={!!form.urgent} onChange={handleChange} className="h-4 w-4" />
-              Urgent
-            </label>
-            <label className="flex items-center gap-1 text-xs">
-              <input type="checkbox" name="important" checked={!!form.important} onChange={handleChange} className="h-4 w-4" />
-              Important
-            </label>
-            <label className="flex items-center gap-1 text-xs">
-              <input type="checkbox" name="authenticDeposit" checked={!!form.authenticDeposit} onChange={handleChange} className="h-4 w-4" />
-              Authentic Deposit
-            </label>
-            <label className="flex items-center gap-1 text-xs">
-              <input type="checkbox" name="twelveWeekGoalChecked" checked={!!form.twelveWeekGoalChecked} onChange={handleChange} className="h-4 w-4" />
-              12-Week Goal
-            </label>
-          </div>
-          {/* 12-Week Goal selection */}
-          {form.twelveWeekGoalChecked && (
+
+          {/* Notes - Show immediately after title for Deposit Ideas */}
+          {form.schedulingType === "depositIdea" && (
+            <div>
+              <label className="block text-sm mb-1">Notes</label>
+              <textarea name="notes" value={form.notes} onChange={handleChange} rows={2} className="w-full border rounded px-2 py-1" placeholder="Describe your authentic deposit idea..." />
+            </div>
+          )}
+
+          {/* Flags - Hide for Deposit Ideas */}
+          {form.schedulingType !== "depositIdea" && (
+            <div className="flex flex-wrap items-center gap-4 mb-2">
+              <label className="flex items-center gap-1 text-xs">
+                <input type="checkbox" name="urgent" checked={!!form.urgent} onChange={handleChange} className="h-4 w-4" />
+                Urgent
+              </label>
+              <label className="flex items-center gap-1 text-xs">
+                <input type="checkbox" name="important" checked={!!form.important} onChange={handleChange} className="h-4 w-4" />
+                Important
+              </label>
+              <label className="flex items-center gap-1 text-xs">
+                <input type="checkbox" name="authenticDeposit" checked={!!form.authenticDeposit} onChange={handleChange} className="h-4 w-4" />
+                Authentic Deposit
+              </label>
+              <label className="flex items-center gap-1 text-xs">
+                <input type="checkbox" name="twelveWeekGoalChecked" checked={!!form.twelveWeekGoalChecked} onChange={handleChange} className="h-4 w-4" />
+                12-Week Goal
+              </label>
+            </div>
+          )}
+
+          {/* 12-Week Goal selection - Hide for Deposit Ideas */}
+          {form.schedulingType !== "depositIdea" && form.twelveWeekGoalChecked && (
             <div>
               <label className="block text-sm mb-1">Choose 12-Week Goal</label>
               <select
@@ -370,88 +446,92 @@ end_time: form.isAllDay ? null : end_time,
               </select>
             </div>
           )}
-          {/* Date, All Day, and Time fields - aligned grid layout */}
-<div
-  className={
-    form.schedulingType === "event" && !form.isAllDay
-      ? "grid grid-cols-3 gap-x-4 mb-2"
-      : !form.isAllDay
-      ? "grid grid-cols-2 gap-x-4 mb-2"
-      : "grid grid-cols-1 mb-2"
-  }
->
-  {/* Date + All Day (always visible) */}
-  <div>
-    <label className="block text-xs mb-1">Date</label>
-    <DatePicker
-  selected={form.dueDate ? new Date(form.dueDate + "T00:00:00") : null}
-  onChange={date =>
-    setForm(f => ({
-      ...f,
-      dueDate: date ? format(date, "yyyy-MM-dd") : "",
-    }))
-  }
-  dateFormat="MMM dd, yyyy"
-  className="border rounded px-2 py-1 text-xs w-full"
-  placeholderText="Select date"
-  calendarClassName="text-xs"
-  popperClassName="small-datepicker-popup"
-  formatWeekDay={name => name.charAt(0)}
-/>
-    <div className="mt-1">
-      <label className="flex items-center gap-2 text-xs">
-        <input
-          type="checkbox"
-          name="isAllDay"
-          checked={form.isAllDay}
-          onChange={handleChange}
-          className="h-4 w-4"
-        />
-        All Day
-      </label>
-    </div>
-  </div>
-  {/* Start Time (shown if not All Day) */}
-{!form.isAllDay && (
-  <div>
-    <label className="block text-xs mb-1">Start Time</label>
-    <select
-      name="startTime"
-      value={form.startTime}
-      onChange={handleChange}
-      className="border rounded px-2 py-1 text-xs w-full"
-    >
-      <option value="">--</option>
-      {timeOptions.map(opt => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  </div>
-)}
-{/* End Time (shown if Event and not All Day) */}
-{form.schedulingType === "event" && !form.isAllDay && (
-  <div>
-    <label className="block text-xs mb-1">End Time</label>
-    <select
-      name="endTime"
-      value={form.endTime}
-      onChange={handleChange}
-      className="border rounded px-2 py-1 text-xs w-full"
-      disabled={!form.startTime}
-    >
-      <option value="">--</option>
-      {getEndTimeOptions(form.startTime).map(opt => (
-        <option key={opt.value} value={opt.value}>{opt.label}</option>
-      ))}
-    </select>
-  </div>
-)}
 
-</div>
+          {/* Date, All Day, and Time fields - Hide for Deposit Ideas */}
+          {form.schedulingType !== "depositIdea" && (
+            <div
+              className={
+                form.schedulingType === "event" && !form.isAllDay
+                  ? "grid grid-cols-3 gap-x-4 mb-2"
+                  : !form.isAllDay
+                  ? "grid grid-cols-2 gap-x-4 mb-2"
+                  : "grid grid-cols-1 mb-2"
+              }
+            >
+              {/* Date + All Day (always visible) */}
+              <div>
+                <label className="block text-xs mb-1">Date</label>
+                <DatePicker
+          selected={form.dueDate ? new Date(form.dueDate + "T00:00:00") : null}
+          onChange={date =>
+            setForm(f => ({
+              ...f,
+              dueDate: date ? format(date, "yyyy-MM-dd") : "",
+            }))
+          }
+          dateFormat="MMM dd, yyyy"
+          className="border rounded px-2 py-1 text-xs w-full"
+          placeholderText="Select date"
+          calendarClassName="text-xs"
+          popperClassName="small-datepicker-popup"
+          formatWeekDay={name => name.charAt(0)}
+        />
+                <div className="mt-1">
+                  <label className="flex items-center gap-2 text-xs">
+                    <input
+                      type="checkbox"
+                      name="isAllDay"
+                      checked={form.isAllDay}
+                      onChange={handleChange}
+                      className="h-4 w-4"
+                    />
+                    All Day
+                  </label>
+                </div>
+              </div>
+              {/* Start Time (shown if not All Day) */}
+        {!form.isAllDay && (
+          <div>
+            <label className="block text-xs mb-1">Start Time</label>
+            <select
+              name="startTime"
+              value={form.startTime}
+              onChange={handleChange}
+              className="border rounded px-2 py-1 text-xs w-full"
+            >
+              <option value="">--</option>
+              {timeOptions.map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+        {/* End Time (shown if Event and not All Day) */}
+        {form.schedulingType === "event" && !form.isAllDay && (
+          <div>
+            <label className="block text-xs mb-1">End Time</label>
+            <select
+              name="endTime"
+              value={form.endTime}
+              onChange={handleChange}
+              className="border rounded px-2 py-1 text-xs w-full"
+              disabled={!form.startTime}
+            >
+              <option value="">--</option>
+              {getEndTimeOptions(form.startTime).map(opt => (
+                <option key={opt.value} value={opt.value}>{opt.label}</option>
+              ))}
+            </select>
+          </div>
+        )}
+            </div>
+          )}
 
           {/* Roles */}
           <div>
-            <label className="block text-sm mb-1">Roles</label>
+            <label className="block text-sm mb-1">
+              Roles {form.schedulingType === "depositIdea" && <span className="text-red-500">*</span>}
+            </label>
             <div className="grid grid-cols-2 gap-2 border rounded-md p-2">
               {roles.map(role => (
                 <label key={role.id} className="flex items-center gap-1 text-sm">
@@ -460,7 +540,11 @@ end_time: form.isAllDay ? null : end_time,
                 </label>
               ))}
             </div>
+            {form.schedulingType === "depositIdea" && form.selectedRoleIds.length === 0 && (
+              <p className="text-xs text-red-600 mt-1">At least one role must be selected for deposit ideas</p>
+            )}
           </div>
+
           {/* Domains */}
           <div>
             <label className="block text-sm mb-1">Domains</label>
@@ -473,30 +557,40 @@ end_time: form.isAllDay ? null : end_time,
               ))}
             </div>
           </div>
+
           {/* Key Relationships */}
           {form.selectedRoleIds.length > 0 && (
             <div>
-              <label className="block text-sm mb-1">Key Relationships</label>
-              <div className="grid grid-cols-2 gap-2 border rounded-md p-2">
+              <label className="block text-sm mb-1">Choose Key Relationship</label>
+              <div className="grid grid-cols-2 gap-2 border border-gray-200 p-2 rounded-md">
                 {keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id)).map(kr => (
                   <label key={kr.id} className="flex items-center gap-1 text-sm">
-                    <input type="checkbox" checked={form.selectedKeyRelationshipIds.includes(kr.id)} onChange={() => handleMultiSelect("selectedKeyRelationshipIds", kr.id)} className="h-4 w-4" />
+                    <input
+                      type="checkbox"
+                      checked={form.selectedKeyRelationshipIds.includes(kr.id)}
+                      onChange={() => handleMultiSelect("selectedKeyRelationshipIds", kr.id)}
+                      className="h-4 w-4"
+                    />
                     <span className="text-xs">{kr.name}</span>
                   </label>
                 ))}
                 {keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id)).length === 0 && (
                   <div className="text-gray-400 text-xs italic px-2 py-2">
-                    No Key Relationships selected yet.
+                    No Key Relationships for selected roles yet.
                   </div>
                 )}
               </div>
             </div>
           )}
-          {/* Notes */}
-          <div>
-            <label className="block text-sm mb-1">Notes</label>
-            <textarea name="notes" value={form.notes} onChange={handleChange} rows={2} className="w-full border rounded px-2 py-1" />
-          </div>
+
+          {/* Notes - Show at bottom for Tasks/Events */}
+          {form.schedulingType !== "depositIdea" && (
+            <div>
+              <label className="block text-sm mb-1">Notes</label>
+              <textarea name="notes" value={form.notes} onChange={handleChange} rows={2} className="w-full border rounded px-2 py-1" />
+            </div>
+          )}
+
           {/* Submit */}
           <div className="flex justify-end gap-2 pt-4">
             <button type="button" onClick={onClose} className="px-4 py-2 text-sm text-gray-600">Cancel</button>
@@ -506,6 +600,26 @@ end_time: form.isAllDay ? null : end_time,
           </div>
         </form>
       </div>
+
+      {/* Role Error Popup */}
+      {showRoleError && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-sm mx-4 shadow-xl">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Role Required</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              A Role must be selected for Deposit Ideas
+            </p>
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowRoleError(false)}
+                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
