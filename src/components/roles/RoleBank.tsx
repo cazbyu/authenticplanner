@@ -58,7 +58,7 @@ interface RoleBankProps {
 const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onBack: propOnBack }) => {
   const navigate = useNavigate();
   const [selectedRole, setSelectedRole] = useState<Role | null>(propSelectedRole || null);
-  const [selectedSection, setSelectedSection] = useState<'roles' | 'deposits' | 'relationships' | null>(null);
+  const [sortBy, setSortBy] = useState<'active' | 'inactive' | 'archived'>('active');
   const [roles, setRoles] = useState<Role[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [relationships, setRelationships] = useState<KeyRelationship[]>([]);
@@ -74,6 +74,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
+  const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
   
   useEffect(() => {
      console.log("Domains passed to DepositIdeaForm in RoleBank:", domains);
@@ -92,14 +93,22 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: rolesData, error } = await supabase
+      let query = supabase
         .from('0007-ap-roles')
-        .select('id, label, category')
-        .eq('user_id', user.id)
-        .eq('is_active', true)
-        .order('category', { ascending: true })
-        .order('label', { ascending: true });
+        .select('id, label, category, is_active')
+        .eq('user_id', user.id);
+      
+      if (sortBy === 'active') {
+        query = query.eq('is_active', true);
+      } else if (sortBy === 'inactive') {
+        query = query.eq('is_active', false);
+      }
+      // For archived, we'll need to add archived column logic later
+      
+      query = query.order('category', { ascending: true })
+                   .order('label', { ascending: true });
 
+      const { data: rolesData, error } = await query;
       if (error) throw error;
       setRoles(rolesData || []);
     } catch (error) {
@@ -108,6 +117,12 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       setLoading(false);
     }
       };
+
+  // Refetch roles when sort changes
+  useEffect(() => {
+    fetchRoles();
+  }, [sortBy]);
+
   const fetchDomains = async () => {
   try {
     const { data: domainData, error } = await supabase
@@ -368,42 +383,15 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
-    setSelectedSection(null);
   };
 
   const handleBack = () => {
     if (selectedRole) {
       setSelectedRole(null);
-      setSelectedSection(null);
-    } else if (selectedSection) {
-      setSelectedSection(null);
     } else if (propOnBack) {
       propOnBack();
     }
   };
-
-  // --- DEPOSIT IDEAS VIEW ---
-  if (selectedSection === 'deposits') {
-    // Import and render the DepositIdeas component
-    const DepositIdeas = React.lazy(() => import('../../pages/DepositIdeas'));
-    
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-3 p-6 flex-shrink-0">
-          <button onClick={handleBack}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-            <ChevronLeft className="h-5 w-5" />
-          </button>
-          <h1 className="text-2xl font-bold text-gray-900">Deposit Ideas</h1>
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <React.Suspense fallback={<div className="flex items-center justify-center h-32"><div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" /></div>}>
-            <DepositIdeas />
-          </React.Suspense>
-        </div>
-      </div>
-    );
-  }
 
   // Group roles by category
   const rolesByCategory = roles.reduce((acc, role) => {
@@ -421,14 +409,11 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         {/* Header */}
         <div className="flex items-center gap-3 p-6 flex-shrink-0">
           <button
-  onClick={() => {
-    setSelectedRole(null);
-    setSelectedSection('roles');
-          }}
-    className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
->
-  <ChevronLeft className="h-5 w-5" />
-</button>
+            onClick={() => setSelectedRole(null)}
+            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
           <h1 className="text-2xl font-bold text-gray-900">{selectedRole.label}</h1>
         </div>
         {/* Content - scrollable */}
@@ -734,125 +719,117 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     );
   }
 
-  // --- ACTIVE ROLES VIEW (unchanged except scroll in grid) ---
- if (selectedSection === 'roles') {
+  // --- MAIN ROLES VIEW WITH SORT BAR ---
   return (
     <div className="flex flex-col h-full">
-      <div className="flex items-center gap-3 p-6 flex-shrink-0">
-        <button onClick={handleBack}
-                className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-          <ChevronLeft className="h-5 w-5" />
-        </button>
-        <h1 className="text-2xl font-bold text-gray-900">Active Roles</h1>
-      </div>
-
-      {/* ①  scrolling now lives here */}
-      <div
-  className="flex-1 overflow-y-auto min-h-0 px-6 pb-6">
-        {/* ②  grid no longer owns the scrollbar */}
-        <div className="grid gap-4 grid-cols-3 pr-2">
-          {roles.length === 0 ? (
-            <div className="text-center py-12 col-span-3">
-              <div className="text-gray-500 mb-4">No active roles found</div>
-              <p className="text-sm text-gray-400">
-                Add roles in Settings to get started with your Role Bank
-              </p>
-            </div>
-          ) : (
-            <>
-              {roles.map(role => (
-                <button key={role.id} onClick={() => handleRoleSelect(role)}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group bg-white">
-                  <div className="flex items-center gap-3">
-                    <div className="text-2xl">{role.icon || '👤'}</div>
-                    <div>
-                      <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
-                        {role.label}
-                      </h3>
-                      <p className="text-sm text-gray-500 capitalize">
-                        {role.category}
-                      </p>
-                    </div>
-                  </div>
-                </button>
-              ))}
-                          </>
-          )}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-  // --- MAIN LANDING VIEW (three feature boxes and header) ---
-  return (
-    <div className="flex flex-col h-full">
-      <div className="p-6 flex-1 overflow-y-auto">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900 text-center">Role Bank</h1>
-          <p className="text-gray-600 mt-1 text-center">
+      {/* Header with Sort Bar */}
+      <div className="flex items-center justify-between p-6 flex-shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Role Bank</h1>
+          <p className="text-gray-600 mt-1">
             Manage your life roles and authentic deposits
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Active Roles Box */}
+        <div className="flex items-center gap-4">
+          {/* Sort Bar */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
+            <button
+              onClick={() => setSortBy('active')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                sortBy === 'active'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Active Roles
+            </button>
+            <button
+              onClick={() => setSortBy('inactive')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                sortBy === 'inactive'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Not Activated
+            </button>
+            <button
+              onClick={() => setSortBy('archived')}
+              className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                sortBy === 'archived'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Archived
+            </button>
+          </div>
+          
+          {/* Add Deposit Idea Button */}
           <button
-            onClick={() => setSelectedSection('roles')}
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow text-left group h-full"
+            onClick={() => setShowAddDepositIdeaForm(true)}
+            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
           >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                <UserPlus className="h-6 w-6 text-blue-600" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">Active Roles</h2>
-            </div>
-            <p className="text-gray-600 text-sm">
-              View and manage your life roles and their associated tasks and relationships
-            </p>
-            <div className="mt-4 text-sm text-gray-500">
-              {roles.length} active role{roles.length !== 1 ? 's' : ''}
-            </div>
-          </button>
-
-          {/* Deposit Ideas Box */}
-          <button
-            onClick={() => setSelectedSection('deposits')}
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow text-left group h-full"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                <Plus className="h-6 w-6 text-green-600" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-green-600">Deposit Ideas</h2>
-            </div>
-            <p className="text-gray-600 text-sm">
-              Authentic deposits to invest in your key relationships
-            </p>
-            <div className="mt-4 text-sm text-gray-500">
-              {roleDepositIdeas.length} deposit idea{roleDepositIdeas.length !== 1 ? 's' : ''}
-            </div>
-          </button>
-
-          {/* Key Relationships Box */}
-          <button
-            onClick={() => setSelectedSection('relationships')}
-            className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow text-left group h-full"
-          >
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                <Heart className="h-6 w-6 text-purple-600" />
-              </div>
-              <h2 className="text-lg font-semibold text-gray-900 group-hover:text-purple-600">Key Relationships</h2>
-            </div>
-            <p className="text-gray-600 text-sm">
-              Important people in your life across all your roles
-            </p>
-            <div className="mt-4 text-sm text-gray-500">
-              {relationships.length} relationship{relationships.length !== 1 ? 's' : ''}
-            </div>
+            <Plus className="h-4 w-4" />
+            Add Deposit Idea
           </button>
         </div>
       </div>
+
+      {/* Roles Grid */}
+      <div className="flex-1 overflow-y-auto min-h-0 px-6 pb-6">
+        <div className="grid gap-4 grid-cols-3 pr-2">
+          {roles.length === 0 ? (
+            <div className="text-center py-12 col-span-3">
+              <div className="text-gray-500 mb-4">
+                {sortBy === 'active' && 'No active roles found'}
+                {sortBy === 'inactive' && 'No inactive roles found'}
+                {sortBy === 'archived' && 'No archived roles found'}
+              </div>
+              <p className="text-sm text-gray-400">
+                {sortBy === 'active' && 'Add roles in Settings to get started with your Role Bank'}
+                {sortBy === 'inactive' && 'All your roles are currently active'}
+                {sortBy === 'archived' && 'No roles have been archived yet'}
+              </p>
+            </div>
+          ) : (
+            roles.map(role => (
+              <button 
+                key={role.id} 
+                onClick={() => handleRoleSelect(role)}
+                className="p-4 border border-gray-200 rounded-lg hover:border-primary-300 hover:shadow-md transition-all text-left group bg-white"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="text-2xl">{role.icon || '👤'}</div>
+                  <div>
+                    <h3 className="font-medium text-gray-900 group-hover:text-primary-600">
+                      {role.label}
+                    </h3>
+                    <p className="text-sm text-gray-500 capitalize">
+                      {role.category}
+                    </p>
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Add Deposit Idea Form Modal - Global */}
+      {showAddDepositIdeaForm && (
+        <DepositIdeaForm
+          open={showAddDepositIdeaForm}
+          onClose={() => setShowAddDepositIdeaForm(false)}
+          onSuccess={() => {
+            setShowAddDepositIdeaForm(false);
+            // Refresh data if needed
+          }}
+          roles={roles.reduce((acc, role) => ({ ...acc, [role.id]: role }), {})}
+          domains={domains}
+          keyRelationships={keyRelationships}
+        />
+      )}
     </div>
   );
 };
