@@ -728,27 +728,37 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <h1 className="text-2xl font-bold text-gray-900">Role Bank</h1>
         </div>
         
-        {/* Sort Filter */}
-        <div className="flex gap-2">
+        {/* Sort Filter and Add Button */}
+        <div className="flex items-center gap-4">
+          <div className="flex gap-2">
+            <button
+              onClick={() => setSortBy('active')}
+              className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                sortBy === 'active'
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setSortBy('inactive')}
+              className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
+                sortBy === 'inactive'
+                  ? 'bg-primary-100 text-primary-700'
+                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+              }`}
+            >
+              Inactive
+            </button>
+          </div>
+          
           <button
-            onClick={() => setSortBy('active')}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-              sortBy === 'active'
-                ? 'bg-primary-100 text-primary-700'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
+            onClick={() => setShowAddDepositIdeaForm(true)}
+            className="flex items-center gap-2 bg-primary-600 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors"
           >
-            Active
-          </button>
-          <button
-            onClick={() => setSortBy('inactive')}
-            className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-              sortBy === 'inactive'
-                ? 'bg-primary-100 text-primary-700'
-                : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-          >
-            Inactive
+            <Plus className="h-4 w-4" />
+            Add Deposit Idea
           </button>
         </div>
       </div>
