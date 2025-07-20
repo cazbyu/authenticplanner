@@ -115,7 +115,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     } finally {
       setLoading(false);
     }
-      };
+  };
 
   // Refetch roles when sort changes
   useEffect(() => {
@@ -696,37 +696,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             onClose={() => setEditingTask(null)}
             onTaskUpdated={handleTaskUpdated}
           />
-        )}
-
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
-            <div className="w-full max-w-2xl mx-4">
-              <TaskEventForm
-                mode="create"
-                initialData={{
-                  schedulingType: 'depositIdea'
-                }}
-                onSubmitSuccess={() => {
-                  setShowAddDepositIdeaForm(false);
-                  // Refresh data if needed
-                }}
-                onClose={() => setShowAddDepositIdeaForm(false)}
-              />
-            </div>
-          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
-            <div className="w-full max-w-2xl mx-4">
-              <TaskEventForm
-                mode="create"
-                initialData={{
-                  schedulingType: 'depositIdea'
-                }}
-                onSubmitSuccess={() => {
-                  setShowAddDepositIdeaForm(false);
-                  // Refresh data if needed
-                }}
-                onClose={() => setShowAddDepositIdeaForm(false)}
-              />
-            </div>
-          </div>
         )}
       </div>
     );
