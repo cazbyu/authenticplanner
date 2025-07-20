@@ -146,7 +146,8 @@ const DepositIdeas: React.FC = () => {
         `)
         .eq('user_id', user.id)
         .eq('archived', true)
-        .order('created_at', { ascending: false });
+        .is('activated_at', null) // Only show non-activated deposit ideas
+        .eq('archived', false), // Only show non-archived deposit ideas
 
       if (error) {
         console.error('Error fetching archived deposit ideas:', error);
