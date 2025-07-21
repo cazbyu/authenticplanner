@@ -443,6 +443,11 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   };
 
   const updateNote = async (noteId: string, content: string) => {
+    if (!content.trim()) {
+      toast.error('Note content cannot be empty');
+      return;
+    }
+    
     try {
       const { error } = await supabase
         .from('0007-ap-notes')
@@ -458,6 +463,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         n.id === noteId ? { ...n, content: content.trim(), updated_at: new Date().toISOString() } : n
       ));
       setEditingNote(null);
+      setEditingNoteContent('');
       toast.success('Note updated successfully');
     } catch (error) {
       console.error('Error updating note:', error);
@@ -466,6 +472,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   };
 
   const removeNote = async (noteId: string) => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+    
     try {
       const { error } = await supabase
         .from('0007-ap-notes')
@@ -832,7 +840,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               />
               <button
                 onClick={addNote}
-                className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
+                disabled={!newNote.trim()}
+                className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
               >
                 <Plus className="h-4 w-4" />
               </button>
