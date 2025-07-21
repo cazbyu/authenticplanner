@@ -865,8 +865,6 @@ const ActivationTypeSelector: React.FC<{
 
   // ---- END OF PASTE ----
 
-  };
-
   const handleFormSuccess = () => {
     setShowTaskEventForm(false);
     onActivated();
