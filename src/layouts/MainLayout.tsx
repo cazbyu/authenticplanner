@@ -352,11 +352,11 @@ const MainLayout: React.FC = () => {
       </AnimatePresence>
       
       {/* Main content */}
-      <main className="main-layout lg:pl-64 flex-1 flex flex-col min-h-0 h-full">
-  <div className="calendar-container flex-1 flex flex-col min-h-0 h-full max-w-7xl px-4 sm:px-6 md:px-8">
+      <main className="main-layout lg:pl-64 flex-1 flex flex-col min-h-0 h-full overflow-hidden">
+        <div className="flex-1 overflow-y-auto">
         <Outlet />
-  </div>
-</main>
+        </div>
+      </main>
     </div>
   );
 };
