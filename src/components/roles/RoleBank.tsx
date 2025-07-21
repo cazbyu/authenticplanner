@@ -13,7 +13,6 @@ import DepositIdeaEditForm from '../shared/DepositIdeaEditForm';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 
-
 interface Role {
   id: string;
   label: string;
