@@ -11,7 +11,9 @@ import {
   CheckCircle, 
   Edit3,
   Save,
-  Upload
+  Upload,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 
@@ -40,6 +42,13 @@ interface DepositIdea {
   is_active: boolean;
 }
 
+interface Note {
+  id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
+
 interface UnifiedKeyRelationshipCardProps {
   relationship: KeyRelationship;
   roleName: string;
@@ -55,21 +64,26 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 }) => {
   // State for relationship data
   const [name, setName] = useState(relationship.name);
-  const [notes, setNotes] = useState(relationship.notes || '');
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   
   // State for tasks and deposit ideas
   const [tasks, setTasks] = useState<Task[]>([]);
   const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
   
   // State for adding new items
   const [newTask, setNewTask] = useState('');
   const [newDepositIdea, setNewDepositIdea] = useState('');
+  const [newNote, setNewNote] = useState('');
   
   // State for editing modes
   const [editingName, setEditingName] = useState(false);
-  const [editingNotes, setEditingNotes] = useState(false);
+  const [editingNote, setEditingNote] = useState<string | null>(null);
+  const [editingNoteContent, setEditingNoteContent] = useState('');
+  
+  // State for collapsible card
+  const [isExpanded, setIsExpanded] = useState(false);
   
   // Loading states
   const [saving, setSaving] = useState(false);
@@ -79,6 +93,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   useEffect(() => {
     loadRelationshipData();
     loadImage();
+    loadNotes();
   }, [relationship]);
 
   const loadImage = async () => {
@@ -126,6 +141,24 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       setDepositIdeas(depositIdeasData || []);
     } catch (error) {
       console.error('Error loading relationship data:', error);
+    }
+  };
+
+  const loadNotes = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: notesData } = await supabase
+        .from('0007-ap-notes')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('key_relationship_id', relationship.id)
+        .order('created_at', { ascending: false });
+
+      setNotes(notesData || []);
+    } catch (error) {
+      console.error('Error loading notes:', error);
     }
   };
 
@@ -197,7 +230,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         .from('0007-ap-key-relationships')
         .update({
           name: name.trim(),
-          notes: notes.trim() || null,
           image_path: imagePath || null,
           updated_at: new Date().toISOString()
         })
@@ -207,7 +239,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 
       toast.success('Relationship updated successfully');
       setEditingName(false);
-      setEditingNotes(false);
       setSelectedImage(null);
       onRelationshipUpdated();
     } catch (error) {
@@ -383,6 +414,74 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     }
   };
 
+  const addNote = async () => {
+    if (!newNote.trim()) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data: note, error } = await supabase
+        .from('0007-ap-notes')
+        .insert([{
+          user_id: user.id,
+          key_relationship_id: relationship.id,
+          content: newNote.trim()
+        }])
+        .select()
+        .single();
+
+      if (error || !note) throw error;
+
+      setNotes(prev => [note, ...prev]);
+      setNewNote('');
+      toast.success('Note added successfully');
+    } catch (error) {
+      console.error('Error adding note:', error);
+      toast.error('Failed to add note');
+    }
+  };
+
+  const updateNote = async (noteId: string, content: string) => {
+    try {
+      const { error } = await supabase
+        .from('0007-ap-notes')
+        .update({ 
+          content: content.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', noteId);
+
+      if (error) throw error;
+
+      setNotes(prev => prev.map(n => 
+        n.id === noteId ? { ...n, content: content.trim(), updated_at: new Date().toISOString() } : n
+      ));
+      setEditingNote(null);
+      toast.success('Note updated successfully');
+    } catch (error) {
+      console.error('Error updating note:', error);
+      toast.error('Failed to update note');
+    }
+  };
+
+  const removeNote = async (noteId: string) => {
+    try {
+      const { error } = await supabase
+        .from('0007-ap-notes')
+        .delete()
+        .eq('id', noteId);
+
+      if (error) throw error;
+
+      setNotes(prev => prev.filter(n => n.id !== noteId));
+      toast.success('Note removed');
+    } catch (error) {
+      console.error('Error removing note:', error);
+      toast.error('Failed to remove note');
+    }
+  };
+
   const deleteRelationship = async () => {
     if (!confirm(`Are you sure you want to delete the relationship with ${name}?`)) return;
     
@@ -403,262 +502,344 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md transition-shadow">
-      {/* Header Section */}
-      <div className="flex items-start gap-4 mb-6">
-        {/* Image Section */}
-        <div className="flex-shrink-0">
-          <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 relative group">
-            {imagePreview ? (
-              <img 
-                src={imagePreview} 
-                alt={name} 
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <UserPlus className="h-8 w-8 text-gray-400" />
-            )}
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
-              className="absolute inset-0 opacity-0 cursor-pointer"
-            />
-            <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-              <Upload className="h-5 w-5 text-white" />
+    <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
+      {/* Collapsed Header */}
+      <div 
+        className="p-4 cursor-pointer"
+        onClick={() => setIsExpanded(!isExpanded)}
+      >
+        <div className="flex items-center gap-4">
+          {/* Image */}
+          <div className="flex-shrink-0">
+            <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
+              {imagePreview ? (
+                <img 
+                  src={imagePreview} 
+                  alt={name} 
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <UserPlus className="h-6 w-6 text-gray-400" />
+              )}
             </div>
           </div>
-        </div>
 
-        {/* Name and Details */}
-        <div className="flex-1 min-w-0">
-          {/* Name Field */}
-          <div className="mb-3">
-            {editingName ? (
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="flex-1 text-lg font-semibold border border-gray-300 rounded px-2 py-1 focus:border-blue-500 focus:outline-none"
-                  onKeyPress={(e) => e.key === 'Enter' && saveRelationshipDetails()}
-                />
-                <button
-                  onClick={saveRelationshipDetails}
-                  disabled={saving}
-                  className="p-1 text-green-600 hover:bg-green-100 rounded"
-                >
-                  <Save className="h-4 w-4" />
-                </button>
-                <button
-                  onClick={() => {
-                    setName(relationship.name);
-                    setEditingName(false);
-                  }}
-                  className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ) : (
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
-                <button
-                  onClick={() => setEditingName(true)}
-                  className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
-                >
-                  <Edit3 className="h-4 w-4" />
-                </button>
-              </div>
-            )}
+          {/* Name and Details */}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
             <p className="text-sm text-gray-600">Key Relationship</p>
+            
+            {/* Counters */}
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1 text-sm text-blue-600">
+                <CheckCircle className="h-4 w-4" />
+                <span>{tasks.length} task{tasks.length !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="flex items-center gap-1 text-sm text-purple-600">
+                <Heart className="h-4 w-4" />
+                <span>{depositIdeas.length} idea{depositIdeas.length !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
           </div>
 
-          {/* Notes Field */}
-          <div className="mb-4">
-            {editingNotes ? (
-              <div className="space-y-2">
-                <textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                  rows={3}
-                  placeholder="Add notes about this relationship..."
+          {/* Expand/Collapse Icon */}
+          <div className="flex-shrink-0">
+            {isExpanded ? (
+              <ChevronUp className="h-5 w-5 text-gray-400" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-gray-400" />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className="border-t border-gray-200 p-4 space-y-6">
+          {/* Edit Name and Image */}
+          <div className="flex items-start gap-4">
+            {/* Image Upload */}
+            <div className="flex-shrink-0">
+              <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 relative group">
+                {imagePreview ? (
+                  <img 
+                    src={imagePreview} 
+                    alt={name} 
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <UserPlus className="h-8 w-8 text-gray-400" />
+                )}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageSelect}
+                  className="absolute inset-0 opacity-0 cursor-pointer"
                 />
-                <div className="flex gap-2">
+                <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Upload className="h-5 w-5 text-white" />
+                </div>
+              </div>
+            </div>
+
+            {/* Name Editing */}
+            <div className="flex-1">
+              {editingName ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="flex-1 text-lg font-semibold border border-gray-300 rounded px-2 py-1 focus:border-blue-500 focus:outline-none"
+                    onKeyPress={(e) => e.key === 'Enter' && saveRelationshipDetails()}
+                  />
                   <button
                     onClick={saveRelationshipDetails}
                     disabled={saving}
-                    className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                    className="p-1 text-green-600 hover:bg-green-100 rounded"
                   >
-                    Save
+                    <Save className="h-4 w-4" />
                   </button>
                   <button
                     onClick={() => {
-                      setNotes(relationship.notes || '');
-                      setEditingNotes(false);
+                      setName(relationship.name);
+                      setEditingName(false);
                     }}
-                    className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+                    className="p-1 text-gray-600 hover:bg-gray-100 rounded"
                   >
-                    Cancel
+                    <X className="h-4 w-4" />
                   </button>
                 </div>
-              </div>
-            ) : (
-              <div 
-                onClick={() => setEditingNotes(true)}
-                className="cursor-pointer group"
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
+                  <button
+                    onClick={() => setEditingName(true)}
+                    className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
+                  >
+                    <Edit3 className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
+              <p className="text-sm text-gray-600">Key Relationship</p>
+            </div>
+
+            {/* Delete Button */}
+            <div className="flex-shrink-0">
+              <button
+                onClick={deleteRelationship}
+                className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors"
+                title="Delete relationship"
               >
-                {notes ? (
-                  <div className="bg-gray-50 rounded-md p-3 group-hover:bg-gray-100 transition-colors">
-                    <p className="text-xs font-medium text-gray-700 mb-1">Notes:</p>
-                    <p className="text-sm text-gray-600">{notes}</p>
-                  </div>
-                ) : (
-                  <div className="bg-gray-50 rounded-md p-3 group-hover:bg-gray-100 transition-colors border-dashed border border-gray-300">
-                    <p className="text-sm text-gray-400 italic">Click to add notes...</p>
-                  </div>
-                )}
-              </div>
-            )}
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
           </div>
-        </div>
 
-        {/* Actions */}
-        <div className="flex-shrink-0">
-          <button
-            onClick={deleteRelationship}
-            className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors"
-            title="Delete relationship"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+          {/* Tasks Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 text-blue-600" />
+                Current Tasks ({tasks.length})
+              </h4>
+            </div>
+            
+            <div className="space-y-2 mb-3">
+              {tasks.map((task) => (
+                <div key={task.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-md border border-blue-200">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <button
+                      onClick={() => toggleTaskStatus(task.id)}
+                      className="p-1 rounded-full hover:bg-blue-200 transition-colors"
+                    >
+                      <Check className="h-3 w-3 text-blue-600" />
+                    </button>
+                    <div className="flex-1">
+                      <span className="text-sm text-gray-900">{task.title}</span>
+                      {task.due_date && (
+                        <div className="text-xs text-gray-600">
+                          Due: {new Date(task.due_date).toLocaleDateString()}
+                        </div>
+                      )}
+                      <div className="flex gap-1 mt-1">
+                        {task.is_urgent && (
+                          <span className="inline-block w-2 h-2 bg-red-400 rounded-full" title="Urgent" />
+                        )}
+                        {task.is_important && (
+                          <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full" title="Important" />
+                        )}
+                        {task.is_authentic_deposit && (
+                          <span className="inline-block w-2 h-2 bg-green-400 rounded-full" title="Authentic Deposit" />
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeTask(task.id)}
+                    className="p-1 text-red-500 hover:bg-red-100 rounded"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={newTask}
+                onChange={(e) => setNewTask(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                placeholder="Add a task..."
+                onKeyPress={(e) => e.key === 'Enter' && addTask()}
+              />
+              <button
+                onClick={addTask}
+                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
 
-      {/* Tasks Section */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-gray-900 flex items-center gap-2">
-            <CheckCircle className="h-4 w-4 text-blue-600" />
-            Current Tasks ({tasks.length})
-          </h4>
-        </div>
-        
-        <div className="space-y-2 mb-3">
-          {tasks.map((task) => (
-            <div key={task.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-md border border-blue-200">
-              <div className="flex items-center space-x-3 flex-1">
-                <button
-                  onClick={() => toggleTaskStatus(task.id)}
-                  className="p-1 rounded-full hover:bg-blue-200 transition-colors"
-                >
-                  <Check className="h-3 w-3 text-blue-600" />
-                </button>
-                <div className="flex-1">
-                  <span className="text-sm text-gray-900">{task.title}</span>
-                  {task.due_date && (
-                    <div className="text-xs text-gray-600">
-                      Due: {new Date(task.due_date).toLocaleDateString()}
+          {/* Deposit Ideas Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-900 flex items-center gap-2">
+                <Heart className="h-4 w-4 text-purple-600" />
+                Deposit Ideas ({depositIdeas.length})
+              </h4>
+            </div>
+            
+            <div className="space-y-2 mb-3">
+              {depositIdeas.map((idea) => (
+                <div key={idea.id} className="flex items-center justify-between p-3 bg-purple-50 rounded-md border border-purple-200">
+                  <div className="flex items-center space-x-3 flex-1">
+                    <button
+                      onClick={() => toggleDepositIdeaStatus(idea.id)}
+                      className={`p-1 rounded-full transition-colors ${
+                        idea.is_active
+                          ? 'bg-purple-200 text-purple-600'
+                          : 'bg-gray-200 text-gray-400'
+                      }`}
+                    >
+                      <Check className="h-3 w-3" />
+                    </button>
+                    <span className={`text-sm flex-1 ${
+                      idea.is_active ? 'text-gray-900' : 'text-gray-500 line-through'
+                    }`}>
+                      {idea.title || idea.description}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => removeDepositIdea(idea.id)}
+                    className="p-1 text-red-500 hover:bg-red-100 rounded"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={newDepositIdea}
+                onChange={(e) => setNewDepositIdea(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                placeholder="Add a deposit idea..."
+                onKeyPress={(e) => e.key === 'Enter' && addDepositIdea()}
+              />
+              <button
+                onClick={addDepositIdea}
+                className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Notes Section */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-medium text-gray-900">Notes ({notes.length})</h4>
+            </div>
+            
+            <div className="space-y-2 mb-3">
+              {notes.map((note) => (
+                <div key={note.id} className="p-3 bg-gray-50 rounded-md border border-gray-200">
+                  {editingNote === note.id ? (
+                    <div className="space-y-2">
+                      <textarea
+                        value={editingNoteContent}
+                        onChange={(e) => setEditingNoteContent(e.target.value)}
+                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
+                        rows={3}
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => updateNote(note.id, editingNoteContent)}
+                          className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={() => {
+                            setEditingNote(null);
+                            setEditingNoteContent('');
+                          }}
+                          className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-start justify-between">
+                      <div 
+                        className="flex-1 cursor-pointer"
+                        onClick={() => {
+                          setEditingNote(note.id);
+                          setEditingNoteContent(note.content);
+                        }}
+                      >
+                        <p className="text-sm text-gray-900">{note.content}</p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(note.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => removeNote(note.id)}
+                        className="p-1 text-red-500 hover:bg-red-100 rounded ml-2"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
                     </div>
                   )}
-                  <div className="flex gap-1 mt-1">
-                    {task.is_urgent && (
-                      <span className="inline-block w-2 h-2 bg-red-400 rounded-full" title="Urgent" />
-                    )}
-                    {task.is_important && (
-                      <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full" title="Important" />
-                    )}
-                    {task.is_authentic_deposit && (
-                      <span className="inline-block w-2 h-2 bg-green-400 rounded-full" title="Authentic Deposit" />
-                    )}
-                  </div>
                 </div>
-              </div>
+              ))}
+            </div>
+            
+            <div className="flex space-x-2">
+              <input
+                type="text"
+                value={newNote}
+                onChange={(e) => setNewNote(e.target.value)}
+                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                placeholder="Add a note..."
+                onKeyPress={(e) => e.key === 'Enter' && addNote()}
+              />
               <button
-                onClick={() => removeTask(task.id)}
-                className="p-1 text-red-500 hover:bg-red-100 rounded"
+                onClick={addNote}
+                className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors text-sm"
               >
-                <Trash2 className="h-3 w-3" />
+                <Plus className="h-4 w-4" />
               </button>
             </div>
-          ))}
+          </div>
         </div>
-        
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={newTask}
-            onChange={(e) => setNewTask(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-            placeholder="Add a task..."
-            onKeyPress={(e) => e.key === 'Enter' && addTask()}
-          />
-          <button
-            onClick={addTask}
-            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Deposit Ideas Section */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h4 className="text-sm font-medium text-gray-900 flex items-center gap-2">
-            <Heart className="h-4 w-4 text-purple-600" />
-            Deposit Ideas ({depositIdeas.length})
-          </h4>
-        </div>
-        
-        <div className="space-y-2 mb-3">
-          {depositIdeas.map((idea) => (
-            <div key={idea.id} className="flex items-center justify-between p-3 bg-purple-50 rounded-md border border-purple-200">
-              <div className="flex items-center space-x-3 flex-1">
-                <button
-                  onClick={() => toggleDepositIdeaStatus(idea.id)}
-                  className={`p-1 rounded-full transition-colors ${
-                    idea.is_active
-                      ? 'bg-purple-200 text-purple-600'
-                      : 'bg-gray-200 text-gray-400'
-                  }`}
-                >
-                  <Check className="h-3 w-3" />
-                </button>
-                <span className={`text-sm flex-1 ${
-                  idea.is_active ? 'text-gray-900' : 'text-gray-500 line-through'
-                }`}>
-                  {idea.title || idea.description}
-                </span>
-              </div>
-              <button
-                onClick={() => removeDepositIdea(idea.id)}
-                className="p-1 text-red-500 hover:bg-red-100 rounded"
-              >
-                <Trash2 className="h-3 w-3" />
-              </button>
-            </div>
-          ))}
-        </div>
-        
-        <div className="flex space-x-2">
-          <input
-            type="text"
-            value={newDepositIdea}
-            onChange={(e) => setNewDepositIdea(e.target.value)}
-            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
-            placeholder="Add a deposit idea..."
-            onKeyPress={(e) => e.key === 'Enter' && addDepositIdea()}
-          />
-          <button
-            onClick={addDepositIdea}
-            className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm"
-          >
-            <Plus className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

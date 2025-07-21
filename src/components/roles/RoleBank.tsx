@@ -675,9 +675,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             </div>
 
             {relationships.length > 0 ? (
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {relationships.map((rel) => (
-
                   <UnifiedKeyRelationshipCard
                     key={rel.id}
                     relationship={rel}
