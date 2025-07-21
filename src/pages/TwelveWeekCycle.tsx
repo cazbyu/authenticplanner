@@ -142,7 +142,6 @@ const TwelveWeekCycle: React.FC = () => {
           )
         `)
         .eq('user_id', user.id)
-        .eq('global_cycle_id', currentCycle?.id)
         .order('created_at', { ascending: false });
 
       if (goalsError) {
