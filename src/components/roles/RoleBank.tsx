@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { ChevronLeft, UserPlus, Plus, Heart, Edit, Eye, CheckCircle, Check, X } from 'lucide-react';
 import KeyRelationshipForm from './KeyRelationshipForm';
+import UnifiedKeyRelationshipCard from './UnifiedKeyRelationshipCard';
 import TaskEventForm from '../tasks/TaskEventForm';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
@@ -63,7 +64,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [relationships, setRelationships] = useState<KeyRelationship[]>([]);
   const [roleDepositIdeas, setRoleDepositIdeas] = useState<DepositIdea[]>([]);
   const [showRelationshipForm, setShowRelationshipForm] = useState(false);
-  const [editingRelationship, setEditingRelationship] = useState<KeyRelationship | null>(null);
   const [loading, setLoading] = useState(true);
   const [showTaskEventForm, setShowTaskEventForm] = useState(false);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
@@ -317,18 +317,11 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   };
 
   const handleAddRelationship = () => {
-    setEditingRelationship(null);
-    setShowRelationshipForm(true);
-  };
-
-  const handleEditRelationship = (relationship: KeyRelationship) => {
-    setEditingRelationship(relationship);
     setShowRelationshipForm(true);
   };
 
   const handleRelationshipSaved = () => {
     setShowRelationshipForm(false);
-    setEditingRelationship(null);
     if (selectedRole) {
       fetchRoleData(selectedRole.id);
     }
@@ -682,98 +675,24 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             </div>
 
             {relationships.length > 0 ? (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-6">
                 {relationships.map((rel) => (
-                  <div 
-                    key={rel.id} 
-                    className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 cursor-pointer group"
-                    onClick={() => handleEditRelationship(rel)}
-                  >
-                    <div className="flex items-start gap-3">
-                      <RelationshipImage relationship={rel} />
-                      <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 truncate transition-colors">{rel.name}</h3>
-                        <p className="text-sm text-gray-600 group-hover:text-blue-600 mb-2 transition-colors">Key Relationship</p>
-                        {rel.notes && (
-                          <div className="bg-gray-50 rounded-md p-2 mb-3">
-                            <p className="text-xs font-medium text-gray-700 mb-1">Notes:</p>
-                            <p className="text-sm text-gray-600">{rel.notes}</p>
-                          </div>
-                        )}
-                        
-                        {/* Active Tasks */}
-                        {relationshipTasks[rel.id] && relationshipTasks[rel.id].length > 0 && (
-                          <div className="bg-blue-50 rounded-md p-2 mb-3">
-                            <p className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
-                              <CheckCircle className="h-3 w-3" />
-                              Active Tasks ({relationshipTasks[rel.id].length})
-                            </p>
-                            <div className="space-y-1">
-                              {relationshipTasks[rel.id].slice(0, 2).map((task) => (
-                                <div key={task.id} className="flex items-center justify-between">
-                                  <span className="text-xs text-blue-800 truncate flex-1">{task.title}</span>
-                                  <div className="flex gap-1 ml-2">
-                                    {task.is_urgent && (
-                                      <span className="inline-block w-2 h-2 bg-red-400 rounded-full" title="Urgent" />
-                                    )}
-                                    {task.is_important && (
-                                      <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full" title="Important" />
-                                    )}
-                                    {task.is_authentic_deposit && (
-                                      <span className="inline-block w-2 h-2 bg-green-400 rounded-full" title="Authentic Deposit" />
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
-                              {relationshipTasks[rel.id].length > 2 && (
-                                <p className="text-xs text-blue-600 italic">
-                                  +{relationshipTasks[rel.id].length - 2} more tasks
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
 
-                        {/* Active Deposit Ideas */}
-                        {relationshipDepositIdeas[rel.id] && relationshipDepositIdeas[rel.id].length > 0 && (
-                          <div className="bg-purple-50 rounded-md p-2 mb-3">
-                            <p className="text-xs font-medium text-purple-700 mb-2 flex items-center gap-1">
-                              <Heart className="h-3 w-3" />
-                              Deposit Ideas ({relationshipDepositIdeas[rel.id].length})
-                            </p>
-                            <div className="space-y-1">
-                              {relationshipDepositIdeas[rel.id].slice(0, 2).map((idea) => (
-                                <div key={idea.id} className="text-xs text-purple-800 truncate">
-                                  {idea.title || idea.description}
-                                </div>
-                              ))}
-                              {relationshipDepositIdeas[rel.id].length > 2 && (
-                                <p className="text-xs text-purple-600 italic">
-                                  +{relationshipDepositIdeas[rel.id].length - 2} more ideas
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                    <div className="flex gap-2 mt-3 pt-3 border-t border-gray-100">
-                      <button className="flex-1 text-sm text-blue-600 hover:text-blue-700 font-medium py-1 px-2 rounded hover:bg-blue-50 transition-colors flex items-center justify-center gap-1">
-                        <Eye className="h-3 w-3" />
-                        View Details
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditRelationship(rel);
-                        }}
-                        className="flex-1 text-sm text-gray-600 hover:text-gray-700 font-medium py-1 px-2 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
-                      >
-                        <Edit className="h-3 w-3" />
-                        Edit
-                      </button>
-                    </div>
-                  </div>
+                  <UnifiedKeyRelationshipCard
+                    key={rel.id}
+                    relationship={rel}
+                    roleName={selectedRole.label}
+                    onRelationshipUpdated={() => {
+                      if (selectedRole) {
+                        fetchRoleData(selectedRole.id);
+                      }
+                    }}
+                    onRelationshipDeleted={() => {
+                      if (selectedRole) {
+                        fetchRoleData(selectedRole.id);
+                      }
+                    }}
+                  />
                 ))}
               </div>
             ) : (
@@ -800,10 +719,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           <KeyRelationshipForm
             roleId={selectedRole.id}
             roleName={selectedRole.label}
-            existingRelationship={editingRelationship}
+            existingRelationship={null}
             onClose={() => {
               setShowRelationshipForm(false);
-              setEditingRelationship(null);
             }}
             onRelationshipCreated={handleRelationshipSaved}
           />
@@ -1114,44 +1032,6 @@ const ActivationTypeSelector: React.FC<{
             Cancel
           </button>
         </div>
-      </div>
-    </div>
-  );
-};
-
-// --- SUPPORT COMPONENT ---
-const RelationshipImage: React.FC<{ relationship: KeyRelationship }> = ({ relationship }) => {
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    const loadImage = async () => {
-      if (relationship.image_path) {
-        const signedUrl = await getSignedImageUrl(relationship.image_path);
-        if (signedUrl) {
-          setImageUrl(signedUrl);
-        }
-      }
-    };
-
-    loadImage();
-  }, [relationship.image_path]);
-
-  if (imageUrl) {
-    return (
-      <div className="flex-shrink-0">
-        <img
-          src={imageUrl}
-          alt={relationship.name}
-          className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-        />
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex-shrink-0">
-      <div className="w-16 h-16 rounded-full bg-gray-100 border-2 border-gray-200 flex items-center justify-center">
-        <UserPlus className="h-8 w-8 text-gray-400" />
       </div>
     </div>
   );
