@@ -279,11 +279,11 @@ const Settings: React.FC = () => {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-3xl mx-auto p-6 h-full overflow-y-auto">
       <h1 className="text-2xl font-bold mb-2">Settings</h1>
       <p className="text-gray-600 mb-6">Manage your application preferences and role settings.</p>
 
-      <div className="bg-white rounded-lg shadow p-6">
+      <div className="bg-white rounded-lg shadow p-6 max-h-[calc(100vh-200px)] overflow-y-auto">
         <h2 className="text-xl font-semibold mb-4">Role Dashboard</h2>
 
         <form onSubmit={handleAddCustomRole} className="flex gap-2 mb-6">
@@ -309,15 +309,15 @@ const Settings: React.FC = () => {
           </button>
         </form>
 
-        <div className="space-y-4">
+        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
           {Object.entries(presetRolesByCategory).map(([category, roles]) => (
             <div key={category} className="border rounded-lg overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleCategory(category)}
-                className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100"
+                className="w-full flex items-center justify-between p-3 bg-gray-50 hover:bg-gray-100 transition-colors"
               >
-                <span className="font-medium">{category}</span>
+                <span className="font-medium text-gray-900">{category}</span>
                 {expandedCategories[category] ? (
                   <ChevronUp className="h-5 w-5 text-gray-500" />
                 ) : (
@@ -326,7 +326,7 @@ const Settings: React.FC = () => {
               </button>
 
               {expandedCategories[category] && (
-                <div className="p-4 grid grid-cols-2 gap-4">
+                <div className="p-4 grid grid-cols-1 sm:grid-cols-2 gap-4 bg-white">
                   {roles.map(role => {
                     const userRole = userRoles.find(
                       r => r.preset_role_id === role.id && r.user_id === userId
@@ -334,8 +334,8 @@ const Settings: React.FC = () => {
                     const checked = userRole ? !!userRole.is_active : false;
 
                     return (
-                      <div key={role.id} className="flex items-center space-x-3">
-                        <span className="text-sm text-gray-700 min-w-[120px]">{role.label}</span>
+                      <div key={role.id} className="flex items-center justify-between space-x-3 p-2 rounded-md hover:bg-gray-50 transition-colors">
+                        <span className="text-sm text-gray-700 flex-1">{role.label}</span>
                         <label className="switch">
                           <input
                             type="checkbox"
@@ -356,12 +356,12 @@ const Settings: React.FC = () => {
         {userRoles.filter(r => !r.preset_role_id && r.is_active).length > 0 && (
           <div className="mt-6">
             <h3 className="font-medium mb-3">Custom Roles</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {userRoles
                 .filter(r => !r.preset_role_id && r.is_active)
                 .map(r => (
-                  <div key={r.id} className="flex items-center space-x-3">
-                    <span className="text-sm text-gray-700 min-w-[120px]">{r.label}</span>
+                  <div key={r.id} className="flex items-center justify-between space-x-3 p-2 rounded-md hover:bg-gray-50 transition-colors">
+                    <span className="text-sm text-gray-700 flex-1">{r.label}</span>
                     <label className="switch">
                       <input
                         type="checkbox"
