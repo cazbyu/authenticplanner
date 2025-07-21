@@ -499,7 +499,9 @@ end_time: form.isAllDay ? null : end_time,
               {/* Start Time (shown if not All Day) */}
         {!form.isAllDay && (
           <div>
-            <label className="block text-xs mb-1">Start Time</label>
+            <label className="block text-xs mb-1">
+              {form.schedulingType === "task" ? "Complete by" : "Start Time"}
+            </label>
             <select
               name="startTime"
               value={form.startTime}
