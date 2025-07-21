@@ -369,7 +369,7 @@ const AuthenticCalendar: React.FC = () => {
           <div className="flex-1 overflow-y-auto px-3 py-4">
             <nav className="space-y-1">
               {navItems.map((item) => {
-                const isActive = item.path === '/' && window.location.pathname === '/';
+                const isActive = window.location.pathname === item.path;
                 const IconComponent = item.icon;
                 
                 return (

@@ -340,7 +340,10 @@ const Dashboard: React.FC = () => {
           </Link>
 
           {/* Tasks by Priority Card */}
-          <div className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200">
+          <Link
+            to="/calendar?view=priorities"
+            className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200"
+          >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -351,12 +354,7 @@ const Dashboard: React.FC = () => {
                   <p className="text-sm text-gray-600">Focus on what matters most</p>
                 </div>
               </div>
-              <Link 
-                to="/calendar?view=priorities"
-                className="text-primary-600 hover:text-primary-700 transition-colors"
-              >
-                <ArrowRight className="h-5 w-5" />
-              </Link>
+              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-primary-600 transition-colors" />
             </div>
             
             {quickTasks.length > 0 ? (
@@ -388,7 +386,7 @@ const Dashboard: React.FC = () => {
             ) : (
               <p className="text-sm text-gray-500">No pending tasks</p>
             )}
-          </div>
+          </Link>
 
           {/* Scorecard Card */}
           <Link
@@ -426,7 +424,10 @@ const Dashboard: React.FC = () => {
           </Link>
 
           {/* Notes & Follow Up Card */}
-          <div className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200">
+          <Link
+            to="/notes"
+            className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200"
+          >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -437,9 +438,7 @@ const Dashboard: React.FC = () => {
                   <p className="text-sm text-gray-600">Capture insights & actions</p>
                 </div>
               </div>
-              <button className="text-primary-600 hover:text-primary-700 transition-colors">
-                <Plus className="h-5 w-5" />
-              </button>
+              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-primary-600 transition-colors" />
             </div>
             
             <div className="space-y-3">
@@ -457,7 +456,7 @@ const Dashboard: React.FC = () => {
                 Capture thoughts and track follow-up actions
               </p>
             </div>
-          </div>
+          </Link>
 
           {/* Quick Actions Card */}
           <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200 p-6">
