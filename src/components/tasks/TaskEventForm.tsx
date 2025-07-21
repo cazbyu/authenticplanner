@@ -136,7 +136,8 @@ function getEndTimeOptions(startTime: string) {
         .from("0007-ap-goals-12wk-main")
         .select("id,title")
         .eq("user_id", user.id)
-        .eq("status", "active");
+        .eq("status", "active")
+        .order('created_at', { ascending: false });
 
       setRoles(roleData || []);
       setDomains(domainData || []);
