@@ -327,8 +327,41 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
   };
 
-  const handleEditDepositIdea = (idea: DepositIdea) => {
-    setEditingDepositIdea(idea);
+  const handleEditDepositIdea = async (idea: DepositIdea) => {
+  // 1. Get domains linked to this deposit idea
+  const { data: domainLinks } = await supabase
+    .from('0007-ap-deposit-idea-domains')
+    .select('domain_id')
+    .eq('deposit_idea_id', idea.id);
+
+  // 2. Extract the domain IDs
+  const selectedDomainIds = domainLinks?.map(link => link.domain_id) || [];
+
+  // 3. Do the same for roles (optional, but helps!)
+  const { data: roleLinks } = await supabase
+    .from('0007-ap-deposit-idea-roles')
+    .select('role_id')
+    .eq('deposit_idea_id', idea.id);
+
+  const selectedRoleIds = roleLinks?.map(link => link.role_id) || [];
+
+  // 4. Same for key relationships (optional)
+  const { data: krLinks } = await supabase
+    .from('0007-ap-deposit-idea-key-relationships')
+    .select('key_relationship_id')
+    .eq('deposit_idea_id', idea.id);
+
+  const selectedKeyRelationshipIds = krLinks?.map(link => link.key_relationship_id) || [];
+
+  // 5. Now open the modal and pass all the correct info!
+  setEditingDepositIdea({
+    ...idea,
+    selectedDomainIds,
+    selectedRoleIds,
+    selectedKeyRelationshipIds,
+  });
+};
+
   };
 
   const handleActivateDepositIdea = (idea: DepositIdea) => {
