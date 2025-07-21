@@ -7,7 +7,6 @@ import TaskEventForm from '../tasks/TaskEventForm';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 import EditTask from '../tasks/EditTask';
-import DepositIdeaForm from '../shared/DepositIdeaForm';
 import DepositIdeaCard from '../shared/DepositIdeaCard';
 import DepositIdeaEditForm from '../shared/DepositIdeaEditForm';
 import { useNavigate } from 'react-router-dom';
@@ -822,9 +821,50 @@ const ActivationTypeSelector: React.FC<{
   const [selectedType, setSelectedType] = useState<'task' | 'event' | null>(null);
   const [showTaskEventForm, setShowTaskEventForm] = useState(false);
 
+  // ---- PASTE THIS BLOCK BELOW ----
+
+  const [pivotIds, setPivotIds] = useState({
+    selectedRoleIds: [],
+    selectedDomainIds: [],
+    selectedKeyRelationshipIds: []
+  });
+
+  useEffect(() => {
+    if (!depositIdea) return;
+    (async () => {
+      // Fetch Roles linked to Deposit Idea
+      const { data: ideaRoles } = await supabase
+        .from("0007-ap-deposit-idea-roles")
+        .select("role_id")
+        .eq("deposit_idea_id", depositIdea.id);
+
+      // Fetch Domains linked to Deposit Idea
+      const { data: ideaDomains } = await supabase
+        .from("0007-ap-deposit-idea-domains")
+        .select("domain_id")
+        .eq("deposit_idea_id", depositIdea.id);
+
+      // Fetch Key Relationships linked to Deposit Idea
+      const { data: ideaKRs } = await supabase
+        .from("0007-ap-deposit-idea-key-relationships")
+        .select("key_relationship_id")
+        .eq("deposit_idea_id", depositIdea.id);
+
+      setPivotIds({
+        selectedRoleIds: ideaRoles?.map(r => r.role_id) || [],
+        selectedDomainIds: ideaDomains?.map(d => d.domain_id) || [],
+        selectedKeyRelationshipIds: ideaKRs?.map(k => k.key_relationship_id) || [],
+      });
+    })();
+  }, [depositIdea]);
+
   const handleTypeSelect = (type: 'task' | 'event') => {
     setSelectedType(type);
     setShowTaskEventForm(true);
+  };
+
+  // ---- END OF PASTE ----
+
   };
 
   const handleFormSuccess = () => {
