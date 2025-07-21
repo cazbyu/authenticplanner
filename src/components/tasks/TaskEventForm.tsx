@@ -228,6 +228,7 @@ function getEndTimeOptions(startTime: string) {
           }));
           await supabase.from('0007-ap-deposit-idea-domains').insert(domainInserts);
         }
+        
 // Create key relationship links
 if (form.selectedKeyRelationshipIds.length > 0) {
   const krInserts = form.selectedKeyRelationshipIds.map(key_relationship_id => ({
