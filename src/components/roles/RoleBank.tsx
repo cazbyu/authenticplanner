@@ -362,8 +362,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   });
 };
 
-  };
-
   const handleActivateDepositIdea = (idea: DepositIdea) => {
     // Show selection dialog for Task vs Event
     setActivatingDepositIdea(idea);
