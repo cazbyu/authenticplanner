@@ -1,20 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
-import { 
-  Plus, 
-  Trash2, 
-  Check, 
-  X, 
-  UserPlus, 
-  Heart, 
-  CheckCircle, 
-  Edit3,
-  Save,
-  Upload,
-  ChevronDown,
-  ChevronUp
-} from 'lucide-react';
+import { Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 
 interface KeyRelationship {
@@ -28,7 +15,7 @@ interface KeyRelationship {
 interface Task {
   id: string;
   title: string;
-  status: 'pending' | 'completed' | 'cancelled';
+  status: string;
   due_date?: string;
   is_urgent: boolean;
   is_important: boolean;
@@ -60,57 +47,44 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   relationship,
   roleName,
   onRelationshipUpdated,
-  onRelationshipDeleted
+  onRelationshipDeleted,
 }) => {
-  // State for relationship data
+  // State for the relationship data
   const [name, setName] = useState(relationship.name);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [selectedImage, setSelectedImage] = useState<File | null>(null);
-  
-  // State for tasks and deposit ideas
+
+  // State for tasks, deposit ideas, and notes
   const [tasks, setTasks] = useState<Task[]>([]);
   const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
-  
-  // State for adding new items
-  const [newTask, setNewTask] = useState('');
-  const [newDepositIdea, setNewDepositIdea] = useState('');
+
+  // State for new note input
   const [newNote, setNewNote] = useState('');
-  
-  // State for editing modes
-  const [editingName, setEditingName] = useState(false);
-  const [editingNote, setEditingNote] = useState<string | null>(null);
-  const [editingNoteContent, setEditingNoteContent] = useState('');
-  
-  // State for collapsible card
+  const [addingNote, setAddingNote] = useState(false);
+
+  // Collapsible
   const [isExpanded, setIsExpanded] = useState(false);
-  
-  // Loading states
-  const [saving, setSaving] = useState(false);
-  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Load initial data
   useEffect(() => {
     loadRelationshipData();
-    loadImage();
     loadNotes();
-  }, [relationship]);
+    loadImage();
+  }, [relationship.id]);
 
   const loadImage = async () => {
     if (relationship.image_path) {
       const signedUrl = await getSignedImageUrl(relationship.image_path);
-      if (signedUrl) {
-        setImagePreview(signedUrl);
-      }
+      if (signedUrl) setImagePreview(signedUrl);
+    } else {
+      setImagePreview(null);
     }
   };
 
+  // Fetch tasks and deposit ideas for this key relationship
   const loadRelationshipData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      // Fetch tasks linked to this relationship
+      // Fetch tasks
       const { data: taskLinks } = await supabase
         .from('0007-ap-task-key-relationships')
         .select(`
@@ -127,9 +101,11 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         .eq('key_relationship_id', relationship.id);
 
       const relationshipTasks = taskLinks?.map(link => link.task).filter(Boolean) || [];
-      setTasks(relationshipTasks.filter(task => task.status === 'pending' || task.status === 'in_progress'));
+      setTasks(relationshipTasks.filter(
+        (task: Task) => task.status === 'pending' || task.status === 'in_progress'
+      ));
 
-      // Fetch deposit ideas linked to this relationship
+      // Fetch deposit ideas
       const { data: depositIdeasData } = await supabase
         .from('0007-ap-deposit-ideas')
         .select('*')
@@ -144,6 +120,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     }
   };
 
+  // Fetch notes
   const loadNotes = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -162,690 +139,132 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     }
   };
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select a valid image file');
-        return;
-      }
-      
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Image size must be less than 5MB');
-        return;
-      }
-      
-      setSelectedImage(file);
-      
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const uploadImage = async (): Promise<string | null> => {
-    if (!selectedImage) return null;
-    
-    setUploadingImage(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-      
-      const fileExt = selectedImage.name.split('.').pop();
-      const fileName = `user-${user.id}/${Date.now()}-${selectedImage.name}`;
-      
-      const { error } = await supabase.storage
-        .from('0007-key-relationship-images')
-        .upload(fileName, selectedImage);
-      
-      if (error) throw error;
-      
-      return fileName;
-    } catch (err) {
-      console.error('Error uploading image:', err);
-      toast.error('Failed to upload image');
-      return null;
-    } finally {
-      setUploadingImage(false);
-    }
-  };
-
-  const saveRelationshipDetails = async () => {
-    setSaving(true);
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      let imagePath = relationship.image_path;
-      if (selectedImage) {
-        const uploadedPath = await uploadImage();
-        if (uploadedPath) {
-          imagePath = uploadedPath;
-        }
-      }
-
-      const { error } = await supabase
-        .from('0007-ap-key-relationships')
-        .update({
-          name: name.trim(),
-          image_path: imagePath || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', relationship.id);
-
-      if (error) throw error;
-
-      toast.success('Relationship updated successfully');
-      setEditingName(false);
-      setSelectedImage(null);
-      onRelationshipUpdated();
-    } catch (error) {
-      console.error('Error saving relationship:', error);
-      toast.error('Failed to save relationship');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const addTask = async () => {
-    if (!newTask.trim()) return;
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: task, error: taskError } = await supabase
-        .from('0007-ap-tasks')
-        .insert([{
-          user_id: user.id,
-          title: newTask.trim(),
-          status: 'pending',
-          notes: `Related to ${name} (${roleName})`
-        }])
-        .select()
-        .single();
-
-      if (taskError || !task) throw taskError;
-
-      // Link task to this relationship
-      const { error: linkError } = await supabase
-        .from('0007-ap-task-key-relationships')
-        .insert([{
-          task_id: task.id,
-          key_relationship_id: relationship.id
-        }]);
-
-      if (linkError) throw linkError;
-
-      // Link task to role
-      const { error: roleError } = await supabase
-        .from('0007-ap-task-roles')
-        .insert([{
-          task_id: task.id,
-          role_id: relationship.role_id
-        }]);
-
-      if (roleError) throw roleError;
-
-      setTasks(prev => [...prev, task]);
-      setNewTask('');
-      toast.success('Task added successfully');
-    } catch (error) {
-      console.error('Error adding task:', error);
-      toast.error('Failed to add task');
-    }
-  };
-
-  const toggleTaskStatus = async (taskId: string) => {
-    try {
-      const task = tasks.find(t => t.id === taskId);
-      if (!task) return;
-
-      const newStatus = task.status === 'completed' ? 'pending' : 'completed';
-      const updates: any = { status: newStatus };
-      
-      if (newStatus === 'completed') {
-        updates.completed_at = new Date().toISOString();
-      }
-
-      const { error } = await supabase
-        .from('0007-ap-tasks')
-        .update(updates)
-        .eq('id', taskId);
-
-      if (error) throw error;
-
-      if (newStatus === 'completed') {
-        setTasks(prev => prev.filter(t => t.id !== taskId));
-      } else {
-        setTasks(prev => prev.map(t => 
-          t.id === taskId ? { ...t, status: newStatus } : t
-        ));
-      }
-    } catch (error) {
-      console.error('Error updating task:', error);
-      toast.error('Failed to update task');
-    }
-  };
-
-  const removeTask = async (taskId: string) => {
-    try {
-      const { error } = await supabase
-        .from('0007-ap-tasks')
-        .delete()
-        .eq('id', taskId);
-
-      if (error) throw error;
-
-      setTasks(prev => prev.filter(t => t.id !== taskId));
-      toast.success('Task removed');
-    } catch (error) {
-      console.error('Error removing task:', error);
-      toast.error('Failed to remove task');
-    }
-  };
-
-  const addDepositIdea = async () => {
-    if (!newDepositIdea.trim()) return;
-    
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: idea, error } = await supabase
-        .from('0007-ap-deposit-ideas')
-        .insert([{
-          user_id: user.id,
-          title: newDepositIdea.trim(),
-          key_relationship_id: relationship.id,
-          is_active: true
-        }])
-        .select()
-        .single();
-
-      if (error || !idea) throw error;
-
-      setDepositIdeas(prev => [...prev, idea]);
-      setNewDepositIdea('');
-      toast.success('Deposit idea added successfully');
-    } catch (error) {
-      console.error('Error adding deposit idea:', error);
-      toast.error('Failed to add deposit idea');
-    }
-  };
-
-  const toggleDepositIdeaStatus = async (ideaId: string) => {
-    try {
-      const idea = depositIdeas.find(d => d.id === ideaId);
-      if (!idea) return;
-
-      const { error } = await supabase
-        .from('0007-ap-deposit-ideas')
-        .update({ is_active: !idea.is_active })
-        .eq('id', ideaId);
-
-      if (error) throw error;
-
-      setDepositIdeas(prev => prev.map(d => 
-        d.id === ideaId ? { ...d, is_active: !d.is_active } : d
-      ));
-    } catch (error) {
-      console.error('Error updating deposit idea:', error);
-      toast.error('Failed to update deposit idea');
-    }
-  };
-
-  const removeDepositIdea = async (ideaId: string) => {
-    try {
-      const { error } = await supabase
-        .from('0007-ap-deposit-ideas')
-        .delete()
-        .eq('id', ideaId);
-
-      if (error) throw error;
-
-      setDepositIdeas(prev => prev.filter(d => d.id !== ideaId));
-      toast.success('Deposit idea removed');
-    } catch (error) {
-      console.error('Error removing deposit idea:', error);
-      toast.error('Failed to remove deposit idea');
-    }
-  };
-
+  // Add note
   const addNote = async () => {
     if (!newNote.trim()) return;
-    
+    setAddingNote(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) throw new Error("User not authenticated");
 
-      const { data: note, error } = await supabase
+      const { error } = await supabase
         .from('0007-ap-notes')
         .insert([{
           user_id: user.id,
           key_relationship_id: relationship.id,
-          content: newNote.trim()
-        }])
-        .select()
-        .single();
-
-      if (error || !note) throw error;
-
-      setNotes(prev => [note, ...prev]);
+          content: newNote.trim(),
+        }]);
+      if (error) {
+        toast.error("Failed to add note: " + error.message);
+        setAddingNote(false);
+        return;
+      }
       setNewNote('');
-      toast.success('Note added successfully');
-    } catch (error) {
-      console.error('Error adding note:', error);
-      toast.error('Failed to add note');
+      loadNotes();
+      toast.success("Note added!");
+    } catch (err: any) {
+      toast.error("Failed to add note: " + (err.message || err));
     }
-  };
-
-  const updateNote = async (noteId: string, content: string) => {
-    if (!content.trim()) {
-      toast.error('Note content cannot be empty');
-      return;
-    }
-    
-    try {
-      const { error } = await supabase
-        .from('0007-ap-notes')
-        .update({ 
-          content: content.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', noteId);
-
-      if (error) throw error;
-
-      setNotes(prev => prev.map(n => 
-        n.id === noteId ? { ...n, content: content.trim(), updated_at: new Date().toISOString() } : n
-      ));
-      setEditingNote(null);
-      setEditingNoteContent('');
-      toast.success('Note updated successfully');
-    } catch (error) {
-      console.error('Error updating note:', error);
-      toast.error('Failed to update note');
-    }
-  };
-
-  const removeNote = async (noteId: string) => {
-    if (!confirm('Are you sure you want to delete this note?')) return;
-    
-    try {
-      const { error } = await supabase
-        .from('0007-ap-notes')
-        .delete()
-        .eq('id', noteId);
-
-      if (error) throw error;
-
-      setNotes(prev => prev.filter(n => n.id !== noteId));
-      toast.success('Note removed');
-    } catch (error) {
-      console.error('Error removing note:', error);
-      toast.error('Failed to remove note');
-    }
-  };
-
-  const deleteRelationship = async () => {
-    if (!confirm(`Are you sure you want to delete the relationship with ${name}?`)) return;
-    
-    try {
-      const { error } = await supabase
-        .from('0007-ap-key-relationships')
-        .delete()
-        .eq('id', relationship.id);
-
-      if (error) throw error;
-
-      toast.success('Relationship deleted successfully');
-      onRelationshipDeleted();
-    } catch (error) {
-      console.error('Error deleting relationship:', error);
-      toast.error('Failed to delete relationship');
-    }
+    setAddingNote(false);
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow">
-      {/* Collapsed Header */}
-      <div 
-        className="p-4 cursor-pointer"
-        onClick={() => setIsExpanded(!isExpanded)}
-      >
-        <div className="flex items-center gap-4">
-          {/* Image */}
-          <div className="flex-shrink-0">
-            <div className="w-16 h-16 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50">
-              {imagePreview ? (
-                <img 
-                  src={imagePreview} 
-                  alt={name} 
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <UserPlus className="h-6 w-6 text-gray-400" />
-              )}
-            </div>
-          </div>
-
-          {/* Name and Details */}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
-            <p className="text-sm text-gray-600">Key Relationship</p>
-            
-            {/* Counters */}
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1 text-sm text-blue-600">
-                <CheckCircle className="h-4 w-4" />
-                <span>{tasks.length} task{tasks.length !== 1 ? 's' : ''}</span>
-              </div>
-              <div className="flex items-center gap-1 text-sm text-purple-600">
-                <Heart className="h-4 w-4" />
-                <span>{depositIdeas.length} idea{depositIdeas.length !== 1 ? 's' : ''}</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Expand/Collapse Icon */}
-          <div className="flex-shrink-0">
-            {isExpanded ? (
-              <ChevronUp className="h-5 w-5 text-gray-400" />
-            ) : (
-              <ChevronDown className="h-5 w-5 text-gray-400" />
-            )}
-          </div>
+    <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm relative">
+      <div className="flex items-center mb-3">
+        {imagePreview && (
+          <img
+            src={imagePreview}
+            alt={name}
+            className="h-10 w-10 rounded-full object-cover border mr-3"
+          />
+        )}
+        <div>
+          <div className="font-bold text-lg text-gray-900">{name}</div>
+          <div className="text-sm text-gray-500">{roleName}</div>
         </div>
+        <button
+          className="ml-auto text-gray-400 hover:text-primary-600 transition"
+          onClick={() => setIsExpanded(!isExpanded)}
+          title={isExpanded ? 'Collapse' : 'Expand'}
+        >
+          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        </button>
       </div>
 
-      {/* Expanded Content */}
+      {/* COLLAPSIBLE SECTION */}
       {isExpanded && (
-        <div className="border-t border-gray-200 p-4 space-y-6">
-          {/* Edit Name and Image */}
-          <div className="flex items-start gap-4">
-            {/* Image Upload */}
-            <div className="flex-shrink-0">
-              <div className="w-20 h-20 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center overflow-hidden bg-gray-50 relative group">
-                {imagePreview ? (
-                  <img 
-                    src={imagePreview} 
-                    alt={name} 
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <UserPlus className="h-8 w-8 text-gray-400" />
-                )}
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={handleImageSelect}
-                  className="absolute inset-0 opacity-0 cursor-pointer"
-                />
-                <div className="absolute inset-0 bg-black bg-opacity-50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                  <Upload className="h-5 w-5 text-white" />
-                </div>
-              </div>
+        <div>
+          {/* --- Tasks --- */}
+          <div className="mb-4">
+            <div className="font-semibold mb-2 flex items-center gap-2">
+              <span>Tasks</span>
+              <span className="text-xs bg-gray-100 rounded px-2">{tasks.length}</span>
             </div>
-
-            {/* Name Editing */}
-            <div className="flex-1">
-              {editingName ? (
-                <div className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="flex-1 text-lg font-semibold border border-gray-300 rounded px-2 py-1 focus:border-blue-500 focus:outline-none"
-                    onKeyPress={(e) => e.key === 'Enter' && saveRelationshipDetails()}
-                  />
-                  <button
-                    onClick={saveRelationshipDetails}
-                    disabled={saving}
-                    className="p-1 text-green-600 hover:bg-green-100 rounded"
-                  >
-                    <Save className="h-4 w-4" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setName(relationship.name);
-                      setEditingName(false);
-                    }}
-                    className="p-1 text-gray-600 hover:bg-gray-100 rounded"
-                  >
-                    <X className="h-4 w-4" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-semibold text-gray-900">{name}</h3>
-                  <button
-                    onClick={() => setEditingName(true)}
-                    className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded"
-                  >
-                    <Edit3 className="h-4 w-4" />
-                  </button>
-                </div>
-              )}
-              <p className="text-sm text-gray-600">Key Relationship</p>
-            </div>
-
-            {/* Delete Button */}
-            <div className="flex-shrink-0">
-              <button
-                onClick={deleteRelationship}
-                className="p-2 text-red-500 hover:bg-red-100 rounded-full transition-colors"
-                title="Delete relationship"
-              >
-                <Trash2 className="h-4 w-4" />
-              </button>
-            </div>
+            {tasks.length === 0 ? (
+              <div className="text-gray-400 text-sm">No tasks for this relationship.</div>
+            ) : (
+              <ul className="space-y-2">
+                {tasks.map((task) => (
+                  <li key={task.id} className="flex items-center gap-2 p-2 border rounded">
+                    <span>{task.title}</span>
+                    {task.is_urgent && <span className="text-xs bg-red-100 text-red-700 rounded px-1 ml-2">Urgent</span>}
+                    {task.is_important && <span className="text-xs bg-blue-100 text-blue-700 rounded px-1 ml-2">Important</span>}
+                    {task.is_authentic_deposit && <span className="text-xs bg-green-100 text-green-700 rounded px-1 ml-2">Deposit</span>}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-
-          {/* Tasks Section */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                <CheckCircle className="h-4 w-4 text-blue-600" />
-                Current Tasks ({tasks.length})
-              </h4>
+          {/* --- Deposit Ideas --- */}
+          <div className="mb-4">
+            <div className="font-semibold mb-2 flex items-center gap-2">
+              <span>Deposit Ideas</span>
+              <span className="text-xs bg-gray-100 rounded px-2">{depositIdeas.length}</span>
             </div>
-            
-            <div className="space-y-2 mb-3">
-              {tasks.map((task) => (
-                <div key={task.id} className="flex items-center justify-between p-3 bg-blue-50 rounded-md border border-blue-200">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <button
-                      onClick={() => toggleTaskStatus(task.id)}
-                      className="p-1 rounded-full hover:bg-blue-200 transition-colors"
-                    >
-                      <Check className="h-3 w-3 text-blue-600" />
-                    </button>
-                    <div className="flex-1">
-                      <span className="text-sm text-gray-900">{task.title}</span>
-                      {task.due_date && (
-                        <div className="text-xs text-gray-600">
-                          Due: {new Date(task.due_date).toLocaleDateString()}
-                        </div>
-                      )}
-                      <div className="flex gap-1 mt-1">
-                        {task.is_urgent && (
-                          <span className="inline-block w-2 h-2 bg-red-400 rounded-full" title="Urgent" />
-                        )}
-                        {task.is_important && (
-                          <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full" title="Important" />
-                        )}
-                        {task.is_authentic_deposit && (
-                          <span className="inline-block w-2 h-2 bg-green-400 rounded-full" title="Authentic Deposit" />
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => removeTask(task.id)}
-                    className="p-1 text-red-500 hover:bg-red-100 rounded"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex space-x-2">
-              <input
-                type="text"
-                value={newTask}
-                onChange={(e) => setNewTask(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                placeholder="Add a task..."
-                onKeyPress={(e) => e.key === 'Enter' && addTask()}
-              />
-              <button
-                onClick={addTask}
-                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors text-sm"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
+            {depositIdeas.length === 0 ? (
+              <div className="text-gray-400 text-sm">No deposit ideas for this relationship.</div>
+            ) : (
+              <ul className="space-y-2">
+                {depositIdeas.map((idea) => (
+                  <li key={idea.id} className="flex items-center gap-2 p-2 border rounded">
+                    <span>{idea.title || idea.description || "No Title"}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-
-          {/* Deposit Ideas Section */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-gray-900 flex items-center gap-2">
-                <Heart className="h-4 w-4 text-purple-600" />
-                Deposit Ideas ({depositIdeas.length})
-              </h4>
-            </div>
-            
-            <div className="space-y-2 mb-3">
-              {depositIdeas.map((idea) => (
-                <div key={idea.id} className="flex items-center justify-between p-3 bg-purple-50 rounded-md border border-purple-200">
-                  <div className="flex items-center space-x-3 flex-1">
-                    <button
-                      onClick={() => toggleDepositIdeaStatus(idea.id)}
-                      className={`p-1 rounded-full transition-colors ${
-                        idea.is_active
-                          ? 'bg-purple-200 text-purple-600'
-                          : 'bg-gray-200 text-gray-400'
-                      }`}
-                    >
-                      <Check className="h-3 w-3" />
-                    </button>
-                    <span className={`text-sm flex-1 ${
-                      idea.is_active ? 'text-gray-900' : 'text-gray-500 line-through'
-                    }`}>
-                      {idea.title || idea.description}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => removeDepositIdea(idea.id)}
-                    className="p-1 text-red-500 hover:bg-red-100 rounded"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </button>
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex space-x-2">
+          {/* --- Notes Section --- */}
+          <div className="mb-4">
+            <div className="font-semibold mb-2">Notes</div>
+            <div className="flex items-center mb-2">
               <input
-                type="text"
-                value={newDepositIdea}
-                onChange={(e) => setNewDepositIdea(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
-                placeholder="Add a deposit idea..."
-                onKeyPress={(e) => e.key === 'Enter' && addDepositIdea()}
-              />
-              <button
-                onClick={addDepositIdea}
-                className="px-3 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 transition-colors text-sm"
-              >
-                <Plus className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-
-          {/* Notes Section */}
-          <div>
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="text-sm font-medium text-gray-900">Notes ({notes.length})</h4>
-            </div>
-            
-            <div className="space-y-2 mb-3">
-              {notes.map((note) => (
-                <div key={note.id} className="p-3 bg-gray-50 rounded-md border border-gray-200">
-                  {editingNote === note.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={editingNoteContent}
-                        onChange={(e) => setEditingNoteContent(e.target.value)}
-                        className="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:border-blue-500 focus:outline-none"
-                        rows={3}
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => updateNote(note.id, editingNoteContent)}
-                          className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                        >
-                          Save
-                        </button>
-                        <button
-                          onClick={() => {
-                            setEditingNote(null);
-                            setEditingNoteContent('');
-                          }}
-                          className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex items-start justify-between">
-                      <div 
-                        className="flex-1 cursor-pointer"
-                        onClick={() => {
-                          setEditingNote(note.id);
-                          setEditingNoteContent(note.content);
-                        }}
-                      >
-                        <p className="text-sm text-gray-900">{note.content}</p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(note.created_at).toLocaleDateString()}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => removeNote(note.id)}
-                        className="p-1 text-red-500 hover:bg-red-100 rounded ml-2"
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-            
-            <div className="flex space-x-2">
-              <input
-                type="text"
                 value={newNote}
-                onChange={(e) => setNewNote(e.target.value)}
-                className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-gray-500 focus:outline-none"
+                onChange={e => setNewNote(e.target.value)}
                 placeholder="Add a note..."
-                onKeyPress={(e) => e.key === 'Enter' && addNote()}
+                className="w-full border rounded px-2 py-1 text-sm"
               />
               <button
                 onClick={addNote}
-                disabled={!newNote.trim()}
-                className="px-3 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm"
+                disabled={!newNote.trim() || addingNote}
+                className="ml-2 px-3 py-1 rounded bg-primary-600 text-white disabled:bg-gray-300"
               >
-                <Plus className="h-4 w-4" />
+                {addingNote ? 'Saving...' : <Plus className="w-4 h-4" />}
               </button>
             </div>
+            {notes && notes.length > 0 ? (
+              <ul className="mt-2 space-y-2">
+                {notes.map((note) => (
+                  <li key={note.id} className="p-2 bg-gray-50 rounded border text-sm">
+                    <span>{note.content}</span>
+                    <span className="block text-xs text-gray-400 mt-1">
+                      {new Date(note.created_at).toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-400 mt-2">No notes yet.</div>
+            )}
           </div>
         </div>
       )}
