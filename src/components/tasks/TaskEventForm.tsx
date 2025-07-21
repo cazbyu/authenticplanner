@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { ChevronLeft, UserPlus, Plus, Heart, Edit, Eye } from 'lucide-react';
 import { Check, X } from 'lucide-react';
-import KeyRelationshipForm from './KeyRelationshipForm';
+import KeyRelationshipForm from '../roles/KeyRelationshipForm';
 import TaskEventForm from '../tasks/TaskEventForm';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
