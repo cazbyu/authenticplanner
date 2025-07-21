@@ -613,12 +613,16 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             {relationships.length > 0 ? (
               <div className="grid gap-4 md:grid-cols-2">
                 {relationships.map((rel) => (
-                  <div key={rel.id} className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div 
+                    key={rel.id} 
+                    className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 cursor-pointer group"
+                    onClick={() => handleEditRelationship(rel)}
+                  >
                     <div className="flex items-start gap-3">
                       <RelationshipImage relationship={rel} />
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-semibold text-gray-900 truncate">{rel.name}</h3>
-                        <p className="text-sm text-gray-600 mb-2">Key Relationship</p>
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-700 truncate transition-colors">{rel.name}</h3>
+                        <p className="text-sm text-gray-600 group-hover:text-blue-600 mb-2 transition-colors">Key Relationship</p>
                         {rel.notes && (
                           <div className="bg-gray-50 rounded-md p-2 mb-3">
                             <p className="text-xs font-medium text-gray-700 mb-1">Notes:</p>
@@ -633,7 +637,10 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                         View Details
                       </button>
                       <button
-                        onClick={() => handleEditRelationship(rel)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEditRelationship(rel);
+                        }}
                         className="flex-1 text-sm text-gray-600 hover:text-gray-700 font-medium py-1 px-2 rounded hover:bg-gray-50 transition-colors flex items-center justify-center gap-1"
                       >
                         <Edit className="h-3 w-3" />
