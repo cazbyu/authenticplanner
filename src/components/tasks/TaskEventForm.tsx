@@ -30,6 +30,7 @@ interface FormData {
   twelveWeekGoalChecked?: boolean;
   twelveWeekGoalId?: string;
   schedulingType?: "task" | "event" | "depositIdea";
+  isFromDepositIdea?: boolean;
 }
 
 interface Role { id: string; label: string; }
@@ -142,8 +143,49 @@ function getEndTimeOptions(startTime: string) {
       setDomains(domainData || []);
       setKeyRelationships(relationshipData || []);
       setTwelveWeekGoals(goalData || []);
+
+      // If editing a deposit idea, fetch existing relationships
+      if (mode === "edit" && form.schedulingType === "depositIdea" && form.id) {
+        await fetchExistingDepositIdeaData(form.id);
+      }
     })();
-  }, []);
+  }, [mode, form.id, form.schedulingType]);
+
+  // ----- FETCH EXISTING DEPOSIT IDEA DATA -----
+  const fetchExistingDepositIdeaData = async (depositIdeaId: string) => {
+    try {
+      // Fetch existing role relationships
+      const { data: existingRoles } = await supabase
+        .from("0007-ap-deposit-idea-roles")
+        .select("role_id")
+        .eq("deposit_idea_id", depositIdeaId);
+
+      // Fetch existing domain relationships
+      const { data: existingDomains } = await supabase
+        .from("0007-ap-deposit-idea-domains")
+        .select("domain_id")
+        .eq("deposit_idea_id", depositIdeaId);
+
+      // Fetch existing key relationship
+      const { data: depositIdea } = await supabase
+        .from("0007-ap-deposit-ideas")
+        .select("key_relationship_id")
+        .eq("id", depositIdeaId)
+        .single();
+
+      // Update form with existing data
+      setForm(prev => ({
+        ...prev,
+        selectedRoleIds: existingRoles?.map(r => r.role_id) || prev.selectedRoleIds,
+        selectedDomainIds: existingDomains?.map(d => d.domain_id) || prev.selectedDomainIds,
+        selectedKeyRelationshipIds: depositIdea?.key_relationship_id 
+          ? [depositIdea.key_relationship_id] 
+          : prev.selectedKeyRelationshipIds,
+      }));
+    } catch (error) {
+      console.error("Error fetching existing deposit idea data:", error);
+    }
+  };
 
   // ----- FORM CHANGE HANDLERS -----
   const handleChange = (
