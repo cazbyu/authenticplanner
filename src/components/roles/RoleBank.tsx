@@ -283,8 +283,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         .select('*')
         .in('key_relationship_id', relationshipIds)
         .eq('is_active', true)
-        .is('activated_at', null)
-        .eq('archived', false);
+        .is('activated_at', null)  // Not activated
+        .neq('archived', true);    // Not archived (handles null values properly)
 
       // Group tasks by relationship
       const tasksByRelationship: Record<string, Task[]> = {};
@@ -745,7 +745,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                             <div className="space-y-1">
                               {relationshipDepositIdeas[rel.id].slice(0, 2).map((idea) => (
                                 <div key={idea.id} className="text-xs text-purple-800 truncate">
-                                  {idea.title}
+                                  {idea.title || idea.description}
                                 </div>
                               ))}
                               {relationshipDepositIdeas[rel.id].length > 2 && (
