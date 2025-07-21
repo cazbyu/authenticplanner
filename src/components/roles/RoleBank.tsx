@@ -73,6 +73,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [editingDepositIdea, setEditingDepositIdea] = useState<any | null>(null);
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
+  const [deletingDepositIdea, setDeletingDepositIdea] = useState<DepositIdea | null>(null);
   const [relationshipTasks, setRelationshipTasks] = useState<Record<string, Task[]>>({});
   const [relationshipDepositIdeas, setRelationshipDepositIdeas] = useState<Record<string, DepositIdea[]>>({});
   
@@ -431,6 +432,39 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     setActivatingDepositIdea(idea);
   };
 
+  const handleDeleteDepositIdea = (idea: DepositIdea) => {
+    setDeletingDepositIdea(idea);
+  };
+
+  const confirmDeleteDepositIdea = async () => {
+    if (!deletingDepositIdea) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .delete()
+        .eq('id', deletingDepositIdea.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting deposit idea:', error);
+        toast.error('Failed to delete deposit idea');
+      } else {
+        toast.success('Deposit idea deleted successfully!');
+        setDeletingDepositIdea(null);
+        if (selectedRole) {
+          fetchRoleData(selectedRole.id);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting deposit idea:', error);
+      toast.error('Failed to delete deposit idea');
+    }
+  };
+
   const handleDepositIdeaActivated = () => {
     setActivatingDepositIdea(null);
     // Archive the deposit idea and refresh data
@@ -630,8 +664,10 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                     domains={domains}
                     onEdit={handleEditDepositIdea}
                     onActivate={handleActivateDepositIdea}
+                    onDelete={handleDeleteDepositIdea}
                     showEditButton={true}
                     showActivateButton={true}
+                    showDeleteButton={true}
                     className="bg-blue-50 border-blue-200"
                   />
                 ))}
@@ -790,6 +826,32 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   onClose={() => setEditingDepositIdea(null)}
 />
 
+            </div>
+          </div>
+        )}
+
+        {/* Delete Deposit Idea Confirmation Modal */}
+        {deletingDepositIdea && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="bg-white rounded-lg p-6 max-w-md mx-4 shadow-xl">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Deposit Idea</h3>
+              <p className="text-sm text-gray-600 mb-4">
+                Are you sure you want to delete "{deletingDepositIdea.title}"? This action cannot be undone.
+              </p>
+              <div className="flex justify-end space-x-3">
+                <button
+                  onClick={() => setDeletingDepositIdea(null)}
+                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteDepositIdea}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           </div>
         )}
