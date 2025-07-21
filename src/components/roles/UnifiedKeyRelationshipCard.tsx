@@ -84,6 +84,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   // Fetch tasks and deposit ideas for this key relationship
   const loadRelationshipData = async () => {
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       // Fetch tasks
       const { data: taskLinks } = await supabase
         .from('0007-ap-task-key-relationships')
@@ -105,16 +108,54 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         (task: Task) => task.status === 'pending' || task.status === 'in_progress'
       ));
 
-      // Fetch deposit ideas
+      // Fetch deposit ideas linked directly to this key relationship
       const { data: depositIdeasData } = await supabase
         .from('0007-ap-deposit-ideas')
         .select('*')
+        .eq('user_id', user.id)
         .eq('key_relationship_id', relationship.id)
         .eq('is_active', true)
         .is('activated_at', null)
-        .neq('archived', true);
+        .or('archived.is.null,archived.eq.false');
 
+      console.log('Deposit ideas for relationship', relationship.id, ':', depositIdeasData);
       setDepositIdeas(depositIdeasData || []);
+
+      // Also check for deposit ideas linked via the junction table
+      const { data: depositIdeaLinks } = await supabase
+        .from('0007-ap-deposit-idea-key-relationships')
+        .select(`
+          deposit_idea:0007-ap-deposit-ideas(
+            id,
+            title,
+            description,
+            is_active,
+            activated_at,
+            archived
+          )
+        `)
+        .eq('key_relationship_id', relationship.id);
+
+      const linkedDepositIdeas = depositIdeaLinks?.map(link => link.deposit_idea).filter(idea => 
+        idea && 
+        idea.is_active && 
+        !idea.activated_at && 
+        (!idea.archived || idea.archived === false)
+      ) || [];
+
+      console.log('Linked deposit ideas for relationship', relationship.id, ':', linkedDepositIdeas);
+
+      // Combine both direct and linked deposit ideas, removing duplicates
+      const allDepositIdeas = [
+        ...(depositIdeasData || []),
+        ...linkedDepositIdeas
+      ];
+      
+      const uniqueDepositIdeas = allDepositIdeas.filter((idea, index, self) => 
+        index === self.findIndex(i => i.id === idea.id)
+      );
+
+      setDepositIdeas(uniqueDepositIdeas);
     } catch (error) {
       console.error('Error loading relationship data:', error);
     }
