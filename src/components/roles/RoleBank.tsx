@@ -74,6 +74,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [editingDepositIdea, setEditingDepositIdea] = useState<any | null>(null);
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
+  const [relationshipTasks, setRelationshipTasks] = useState<Record<string, Task[]>>({});
+  const [relationshipDepositIdeas, setRelationshipDepositIdeas] = useState<Record<string, DepositIdea[]>>({});
   
   useEffect(() => {
      console.log("Domains passed to DepositIdeaForm in RoleBank:", domains);
@@ -184,6 +186,11 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       setRelationships(relationshipsData || []);
       setKeyRelationships(relationshipsData || []);
 
+      // Fetch tasks and deposit ideas for each key relationship
+      if (relationshipsData && relationshipsData.length > 0) {
+        await fetchRelationshipContent(relationshipsData);
+      }
+
       // Fetch deposit ideas specifically associated with this role
       const { data: roleDepositIdeaLinks, error: roleDepositError } = await supabase
         .from('0007-ap-deposit-idea-roles')
@@ -242,6 +249,71 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       console.error('Error fetching role data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchRelationshipContent = async (relationships: KeyRelationship[]) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const relationshipIds = relationships.map(rel => rel.id);
+
+      // Fetch tasks linked to these key relationships
+      const { data: taskLinks } = await supabase
+        .from('0007-ap-task-key-relationships')
+        .select(`
+          key_relationship_id,
+          task:0007-ap-tasks(
+            id,
+            title,
+            due_date,
+            status,
+            is_urgent,
+            is_important,
+            is_authentic_deposit,
+            notes
+          )
+        `)
+        .in('key_relationship_id', relationshipIds);
+
+      // Fetch deposit ideas linked to these key relationships
+      const { data: depositIdeas } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .select('*')
+        .in('key_relationship_id', relationshipIds)
+        .eq('is_active', true)
+        .is('activated_at', null)
+        .eq('archived', false);
+
+      // Group tasks by relationship
+      const tasksByRelationship: Record<string, Task[]> = {};
+      taskLinks?.forEach(link => {
+        if (link.task && (link.task.status === 'pending' || link.task.status === 'in_progress')) {
+          const relId = link.key_relationship_id;
+          if (!tasksByRelationship[relId]) {
+            tasksByRelationship[relId] = [];
+          }
+          tasksByRelationship[relId].push(link.task);
+        }
+      });
+
+      // Group deposit ideas by relationship
+      const depositIdeasByRelationship: Record<string, DepositIdea[]> = {};
+      depositIdeas?.forEach(idea => {
+        const relId = idea.key_relationship_id;
+        if (relId) {
+          if (!depositIdeasByRelationship[relId]) {
+            depositIdeasByRelationship[relId] = [];
+          }
+          depositIdeasByRelationship[relId].push(idea);
+        }
+      });
+
+      setRelationshipTasks(tasksByRelationship);
+      setRelationshipDepositIdeas(depositIdeasByRelationship);
+    } catch (error) {
+      console.error('Error fetching relationship content:', error);
     }
   };
 
@@ -627,6 +699,61 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                           <div className="bg-gray-50 rounded-md p-2 mb-3">
                             <p className="text-xs font-medium text-gray-700 mb-1">Notes:</p>
                             <p className="text-sm text-gray-600">{rel.notes}</p>
+                          </div>
+                        )}
+                        
+                        {/* Active Tasks */}
+                        {relationshipTasks[rel.id] && relationshipTasks[rel.id].length > 0 && (
+                          <div className="bg-blue-50 rounded-md p-2 mb-3">
+                            <p className="text-xs font-medium text-blue-700 mb-2 flex items-center gap-1">
+                              <CheckCircle className="h-3 w-3" />
+                              Active Tasks ({relationshipTasks[rel.id].length})
+                            </p>
+                            <div className="space-y-1">
+                              {relationshipTasks[rel.id].slice(0, 2).map((task) => (
+                                <div key={task.id} className="flex items-center justify-between">
+                                  <span className="text-xs text-blue-800 truncate flex-1">{task.title}</span>
+                                  <div className="flex gap-1 ml-2">
+                                    {task.is_urgent && (
+                                      <span className="inline-block w-2 h-2 bg-red-400 rounded-full" title="Urgent" />
+                                    )}
+                                    {task.is_important && (
+                                      <span className="inline-block w-2 h-2 bg-yellow-400 rounded-full" title="Important" />
+                                    )}
+                                    {task.is_authentic_deposit && (
+                                      <span className="inline-block w-2 h-2 bg-green-400 rounded-full" title="Authentic Deposit" />
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                              {relationshipTasks[rel.id].length > 2 && (
+                                <p className="text-xs text-blue-600 italic">
+                                  +{relationshipTasks[rel.id].length - 2} more tasks
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Active Deposit Ideas */}
+                        {relationshipDepositIdeas[rel.id] && relationshipDepositIdeas[rel.id].length > 0 && (
+                          <div className="bg-purple-50 rounded-md p-2 mb-3">
+                            <p className="text-xs font-medium text-purple-700 mb-2 flex items-center gap-1">
+                              <Heart className="h-3 w-3" />
+                              Deposit Ideas ({relationshipDepositIdeas[rel.id].length})
+                            </p>
+                            <div className="space-y-1">
+                              {relationshipDepositIdeas[rel.id].slice(0, 2).map((idea) => (
+                                <div key={idea.id} className="text-xs text-purple-800 truncate">
+                                  {idea.title}
+                                </div>
+                              ))}
+                              {relationshipDepositIdeas[rel.id].length > 2 && (
+                                <p className="text-xs text-purple-600 italic">
+                                  +{relationshipDepositIdeas[rel.id].length - 2} more ideas
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
