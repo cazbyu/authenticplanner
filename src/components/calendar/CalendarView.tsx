@@ -177,7 +177,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     // Example: handle FullCalendar datesSet callback
     const handleDatesSet = (arg: DateSetArg) => {
       // Optionally update parent component, fetch data, etc.
-      onDateChange(arg.start); // update to first day in new view
+      // Update parent with the view's current date
+      onDateChange(arg.view.currentStart);
     };
 
     // Custom day header for week view
@@ -336,6 +337,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             },
           }}
           datesSet={handleDatesSet}
+          initialDate={currentDate}
           dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
         />
       </div>

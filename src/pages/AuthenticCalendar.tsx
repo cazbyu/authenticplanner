@@ -178,19 +178,21 @@ const AuthenticCalendar: React.FC = () => {
 
   const handlePrevious = () => {
     if (calendarRef.current) {
-      calendarRef.current.getApi().prev();
-      // Update currentDate to reflect the new view
       const calendarApi = calendarRef.current.getApi();
-      setCurrentDate(calendarApi.getDate());
+      calendarApi.prev();
+      // Get the new date after navigation and update state
+      const newDate = calendarApi.getDate();
+      setCurrentDate(newDate);
     }
   };
 
   const handleNext = () => {
     if (calendarRef.current) {
-      calendarRef.current.getApi().next();
-      // Update currentDate to reflect the new view
       const calendarApi = calendarRef.current.getApi();
-      setCurrentDate(calendarApi.getDate());
+      calendarApi.next();
+      // Get the new date after navigation and update state
+      const newDate = calendarApi.getDate();
+      setCurrentDate(newDate);
     }
   };
 
