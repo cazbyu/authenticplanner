@@ -278,13 +278,29 @@ function getEndTimeOptions(startTime: string) {
           }
 
           // Update key relationship links
-          await supabase.from('0007-ap-deposit-idea-key-relationships').delete().eq('deposit_idea_id', form.id);
+          const { error: deleteKRError } = await supabase
+            .from('0007-ap-deposit-idea-key-relationships')
+            .delete()
+            .eq('deposit_idea_id', form.id);
+          
+          if (deleteKRError) {
+            console.error('Error deleting existing key relationship links:', deleteKRError);
+          }
+          
           if (form.selectedKeyRelationshipIds.length > 0) {
             const krInserts = form.selectedKeyRelationshipIds.map(key_relationship_id => ({
               deposit_idea_id: form.id,
               key_relationship_id
             }));
-            await supabase.from('0007-ap-deposit-idea-key-relationships').insert(krInserts);
+            
+            const { error: insertKRError } = await supabase
+              .from('0007-ap-deposit-idea-key-relationships')
+              .insert(krInserts);
+            
+            if (insertKRError) {
+              console.error('Error inserting key relationship links:', insertKRError);
+              throw new Error('Failed to update key relationship links');
+            }
           }
 
           toast.success('Deposit idea updated successfully!');
