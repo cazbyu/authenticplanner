@@ -171,9 +171,8 @@ const AuthenticCalendar: React.FC = () => {
   };
 
   const handleDateChange = (newStart: Date) => {
-    if (!isViewChanging) {
-      setCurrentDate(newStart);
-    }
+    // Always update the current date when calendar changes
+    setCurrentDate(newStart);
   };
 
   const handlePrevious = () => {
