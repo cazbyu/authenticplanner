@@ -701,9 +701,10 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                   title: editingDepositIdea.title || editingDepositIdea.description || '',
                   notes: editingDepositIdea.notes || '',
                   schedulingType: 'depositIdea',
-                  selectedRoleIds: [selectedRole.id], // Default to current role
+                  // Don't pre-fill these - let TaskEventForm fetch them from the database
+                  selectedRoleIds: [],
                   selectedDomainIds: [],
-                  selectedKeyRelationshipIds: editingDepositIdea.key_relationship_id ? [editingDepositIdea.key_relationship_id] : [],
+                  selectedKeyRelationshipIds: [],
                 }}
                 onSubmitSuccess={handleDepositIdeaUpdated}
                 onClose={() => setEditingDepositIdea(null)}
