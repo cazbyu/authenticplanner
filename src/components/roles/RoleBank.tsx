@@ -201,8 +201,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             .select('*')
             .in('id', depositIdeaIds)
             .eq('is_active', true)
-            .is('activated_at', null)
-            .eq('archived', false)  // Only show non-archived ideas
+            .is('activated_at', null)  // Not activated
+            .eq('archived', false)     // Not archived
         : { data: [], error: null };
 
       if (depositIdeasError) throw depositIdeasError;
@@ -215,7 +215,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           .from('0007-ap-deposit-ideas')
           .select('*')
           .in('key_relationship_id', relationshipIds)
-          .eq('is_active', true);
+          .eq('is_active', true)
+          .is('activated_at', null)  // Not activated
+          .eq('archived', false);    // Not archived
 
         if (relationshipDepositError) throw relationshipDepositError;
         
