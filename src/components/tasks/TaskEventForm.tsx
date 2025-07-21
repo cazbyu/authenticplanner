@@ -194,50 +194,101 @@ function getEndTimeOptions(startTime: string) {
           return;
         }
         
-        // Handle deposit idea creation
-        const { data: depositIdea, error: depositError } = await supabase
-          .from('0007-ap-deposit-ideas')
-          .insert([{
-            user_id: user.id,
-            title: form.title.trim(),
-            notes: form.notes.trim() || null,
-            key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
-            is_active: true
-          }])
-          .select()
-          .single();
+        if (mode === "create") {
+          // Handle deposit idea creation
+          const { data: depositIdea, error: depositError } = await supabase
+            .from('0007-ap-deposit-ideas')
+            .insert([{
+              user_id: user.id,
+              title: form.title.trim(),
+              notes: form.notes.trim() || null,
+              key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
+              is_active: true
+            }])
+            .select()
+            .single();
 
-        if (depositError || !depositIdea) {
-          throw new Error('Failed to create deposit idea');
-        }
+          if (depositError || !depositIdea) {
+            throw new Error('Failed to create deposit idea');
+          }
 
-        // Create role relationships
-        if (form.selectedRoleIds.length > 0) {
-          const roleInserts = form.selectedRoleIds.map(roleId => ({
-            deposit_idea_id: depositIdea.id, 
-            role_id: roleId
-          }));
-          await supabase.from('0007-ap-deposit-idea-roles').insert(roleInserts);
-        }
+          // Create role relationships
+          if (form.selectedRoleIds.length > 0) {
+            const roleInserts = form.selectedRoleIds.map(roleId => ({
+              deposit_idea_id: depositIdea.id, 
+              role_id: roleId
+            }));
+            await supabase.from('0007-ap-deposit-idea-roles').insert(roleInserts);
+          }
 
-        // Create domain relationships
-        if (form.selectedDomainIds.length > 0) {
-          const domainInserts = form.selectedDomainIds.map(domainId => ({
-            deposit_idea_id: depositIdea.id, 
-            domain_id: domainId
-          }));
-          await supabase.from('0007-ap-deposit-idea-domains').insert(domainInserts);
+          // Create domain relationships
+          if (form.selectedDomainIds.length > 0) {
+            const domainInserts = form.selectedDomainIds.map(domainId => ({
+              deposit_idea_id: depositIdea.id, 
+              domain_id: domainId
+            }));
+            await supabase.from('0007-ap-deposit-idea-domains').insert(domainInserts);
+          }
+          
+          // Create key relationship links
+          if (form.selectedKeyRelationshipIds.length > 0) {
+            const krInserts = form.selectedKeyRelationshipIds.map(key_relationship_id => ({
+              deposit_idea_id: depositIdea.id,
+              key_relationship_id
+            }));
+            await supabase.from('0007-ap-deposit-idea-key-relationships').insert(krInserts);
+          }
+
+          toast.success('Deposit idea created successfully!');
+        } else if (mode === "edit" && form.id) {
+          // Handle deposit idea editing
+          const { error: depositError } = await supabase
+            .from('0007-ap-deposit-ideas')
+            .update({
+              title: form.title.trim(),
+              notes: form.notes.trim() || null,
+              key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', form.id)
+            .eq('user_id', user.id);
+
+          if (depositError) {
+            throw new Error('Failed to update deposit idea');
+          }
+
+          // Update role relationships
+          await supabase.from('0007-ap-deposit-idea-roles').delete().eq('deposit_idea_id', form.id);
+          if (form.selectedRoleIds.length > 0) {
+            const roleInserts = form.selectedRoleIds.map(roleId => ({
+              deposit_idea_id: form.id, 
+              role_id: roleId
+            }));
+            await supabase.from('0007-ap-deposit-idea-roles').insert(roleInserts);
+          }
+
+          // Update domain relationships
+          await supabase.from('0007-ap-deposit-idea-domains').delete().eq('deposit_idea_id', form.id);
+          if (form.selectedDomainIds.length > 0) {
+            const domainInserts = form.selectedDomainIds.map(domainId => ({
+              deposit_idea_id: form.id, 
+              domain_id: domainId
+            }));
+            await supabase.from('0007-ap-deposit-idea-domains').insert(domainInserts);
+          }
+
+          // Update key relationship links
+          await supabase.from('0007-ap-deposit-idea-key-relationships').delete().eq('deposit_idea_id', form.id);
+          if (form.selectedKeyRelationshipIds.length > 0) {
+            const krInserts = form.selectedKeyRelationshipIds.map(key_relationship_id => ({
+              deposit_idea_id: form.id,
+              key_relationship_id
+            }));
+            await supabase.from('0007-ap-deposit-idea-key-relationships').insert(krInserts);
+          }
+
+          toast.success('Deposit idea updated successfully!');
         }
-        
-// Create key relationship links
-if (form.selectedKeyRelationshipIds.length > 0) {
-  const krInserts = form.selectedKeyRelationshipIds.map(key_relationship_id => ({
-    deposit_idea_id: depositIdea.id,
-    key_relationship_id
-  }));
-  await supabase.from('0007-ap-deposit-idea-key-relationships').insert(krInserts);
-}
-        toast.success('Deposit idea created successfully!');
         onSubmitSuccess();
         onClose();
         return;

@@ -71,7 +71,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
   const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
-  const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
+  const [editingDepositIdea, setEditingDepositIdea] = useState<any | null>(null);
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
   
@@ -380,12 +380,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
   };
 
-  const handleDepositIdeaDeleted = () => {
-    setEditingDepositIdea(null);
-    if (selectedRole) {
-      fetchRoleData(selectedRole.id);
-    }
-  };
 
   const handleRoleSelect = (role: Role) => {
     setSelectedRole(role);
@@ -694,6 +688,28 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             onClose={() => setEditingTask(null)}
             onTaskUpdated={handleTaskUpdated}
           />
+        )}
+
+        {/* Edit Deposit Idea Modal */}
+        {editingDepositIdea && selectedRole && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <TaskEventForm
+                mode="edit"
+                initialData={{
+                  id: editingDepositIdea.id,
+                  title: editingDepositIdea.title || editingDepositIdea.description || '',
+                  notes: editingDepositIdea.notes || '',
+                  schedulingType: 'depositIdea',
+                  selectedRoleIds: [selectedRole.id], // Default to current role
+                  selectedDomainIds: [],
+                  selectedKeyRelationshipIds: editingDepositIdea.key_relationship_id ? [editingDepositIdea.key_relationship_id] : [],
+                }}
+                onSubmitSuccess={handleDepositIdeaUpdated}
+                onClose={() => setEditingDepositIdea(null)}
+              />
+            </div>
+          </div>
         )}
       </div>
     );
