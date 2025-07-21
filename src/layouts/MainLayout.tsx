@@ -49,10 +49,12 @@ const MainLayout: React.FC = () => {
   };
   
   const navItems = [
-    { name: 'Authentic Calendar', path: '/', icon: Calendar },
+    { name: 'Dashboard', path: '/', icon: Home },
+    { name: 'Authentic Calendar', path: '/calendar', icon: Calendar },
     { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: Clock },
     { name: 'Role Bank', path: '/role-bank', icon: Users },
     { name: 'Domain Dashboard', path: '/domains', icon: Compass },
+    { name: 'Notes & Follow Up', path: '/notes', icon: BookOpen },
     { name: 'Settings', path: '/settings', icon: Settings },
   ];
   

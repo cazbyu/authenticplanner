@@ -12,6 +12,8 @@ import OnboardingLayout from './layouts/OnboardingLayout';
 import AuthenticCalendar from './pages/AuthenticCalendar';
 import CycleTracker from './pages/CycleTracker';
 import TwelveWeekCycle from './pages/TwelveWeekCycle';
+import Dashboard from './pages/Dashboard';
+import NotesFollowUp from './pages/NotesFollowUp';
 import Settings from './pages/Settings';
 import Login from './pages/auth/Login';
 import PaymentCheck from './pages/auth/PaymentCheck';
@@ -119,13 +121,15 @@ function App() {
           </ProtectedRoute>
         }
       >
-        {/* Default route now goes to calendar */}
-        <Route index element={<AuthenticCalendar />} />
+        {/* Default route now goes to dashboard */}
+        <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="calendar" element={<AuthenticCalendar />} />
         <Route path="twelve-week-cycle" element={<TwelveWeekCycle />} />
         <Route path="role-bank" element={<RoleBankPage />} />
         <Route path="domains" element={<DomainDashboard />} />
         <Route path="domains/:domainId" element={<DomainDetail />} />
+        <Route path="notes" element={<NotesFollowUp />} />
         <Route path="settings" element={<Settings />} />
         <Route path="scorecard/full" element={<FullScorecard />} />
       </Route>
