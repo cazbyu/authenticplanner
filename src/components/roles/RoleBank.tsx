@@ -837,21 +837,26 @@ const ActivationTypeSelector: React.FC<{
       <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
         <div className="w-full max-w-2xl mx-4">
           <TaskEventForm
-            mode="create"
-            initialData={{
-              title: depositIdea.title,
-              notes: depositIdea.notes || '',
-              schedulingType: selectedType,
-              selectedRoleIds: [selectedRole.id],
-              authenticDeposit: true,
-              isFromDepositIdea: true
-            }}
-            onSubmitSuccess={handleFormSuccess}
-            onClose={() => {
-              setShowTaskEventForm(false);
-              setSelectedType(null);
-            }}
-          />
+  mode="create"
+  initialData={{
+    title: depositIdea.title,
+    notes: depositIdea.notes || "",
+    schedulingType: selectedType,
+    selectedRoleIds: pivotIds.selectedRoleIds.length
+      ? pivotIds.selectedRoleIds
+      : [selectedRole.id], // fallback if empty
+    selectedDomainIds: pivotIds.selectedDomainIds,
+    selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds,
+    authenticDeposit: true,
+    isFromDepositIdea: true
+  }}
+  onSubmitSuccess={handleFormSuccess}
+  onClose={() => {
+    setShowTaskEventForm(false);
+    setSelectedType(null);
+  }}
+/>
+
         </div>
       </div>
     );
