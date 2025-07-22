@@ -256,10 +256,17 @@ const AuthenticCalendar: React.FC = () => {
     switch (view) {
       case 'timeGridDay':
         return format(currentDate, 'MMM d, yyyy');
-      case 'timeGridWeek':
-        const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
-        const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
-        return `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'd, yyyy')}`;
+      case 'timeGridWeek': {
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
+  const isSameMonth = weekStart.getMonth() === weekEnd.getMonth();
+
+  if (isSameMonth) {
+    // Example: "Jul 21 – 27, 2025"
+    return `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'd, yyyy')}`;
+  } else {
+    // Example: "Jul 27 – Aug 2, 2025"
+    return `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`;
       case 'dayGridMonth':
         return format(currentDate, 'MMMM yyyy');
       default:
