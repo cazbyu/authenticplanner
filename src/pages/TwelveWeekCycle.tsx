@@ -126,6 +126,43 @@ const TwelveWeekCycle: React.FC = () => {
     }
   };
 
+  // Calculate cycle progress
+  const calculateCycleProgress = () => {
+    if (!currentCycle?.start_date || !currentCycle?.reflection_end) {
+      return { percentage: 0, daysRemaining: 0, totalDays: 0 };
+    }
+
+    const now = new Date();
+    const startDate = new Date(currentCycle.start_date);
+    const endDate = new Date(currentCycle.reflection_end);
+    
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysPassed = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = Math.max(0, totalDays - daysPassed);
+    const percentage = Math.min(100, Math.max(0, (daysPassed / totalDays) * 100));
+
+    return { percentage, daysRemaining, totalDays };
+  };
+
+  // Format date range for display
+  const formatCycleDateRange = () => {
+    if (!currentCycle?.start_date || !currentCycle?.reflection_end) {
+      return '';
+    }
+
+    const startDate = new Date(currentCycle.start_date);
+    const endDate = new Date(currentCycle.reflection_end);
+    
+    return `${startDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    })} - ${endDate.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    })}`;
+  };
   const fetchGoals = async () => {
     if (!user) return;
 
@@ -461,9 +498,8 @@ const TwelveWeekCycle: React.FC = () => {
   }
 
   const weeks = Array.from({ length: 12 }, (_, i) => i + 1);
-  const reflectionWeekDates = currentCycle.reflection_start && currentCycle.reflection_end
-    ? `${new Date(currentCycle.reflection_start).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} - ${new Date(currentCycle.reflection_end).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}`
-    : '';
+  const cycleProgress = calculateCycleProgress();
+  const cycleDateRange = formatCycleDateRange();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -474,10 +510,28 @@ const TwelveWeekCycle: React.FC = () => {
               <h1 className="text-3xl font-bold text-gray-900">
                 {currentCycle.title || '12-Week Cycle'}
               </h1>
-              {currentCycle.start_date && currentCycle.end_date && (
-                <p className="text-gray-600 mt-1">
-                  {new Date(currentCycle.start_date).toLocaleDateString()} - {new Date(currentCycle.end_date).toLocaleDateString()}
-                </p>
+              {cycleDateRange && (
+                <div className="mt-2">
+                  <p className="text-gray-600 mb-3">{cycleDateRange}</p>
+                  
+                  {/* Progress Bar */}
+                  <div className="max-w-md">
+                    <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                      <span>Cycle Progress</span>
+                      <span>{cycleProgress.daysRemaining} days remaining</span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-3">
+                      <div 
+                        className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${cycleProgress.percentage}%` }}
+                      ></div>
+                    </div>
+                    <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                      <span>{Math.round(cycleProgress.percentage)}% complete</span>
+                      <span>{cycleProgress.totalDays} total days</span>
+                    </div>
+                  </div>
+                </div>
               )}
             </div>
             <button
@@ -638,13 +692,15 @@ const TwelveWeekCycle: React.FC = () => {
                       </div>
                       
                       {/* Week 13 (Reflection Week) */}
-                      {reflectionWeekDates && (
+                      {currentCycle.reflection_start && currentCycle.reflection_end && (
                         <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
                           <div className="text-center">
                             <h3 className="text-lg font-semibold text-purple-900 mb-1">
                               Week 13 (Reflection Week)
                             </h3>
-                            <p className="text-purple-700">{reflectionWeekDates}</p>
+                            <p className="text-purple-700">
+                              {new Date(currentCycle.reflection_start).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} - {new Date(currentCycle.reflection_end).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+                            </p>
                           </div>
                         </div>
                       )}
