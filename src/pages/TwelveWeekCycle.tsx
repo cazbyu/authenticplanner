@@ -507,7 +507,7 @@ const TwelveWeekCycle: React.FC = () => {
                   <p className="text-gray-600 mb-3">{cycleDateRange}</p>
                   
                   {/* Progress Bar */}
-                  <div className="max-w-md">
+                  <div className="max-w-2xl mx-auto">
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                       <span>Cycle Progress</span>
                       <span>{cycleProgress.daysRemaining} days remaining</span>
