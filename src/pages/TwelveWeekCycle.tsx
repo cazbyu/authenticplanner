@@ -494,62 +494,62 @@ const TwelveWeekCycle: React.FC = () => {
   const cycleDateRange = formatCycleDateRange();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8 flex flex-col items-center">
-          <div className="flex items-center justify-center">
-              <h1 className="text-3xl font-bold text-gray-900 text-center">
-                {currentCycle.title || '12-Week Cycle'}
-              </h1>
-              {cycleDateRange && (
-                <div className="mt-2 text-center">
-                  <p className="text-gray-600 mb-3">{cycleDateRange}</p>
-                  <div className="w-full max-w-2xl mx-auto">
-                  {/* Progress Bar */}
-                  <div className="max-w-full">
-                    <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                      <span>Cycle Progress</span>
-                      <span>{cycleProgress.daysRemaining} days remaining</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-3">
-                      <div 
-                        className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
-                        style={{ width: `${cycleProgress.percentage}%` }}
-                      ></div>
-                    </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                      <span>{Math.round(cycleProgress.percentage)}% complete</span>
-                      <span>{cycleProgress.totalDays} total days</span>
-                    </div>
-                  </div>
+  <div className="min-h-screen bg-gray-50">
+    <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Header Section */}
+      <div className="mb-8 flex flex-col items-center">
+        <h1 className="text-3xl font-bold text-gray-900 text-center">
+          {currentCycle.title || '12-Week Cycle'}
+        </h1>
+        {cycleDateRange && (
+          <div className="mt-2 text-center">
+            <p className="text-gray-600 mb-3">{cycleDateRange}</p>
+            <div className="w-full max-w-2xl mx-auto">
+              <div className="max-w-full">
+                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                  <span>Cycle Progress</span>
+                  <span>{cycleProgress.daysRemaining} days remaining</span>
                 </div>
-              )}
-                  {/* Move button BELOW everything else */}
+                <div className="w-full bg-gray-200 rounded-full h-3">
+                  <div
+                    className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
+                    style={{ width: `${cycleProgress.percentage}%` }}
+                  ></div>
+                </div>
+                <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
+                  <span>{Math.round(cycleProgress.percentage)}% complete</span>
+                  <span>{cycleProgress.totalDays} total days</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <button
+          onClick={() => setShowGoalForm(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mt-6"
+        >
+          <Plus className="h-5 w-5" />
+          Add 12-Week Goal
+        </button>
+      </div>
+
+      {/* Goals or Empty State */}
+      <div className="space-y-8">
+        {goals.length === 0 ? (
+          <div className="text-center py-12">
+            <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-2">No 12-Week Goals Yet</h3>
+            <p className="text-gray-600 mb-6">
+              Start by creating your first 12-week goal to begin your focused execution cycle.
+            </p>
             <button
               onClick={() => setShowGoalForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mt-6"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
             >
-              <Plus className="h-5 w-5" />
-              Add 12-Week Goal
+              Create Your First Goal
             </button>
           </div>
-
-        <div className="space-y-8">
-          {goals.length === 0 ? (
-            <div className="text-center py-12">
-              <Target className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No 12-Week Goals Yet</h3>
-              <p className="text-gray-600 mb-6">
-                Start by creating your first 12-week goal to begin your focused execution cycle.
-              </p>
-              <button
-                onClick={() => setShowGoalForm(true)}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Create Your First Goal
-              </button>
-            </div>
-          ) : (
+        ) : (
             goals.map(goal => (
               <div key={goal.id} className="bg-white rounded-lg shadow-sm border">
                 <div className="p-6 border-b">
