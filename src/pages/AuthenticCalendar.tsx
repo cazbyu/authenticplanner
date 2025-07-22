@@ -267,6 +267,8 @@ const AuthenticCalendar: React.FC = () => {
   } else {
     // Example: "Jul 27 – Aug 2, 2025"
     return `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`;
+    }
+        }
       case 'dayGridMonth':
         return format(currentDate, 'MMMM yyyy');
       default:
