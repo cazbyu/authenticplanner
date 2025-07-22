@@ -155,8 +155,6 @@ const TwelveWeekCycle: React.FC = () => {
   return `${format(startDate, 'd MMM yyyy')} - ${format(endDate, 'd MMM yyyy')}`;
 };
     
-    return `${startDate.toLocaleDateString('en-GB', formatOptions)} - ${endDate.toLocaleDateString('en-GB', formatOptions)}`;
-  };
   const fetchGoals = async () => {
     if (!user) return;
 
