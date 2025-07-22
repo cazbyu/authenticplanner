@@ -158,8 +158,11 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     // Update calendar view and date
     useEffect(() => {
-      if (fullCalendarRef && 'current' in fullCalendarRef && fullCalendarRef.current) {
-        const calendarApi = fullCalendarRef.current.getApi();
+      if (ref && 'current' in ref && ref.current) {
+  const calendarApi = ref.current.getApi();
+  // ...
+}
+
         calendarApi.changeView(view);
         calendarApi.gotoDate(currentDate);
       }
