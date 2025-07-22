@@ -6,6 +6,7 @@ import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
 import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
 import WeeklyGoalForm from '../components/goals/WeeklyGoalForm';
 import WeeklyGoalEditForm from '../components/goals/WeeklyGoalEditForm';
+import { parseISO, format } from 'date-fns'; // at top
 
 interface TwelveWeekGoal {
   id: string;
@@ -148,19 +149,11 @@ const TwelveWeekCycle: React.FC = () => {
 
   // Format date range for display
   const formatCycleDateRange = () => {
-    if (!currentCycle?.start_date || !currentCycle?.reflection_end) {
-      return '';
-    }
-
-    const startDate = new Date(currentCycle.start_date);
-    const endDate = new Date(currentCycle.reflection_end);
-    
-    // Format as "29 Jun 2025 - 28 Sep 2025"
-    const formatOptions: Intl.DateTimeFormatOptions = { 
-      day: 'numeric',
-      month: 'short', 
-      year: 'numeric' 
-    };
+  if (!currentCycle?.start_date || !currentCycle?.reflection_end) return '';
+  const startDate = parseISO(currentCycle.start_date);
+  const endDate = parseISO(currentCycle.reflection_end);
+  return `${format(startDate, 'd MMM yyyy')} - ${format(endDate, 'd MMM yyyy')}`;
+};
     
     return `${startDate.toLocaleDateString('en-GB', formatOptions)} - ${endDate.toLocaleDateString('en-GB', formatOptions)}`;
   };
