@@ -207,3 +207,17 @@ html, body, #root {
 .fc-timegrid-body {
   overflow: visible !important;
 }
+
+/* Enhanced scrolling for calendar */
+.fc-scroller-liquid-absolute {
+  position: relative !important;
+}
+
+.fc-timegrid-slots {
+  overflow-y: auto !important;
+}
+
+/* Ensure proper scrolling behavior */
+.fc-view-harness-active > .fc-view {
+  overflow-y: auto !important;
+}
