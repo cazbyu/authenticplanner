@@ -32,10 +32,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
   ({ view, currentDate, onDateChange, onTaskUpdated }, ref) => {
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const calendarRef = useRef<FullCalendar | null>(null);
-
-    const fullCalendarRef = (ref as any) || calendarRef;
-
+    
     // Fetch tasks on mount
     useEffect(() => {
       const fetchTasks = async () => {
@@ -281,7 +278,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
         <FullCalendar
   key={view}                      // ← ADD THIS LINE! (anywhere in the tag's props)
-  ref={calendarRef}
+  ref={ref}
   plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
   initialView={view}
           headerToolbar={false} // We handle navigation in parent
