@@ -198,83 +198,84 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     return (
       <div className="h-full">
         <style>
-          {`
-          .fc { height: 100% !important; font-family: inherit; }
-          .fc-view-harness { height: 100% !important; overflow: hidden !important; }
-          .fc-view-harness-active { height: 100% !important; overflow: hidden !important; }
-          .fc-scrollgrid-sync-inner { padding: 8px 0; }
-          .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
-          .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
-          .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
-          .fc-timegrid-axis { padding-right: 0.5rem; }
-          .fc-timegrid-now-indicator-line { 
-            border-color: #EF4444; 
-            border-width: 2px; 
-            left: 0 !important; 
-            right: 0 !important; 
-            margin-left: 0 !important;
-            box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
-          }
-          .fc-timegrid-now-indicator-arrow { 
-            border-color: #EF4444;
-            border-width: 6px 0 6px 8px;
-            margin-top: -6px;
-          }
-          .fc-scroller { 
-            overflow-y: auto !important; 
-            overflow-x: hidden !important;
-            height: 100% !important;
-            max-height: calc(100vh - 200px) !important;
-          }
-          .fc-timegrid-body { 
-            min-height: 100% !important; 
-            overflow: visible !important;
-          }
-          .fc-timegrid-container {
-            height: 100% !important;
-            overflow: visible !important;
-          }
-          .fc-timegrid-slots {
-            height: auto !important;
-          }
-          .fc-scrollgrid-section-body > td {
-            overflow: visible !important;
-          }
-          .fc-scrollgrid-section-body .fc-scroller {
-            overflow-y: auto !important;
-            height: 100% !important;
-          }
-          .fc-col-header-cell { padding: 0; background: #fff; }
-          .fc-col-header-cell.fc-day-today { background: transparent !important; }
-          .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
-          .fc-col-header-cell-cushion { display: flex; flex-direction: column; align-items: center; padding: 8px 0; color: #4B5563; font-weight: 500; }
-          .fc-col-header-cell-cushion .day-name { font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
-          .fc-col-header-cell-cushion .day-number { font-size: 20px; font-weight: 400; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-          .fc-col-header-cell-cushion .day-number.today { background: #3B82F6; color: white; }
-          .fc-dayGridMonth-view .fc-col-header-cell { text-align: center; padding: 8px 0; }
-          .fc-dayGridMonth-view .fc-daygrid-day-top { justify-content: center; padding-top: 4px; }
-          .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px; color: #4B5563; }
-          .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: #3B82F6; color: white; border-radius: 50%; }
-          .fc-header-toolbar { display: none !important; }
-          
-          /* Drag and drop styling */
-          .fc-event-dragging {
-            opacity: 0.75;
-          }
-          
-          .fc-timegrid-col.fc-day-today {
-            background-color: rgba(59, 130, 246, 0.05);
-          }
-          
-          /* External drag styling */
-          .fc-unthemed .fc-event {
-            border-radius: 4px;
-            border: 1px solid;
-            font-size: 0.85em;
-            padding: 2px 4px;
-          }
-          `}
-        </style>
+  {`
+    .fc { height: 100% !important; font-family: inherit; }
+    .fc-view-harness { height: 100% !important; overflow: hidden !important; }
+    .fc-view-harness-active { height: 100% !important; overflow: hidden !important; }
+    .fc-scrollgrid-sync-inner { padding: 8px 0; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
+    .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
+    .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
+    .fc-timegrid-axis { padding-right: 0.5rem; }
+    .fc-timegrid-now-indicator-line { 
+      border-color: #EF4444; 
+      border-width: 2px; 
+      left: 0 !important; 
+      right: 0 !important; 
+      margin-left: 0 !important;
+      box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
+    }
+    .fc-timegrid-now-indicator-arrow { 
+      border-color: #EF4444;
+      border-width: 6px 0 6px 8px;
+      margin-top: -6px;
+    }
+    .fc-scroller { 
+      overflow-y: auto !important; 
+      overflow-x: hidden !important;
+      height: 100% !important;
+      max-height: calc(100vh - 200px) !important;
+    }
+    .fc-timegrid-body { 
+      min-height: 100% !important; 
+      overflow: visible !important;
+    }
+    .fc-timegrid-container {
+      height: 100% !important;
+      overflow: visible !important;
+    }
+    .fc-timegrid-slots {
+      height: auto !important;
+    }
+    .fc-scrollgrid-section-body > td {
+      overflow: visible !important;
+    }
+    .fc-scrollgrid-section-body .fc-scroller {
+      overflow-y: auto !important;
+      height: 100% !important;
+    }
+    .fc-col-header-cell { padding: 0; background: #fff; }
+    .fc-col-header-cell.fc-day-today { background: transparent !important; }
+    .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
+    .fc-col-header-cell-cushion { display: flex; flex-direction: column; align-items: center; padding: 8px 0; color: #4B5563; font-weight: 500; }
+    .fc-col-header-cell-cushion .day-name { font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+    .fc-col-header-cell-cushion .day-number { font-size: 20px; font-weight: 400; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+    .fc-col-header-cell-cushion .day-number.today { background: #3B82F6; color: white; }
+    .fc-dayGridMonth-view .fc-col-header-cell { text-align: center; padding: 8px 0; }
+    .fc-dayGridMonth-view .fc-daygrid-day-top { justify-content: center; padding-top: 4px; }
+    .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px; color: #4B5563; }
+    .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: #3B82F6; color: white; border-radius: 50%; }
+    .fc-header-toolbar { display: none !important; }
+    
+    /* Drag and drop styling */
+    .fc-event-dragging {
+      opacity: 0.75;
+    }
+    
+    .fc-timegrid-col.fc-day-today {
+      background-color: rgba(59, 130, 246, 0.05);
+    }
+    
+    /* External drag styling */
+    .fc-unthemed .fc-event {
+      border-radius: 4px;
+      border: 1px solid;
+      font-size: 0.85em;
+      padding: 2px 4px;
+    }
+  `}
+</style>
+
 
         <FullCalendar
   key={view}                      // ← ADD THIS LINE! (anywhere in the tag's props)
