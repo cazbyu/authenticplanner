@@ -255,7 +255,7 @@ const AuthenticCalendar: React.FC = () => {
   const getDateDisplayText = () => {
     switch (view) {
       case 'timeGridDay':
-        return format(currentDate, 'EEEE, MMMM d, yyyy');
+        return format(currentDate, 'MMM d, yyyy');
       case 'timeGridWeek':
         const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
         const weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
