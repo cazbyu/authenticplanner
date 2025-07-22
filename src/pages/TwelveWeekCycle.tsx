@@ -496,7 +496,7 @@ const TwelveWeekCycle: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="mb-8">
+        <div className="mb-8 flex flex-col items-center">
           <div className="flex items-center justify-center">
             <div>
               <h1 className="text-3xl font-bold text-gray-900 text-center">
@@ -505,7 +505,7 @@ const TwelveWeekCycle: React.FC = () => {
               {cycleDateRange && (
                 <div className="mt-2 text-center">
                   <p className="text-gray-600 mb-3">{cycleDateRange}</p>
-                  
+                  <div className="w-full max-w-2xl mx-auto">
                   {/* Progress Bar */}
                   <div className="max-w-full">
                     <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
@@ -525,10 +525,10 @@ const TwelveWeekCycle: React.FC = () => {
                   </div>
                 </div>
               )}
-            </div>
+                  {/* Move button BELOW everything else */}
             <button
               onClick={() => setShowGoalForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mt-6"
             >
               <Plus className="h-5 w-5" />
               Add 12-Week Goal
