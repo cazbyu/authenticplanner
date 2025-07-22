@@ -128,13 +128,13 @@ const TwelveWeekCycle: React.FC = () => {
 
   // Calculate cycle progress
   const calculateCycleProgress = () => {
-    if (!currentCycle?.start_date || !currentCycle?.reflection_end) {
+    if (!currentCycle?.start_date || !currentCycle?.end_date) {
       return { percentage: 0, daysRemaining: 0, totalDays: 0 };
     }
 
     const now = new Date();
     const startDate = new Date(currentCycle.start_date);
-    const endDate = new Date(currentCycle.reflection_end);
+    const endDate = new Date(currentCycle.end_date);
     
     const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const daysPassed = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
@@ -146,22 +146,21 @@ const TwelveWeekCycle: React.FC = () => {
 
   // Format date range for display
   const formatCycleDateRange = () => {
-    if (!currentCycle?.start_date || !currentCycle?.reflection_end) {
+    if (!currentCycle?.start_date || !currentCycle?.end_date) {
       return '';
     }
 
     const startDate = new Date(currentCycle.start_date);
-    const endDate = new Date(currentCycle.reflection_end);
+    const endDate = new Date(currentCycle.end_date);
     
-    return `${startDate.toLocaleDateString('en-US', { 
+    // Format as "29 Jun 2025 - 28 Sep 2025"
+    const formatOptions: Intl.DateTimeFormatOptions = { 
+      day: 'numeric',
       month: 'short', 
-      day: 'numeric', 
       year: 'numeric' 
-    })} - ${endDate.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    })}`;
+    };
+    
+    return `${startDate.toLocaleDateString('en-GB', formatOptions)} - ${endDate.toLocaleDateString('en-GB', formatOptions)}`;
   };
   const fetchGoals = async () => {
     if (!user) return;
