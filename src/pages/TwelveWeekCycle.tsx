@@ -528,7 +528,7 @@ const TwelveWeekCycle: React.FC = () => {
           onClick={() => setShowGoalForm(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mt-6"
         >
-          <Plus className="h-1 w-1" />
+          <Plus className="h-5 w-5" />
           Add 12-Week Goal
         </button>
       </div>
