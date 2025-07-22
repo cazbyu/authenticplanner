@@ -128,14 +128,16 @@ const TwelveWeekCycle: React.FC = () => {
 
   // Calculate cycle progress
   const calculateCycleProgress = () => {
-    if (!currentCycle?.start_date || !currentCycle?.end_date) {
+    if (!currentCycle?.start_date || !currentCycle?.reflection_end) {
       return { percentage: 0, daysRemaining: 0, totalDays: 0 };
     }
 
+    // Use current date/time (same as calendar components)
     const now = new Date();
-    const startDate = new Date(currentCycle.start_date);
-    const endDate = new Date(currentCycle.end_date);
+    const startDate = new Date(currentCycle.start_date + 'T00:00:00Z'); // Treat as UTC
+    const endDate = new Date(currentCycle.reflection_end + 'T23:59:59Z'); // End of reflection day in UTC
     
+    // Calculate days using UTC dates to avoid timezone issues
     const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const daysPassed = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const daysRemaining = Math.max(0, totalDays - daysPassed);
@@ -146,12 +148,12 @@ const TwelveWeekCycle: React.FC = () => {
 
   // Format date range for display
   const formatCycleDateRange = () => {
-    if (!currentCycle?.start_date || !currentCycle?.end_date) {
+    if (!currentCycle?.start_date || !currentCycle?.reflection_end) {
       return '';
     }
 
     const startDate = new Date(currentCycle.start_date);
-    const endDate = new Date(currentCycle.end_date);
+    const endDate = new Date(currentCycle.reflection_end);
     
     // Format as "29 Jun 2025 - 28 Sep 2025"
     const formatOptions: Intl.DateTimeFormatOptions = { 
