@@ -504,7 +504,7 @@ const TwelveWeekCycle: React.FC = () => {
         {cycleDateRange && (
           <div className="mt-2 text-center">
             <p className="text-gray-600 mb-3">{cycleDateRange}</p>
-            <div className="w-full max-w-4xl mx-auto px-4">
+            <div className="w-full mx-auto px-4">
               <div className="max-w-full">
                 <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                   <span>Cycle Progress</span>
