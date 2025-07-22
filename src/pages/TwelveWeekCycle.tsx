@@ -533,7 +533,6 @@ const TwelveWeekCycle: React.FC = () => {
               Add 12-Week Goal
             </button>
           </div>
-        </div>
 
         <div className="space-y-8">
           {goals.length === 0 ? (
