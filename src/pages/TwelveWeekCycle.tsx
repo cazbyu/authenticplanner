@@ -503,17 +503,10 @@ const TwelveWeekCycle: React.FC = () => {
             <p className="text-gray-600 mb-3">{cycleDateRange}</p>
              </div>
           )}
-        <button
-          onClick={() => setShowGoalForm(true)}
-          className="bg-blue-600 text-white px-3 py-1 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mt-6"
-        >
-          <Plus className="h-5 w-5" />
-          Add 12-Week Goal
-        </button>
       </div>
 
 {/* Wide Progress Bar */}
-<div className="w-full max-w-7xl mx-auto mb-10 px-4">
+<div className="w-full max-w-7xl mx-auto mb-6 px-4">
   <div>
     <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
       <span>Cycle Progress</span>
@@ -532,6 +525,16 @@ const TwelveWeekCycle: React.FC = () => {
   </div>
 </div>
       
+      {/* Add Goal Button - Right aligned below progress bar */}
+      <div className="w-full max-w-7xl mx-auto mb-10 px-4 flex justify-end">
+        <button
+          onClick={() => setShowGoalForm(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Plus className="h-5 w-5" />
+          Add 12-Week Goal
+        </button>
+      </div>
       {/* Goals or Empty State */}
       <div className="space-y-8">
         {goals.length === 0 ? (
@@ -549,6 +552,13 @@ const TwelveWeekCycle: React.FC = () => {
             </button>
           </div>
         ) : (
+          <div>
+            {/* Current Goals Header */}
+            <div className="mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Current Goals:</h2>
+            </div>
+            
+            <div className="space-y-8">
             goals.map(goal => (
               <div key={goal.id} className="bg-white rounded-lg shadow-sm border">
                 <div className="p-6 border-b">
@@ -699,6 +709,8 @@ const TwelveWeekCycle: React.FC = () => {
                 )}
               </div>
             ))
+            </div>
+          </div>
           )}
         </div>
       </main>
