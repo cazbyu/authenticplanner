@@ -6,7 +6,7 @@ import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
 import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
 import WeeklyGoalForm from '../components/goals/WeeklyGoalForm';
 import WeeklyGoalEditForm from '../components/goals/WeeklyGoalEditForm';
-import { parseISO, format } from 'date-fns'; // at top
+import { parseISO, format, addDays } from 'date-fns'; // at top
 
 interface TwelveWeekGoal {
   id: string;
