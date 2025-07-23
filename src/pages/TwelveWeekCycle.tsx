@@ -825,13 +825,24 @@ const TwelveWeekCycle: React.FC = () => {
       )}
 
       {showWeeklyGoalForm && (
-        <WeeklyGoalForm
+        <TaskEventForm
           onClose={() => setShowWeeklyGoalForm(null)}
-          onGoalCreated={handleWeeklyGoalCreated}
-          twelveWeekGoalId={showWeeklyGoalForm.goalId}
-          weekNumber={showWeeklyGoalForm.weekNumber}
-          prefilledDomains={showWeeklyGoalForm.domains}
-          prefilledRoles={showWeeklyGoalForm.roles}
+          onTaskCreated={handleWeeklyGoalCreated}
+          initialData={{
+            schedulingType: 'task',
+            twelveWeekGoalChecked: true,
+            twelveWeekGoalId: showWeeklyGoalForm.goalId,
+            roles: showWeeklyGoalForm.roles,
+            domains: showWeeklyGoalForm.domains,
+            due_date: (() => {
+              if (!currentCycle?.start_date) return '';
+              const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z');
+              const weekStart = new Date(cycleStart);
+              weekStart.setDate(cycleStart.getDate() + (showWeeklyGoalForm.weekNumber - 1) * 7);
+              return weekStart.toISOString().split('T')[0];
+            })(),
+            notes: `Week ${showWeeklyGoalForm.weekNumber} task for 12-week goal`
+          }}
         />
       )}
 
