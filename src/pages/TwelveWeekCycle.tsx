@@ -559,7 +559,7 @@ const TwelveWeekCycle: React.FC = () => {
             </div>
             
             <div className="space-y-8">
-            goals.map(goal => (
+            {goals.map(goal => (
               <div key={goal.id} className="bg-white rounded-lg shadow-sm border">
                 <div className="p-6 border-b">
                   <div className="flex items-start justify-between">
@@ -708,7 +708,7 @@ const TwelveWeekCycle: React.FC = () => {
                   </div>
                 )}
               </div>
-            ))
+            ))}
             </div>
           </div>
           )}
