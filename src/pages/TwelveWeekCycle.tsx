@@ -313,7 +313,7 @@ const TwelveWeekCycle: React.FC = () => {
   const getWeekDates = (weekNumber: number) => {
     if (!currentCycle?.start_date) return { start: '', end: '' };
     
-    const cycleStart = new Date(currentCycle.start_date);
+    const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z'); // Treat as UTC
     const weekStart = new Date(cycleStart);
     weekStart.setDate(cycleStart.getDate() + (weekNumber - 1) * 7);
     
@@ -321,15 +321,15 @@ const TwelveWeekCycle: React.FC = () => {
     weekEnd.setDate(weekStart.getDate() + 6);
     
     return {
-      start: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      end: weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+      start: weekStart.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+      end: weekEnd.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
     };
   };
 
   const getTasksForWeek = (goalId: string, weekNumber: number) => {
     if (!currentCycle?.start_date) return [];
     
-    const cycleStart = new Date(currentCycle.start_date);
+    const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z'); // Treat as UTC
     const weekStart = new Date(cycleStart);
     weekStart.setDate(cycleStart.getDate() + (weekNumber - 1) * 7);
     
