@@ -805,14 +805,29 @@ const TwelveWeekCycle: React.FC = () => {
       )}
 
       {showTaskForm && (
-        <TaskEventForm
-          onClose={() => setShowTaskForm(null)}
-          onTaskCreated={handleTaskCreated}
-          goalId={showTaskForm.goalId}
-          weekNumber={showTaskForm.weekNumber}
-          prefilledDomains={showTaskForm.domains}
-          prefilledRoles={showTaskForm.roles}
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="create"
+              initialData={{
+                schedulingType: 'task',
+                twelveWeekGoalChecked: true,
+                twelveWeekGoalId: showTaskForm.goalId,
+                selectedRoleIds: showTaskForm.roles.map(r => r.id),
+                selectedDomainIds: showTaskForm.domains.map(d => d.id),
+                dueDate: (() => {
+                  if (!currentCycle?.start_date) return format(new Date(), 'yyyy-MM-dd');
+                  const cycleStart = parseISO(currentCycle.start_date);
+                  const weekStart = addDays(cycleStart, (showTaskForm.weekNumber - 1) * 7);
+                  return format(weekStart, 'yyyy-MM-dd');
+                })(),
+                notes: `Week ${showTaskForm.weekNumber} task for: ${showTaskForm.goalTitle}`
+              }}
+              onSubmitSuccess={handleTaskCreated}
+              onClose={() => setShowTaskForm(null)}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
