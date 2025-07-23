@@ -84,6 +84,13 @@ const TwelveWeekCycle: React.FC = () => {
   } | null>(null);
   const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
   const [selectedWeek, setSelectedWeek] = useState<WeekModalData | null>(null);
+  const [showWeeklyGoalForm, setShowWeeklyGoalForm] = useState<{
+    goalId: string;
+    weekNumber: number;
+    domains: Array<{ id: string; name: string; }>;
+    roles: Array<{ id: string; label: string; category?: string; }>;
+  } | null>(null);
+  const [editingWeeklyGoal, setEditingWeeklyGoal] = useState<WeeklyGoal | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -238,10 +245,20 @@ const TwelveWeekCycle: React.FC = () => {
     fetchGoals(); // Refresh goals instead of manual state update
   };
 
-  const handleTaskCreated = () => {
-    setShowTaskForm(null);
+  const handleWeeklyGoalCreated = (newWeeklyGoal: WeeklyGoal) => {
+    setShowWeeklyGoalForm(null);
     setSelectedWeek(null);
     fetchTasks(); // Refresh tasks since new task was created
+  };
+
+  const handleWeeklyGoalUpdated = (updatedWeeklyGoal: WeeklyGoal) => {
+    setEditingWeeklyGoal(null);
+    fetchTasks(); // Refresh tasks in case task was updated
+  };
+
+  const handleWeeklyGoalDeleted = (deletedWeeklyGoalId: string) => {
+    setEditingWeeklyGoal(null);
+    fetchTasks(); // Refresh tasks in case task was deleted
   };
 
   const toggleGoalExpansion = (goalId: string) => {
@@ -688,10 +705,9 @@ const TwelveWeekCycle: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => setShowTaskForm({
+                    onClick={() => setShowWeeklyGoalForm({
                       goalId: selectedWeek.goalId,
                       weekNumber: selectedWeek.weekNumber,
-                      goalTitle: goals.find(g => g.id === selectedWeek.goalId)?.title || '',
                       domains: selectedWeek.domains,
                       roles: selectedWeek.roles
                     })}
@@ -721,10 +737,9 @@ const TwelveWeekCycle: React.FC = () => {
                       <p className="text-lg font-medium mb-2">No tasks for Week {selectedWeek.weekNumber} yet.</p>
                       <p className="text-sm mb-6">Add your first task to get started with this week.</p>
                       <button
-                        onClick={() => setShowTaskForm({
+                        onClick={() => setShowWeeklyGoalForm({
                           goalId: selectedWeek.goalId,
                           weekNumber: selectedWeek.weekNumber,
-                          goalTitle: goals.find(g => g.id === selectedWeek.goalId)?.title || '',
                           domains: selectedWeek.domains,
                           roles: selectedWeek.roles
                         })}
@@ -804,30 +819,24 @@ const TwelveWeekCycle: React.FC = () => {
         />
       )}
 
-      {showTaskForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-2xl mx-4">
-            <TaskEventForm
-              mode="create"
-              initialData={{
-                schedulingType: 'task',
-                twelveWeekGoalChecked: true,
-                twelveWeekGoalId: showTaskForm.goalId,
-                selectedRoleIds: showTaskForm.roles.map(r => r.id),
-                selectedDomainIds: showTaskForm.domains.map(d => d.id),
-                dueDate: (() => {
-                  if (!currentCycle?.start_date) return format(new Date(), 'yyyy-MM-dd');
-                  const cycleStart = parseISO(currentCycle.start_date);
-                  const weekStart = addDays(cycleStart, (showTaskForm.weekNumber - 1) * 7);
-                  return format(weekStart, 'yyyy-MM-dd');
-                })(),
-                notes: `Week ${showTaskForm.weekNumber} task for: ${showTaskForm.goalTitle}`
-              }}
-              onSubmitSuccess={handleTaskCreated}
-              onClose={() => setShowTaskForm(null)}
-            />
-          </div>
-        </div>
+      {showWeeklyGoalForm && (
+        <WeeklyGoalForm
+          onClose={() => setShowWeeklyGoalForm(null)}
+          onGoalCreated={handleWeeklyGoalCreated}
+          twelveWeekGoalId={showWeeklyGoalForm.goalId}
+          weekNumber={showWeeklyGoalForm.weekNumber}
+          prefilledDomains={showWeeklyGoalForm.domains}
+          prefilledRoles={showWeeklyGoalForm.roles}
+        />
+      )}
+
+      {editingWeeklyGoal && (
+        <WeeklyGoalEditForm
+          weeklyGoal={editingWeeklyGoal}
+          onClose={() => setEditingWeeklyGoal(null)}
+          onGoalUpdated={handleWeeklyGoalUpdated}
+          onGoalDeleted={handleWeeklyGoalDeleted}
+        />
       )}
     </div>
   );
