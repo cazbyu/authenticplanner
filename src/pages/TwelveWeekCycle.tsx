@@ -682,17 +682,18 @@ const TwelveWeekCycle: React.FC = () => {
                       
                       {/* Week 13 (Reflection Week) */}
                       {currentCycle.reflection_start && currentCycle.reflection_end && (
-                        <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
-                          <div className="text-center">
-                            <h3 className="text-lg font-semibold text-purple-900 mb-1">
-                              Week 13 (Reflection Week)
-                            </h3>
-                            <p className="text-purple-700">
-                              {new Date(currentCycle.reflection_start).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })} - {new Date(currentCycle.reflection_end).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-                            </p>
-                          </div>
-                        </div>
-                      )}
+  <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
+    <div className="text-center">
+      <h3 className="text-lg font-semibold text-purple-900 mb-1">
+        Week 13 (Reflection Week)
+      </h3>
+      <p className="text-purple-700">
+        {format(parseISO(currentCycle.reflection_start), 'd MMM')} - {format(parseISO(currentCycle.reflection_end), 'd MMM')}
+      </p>
+    </div>
+  </div>
+)}
+
                     </div>
                   </div>
                 )}
