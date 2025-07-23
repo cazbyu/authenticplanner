@@ -504,25 +504,8 @@ const TwelveWeekCycle: React.FC = () => {
         {cycleDateRange && (
           <div className="mt-2 text-center">
             <p className="text-gray-600 mb-3">{cycleDateRange}</p>
-              <div className="max-w-full">
-                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                  <span>Cycle Progress</span>
-                  <span>{cycleProgress.daysRemaining} days remaining</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-3">
-                  <div
-                    className="bg-blue-600 h-3 rounded-full transition-all duration-500 ease-out"
-                    style={{ width: `${cycleProgress.percentage}%` }}
-                  ></div>
-                </div>
-                <div className="flex items-center justify-between text-xs text-gray-500 mt-1">
-                  <span>{Math.round(cycleProgress.percentage)}% complete</span>
-                  <span>{cycleProgress.totalDays} total days</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
+             </div>
+          )}
         <button
           onClick={() => setShowGoalForm(true)}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mt-6"
