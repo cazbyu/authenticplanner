@@ -71,7 +71,6 @@ const TwelveWeekCycle: React.FC = () => {
   const { user } = useAuth();
   const [goals, setGoals] = useState<TwelveWeekGoal[]>([]);
   const [tasks, setTasks] = useState<Task[]>([]);
-  const [weeklyGoals, setWeeklyGoals] = useState<WeeklyGoal[]>([]);
   const [currentCycle, setCurrentCycle] = useState<GlobalCycle | null>(null);
   const [loading, setLoading] = useState(true);
   const [showGoalForm, setShowGoalForm] = useState(false);
@@ -83,15 +82,15 @@ const TwelveWeekCycle: React.FC = () => {
     domains: Array<{ id: string; name: string; }>;
     roles: Array<{ id: string; label: string; category?: string; }>;
   } | null>(null);
+  const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
+  const [selectedWeek, setSelectedWeek] = useState<WeekModalData | null>(null);
   const [showWeeklyGoalForm, setShowWeeklyGoalForm] = useState<{
     goalId: string;
     weekNumber: number;
     domains: Array<{ id: string; name: string; }>;
     roles: Array<{ id: string; label: string; category?: string; }>;
   } | null>(null);
-  const [editingWeeklyGoal, setEditingWeeklyGoal] = useState<WeeklyGoal | null>(null);
-  const [expandedGoals, setExpandedGoals] = useState<Set<string>>(new Set());
-  const [selectedWeek, setSelectedWeek] = useState<WeekModalData | null>(null);
+  const [editingWeeklyGoal, setEditingWeeklyGoal] = useState<any>(null);
 
   useEffect(() => {
     if (user) {
@@ -191,30 +190,6 @@ const TwelveWeekCycle: React.FC = () => {
     }
   };
 
-  const fetchWeeklyGoals = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('0007-ap-goal-weekly-goals')
-        .select(`
-          *,
-          goal:0007-ap-goals-12wk-main!inner(user_id)
-        `)
-        .eq('goal.user_id', user.id)
-        .order('week_number', { ascending: true });
-
-      if (error) {
-        console.error('Error fetching weekly goals:', error);
-        return;
-      }
-
-      setWeeklyGoals(data || []);
-    } catch (error) {
-      console.error('Error fetching weekly goals:', error);
-    }
-  };
-
   const fetchTasks = async () => {
     if (!user) return;
 
@@ -270,20 +245,25 @@ const TwelveWeekCycle: React.FC = () => {
     fetchGoals(); // Refresh goals instead of manual state update
   };
 
-  const handleWeeklyGoalCreated = (newWeeklyGoal: WeeklyGoal) => {
-    setShowWeeklyGoalForm(null);
+  const handleTaskCreated = () => {
+    setShowTaskForm(null);
     setSelectedWeek(null);
     fetchTasks(); // Refresh tasks since new task was created
   };
 
-  const handleWeeklyGoalUpdated = (updatedWeeklyGoal: WeeklyGoal) => {
-    setEditingWeeklyGoal(null);
-    fetchTasks(); // Refresh tasks in case task was updated
+  const handleWeeklyGoalCreated = () => {
+    setShowWeeklyGoalForm(null);
+    fetchGoals();
   };
 
-  const handleWeeklyGoalDeleted = (deletedWeeklyGoalId: string) => {
+  const handleWeeklyGoalUpdated = () => {
     setEditingWeeklyGoal(null);
-    fetchTasks(); // Refresh tasks in case task was deleted
+    fetchGoals();
+  };
+
+  const handleWeeklyGoalDeleted = () => {
+    setEditingWeeklyGoal(null);
+    fetchGoals();
   };
 
   const toggleGoalExpansion = (goalId: string) => {
@@ -500,8 +480,8 @@ const TwelveWeekCycle: React.FC = () => {
         {cycleDateRange && (
           <div className="mt-2 text-center">
             <p className="text-gray-600 mb-3">{cycleDateRange}</p>
-          </div>
-        )}
+             </div>
+          )}
       </div>
 
 {/* Wide Progress Bar */}
@@ -710,9 +690,9 @@ const TwelveWeekCycle: React.FC = () => {
             ))}
             </div>
           </div>
-        )}
-      </div>
-    </main>
+          )}
+        </div>
+      </main>
 
       {/* Week Details Modal */}
       {selectedWeek && (
