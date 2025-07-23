@@ -30,6 +30,8 @@ interface WeeklyGoal {
   description?: string;
   status: string;
   progress: number;
+}
+
 interface Task {
   id: string;
   title: string;
@@ -55,6 +57,14 @@ interface GlobalCycle {
   reflection_start?: string;
   reflection_end?: string;
   is_active?: boolean;
+}
+
+interface WeekModalData {
+  goalId: string;
+  weekNumber: number;
+  weekDates: { start: string; end: string; };
+  domains: Array<{ id: string; name: string; }>;
+  roles: Array<{ id: string; label: string; category?: string; }>;
 }
 
 const TwelveWeekCycle: React.FC = () => {
@@ -448,8 +458,8 @@ const TwelveWeekCycle: React.FC = () => {
         {cycleDateRange && (
           <div className="mt-2 text-center">
             <p className="text-gray-600 mb-3">{cycleDateRange}</p>
-             </div>
-          )}
+          </div>
+        )}
       </div>
 
 {/* Wide Progress Bar */}
@@ -658,9 +668,9 @@ const TwelveWeekCycle: React.FC = () => {
             ))}
             </div>
           </div>
-          )}
-        </div>
-      </main>
+        )}
+      </div>
+    </main>
 
       {/* Week Details Modal */}
       {selectedWeek && (
@@ -795,29 +805,13 @@ const TwelveWeekCycle: React.FC = () => {
       )}
 
       {showTaskForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-2xl mx-4">
-            <TaskEventForm
-              mode="create"
-              initialData={{
-                schedulingType: 'task',
-                twelveWeekGoalChecked: true,
-                twelveWeekGoalId: showTaskForm.goalId,
-                selectedRoleIds: showTaskForm.roles.map(r => r.id),
-                selectedDomainIds: showTaskForm.domains.map(d => d.id),
-                dueDate: (() => {
-                  if (!currentCycle?.start_date) return format(new Date(), 'yyyy-MM-dd');
-                  const cycleStart = parseISO(currentCycle.start_date);
-                  const weekStart = addDays(cycleStart, (showTaskForm.weekNumber - 1) * 7);
-                  return format(weekStart, 'yyyy-MM-dd');
-                })(),
-                notes: `Week ${showTaskForm.weekNumber} task for: ${showTaskForm.goalTitle}`
-              }}
-              onSubmitSuccess={handleTaskCreated}
-              onClose={() => setShowTaskForm(null)}
-            />
-          </div>
-        </div>
+        <TaskEventForm
+          onClose={() => setShowTaskForm(null)}
+          onTaskCreated={handleTaskCreated}
+          goalId={showTaskForm.goalId}
+          weekNumber={showTaskForm.weekNumber}
+          prefilledDomains={showTaskForm.domains}
+          prefilledRoles={showTaskForm.roles}
         />
       )}
     </div>
