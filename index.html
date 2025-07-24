@@ -8,11 +8,15 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    
     <!-- FullCalendar CSS and JS for external dragging -->
+    <!-- Note: This script is loaded synchronously in the head. For larger apps, consider loading it dynamically. -->
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- The 'defer' attribute ensures this script is executed after the document is parsed -->
+    <script type="module" src="/src/main.tsx" defer></script>
   </body>
 </html>
