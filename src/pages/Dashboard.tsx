@@ -1,62 +1,93 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Calendar, 
-  Users, 
-  CheckSquare, 
-  BarChart3, 
-  FileText, 
+import { supabase } from '../supabaseClient';
+import { useAuth } from '../contexts/AuthContext';
+import {
+  Calendar,
+  Users,
+  CheckSquare,
+  BarChart3,
   ArrowRight,
   Clock,
   Target,
   Star,
-  TrendingUp,
-  Plus
+  Plus,
+  TrendingUp
 } from 'lucide-react';
-import { supabase } from '../supabaseClient';
-import { useAuth } from '../contexts/AuthContext';
+
+// --- Type Definitions ---
 
 interface DashboardStats {
-  totalTasks: number;
+  activeTasks: number;
   urgentTasks: number;
   completedThisWeek: number;
-  authenticDeposits: number;
   activeRoles: number;
-  weeklyScore: number;
-  upcomingEvents: number;
-  pendingNotes: number;
 }
 
 interface QuickTask {
   id: string;
   title: string;
-  is_urgent: boolean;
-  is_important: boolean;
-  is_authentic_deposit: boolean;
-  due_date?: string;
+  'is-urgent': boolean;
+  'is-important': boolean;
 }
 
 interface UpcomingEvent {
   id: string;
   title: string;
-  start_time: string;
-  is_all_day: boolean;
+  'start-time': string;
 }
+
+interface TwelveWeekGoal {
+  id: string;
+  title: string;
+  progress: number;
+}
+
+
+// --- Sub-Components ---
+
+/**
+ * A reusable card for displaying a key statistic.
+ */
+const StatCard = ({ title, value, icon: Icon, detail }: { title: string, value: string | number, icon: React.ElementType, detail?: string }) => (
+  <div className="bg-white rounded-lg border border-gray-200 p-5">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-600">{title}</p>
+        <p className="text-2xl font-bold text-gray-900">{value}</p>
+      </div>
+      <Icon className="h-8 w-8 text-gray-400" />
+    </div>
+    {detail && <p className="text-xs text-gray-500 mt-2">{detail}</p>}
+  </div>
+);
+
+/**
+ * A generic wrapper for dashboard widgets.
+ */
+const DashboardCard = ({ title, linkTo, children }: { title: string, linkTo: string, children: React.ReactNode }) => (
+    <div className="bg-white rounded-xl border border-gray-200 p-6 h-full flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <Link to={linkTo} className="text-sm font-medium text-primary-600 hover:underline">View all</Link>
+        </div>
+        <div className="flex-1">
+            {children}
+        </div>
+    </div>
+);
+
+
+// ============================================================================
+// MAIN DASHBOARD COMPONENT
+// ============================================================================
 
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
-  const [stats, setStats] = useState<DashboardStats>({
-    totalTasks: 0,
-    urgentTasks: 0,
-    completedThisWeek: 0,
-    authenticDeposits: 0,
-    activeRoles: 0,
-    weeklyScore: 0,
-    upcomingEvents: 0,
-    pendingNotes: 0
-  });
+  const [stats, setStats] = useState<DashboardStats | null>(null);
   const [quickTasks, setQuickTasks] = useState<QuickTask[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
+  const [activeGoals, setActiveGoals] = useState<TwelveWeekGoal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -65,108 +96,77 @@ const Dashboard: React.FC = () => {
     }
   }, [user]);
 
+  /**
+   * Fetches all necessary data for the dashboard in parallel.
+   */
   const fetchDashboardData = async () => {
+    if (!user) return;
+    setLoading(true);
+
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser();
-      if (!authUser) return;
-
-      // Get current week dates
+      // Define date range for "this week"
       const now = new Date();
-      const startOfWeek = new Date(now);
-      startOfWeek.setDate(now.getDate() - now.getDay());
+      const startOfWeek = new Date(now.setDate(now.getDate() - now.getDay()));
       startOfWeek.setHours(0, 0, 0, 0);
-      
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
 
-      // Fetch all data in parallel
       const [
         tasksRes,
-        completedTasksRes,
         rolesRes,
-        eventsRes,
-        notesRes
+        goalsRes
       ] = await Promise.all([
-        // Active tasks
+        // Fetch all tasks (events and tasks)
         supabase
-          .from('0007-ap-tasks')
-          .select('id, title, is_urgent, is_important, is_authentic_deposit, due_date, status')
-          .eq('user_id', authUser.id)
-          .in('status', ['pending', 'in_progress']),
-        
-        // Completed tasks this week
+          .from('0004-ap-tasks')
+          .select('id, title, is-urgent, is-important, status, start-time, completed-at')
+          .eq('user-id', user.id),
+        // Fetch active roles
         supabase
-          .from('0007-ap-tasks')
-          .select('id, is_authentic_deposit')
-          .eq('user_id', authUser.id)
-          .eq('status', 'completed')
-          .gte('completed_at', startOfWeek.toISOString())
-          .lte('completed_at', endOfWeek.toISOString()),
-        
-        // Active roles
+          .from('0004-ap-roles')
+          .select('id', { count: 'exact' })
+          .eq('user-id', user.id)
+          .eq('is-active', true),
+        // Fetch active 12-week goals
         supabase
-          .from('0007-ap-roles')
-          .select('id')
-          .eq('user_id', authUser.id)
-          .eq('is_active', true),
-        
-        // Upcoming events (next 7 days)
-        supabase
-          .from('0007-ap-tasks')
-          .select('id, title, start_time, is_all_day')
-          .eq('user_id', authUser.id)
-          .not('start_time', 'is', null)
-          .gte('start_time', now.toISOString())
-          .lte('start_time', new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString())
-          .order('start_time', { ascending: true })
-          .limit(5),
-        
-        // Notes (for follow-up count)
-        supabase
-          .from('0007-ap-notes')
-          .select('id')
-          .eq('user_id', authUser.id)
+            .from('0004-ap-goals')
+            .select('id, title, progress')
+            .eq('user-id', user.id)
+            .eq('type', 'twelve_week')
+            .eq('status', 'active')
+            .limit(5)
       ]);
+      
+      const allTasks = tasksRes.data || [];
 
-      const tasks = tasksRes.data || [];
-      const completedTasks = completedTasksRes.data || [];
-      const roles = rolesRes.data || [];
-      const events = eventsRes.data || [];
-      const notes = notesRes.data || [];
+      // --- Process Data ---
+
+      // Filter for active tasks
+      const activeTasks = allTasks.filter(t => t.status === 'pending' || t.status === 'in_progress');
+      
+      // Filter for upcoming events (in the next 7 days)
+      const sevenDaysFromNow = new Date();
+      sevenDaysFromNow.setDate(sevenDaysFromNow.getDate() + 7);
+      const upcoming = allTasks
+        .filter(t => t['start-time'] && new Date(t['start-time']) > new Date() && new Date(t['start-time']) < sevenDaysFromNow)
+        .sort((a, b) => new Date(a['start-time']!).getTime() - new Date(b['start-time']!).getTime())
+        .slice(0, 3);
+      setUpcomingEvents(upcoming);
+
+      // Get top 5 priority tasks
+      const priorityTasks = [...activeTasks]
+        .sort((a, b) => (b['is-urgent'] ? 2 : 0) + (b['is-important'] ? 1 : 0) - ((a['is-urgent'] ? 2 : 0) + (a['is-important'] ? 1 : 0)))
+        .slice(0, 5);
+      setQuickTasks(priorityTasks);
+
+      // Set active goals
+      setActiveGoals(goalsRes.data || []);
 
       // Calculate stats
-      const urgentTasks = tasks.filter(t => t.is_urgent).length;
-      const authenticDeposits = tasks.filter(t => t.is_authentic_deposit).length;
-      const completedDeposits = completedTasks.filter(t => t.is_authentic_deposit).length;
-      
-      // Simple scoring: 5 points per authentic deposit, 3 points per important task, 1 point per other task
-      const weeklyScore = (completedDeposits * 5) + 
-                         (completedTasks.filter(t => !t.is_authentic_deposit).length * 2);
-
       setStats({
-        totalTasks: tasks.length,
-        urgentTasks,
-        completedThisWeek: completedTasks.length,
-        authenticDeposits,
-        activeRoles: roles.length,
-        weeklyScore,
-        upcomingEvents: events.length,
-        pendingNotes: notes.length
+        activeTasks: activeTasks.length,
+        urgentTasks: activeTasks.filter(t => t['is-urgent']).length,
+        completedThisWeek: allTasks.filter(t => t.status === 'completed' && t['completed-at'] && new Date(t['completed-at']) >= startOfWeek).length,
+        activeRoles: rolesRes.count || 0,
       });
-
-      // Set quick tasks (top 5 priority tasks)
-      const priorityTasks = tasks
-        .sort((a, b) => {
-          // Sort by priority: urgent+important > urgent > important > others
-          const aPriority = (a.is_urgent ? 2 : 0) + (a.is_important ? 1 : 0);
-          const bPriority = (b.is_urgent ? 2 : 0) + (b.is_important ? 1 : 0);
-          return bPriority - aPriority;
-        })
-        .slice(0, 5);
-      
-      setQuickTasks(priorityTasks);
-      setUpcomingEvents(events);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -175,347 +175,96 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const formatEventTime = (startTime: string, isAllDay: boolean) => {
-    if (isAllDay) return 'All day';
-    const date = new Date(startTime);
-    return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
-
-  const formatTaskDate = (dueDate?: string) => {
-    if (!dueDate) return null;
-    const date = new Date(dueDate);
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    
-    if (date.toDateString() === today.toDateString()) return 'Today';
-    if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  };
-
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your dashboard...</p>
-        </div>
+      <div className="p-8 text-center">
+        <p>Loading your dashboard...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-y-auto">
-      <div className="max-w-7xl mx-auto px-4 py-6 sm:px-6 md:px-8">
+    <div className="min-h-screen bg-gray-50 p-4 sm:p-6 lg:p-8">
+      <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Welcome back, {user?.name || 'User'}
-          </h1>
-          <p className="text-lg text-gray-600">
-            Here's your authentic journey overview for today
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-lg text-gray-600 mt-1">
+            Here's your authentic journey overview for today.
           </p>
         </div>
 
         {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Tasks</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.totalTasks}</p>
-              </div>
-              <CheckSquare className="h-8 w-8 text-blue-600" />
-            </div>
-            {stats.urgentTasks > 0 && (
-              <p className="text-sm text-red-600 mt-2">{stats.urgentTasks} urgent</p>
-            )}
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Weekly Score</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.weeklyScore}</p>
-              </div>
-              <TrendingUp className="h-8 w-8 text-green-600" />
-            </div>
-            <p className="text-sm text-gray-500 mt-2">{stats.completedThisWeek} tasks completed</p>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Roles</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.activeRoles}</p>
-              </div>
-              <Users className="h-8 w-8 text-purple-600" />
-            </div>
-            <p className="text-sm text-gray-500 mt-2">Authentic deposits: {stats.authenticDeposits}</p>
-          </div>
-
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Upcoming Events</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.upcomingEvents}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-orange-600" />
-            </div>
-            <p className="text-sm text-gray-500 mt-2">Next 7 days</p>
-          </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <StatCard title="Active Tasks" value={stats?.activeTasks || 0} icon={CheckSquare} detail={`${stats?.urgentTasks || 0} urgent`} />
+          <StatCard title="Completed This Week" value={stats?.completedThisWeek || 0} icon={TrendingUp} />
+          <StatCard title="Active Roles" value={stats?.activeRoles || 0} icon={Users} />
+          <StatCard title="Upcoming Events" value={upcomingEvents.length} icon={Calendar} detail="In next 7 days" />
         </div>
 
-        {/* Main Dashboard Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
-          {/* Authentic Calendar Card */}
-          <Link
-            to="/calendar"
-            className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center group-hover:bg-blue-200 transition-colors">
-                  <Calendar className="h-6 w-6 text-blue-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Authentic Calendar</h3>
-                  <p className="text-sm text-gray-600">Schedule & manage your time</p>
-                </div>
-              </div>
-              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-primary-600 transition-colors" />
-            </div>
-            
-            {upcomingEvents.length > 0 ? (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700 mb-2">Upcoming Events:</p>
-                {upcomingEvents.slice(0, 3).map(event => (
-                  <div key={event.id} className="flex items-center justify-between text-sm">
-                    <span className="text-gray-900 truncate">{event.title}</span>
-                    <span className="text-gray-500 text-xs">
-                      {formatEventTime(event.start_time, event.is_all_day)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No upcoming events scheduled</p>
-            )}
-          </Link>
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-          {/* Role Bank Card */}
-          <Link
-            to="/role-bank"
-            className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center group-hover:bg-purple-200 transition-colors">
-                  <Users className="h-6 w-6 text-purple-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Role Bank</h3>
-                  <p className="text-sm text-gray-600">Manage roles & relationships</p>
-                </div>
-              </div>
-              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-primary-600 transition-colors" />
-            </div>
-            
-            <div className="flex items-center justify-between">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-gray-900">{stats.activeRoles}</p>
-                <p className="text-xs text-gray-500">Active Roles</p>
-              </div>
-              <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">{stats.authenticDeposits}</p>
-                <p className="text-xs text-gray-500">Deposit Ideas</p>
-              </div>
-            </div>
-          </Link>
-
-          {/* Tasks by Priority Card */}
-          <Link
-            to="/calendar?view=priorities"
-            className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
-                  <CheckSquare className="h-6 w-6 text-red-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Tasks by Priority</h3>
-                  <p className="text-sm text-gray-600">Focus on what matters most</p>
-                </div>
-              </div>
-              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-primary-600 transition-colors" />
-            </div>
-            
-            {quickTasks.length > 0 ? (
-              <div className="space-y-2">
-                {quickTasks.map(task => (
-                  <div key={task.id} className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2 flex-1 min-w-0">
-                      <div className="flex space-x-1">
-                        {task.is_urgent && (
-                          <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                        )}
-                        {task.is_important && (
-                          <span className="w-2 h-2 bg-blue-500 rounded-full"></span>
-                        )}
-                        {task.is_authentic_deposit && (
-                          <Star className="h-3 w-3 text-yellow-500" />
-                        )}
-                      </div>
-                      <span className="text-sm text-gray-900 truncate">{task.title}</span>
-                    </div>
-                    {task.due_date && (
-                      <span className="text-xs text-gray-500 ml-2">
-                        {formatTaskDate(task.due_date)}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-500">No pending tasks</p>
-            )}
-          </Link>
-
-          {/* Scorecard Card */}
-          <Link
-            to="/scorecard/full"
-            className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center group-hover:bg-green-200 transition-colors">
-                  <BarChart3 className="h-6 w-6 text-green-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Scorecard</h3>
-                  <p className="text-sm text-gray-600">Track your progress</p>
-                </div>
-              </div>
-              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-primary-600 transition-colors" />
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">This Week's Score</span>
-                <span className="text-lg font-bold text-green-600">{stats.weeklyScore}</span>
-              </div>
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${Math.min((stats.weeklyScore / 50) * 100, 100)}%` }}
-                />
-              </div>
-              <p className="text-xs text-gray-500">
-                {stats.completedThisWeek} tasks completed this week
-              </p>
-            </div>
-          </Link>
-
-          {/* Notes & Follow Up Card */}
-          <Link
-            to="/notes"
-            className="group bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg hover:border-primary-300 transition-all duration-200"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                  <FileText className="h-6 w-6 text-yellow-600" />
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-900">Notes & Follow Up</h3>
-                  <p className="text-sm text-gray-600">Capture insights & actions</p>
-                </div>
-              </div>
-              <ArrowRight className="h-5 w-5 text-gray-400 group-hover:text-primary-600 transition-colors" />
-            </div>
-            
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Total Notes</span>
-                <span className="text-lg font-bold text-gray-900">{stats.pendingNotes}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Follow-ups Needed</span>
-                <span className="text-lg font-bold text-orange-600">
-                  {Math.floor(stats.pendingNotes * 0.3)}
-                </span>
-              </div>
-              <p className="text-xs text-gray-500">
-                Capture thoughts and track follow-up actions
-              </p>
-            </div>
-          </Link>
-
-          {/* Quick Actions Card */}
-          <div className="bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border border-primary-200 p-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-            <div className="space-y-3">
-              <Link
-                to="/calendar?action=add-task"
-                className="flex items-center justify-between w-full p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Plus className="h-4 w-4 text-primary-600" />
-                  <span className="text-sm font-medium text-gray-900">Add Task</span>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400" />
-              </Link>
-              
-              <Link
-                to="/calendar?action=add-event"
-                className="flex items-center justify-between w-full p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Calendar className="h-4 w-4 text-primary-600" />
-                  <span className="text-sm font-medium text-gray-900">Schedule Event</span>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400" />
-              </Link>
-              
-              <Link
-                to="/role-bank"
-                className="flex items-center justify-between w-full p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <div className="flex items-center space-x-3">
-                  <Star className="h-4 w-4 text-primary-600" />
-                  <span className="text-sm font-medium text-gray-900">Add Deposit Idea</span>
-                </div>
-                <ArrowRight className="h-4 w-4 text-gray-400" />
-              </Link>
-            </div>
+          {/* Left Column */}
+          <div className="lg:col-span-2 space-y-6">
+            <DashboardCard title="Priority Tasks" linkTo="/calendar">
+                {quickTasks.length > 0 ? (
+                    <ul className="space-y-3">
+                        {quickTasks.map(task => (
+                            <li key={task.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <div className="flex items-center space-x-3">
+                                    {task['is-urgent'] && <div className="w-2 h-2 rounded-full bg-red-500" title="Urgent"></div>}
+                                    {task['is-important'] && <div className="w-2 h-2 rounded-full bg-blue-500" title="Important"></div>}
+                                    <p className="text-sm font-medium text-gray-800">{task.title}</p>
+                                </div>
+                                <ArrowRight className="h-4 w-4 text-gray-400" />
+                            </li>
+                        ))}
+                    </ul>
+                ) : <p className="text-sm text-gray-500">No active tasks. Great job!</p>}
+            </DashboardCard>
+            <DashboardCard title="Upcoming Events" linkTo="/calendar">
+                {upcomingEvents.length > 0 ? (
+                     <ul className="space-y-3">
+                        {upcomingEvents.map(event => (
+                            <li key={event.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm font-medium text-gray-800">{event.title}</p>
+                                <p className="text-xs text-gray-500">{new Date(event['start-time']).toLocaleString([], {month: 'short', day: 'numeric', hour: 'numeric', minute:'2-digit'})}</p>
+                            </li>
+                        ))}
+                    </ul>
+                ) : <p className="text-sm text-gray-500">No events scheduled in the next 7 days.</p>}
+            </DashboardCard>
           </div>
-        </div>
 
-        {/* Recent Activity */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="text-gray-600">Completed 3 authentic deposits this week</span>
-              <span className="text-gray-400">2 hours ago</span>
-            </div>
-            <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="text-gray-600">Updated role relationships in Family category</span>
-              <span className="text-gray-400">1 day ago</span>
-            </div>
-            <div className="flex items-center space-x-3 text-sm">
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className="text-gray-600">Created new 12-week goal for Physical wellness</span>
-              <span className="text-gray-400">3 days ago</span>
+          {/* Right Column */}
+          <div className="space-y-6">
+            <DashboardCard title="12-Week Goals" linkTo="/twelve-week-cycle">
+                {activeGoals.length > 0 ? (
+                    <ul className="space-y-3">
+                        {activeGoals.map(goal => (
+                             <li key={goal.id} className="p-3 bg-gray-50 rounded-lg">
+                                <p className="text-sm font-medium text-gray-800 mb-2">{goal.title}</p>
+                                <div className="w-full bg-gray-200 rounded-full h-1.5">
+                                    <div className="bg-primary-600 h-1.5 rounded-full" style={{width: `${goal.progress || 0}%`}}></div>
+                                </div>
+                            </li>
+                        ))}
+                    </ul>
+                ) : <p className="text-sm text-gray-500">No active 12-week goals.</p>}
+            </DashboardCard>
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+                <div className="space-y-3">
+                    <Link to="/calendar" className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                        <span className="text-sm font-medium text-gray-800">Add New Task</span>
+                        <Plus className="h-4 w-4 text-gray-500" />
+                    </Link>
+                    <Link to="/role-bank" className="flex items-center justify-between w-full p-3 bg-gray-50 rounded-lg hover:bg-gray-100">
+                        <span className="text-sm font-medium text-gray-800">Add Deposit Idea</span>
+                        <Star className="h-4 w-4 text-gray-500" />
+                    </Link>
+                </div>
             </div>
           </div>
         </div>
