@@ -15,7 +15,7 @@ const OnboardingWelcome: React.FC = () => {
   const { goToNextStep } = useOutletContext<OnboardingContextType>();
   
   return (
-    <div className="text-center">
+    <div className="text-center space-y-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -74,7 +74,7 @@ const OnboardingWelcome: React.FC = () => {
         <div className="mt-8">
           <button
             onClick={goToNextStep}
-            className="w-full rounded-md bg-primary-500 py-3 px-4 text-center text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            className="w-full rounded-md bg-primary-500 py-3 px-4 text-center text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 mb-4"
           >
             Begin Your Authentic Journey
           </button>

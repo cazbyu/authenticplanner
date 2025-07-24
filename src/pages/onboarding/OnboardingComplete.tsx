@@ -15,7 +15,7 @@ const OnboardingComplete: React.FC = () => {
   };
   
   return (
-    <div className="text-center">
+    <div className="text-center space-y-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -47,7 +47,7 @@ const OnboardingComplete: React.FC = () => {
           
           <button
             onClick={handleComplete}
-            className="w-full rounded-md bg-primary-500 py-3 px-4 text-center text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2"
+            className="w-full rounded-md bg-primary-500 py-3 px-4 text-center text-sm font-medium text-white hover:bg-primary-600 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 mb-4"
           >
             Start Your Journey
           </button>

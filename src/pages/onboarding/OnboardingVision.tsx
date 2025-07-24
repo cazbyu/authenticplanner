@@ -55,6 +55,7 @@ const OnboardingVision: React.FC = () => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
+      className="space-y-6"
     >
       <h2 className="text-xl font-bold text-gray-900">Your Five-Year Vision</h2>
       <p className="mt-2 text-sm text-gray-600">
@@ -77,7 +78,7 @@ const OnboardingVision: React.FC = () => {
         </div>
         
         {/* Single Navigation Row - Centered Continue button between Back and Skip */}
-        <div className="mt-6 flex items-center justify-center">
+        <div className="mt-6 flex items-center justify-center pb-4">
           <div className="flex items-center space-x-8">
             <button
               type="button"

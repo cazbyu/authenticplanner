@@ -68,7 +68,7 @@ const OnboardingLayout: React.FC = () => {
   const progressPercentage = ((currentStepIndex) / (ONBOARDING_STEPS.length - 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-y-auto">
+    <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
@@ -83,7 +83,7 @@ const OnboardingLayout: React.FC = () => {
         </div>
       </header>
       
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8 min-h-[calc(100vh-120px)]">
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -105,7 +105,7 @@ const OnboardingLayout: React.FC = () => {
         </div>
         
         {/* Content area for the current step */}
-        <div className="rounded-lg bg-white p-6 shadow sm:p-8">
+        <div className="rounded-lg bg-white p-6 shadow sm:p-8 mb-8">
           {/* Child routes (e.g., OnboardingWelcome) are rendered here */}
           <Outlet context={{ goToNextStep, goToPreviousStep }} />
         </div>
