@@ -13,8 +13,6 @@ import type { FullCalendar } from '@fullcalendar/core';
 import logo from '../assets/logo.svg';
 import { supabase } from '../supabaseClient';
 
-
-
 // Import drawer content components
 import RoleBank from '../components/roles/RoleBank';
 import StrategicGoals from '../pages/StrategicGoals';
