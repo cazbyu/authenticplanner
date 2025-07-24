@@ -45,7 +45,7 @@ const OnboardingLayout: React.FC = () => {
   const isLastStep = currentStepIndex === onboardingSteps.length - 1;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 overflow-y-auto">
       <header className="bg-white shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
@@ -60,7 +60,7 @@ const OnboardingLayout: React.FC = () => {
         </div>
       </header>
       
-      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8 min-h-0">
         {/* Progress indicator */}
         <div className="mb-8">
           <div className="flex items-center justify-between">
@@ -82,7 +82,7 @@ const OnboardingLayout: React.FC = () => {
         </div>
         
         {/* Content area */}
-        <div className="rounded-lg bg-white p-6 shadow sm:p-8">
+        <div className="rounded-lg bg-white p-6 shadow sm:p-8 overflow-y-auto">
           <Outlet context={{ goToNextStep, goToPreviousStep }} />
         </div>
         
