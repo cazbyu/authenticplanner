@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import logo from '../assets/logo.svg';
@@ -37,6 +37,7 @@ const ONBOARDING_STEPS = [
  */
 const OnboardingLayout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
 
@@ -49,18 +50,17 @@ const OnboardingLayout: React.FC = () => {
     }
   }, [location.pathname]);
 
-  // Note: The navigation functions are passed down via context, but the individual
-  // pages are responsible for rendering their own navigation buttons (Back, Continue, Skip).
-  // This provides greater flexibility for each step.
   const goToNextStep = () => {
     if (currentStepIndex < ONBOARDING_STEPS.length - 1) {
-      // This navigation is now handled within each onboarding page component.
+      const nextStep = ONBOARDING_STEPS[currentStepIndex + 1];
+      navigate(nextStep.path);
     }
   };
   
   const goToPreviousStep = () => {
     if (currentStepIndex > 0) {
-        // This navigation is now handled within each onboarding page component.
+      const previousStep = ONBOARDING_STEPS[currentStepIndex - 1];
+      navigate(previousStep.path);
     }
   };
 
