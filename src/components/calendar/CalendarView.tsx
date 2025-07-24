@@ -1,313 +1,137 @@
-import React, { forwardRef, useRef, useEffect, useState } from 'react';
-import FullCalendar, { DateSetArg, DateHeaderContentArg } from '@fullcalendar/react';
+import React, { forwardRef, useEffect, useState, useMemo } from 'react';
+import FullCalendar, { DateSetArg, EventDropArg, EventInput } from '@fullcalendar/react';
 import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
-import interactionPlugin from '@fullcalendar/interaction';
+import interactionPlugin, { DropArg } from '@fullcalendar/interaction';
 import { supabase } from '../../supabaseClient';
-import { format } from 'date-fns';
 import { toast } from 'sonner';
 
-interface CalendarViewProps {
-  view: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth';
-  currentDate: Date;
-  onDateChange: (date: Date) => void;
-  refreshTrigger: number;
-  onTaskUpdated?: () => void;
-}
-
+// --- Type Definitions (aligned with 0004-ap- schema) ---
 interface Task {
   id: string;
   title: string;
-  start_time: string | null;
-  end_time: string | null;
-  due_date: string | null;
-  is_urgent: boolean;
-  is_important: boolean;
-  is_authentic_deposit: boolean;
-  status: string;
-  notes: string | null;
+  'start-time': string | null;
+  'end-time': string | null;
+  'due-date': string | null;
+  'is-urgent': boolean;
+  'is-important': boolean;
+  'is-authentic-deposit': boolean;
 }
 
+interface CalendarViewProps {
+  tasks: Task[]; // Receive tasks from the parent component
+  view: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth';
+  currentDate: Date;
+  onDateChange: (date: Date) => void;
+  onTaskUpdated: () => void; // To trigger a refresh in the parent
+}
+
+/**
+ * CalendarView is a "dumb" component responsible for rendering the FullCalendar grid.
+ * It receives all task data and configuration as props from its parent (AuthenticCalendar.tsx).
+ * It handles user interactions like dragging and dropping events and communicates these
+ * changes back to the database and the parent component.
+ */
 const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
-  ({ view, currentDate, onDateChange, onTaskUpdated }, ref) => {
-    const [events, setEvents] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    
-    // Fetch tasks on mount
-    useEffect(() => {
-      const fetchTasks = async () => {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setLoading(false);
-          return;
-        }
-        const { data: tasks } = await supabase
-          .from('0007-ap-tasks')
-          .select('*')
-          .eq('user_id', user.id);
+  ({ tasks, view, currentDate, onDateChange, onTaskUpdated }, ref) => {
 
-        if (tasks) {
-          const calendarEvents = tasks.map(task => ({
-            id: task.id,
-            title: task.title,
-            start: task.start_time || task.due_date,
-            end: task.end_time,
-            allDay: !task.start_time,
-            backgroundColor: task.is_urgent ? '#ef4444' : task.is_important ? '#f59e0b' : '#3b82f6',
-            borderColor: task.is_urgent ? '#dc2626' : task.is_important ? '#d97706' : '#2563eb',
-          }));
-          setEvents(calendarEvents);
-        }
-        setLoading(false);
-      };
-      fetchTasks();
-    }, []);
+    // useMemo will only re-calculate the events array when the tasks prop changes.
+    const events = useMemo(() => {
+      return tasks
+        .filter(task => task['start-time'] || task['due-date']) // Only map scheduled tasks
+        .map((task): EventInput => ({
+          id: task.id,
+          title: task.title,
+          start: task['start-time'] || task['due-date'],
+          end: task['end-time'],
+          allDay: !task['start-time'],
+          backgroundColor: task['is-urgent'] ? '#ef4444' : task['is-important'] ? '#f59e0b' : '#3b82f6',
+          borderColor: task['is-urgent'] ? '#dc2626' : task['is-important'] ? '#d97706' : '#2563eb',
+        }));
+    }, [tasks]);
 
-    // Handle external task drops
-    const handleDrop = async (info: any) => {
+    /**
+     * Handles dropping an external task (from UnscheduledPriorities) onto the calendar.
+     */
+    const handleDrop = async (info: DropArg) => {
       const taskId = info.draggedEl.getAttribute('data-task-id');
       if (!taskId) return;
 
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        // Convert drop date/time to UTC for storage
-        const startTimeUTC = info.date.toISOString();
-        
-        // Calculate end time (1 hour later by default)
-        const endTime = new Date(info.date);
-        endTime.setHours(endTime.getHours() + 1);
-        const endTimeFormatted = endTime.toTimeString().slice(0, 8); // HH:MM:SS format
-
         const { error } = await supabase
-          .from('0007-ap-tasks')
+          .from('0004-ap-tasks')
           .update({
-            start_time: startTimeUTC,
-            end_time: endTimeFormatted,
-            due_date: info.date.toISOString().split('T')[0],
-            updated_at: new Date().toISOString()
+            'start-time': info.date.toISOString(),
+            'due-date': info.date.toISOString().split('T')[0],
+            // Note: end-time is not set on drop, user can resize.
           })
-          .eq('id', taskId)
-          .eq('user_id', user.id);
+          .eq('id', taskId);
 
-        if (error) {
-          console.error('Error updating task:', error);
-          toast.error('Failed to schedule task');
-          return;
-        }
+        if (error) throw error;
 
-        // Add event to calendar immediately
-        const newEvent = {
-          id: taskId,
-          title: info.draggedEl.textContent?.split('\n')[0] || 'Task',
-          start: info.date,
-          end: endTime,
-          allDay: false,
-          backgroundColor: '#3b82f6',
-          borderColor: '#2563eb',
-        };
-
-        setEvents(prev => [...prev, newEvent]);
         toast.success('Task scheduled successfully');
-        
-        // Notify parent to refresh unscheduled tasks
-        if (onTaskUpdated) {
-          onTaskUpdated();
-        }
-      } catch (err) {
-        console.error('Error scheduling task:', err);
-        toast.error('Failed to schedule task');
+        onTaskUpdated(); // Trigger a full data refresh in the parent
+      } catch (err: any) {
+        toast.error(`Failed to schedule task: ${err.message}`);
       }
     };
 
-    // Handle event resize/move
-    const handleEventChange = async (info: any) => {
+    /**
+     * Handles moving or resizing an existing event on the calendar.
+     */
+    const handleEventChange = async (arg: EventDropArg) => {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user) return;
-
-        const startTimeUTC = info.event.start.toISOString();
-        const endTimeFormatted = info.event.end ? 
-          info.event.end.toTimeString().slice(0, 8) : null;
-
         const { error } = await supabase
-          .from('0007-ap-tasks')
+          .from('0004-ap-tasks')
           .update({
-            start_time: startTimeUTC,
-            end_time: endTimeFormatted,
-            due_date: info.event.start.toISOString().split('T')[0],
-            updated_at: new Date().toISOString()
+            'start-time': arg.event.start?.toISOString(),
+            'end-time': arg.event.end?.toISOString(),
+            'due-date': arg.event.start?.toISOString().split('T')[0],
           })
-          .eq('id', info.event.id)
-          .eq('user_id', user.id);
+          .eq('id', arg.event.id);
 
-        if (error) {
-          console.error('Error updating task time:', error);
-          info.revert();
-          toast.error('Failed to update task time');
-        } else {
-          toast.success('Task time updated');
-        }
-      } catch (err) {
-        console.error('Error updating task time:', err);
-        info.revert();
-        toast.error('Failed to update task time');
+        if (error) throw error;
+        
+        toast.success('Task time updated');
+        onTaskUpdated();
+      } catch (err: any) {
+        toast.error(`Failed to update task: ${err.message}`);
+        arg.revert(); // Revert the change on the calendar if the DB update fails
       }
     };
 
-    // Update calendar view and date
+    // Synchronize the calendar's internal view and date with props from the parent.
     useEffect(() => {
-      if (ref && 'current' in ref && ref.current) {
-  const calendarApi = ref.current.getApi();
-        calendarApi.changeView(view);
+      const calendarApi = ref && 'current' in ref && ref.current ? ref.current.getApi() : null;
+      if (calendarApi) {
+        if (calendarApi.view.type !== view) {
+            calendarApi.changeView(view);
+        }
         calendarApi.gotoDate(currentDate);
       }
-    }, [view, currentDate]);
-
-    // Example event handler (implement as needed)
-    const handleEventClick = (info: any) => {
-      // Implement your logic here, e.g. open edit modal
-      // info.event contains event data
-    };
-
-    // Example: handle FullCalendar datesSet callback
-    const handleDatesSet = (arg: DateSetArg) => {
-      // Optionally update parent component, fetch data, etc.
-      // Update parent with the view's current date
-      onDateChange(arg.view.currentStart);
-    };
-
-    // Custom day header for week view
-    const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
-      html: `
-        <div class="day-name">${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][arg.date.getDay()]}</div>
-        <div class="day-number ${isToday(arg.date) ? 'today' : ''}">${arg.date.getDate()}</div>
-      `,
-    });
-
-    const isToday = (date: Date) => {
-      const today = new Date();
-      return (
-        date.getDate() === today.getDate() &&
-        date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear()
-      );
-    };
+    }, [view, currentDate, ref]);
 
     return (
-      <div className="h-full">
-        <style>
-  {`
-    .fc { font-family: inherit; } /* Remove height: 100% */
-    .fc-scrollgrid-sync-inner { padding: 8px 0; }
-    .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
-    .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
-    .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
-    .fc-timegrid-axis { padding-right: 0.5rem; }
-    .fc-timegrid-now-indicator-line { 
-      border-color: #EF4444; 
-      border-width: 2px; 
-      left: 0 !important; 
-      right: 0 !important; 
-      margin-left: 0 !important;
-      box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
-    }
-    .fc-timegrid-now-indicator-arrow { 
-      border-color: #EF4444;
-      border-width: 6px 0 6px 8px;
-      margin-top: -6px;
-    }
-    .fc-scroller { 
-      overflow-y: auto !important;
-      overflow-x: hidden !important;
-      height: 100% !important;
-      max-height: calc(100vh - 200px) !important;
-    }
-    .fc-timegrid-body {
-      overflow-y: auto !important;
-      max-height: calc(100vh - 200px) !important;
-    }
-    .fc-col-header-cell { padding: 0; background: #fff; }
-    .fc-col-header-cell.fc-day-today { background: transparent !important; }
-    .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
-    .fc-col-header-cell-cushion { display: flex; flex-direction: column; align-items: center; padding: 8px 0; color: #4B5563; font-weight: 500; }
-    .fc-col-header-cell-cushion .day-name { font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
-    .fc-col-header-cell-cushion .day-number { font-size: 20px; font-weight: 400; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-    .fc-col-header-cell-cushion .day-number.today { background: #3B82F6; color: white; }
-    .fc-dayGridMonth-view .fc-col-header-cell { text-align: center; padding: 8px 0; }
-    .fc-dayGridMonth-view .fc-daygrid-day-top { justify-content: center; padding-top: 4px; }
-    .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px; color: #4B5563; }
-    .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: #3B82F6; color: white; border-radius: 50%; }
-    .fc-header-toolbar { display: none !important; }
-    /* Drag and drop styling */
-    .fc-event-dragging { opacity: 0.75; }
-    .fc-timegrid-col.fc-day-today { background-color: rgba(59, 130, 246, 0.05); }
-    /* External drag styling */
-    .fc-unthemed .fc-event { border-radius: 4px; border: 1px solid; font-size: 0.85em; padding: 2px 4px; }
-  `}
-</style>
-
+      <div className="h-full p-4">
         <FullCalendar
-  key={view}                      // ← ADD THIS LINE! (anywhere in the tag's props)
-  ref={ref}
-  plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-  initialView={view}
-          headerToolbar={false} // We handle navigation in parent
+          ref={ref}
+          key={view} // Force re-render when view changes
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView={view}
+          headerToolbar={false}
           height="100%"
           events={events}
           editable={true}
           droppable={true}
-          selectable={true}
-          selectMirror={true}
-          dayMaxEvents={true}
-          weekends={true}
-          eventClick={handleEventClick}
+          eventClick={(info) => {
+            // Placeholder for opening an edit modal
+            console.log('Event clicked:', info.event);
+          }}
           drop={handleDrop}
           eventDrop={handleEventChange}
           eventResize={handleEventChange}
-          dayMinTime="00:00:00"
-          dayMaxTime="24:00:00"
-          allDaySlot={true}
-          scrollTime="06:00:00"
-          nowIndicator={true}
-          slotDuration="00:15:00"
-          slotLabelInterval="01:00"
-          expandRows={true}
-          stickyHeaderDates={true}
-          slotLabelFormat={{
-            hour: 'numeric',
-            minute: '2-digit',
-            omitZeroMinute: true,
-            meridiem: 'short',
-          }}
-          views={{
-            dayGridMonth: {
-              firstDay: 0, // Start week on Sunday
-              fixedWeekCount: false,
-              showNonCurrentDates: true,
-            },
-            timeGridWeek: {
-              firstDay: 0, // Start week on Sunday
-              slotDuration: '00:15:00',
-              slotLabelInterval: '01:00',
-              scrollTime: '06:00:00',
-              allDaySlot: true,
-              expandRows: true,
-            },
-            timeGridDay: {
-              dayCount: 1,
-              firstDay: 0, // Start week on Sunday
-              slotDuration: '00:15:00',
-              slotLabelInterval: '01:00',
-              scrollTime: '06:00:00',
-              allDaySlot: true,
-              expandRows: true,
-            },
-          }}
-          datesSet={handleDatesSet}
-          initialDate={currentDate}
-          dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
+          datesSet={(arg: DateSetArg) => onDateChange(arg.view.currentStart)}
+          // Add other FullCalendar options as needed
         />
       </div>
     );
