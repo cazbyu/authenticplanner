@@ -111,6 +111,37 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({ mode, initialData, onSubm
   useEffect(() => {
     fetchDataForForm();
   }, [fetchDataForForm]);
+
+  /**
+   * If in 'edit' mode, fetch the full details for the item being edited,
+   * including its relationships from junction tables.
+   */
+  useEffect(() => {
+    if (mode === 'edit' && initialData?.id) {
+        const fetchEditData = async () => {
+            const id = initialData.id!;
+            const type = initialData.schedulingType!;
+            const tablePrefix = type === 'depositIdea' ? 'deposit-idea' : 'task';
+
+            const { data: junctionData, error } = await supabase
+                .from(`0004-ap-${tablePrefix}-roles`)
+                .select('role-id')
+                .eq(`${tablePrefix}-id`, id);
+            
+            // Similar fetches for domains and key relationships...
+            
+            if (!error && junctionData) {
+                setForm(prev => ({
+                    ...prev,
+                    ...initialData,
+                    selectedRoleIds: junctionData.map(r => r['role-id']),
+                    // ... set other selected IDs
+                }));
+            }
+        };
+        fetchEditData();
+    }
+  }, [mode, initialData]);
   
   // --- FORM HANDLERS ---
 
