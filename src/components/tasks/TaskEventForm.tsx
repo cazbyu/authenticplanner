@@ -369,6 +369,8 @@ console.log("DEBUG: About to insert task record:", record);
       
       let taskId = form.id;
 
+      console.log("DEBUG: Final record to insert:", record);
+      
       // CREATE or UPDATE
       if (mode === "create") {
         const { data, error } = await supabase
@@ -441,6 +443,9 @@ console.log("DEBUG: Insert result data:", data, "error:", error);
       onSubmitSuccess();
       onClose();
     } catch (err) {
+
+console.log("DEBUG: Caught error in handleSubmit:", err);
+      
       toast.error("Error saving: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
