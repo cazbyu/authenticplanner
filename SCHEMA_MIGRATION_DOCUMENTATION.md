@@ -20,7 +20,7 @@ The following tables already follow the naming convention:
 - `0007-ap-task-roles`
 - `0007-ap-custom-roles`
 - `0007-ap-task-domains`
-- `0007-ap-goals-12wk`
+- `0007-ap-goals-12wk-main`
 - `0007-ap-users`
 - `0007-ap-task-12wkgoals`
 - `0007-ap-task-notes`

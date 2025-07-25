@@ -56,7 +56,7 @@ const TaskEditModal: React.FC<TaskEditModalProps> = ({ taskId, onClose, onTaskUp
             *,
             task_roles:0007-ap-task-roles!task_id(role_id),
             task_domains:0007-ap-task-domains(domain_id)
-          `)
+          .from('0007-ap-goals-12wk')
           .eq('id', taskId)
           .eq('user_id', user.id)
           .single();
