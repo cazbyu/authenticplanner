@@ -18,6 +18,8 @@ interface Goal {
   description?: string;
   status: string;
   progress: number;
+  'start-date'?: string;
+  'end-date'?: string;
   domains: Array<{ id: string; name: string; }>;
   roles: Array<{ id: string; label: string; }>;
 }
