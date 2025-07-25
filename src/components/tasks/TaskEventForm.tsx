@@ -187,6 +187,8 @@ function getEndTimeOptions(startTime: string) {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
+console.log("Current User:", user); // <-- ADD THIS LINE
+      
       // Validate deposit idea requirements
       if (form.schedulingType === "depositIdea") {
         if (form.selectedRoleIds.length === 0) {
@@ -365,6 +367,9 @@ end_time: form.isAllDay ? null : end_time,
           .insert([record])
           .select()
           .single();
+
+console.log("Task creation result:", { data, error }); // <-- ADD THIS LINE
+        
         if (error) throw error;
         taskId = data.id;
       } else if (mode === "edit" && form.id) {
