@@ -114,7 +114,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
     try {
       const date = parseISO(dateStr);
       if (!isValid(date)) return null;
-      return format(date, 'MMM d');
+      return format(date, 'd MMM');
     } catch (error) {
       console.warn('Date formatting error:', error);
       return null;

@@ -212,7 +212,7 @@ const TwelveWeekCycle: React.FC = () => {
             domain:0007-ap-domains(id, name)
  
          ),
-          goal_tasks:0007-ap-task-12wkgoals(
+          task_12wkgoals:0007-ap-task-12wkgoals(
             goal:0007-ap-goals-12wk(id, global_cycle_id)
           )
         `)
@@ -231,8 +231,9 @@ const TwelveWeekCycle: React.FC = () => {
         roles: task.task_roles?.map((tr: any) => tr.role).filter(Boolean) || [],
         domains: task.task_domains?.map((td: any) => td.domain).filter(Boolean) || [],
         // Keep the raw relationship data for editing
-        task_roles: task.task_roles || [],
-        task_domains: task.task_domains || []
+        task_roles: task.task_roles?.map((tr: any) => ({ role_id: tr.role?.id })).filter(Boolean) || [],
+        task_domains: task.task_domains?.map((td: any) => ({ domain_id: td.domain?.id })).filter(Boolean) || [],
+        task_12wkgoals: task.task_12wkgoals || []
       })) || [];
 
       setTasks(formattedTasks);
@@ -330,7 +331,7 @@ const TwelveWeekCycle: React.FC = () => {
     
     return tasks.filter(task => {
       // Check if task is linked to this goal
-      const isLinkedToGoal = task.goal_tasks?.some((gt: any) => gt.goal?.id === goalId);
+      const isLinkedToGoal = task.task_12wkgoals?.some((gt: any) => gt.goal?.id === goalId);
       if (!isLinkedToGoal) return false;
       
       // Check if task falls within this week
@@ -428,7 +429,11 @@ const TwelveWeekCycle: React.FC = () => {
                   </h4>
                   {task.due_date && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Due: {new Date(task.due_date).toLocaleDateString()}
+                      Due: {new Date(task.due_date).toLocaleDateString('en-US', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric' 
+                      })}
                       {task.time && ` at ${task.time}`}
                     </p>
                   )}
@@ -869,7 +874,8 @@ const TwelveWeekCycle: React.FC = () => {
             cycleStartDate: currentCycle?.start_date,
             selectedRoleIds: showWeeklyGoalForm.roles.map(r => r.id),
             selectedDomainIds: showWeeklyGoalForm.domains.map(d => d.id),
-            notes: `Week ${showWeeklyGoalForm.weekNumber} task for 12-week goal`
+            notes: `Week ${showWeeklyGoalForm.weekNumber} task for 12-week goal`,
+            twelveWeekGoalChecked: true
           }}
         />
       )}
@@ -890,14 +896,21 @@ const TwelveWeekCycle: React.FC = () => {
           initialData={{
             id: editingTask.id,
             title: editingTask.title,
-            dueDate: editingTask.due_date || '',
-            startTime: editingTask.start_time ? new Date(editingTask.start_time).toTimeString().slice(0, 5) : '',
-            endTime: editingTask.end_time ? new Date(editingTask.end_time).toTimeString().slice(0, 5) : '',
+            dueDate: editingTask.due_date || new Date().toISOString().split('T')[0],
+            startTime: editingTask.start_time ? (() => {
+              const date = new Date(editingTask.start_time);
+              return date.toTimeString().slice(0, 5);
+            })() : '',
+            endTime: editingTask.end_time ? (() => {
+              const date = new Date(editingTask.end_time);
+              return date.toTimeString().slice(0, 5);
+            })() : '',
             isAllDay: editingTask.is_all_day || false,
             urgent: editingTask.is_urgent,
             important: editingTask.is_important,
             authenticDeposit: editingTask.is_authentic_deposit,
-            twelveWeekGoalChecked: editingTask.is_twelve_week_goal || true,
+            twelveWeekGoalChecked: true, // Always true for 12-week cycle tasks
+            twelveWeekGoalId: editingTask.goal_tasks?.[0]?.goal?.id || '',
             notes: editingTask.notes || '',
             selectedRoleIds: editingTask.task_roles?.map(tr => tr.role_id) || [],
             selectedDomainIds: editingTask.task_domains?.map(td => td.domain_id) || [],

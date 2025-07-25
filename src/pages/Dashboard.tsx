@@ -196,7 +196,7 @@ const Dashboard: React.FC = () => {
     
     if (date.toDateString() === today.toDateString()) return 'Today';
     if (date.toDateString() === tomorrow.toDateString()) return 'Tomorrow';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
   };
 
   if (loading) {
