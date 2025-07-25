@@ -832,8 +832,8 @@ const TwelveWeekCycle: React.FC = () => {
             schedulingType: 'task',
             twelveWeekGoalChecked: true,
             twelveWeekGoalId: showWeeklyGoalForm.goalId,
-            roles: showWeeklyGoalForm.roles,
-            domains: showWeeklyGoalForm.domains,
+            selectedRoleIds: showWeeklyGoalForm.roles.map(r => r.id),
+            selectedDomainIds: showWeeklyGoalForm.domains.map(d => d.id),
             due_date: (() => {
               if (!currentCycle?.start_date) return '';
               const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z');
