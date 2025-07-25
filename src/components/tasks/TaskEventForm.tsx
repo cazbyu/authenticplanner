@@ -375,6 +375,14 @@ end_time: form.isAllDay ? null : end_time,
         if (error) throw error;
       }
 
+      // v-- NEW CODE STARTS HERE --v
+      if (!taskId) {
+        toast.error("Could not create or find task ID to update relations.");
+        setLoading(false);
+        return;
+      }
+      // ^-- NEW CODE ENDS HERE --^
+
       // --- Pivot tables (roles, domains, relationships, 12-week goals) ---
       // Roles
       await supabase.from("0007-ap-task-roles").delete().eq("task_id", taskId);
