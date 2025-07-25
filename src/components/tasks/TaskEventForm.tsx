@@ -380,6 +380,7 @@ console.log("DEBUG: About to insert task record:", record);
 console.log("DEBUG: Insert result data:", data, "error:", error);
         
         if (error) throw error;
+        if (!data) throw new Error("No data returned from insert.");
         taskId = data.id;
       } else if (mode === "edit" && form.id) {
         const { error } = await supabase
