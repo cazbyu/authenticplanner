@@ -71,7 +71,7 @@ const Scorecard: React.FC = () => {
         .select(`
           *,
           task_roles:0007-ap-task-roles!task_id(role_id, 0007-ap-roles:role_id(label))
-          goal_tasks:0007-ap-tasks-12wkgoals(
+          goal_tasks:0007-ap-task-12wkgoals(
             goal:0007-ap-goals-12wk(id, title, progress)
           )
         `)
