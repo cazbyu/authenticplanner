@@ -827,6 +827,7 @@ const TwelveWeekCycle: React.FC = () => {
 
       {showWeeklyGoalForm && (
         <TaskEventForm
+          mode="create"
           onClose={() => setShowWeeklyGoalForm(null)}
           onTaskCreated={handleWeeklyGoalCreated}
           initialData={{
