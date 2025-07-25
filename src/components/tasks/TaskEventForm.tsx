@@ -217,7 +217,7 @@ console.log("DEBUG: Early return for depositIdea path");
         title: form.title,
         due_date: form.dueDate || null,
         start_time: convertToUTC(form.dueDate, form.startTime),
-        end_time: convertToTimeFormat(form.endTime),
+        end_time: convertToUTC(form.dueDate, form.endTime),
         is_all_day: form.isAllDay,
         is_urgent: form.urgent || false,
         is_important: form.important || false,
