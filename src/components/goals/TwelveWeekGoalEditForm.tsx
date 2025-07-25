@@ -150,7 +150,7 @@ const TwelveWeekGoalEditForm: React.FC<TwelveWeekGoalEditFormProps> = ({
 
       // Update the main goal
       const { error: goalError } = await supabase
-        .from('0007-ap-goals-12wk-main')
+        .from('0007-ap-goals-12wk')
         .update({
           title: form.title.trim(),
           description: form.description.trim() || null,
@@ -252,7 +252,7 @@ const TwelveWeekGoalEditForm: React.FC<TwelveWeekGoalEditFormProps> = ({
       }
 
       const { error } = await supabase
-        .from('0007-ap-goals-12wk-main')
+        .from('0007-ap-goals-12wk')
         .delete()
         .eq('id', goal.id)
         .eq('user_id', user.id);

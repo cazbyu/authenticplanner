@@ -126,7 +126,7 @@ const TwelveWeekGoalForm: React.FC<TwelveWeekGoalFormProps> = ({ onClose, onGoal
 
       // Create the main goal
       const { data: goal, error: goalError } = await supabase
-        .from('0007-ap-goals-12wk-main')
+        .from('0007-ap-goals-12wk')
         .insert([{
           user_id: user.id,
           title: form.title.trim(),

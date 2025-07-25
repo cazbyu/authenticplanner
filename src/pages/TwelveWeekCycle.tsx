@@ -158,7 +158,7 @@ const TwelveWeekCycle: React.FC = () => {
 
     try {
       const { data: goalsData, error: goalsError } = await supabase
-        .from('0007-ap-goals-12wk-main')
+        .from('0007-ap-goals-12wk')
         .select(`
           *,
           goal_domains:0007-ap-goal-domains(
@@ -205,7 +205,7 @@ const TwelveWeekCycle: React.FC = () => {
             domain:0007-ap-domains(id, name)
           ),
           goal_tasks:0007-ap-goal-tasks(
-            goal:0007-ap-goals-12wk-main(id, global_cycle_id)
+            goal:0007-ap-goals-12wk(id, global_cycle_id)
           )
         `)
         .eq('user_id', user.id)
