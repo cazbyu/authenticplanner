@@ -46,6 +46,12 @@ interface Task {
   updated_at: string;
   roles?: Array<{ id: string; label: string; category?: string; }>;
   domains?: Array<{ id: string; name: string; }>;
+  start_time?: string;
+  end_time?: string;
+  is_all_day?: boolean;
+  task_roles?: Array<{ role_id: string }>;
+  task_domains?: Array<{ domain_id: string }>;
+  task_key_relationships?: Array<{ key_relationship_id: string }>;
 }
 
 interface GlobalCycle {
@@ -91,6 +97,7 @@ const TwelveWeekCycle: React.FC = () => {
     roles: Array<{ id: string; label: string; category?: string; }>;
   } | null>(null);
   const [editingWeeklyGoal, setEditingWeeklyGoal] = useState<any>(null);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -222,7 +229,10 @@ const TwelveWeekCycle: React.FC = () => {
       const formattedTasks = tasksData?.map(task => ({
         ...task,
         roles: task.task_roles?.map((tr: any) => tr.role).filter(Boolean) || [],
-        domains: task.task_domains?.map((td: any) => td.domain).filter(Boolean) || []
+        domains: task.task_domains?.map((td: any) => td.domain).filter(Boolean) || [],
+        // Keep the raw relationship data for editing
+        task_roles: task.task_roles || [],
+        task_domains: task.task_domains || []
       })) || [];
 
       setTasks(formattedTasks);
@@ -250,6 +260,11 @@ const TwelveWeekCycle: React.FC = () => {
     setShowTaskForm(null);
     setSelectedWeek(null);
     fetchTasks(); // Refresh tasks since new task was created
+  };
+
+  const handleTaskUpdated = () => {
+    setEditingTask(null);
+    fetchTasks(); // Refresh tasks since task was updated
   };
 
   const handleWeeklyGoalCreated = () => {
@@ -387,7 +402,8 @@ const TwelveWeekCycle: React.FC = () => {
     borderColor: string;
     textColor: string;
     icon: React.ReactNode;
-  }> = ({ title, tasks, bgColor, borderColor, textColor, icon }) => {
+    onTaskEdit: (task: Task) => void;
+  }> = ({ title, tasks, bgColor, borderColor, textColor, icon, onTaskEdit }) => {
     if (tasks.length === 0) return null;
 
     return (
@@ -399,7 +415,12 @@ const TwelveWeekCycle: React.FC = () => {
         </div>
         <div className="p-3 space-y-2">
           {tasks.map(task => (
-            <div key={task.id} className="bg-gray-50 rounded-lg p-3 border">
+            <div 
+              key={task.id} 
+              className="bg-gray-50 rounded-lg p-3 border hover:bg-gray-100 cursor-pointer transition-colors"
+              onClick={() => onTaskEdit(task)}
+              title="Click to edit task"
+            >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
                   <h4 className="font-medium text-sm text-gray-900 truncate">
@@ -419,14 +440,20 @@ const TwelveWeekCycle: React.FC = () => {
                 </div>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => handleCompleteTask(task.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCompleteTask(task.id);
+                    }}
                     className="p-1 text-green-600 hover:bg-green-100 rounded"
                     title="Complete task"
                   >
                     <CheckCircle className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={() => handleCancelTask(task.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleCancelTask(task.id);
+                    }}
                     className="p-1 text-red-600 hover:bg-red-100 rounded"
                     title="Cancel task"
                   >
@@ -769,6 +796,7 @@ const TwelveWeekCycle: React.FC = () => {
                       borderColor="border-l-red-500"
                       textColor="text-white"
                       icon={<AlertTriangle className="h-4 w-4" />}
+                      onTaskEdit={setEditingTask}
                     />
 
                     {/* Not Urgent & Important */}
@@ -779,6 +807,7 @@ const TwelveWeekCycle: React.FC = () => {
                       borderColor="border-l-green-500"
                       textColor="text-white"
                       icon={<CheckCircle className="h-4 w-4" />}
+                      onTaskEdit={setEditingTask}
                     />
 
                     {/* Urgent & Not Important */}
@@ -789,6 +818,7 @@ const TwelveWeekCycle: React.FC = () => {
                       borderColor="border-l-orange-500"
                       textColor="text-white"
                       icon={<Clock className="h-4 w-4" />}
+                      onTaskEdit={setEditingTask}
                     />
 
                     {/* Not Urgent & Not Important */}
@@ -799,6 +829,7 @@ const TwelveWeekCycle: React.FC = () => {
                       borderColor="border-l-gray-500"
                       textColor="text-white"
                       icon={<X className="h-4 w-4" />}
+                      onTaskEdit={setEditingTask}
                     />
                   </div>
                 );
@@ -849,6 +880,32 @@ const TwelveWeekCycle: React.FC = () => {
           onClose={() => setEditingWeeklyGoal(null)}
           onGoalUpdated={handleWeeklyGoalUpdated}
           onGoalDeleted={handleWeeklyGoalDeleted}
+        />
+      )}
+
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <TaskEventForm
+          mode="edit"
+          initialData={{
+            id: editingTask.id,
+            title: editingTask.title,
+            dueDate: editingTask.due_date || '',
+            startTime: editingTask.start_time ? new Date(editingTask.start_time).toTimeString().slice(0, 5) : '',
+            endTime: editingTask.end_time ? new Date(editingTask.end_time).toTimeString().slice(0, 5) : '',
+            isAllDay: editingTask.is_all_day || false,
+            urgent: editingTask.is_urgent,
+            important: editingTask.is_important,
+            authenticDeposit: editingTask.is_authentic_deposit,
+            twelveWeekGoalChecked: editingTask.is_twelve_week_goal || true,
+            notes: editingTask.notes || '',
+            selectedRoleIds: editingTask.task_roles?.map(tr => tr.role_id) || [],
+            selectedDomainIds: editingTask.task_domains?.map(td => td.domain_id) || [],
+            selectedKeyRelationshipIds: editingTask.task_key_relationships?.map(tkr => tkr.key_relationship_id) || [],
+            schedulingType: editingTask.start_time ? 'event' : 'task'
+          }}
+          onSubmitSuccess={handleTaskUpdated}
+          onClose={() => setEditingTask(null)}
         />
       )}
     </div>
