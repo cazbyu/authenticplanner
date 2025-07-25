@@ -168,6 +168,9 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 
       // --- Deposit Idea Logic (Unchanged) ---
       if (form.schedulingType === "depositIdea") {
+
+console.log("DEBUG: Early return for depositIdea path");
+        
           // ... logic for deposit ideas
           onSubmitSuccess();
           onClose();
@@ -188,6 +191,9 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       let taskId = form.id;
 
       // CREATE or UPDATE
+
+      console.log("DEBUG: handleSubmit called, mode:", mode, "form:", form);
+      
       if (mode === "create") {
         const { data, error } = await supabase
           .from("0007-ap-tasks")
