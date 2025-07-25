@@ -29,6 +29,7 @@ The following tables already follow the naming convention:
 - `0007-ap-roles`
 - `0007-ap-goals-12wk-weeks`
 - `0007-ap-cycle-goals`
+- `0007-ap-tasks-12wkgoals`
 
 ## Changes Made
 
