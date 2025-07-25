@@ -834,15 +834,10 @@ const TwelveWeekCycle: React.FC = () => {
             schedulingType: 'task',
             twelveWeekGoalChecked: true,
             twelveWeekGoalId: showWeeklyGoalForm.goalId,
+            weekNumber: showWeeklyGoalForm.weekNumber,
+            cycleStartDate: currentCycle?.start_date,
             selectedRoleIds: showWeeklyGoalForm.roles.map(r => r.id),
             selectedDomainIds: showWeeklyGoalForm.domains.map(d => d.id),
-            due_date: (() => {
-              if (!currentCycle?.start_date) return '';
-              const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z');
-              const weekStart = new Date(cycleStart);
-              weekStart.setDate(cycleStart.getDate() + (showWeeklyGoalForm.weekNumber - 1) * 7);
-              return weekStart.toISOString().split('T')[0];
-            })(),
             notes: `Week ${showWeeklyGoalForm.weekNumber} task for 12-week goal`
           }}
         />

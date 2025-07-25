@@ -128,6 +128,22 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
     })();
   }, []);
 
+  // Calculate default due date for 12-week goal tasks
+  useEffect(() => {
+    if (initialData?.twelveWeekGoalChecked && initialData?.weekNumber && initialData?.cycleStartDate) {
+      const cycleStart = new Date(initialData.cycleStartDate + 'T00:00:00Z');
+      const weekStart = new Date(cycleStart);
+      weekStart.setDate(cycleStart.getDate() + ((initialData.weekNumber - 1) * 7));
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      
+      setForm(prev => ({
+        ...prev,
+        dueDate: weekEnd.toISOString().split('T')[0]
+      }));
+    }
+  }, [initialData?.twelveWeekGoalChecked, initialData?.weekNumber, initialData?.cycleStartDate]);
+
   // ----- FORM CHANGE HANDLERS -----
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value, type } = e.target;
@@ -184,6 +200,17 @@ console.log("DEBUG: Early return for depositIdea path");
       const record: any = {
         user_id: user.id,
         title: form.title,
+        due_date: form.dueDate || null,
+        start_time: convertToUTC(form.dueDate, form.startTime),
+        end_time: convertToTimeFormat(form.endTime),
+        is_all_day: form.isAllDay,
+        is_urgent: form.urgent || false,
+        is_important: form.important || false,
+        is_authentic_deposit: form.authenticDeposit || false,
+        is_twelve_week_goal: form.twelveWeekGoalChecked || false,
+        notes: form.notes.trim() || null,
+        status: 'pending',
+        percent_complete: 0
       };
       console.log("DEBUG: About to insert MINIMAL task record:", record);
       // ==========^^^ END OF CHANGE ^^^==========
@@ -368,7 +395,7 @@ console.log("DEBUG: Early return for depositIdea path");
             >
               {/* Date + All Day (always visible) */}
               <div>
-                <label className="block text-xs mb-1">Date</label>
+                <label className="block text-xs mb-1">Due Date</label>
                 <DatePicker
           selected={form.dueDate ? new Date(form.dueDate + "T00:00:00") : null}
           onChange={date =>
