@@ -159,6 +159,8 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    console.log("DEBUG: handleSubmit called, mode:", mode, "form:", form);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
@@ -169,6 +171,8 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
           // ... logic for deposit ideas
           onSubmitSuccess();
           onClose();
+        console.log("DEBUG: handleSubmit returning after deposit idea logic");
+        
           return;
       }
 
@@ -207,6 +211,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       if (!taskId) {
         toast.error("Could not create or find task ID to update relations.");
         setLoading(false);
+        console.log("DEBUG: handleSubmit returning due to missing taskId");
         return;
       }
 
@@ -244,6 +249,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       toast.error("Error saving: " + (err instanceof Error ? err.message : String(err)));
     } finally {
       setLoading(false);
+      console.log("DEBUG: handleSubmit finished");
     }
   };
 
