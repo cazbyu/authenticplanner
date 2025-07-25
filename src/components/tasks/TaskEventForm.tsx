@@ -313,11 +313,17 @@ console.log("Current User:", user); // <-- ADD THIS LINE
         return;
       }
 
+let status = "pending";
+if (form.completed) status = "completed";
+else if (form.delegated) status = "delegated";
+else if (form.cancelled) status = "cancelled";
+      
       // Handle task/event creation (existing logic)
       let record: any = {
         user_id: user.id,
         title: form.title,
         notes: form.notes || null,
+        status, // <-- use the variable above!
         is_urgent: !!form.urgent,
         is_important: !!form.important,
         is_authentic_deposit: form.isFromDepositIdea ? true : !!form.authenticDeposit,
