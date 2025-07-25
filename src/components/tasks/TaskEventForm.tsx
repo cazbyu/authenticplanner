@@ -357,7 +357,10 @@ end_time: form.isAllDay ? null : end_time,
           is_all_day: false,
         };
       }
+      
+console.log("DEBUG: About to insert task record:", record);
 
+      
       let taskId = form.id;
 
       // CREATE or UPDATE
@@ -368,7 +371,7 @@ end_time: form.isAllDay ? null : end_time,
           .select()
           .single();
 
-console.log("Task creation result:", { data, error }); // <-- ADD THIS LINE
+console.log("DEBUG: Insert result data:", data, "error:", error);
         
         if (error) throw error;
         taskId = data.id;
