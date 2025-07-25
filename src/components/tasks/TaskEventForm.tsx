@@ -37,6 +37,21 @@ interface Domain { id: string; name: string; }
 interface KeyRelationship { id: string; name: string; role_id: string; }
 interface TwelveWeekGoal { id: string; title: string; }
 
+// Helper function to combine date and time into a UTC timestamp
+const convertToUTC = (date: string, time: string): string | null => {
+  if (!date || !time) return null;
+  // Creates a date object in the user's local timezone
+  const localDate = new Date(`${date}T${time}:00`);
+  // Converts the local time to the equivalent UTC time in ISO format
+  return localDate.toISOString();
+};
+
+// Helper function to format time
+const convertToTimeFormat = (time: string): string | null => {
+  if (!time) return null;
+  return `${time}:00`;
+};
+
 const defaultForm: FormData = {
   title: "",
   dueDate: format(new Date(), "yyyy-MM-dd"),
