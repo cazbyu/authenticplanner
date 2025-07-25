@@ -421,3 +421,9 @@ const TaskEditModal: React.FC<TaskEditModalProps> = ({ taskId, onClose, onTaskUp
 };
 
 export default TaskEditModal;
+          )
+      }
+    }
+  }
+  )
+}
