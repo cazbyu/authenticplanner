@@ -518,13 +518,13 @@ const TwelveWeekCycle: React.FC = () => {
                   {task.notes && task.notes.length > 0 && (
                     <div className="mt-2">
                       <p className="text-xs text-gray-600 font-medium">Notes:</p>
-                      {task.notes.slice(0, 1).map((note: any) => (
-                        <p key={note.id} className="text-xs text-gray-500 truncate">
+                      {task.notes.slice(0, 2).map((note: any) => (
+                        <p key={note.id} className="text-xs text-gray-500 mb-1">
                           {note.content}
                         </p>
                       ))}
-                      {task.notes.length > 1 && (
-                        <p className="text-xs text-gray-400">+{task.notes.length - 1} more note{task.notes.length > 2 ? 's' : ''}</p>
+                      {task.notes.length > 2 && (
+                        <p className="text-xs text-gray-400">+{task.notes.length - 2} more note{task.notes.length > 3 ? 's' : ''}</p>
                       )}
                     </div>
                   )}
