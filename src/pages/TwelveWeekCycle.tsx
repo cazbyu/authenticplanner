@@ -429,13 +429,13 @@ const TwelveWeekCycle: React.FC = () => {
                   </h4>
                   {task.due_date && (
                     <p className="text-xs text-gray-500 mt-1">
-                      Due: {new Date(task.due_date).toLocaleDateString('en-US', { 
-                        day: 'numeric', 
-                        month: 'short', 
-                        year: 'numeric' 
-                      })}
-                      {task.time && ` at ${task.time}`}
-                    </p>
+  Due: {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', { 
+    day: 'numeric', 
+    month: 'short', 
+    year: 'numeric' 
+  })}
+  {task.time && ` at ${task.time}`}
+</p>
                   )}
                   {task.is_authentic_deposit && (
                     <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
