@@ -683,6 +683,11 @@ const TwelveWeekCycle: React.FC = () => {
                                       {weekTasks.length} task{weekTasks.length !== 1 ? 's' : ''}
                                     </p>
                                   )}
+                                  {weekTasks.some(task => task.notes && task.notes.length > 0) && (
+                                    <p className="text-xs text-purple-600 mt-1">
+                                      📝 Has notes
+                                    </p>
+                                  )}
                                 </div>
                               </button>
                             </div>
@@ -710,6 +715,11 @@ const TwelveWeekCycle: React.FC = () => {
                                   {weekTasks.length > 0 && (
                                     <p className="text-xs text-blue-600 mt-1">
                                       {weekTasks.length} task{weekTasks.length !== 1 ? 's' : ''}
+                                    </p>
+                                  )}
+                                  {weekTasks.some(task => task.notes && task.notes.length > 0) && (
+                                    <p className="text-xs text-purple-600 mt-1">
+                                      📝 Has notes
                                     </p>
                                   )}
                                 </div>
