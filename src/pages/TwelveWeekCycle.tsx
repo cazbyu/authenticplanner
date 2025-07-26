@@ -99,9 +99,9 @@ const TwelveWeekCycle: React.FC = () => {
   } | null>(null);
   const [editingWeeklyGoal, setEditingWeeklyGoal] = useState<any>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const [cycleNotes, setCycleNotes] = useState<any[]>([]);
-  const [newCycleNote, setNewCycleNote] = useState('');
-  const [savingNote, setSavingNote] = useState(false);
+  const [goalNotes, setGoalNotes] = useState<Record<string, any[]>>({});
+  const [newGoalNotes, setNewGoalNotes] = useState<Record<string, string>>({});
+  const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     if (user) {
@@ -113,7 +113,6 @@ const TwelveWeekCycle: React.FC = () => {
     if (user && currentCycle) {
       fetchGoals();
       fetchTasks();
-      fetchCycleNotes();
     }
   }, [user, currentCycle]);
 
