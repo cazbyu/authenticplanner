@@ -98,6 +98,9 @@ const TwelveWeekCycle: React.FC = () => {
   } | null>(null);
   const [editingWeeklyGoal, setEditingWeeklyGoal] = useState<any>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [cycleNotes, setCycleNotes] = useState<any[]>([]);
+  const [newCycleNote, setNewCycleNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -109,6 +112,7 @@ const TwelveWeekCycle: React.FC = () => {
     if (user && currentCycle) {
       fetchGoals();
       fetchTasks();
+      fetchCycleNotes();
     }
   }, [user, currentCycle]);
 
@@ -246,6 +250,76 @@ const TwelveWeekCycle: React.FC = () => {
     }
   };
 
+  const fetchCycleNotes = async () => {
+    if (!user || !currentCycle) return;
+
+    try {
+      const { data: notesData, error } = await supabase
+        .from('0007-ap-goal-notes')
+        .select(`
+          note:0007-ap-notes(
+            id,
+            content,
+            created_at,
+            updated_at
+          )
+        `)
+        .eq('goal_id', currentCycle.id);
+
+      if (error) {
+        console.error('Error fetching cycle notes:', error);
+        return;
+      }
+
+      const notes = notesData?.map(item => item.note).filter(Boolean) || [];
+      setCycleNotes(notes);
+    } catch (error) {
+      console.error('Error fetching cycle notes:', error);
+    }
+  };
+
+  const handleAddCycleNote = async () => {
+    if (!newCycleNote.trim() || !user || !currentCycle) return;
+
+    setSavingNote(true);
+    try {
+      // Create note in centralized notes table
+      const { data: noteData, error: noteError } = await supabase
+        .from('0007-ap-notes')
+        .insert([{
+          user_id: user.id,
+          content: newCycleNote.trim(),
+        }])
+        .select()
+        .single();
+
+      if (noteError || !noteData) {
+        console.error('Error creating note:', noteError);
+        return;
+      }
+
+      // Link note to current cycle via goal-notes junction table
+      const { error: linkError } = await supabase
+        .from('0007-ap-goal-notes')
+        .insert([{
+          goal_id: currentCycle.id,
+          note_id: noteData.id,
+        }]);
+
+      if (linkError) {
+        console.error('Error linking note to cycle:', linkError);
+        return;
+      }
+
+      // Clear form and refresh notes
+      setNewCycleNote('');
+      fetchCycleNotes();
+    } catch (error) {
+      console.error('Error adding cycle note:', error);
+    } finally {
+      setSavingNote(false);
+    }
+  };
   const handleGoalCreated = (newGoal: TwelveWeekGoal) => {
     setShowGoalForm(false);
     fetchGoals(); // Refresh goals instead of manual state update
@@ -963,20 +1037,43 @@ const TwelveWeekCycle: React.FC = () => {
           <div className="space-y-4">
             <div>
               <textarea
+                value={newCycleNote}
+                onChange={(e) => setNewCycleNote(e.target.value)}
                 placeholder="Add notes about your 12-week cycle progress, insights, or reflections..."
                 className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                 rows={4}
               />
               <div className="mt-2 flex justify-end">
-                <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm">
-                  Add Note
+                <button 
+                  onClick={handleAddCycleNote}
+                  disabled={!newCycleNote.trim() || savingNote}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {savingNote ? 'Saving...' : 'Add Note'}
                 </button>
               </div>
             </div>
             
             {/* Display existing cycle notes */}
             <div className="space-y-2">
-              <p className="text-sm text-gray-500 italic">No cycle notes yet. Add your first note above.</p>
+              {cycleNotes.length === 0 ? (
+                <p className="text-sm text-gray-500 italic">No cycle notes yet. Add your first note above.</p>
+              ) : (
+                cycleNotes.map(note => (
+                  <div key={note.id} className="bg-gray-50 rounded-lg p-3 border">
+                    <p className="text-sm text-gray-900">{note.content}</p>
+                    <p className="text-xs text-gray-500 mt-2">
+                      {new Date(note.created_at).toLocaleDateString('en-US', {
+                        day: 'numeric',
+                        month: 'short',
+                        year: 'numeric',
+                        hour: 'numeric',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
