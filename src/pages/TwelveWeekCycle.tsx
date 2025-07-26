@@ -969,7 +969,7 @@ const TwelveWeekCycle: React.FC = () => {
           onClose={() => setShowWeeklyGoalForm(null)}
           onSubmitSuccess={handleWeeklyGoalCreated} // <-- THIS IS WHAT YOUR FORM EXPECTS
           initialData={{
-            schedulingType: editingTask.start_time ? 'event' : 'task'
+            schedulingType: editingTask.start_time ? 'event' : 'task',
             twelveWeekGoalChecked: true,
             twelveWeekGoalId: showWeeklyGoalForm.goalId,
             weekNumber: showWeeklyGoalForm.weekNumber,
