@@ -530,7 +530,7 @@ const TwelveWeekCycle: React.FC = () => {
                   )}
                   {task.is_authentic_deposit && (
                     <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                      Authentic Deposit
+                      📝 {weekTasks.reduce((count, task) => count + (task.notes?.length || 0), 0)} note{weekTasks.reduce((count, task) => count + (task.notes?.length || 0), 0) !== 1 ? 's' : ''}
                     </span>
                   )}
                 </div>
@@ -817,6 +817,54 @@ const TwelveWeekCycle: React.FC = () => {
   </div>
 )}
 
+                    </div>
+                    
+                    {/* Goal Notes Section */}
+                    <div className="border-t border-gray-200 pt-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">Goal Notes</h3>
+                      
+                      {/* Add Note Form */}
+                      <div className="mb-4">
+                        <div className="flex gap-2">
+                          <textarea
+                            value={newGoalNotes[goal.id] || ''}
+                            onChange={(e) => setNewGoalNotes(prev => ({ ...prev, [goal.id]: e.target.value }))}
+                            placeholder="Add a note about this goal..."
+                            className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            rows={2}
+                          />
+                          <button
+                            onClick={() => handleAddGoalNote(goal.id)}
+                            disabled={!newGoalNotes[goal.id]?.trim() || savingNotes[goal.id]}
+                            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            {savingNotes[goal.id] ? 'Saving...' : 'Add Note'}
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* Display Notes */}
+                      <div className="space-y-3">
+                        {goalNotes[goal.id] && goalNotes[goal.id].length > 0 ? (
+                          goalNotes[goal.id].map((note: any) => (
+                            <div key={note.id} className="bg-gray-50 rounded-lg p-3 border">
+                              <p className="text-sm text-gray-900 mb-2">{note.content}</p>
+                              <p className="text-xs text-gray-500">
+                                {new Date(note.created_at).toLocaleDateString('en-US', {
+                                  day: 'numeric',
+                                  month: 'short',
+                                  year: 'numeric',
+                                  hour: 'numeric',
+                                  minute: '2-digit',
+                                  hour12: true
+                                })}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-gray-500 text-sm italic">No notes yet for this goal.</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 )}
