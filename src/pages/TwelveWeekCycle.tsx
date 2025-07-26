@@ -214,6 +214,9 @@ const TwelveWeekCycle: React.FC = () => {
          ),
           task_12wkgoals:0007-ap-task-12wkgoals(
             goal:0007-ap-goals-12wk(id, global_cycle_id)
+          ),
+          task_notes:0007-ap-task-notes(
+            note:0007-ap-notes(id, content, created_at)
           )
         `)
         .eq('user_id', user.id)
@@ -233,7 +236,8 @@ const TwelveWeekCycle: React.FC = () => {
         // Keep the raw relationship data for editing
         task_roles: task.task_roles?.map((tr: any) => ({ role_id: tr.role?.id })).filter(Boolean) || [],
         task_domains: task.task_domains?.map((td: any) => ({ domain_id: td.domain?.id })).filter(Boolean) || [],
-        task_12wkgoals: task.task_12wkgoals || []
+        task_12wkgoals: task.task_12wkgoals || [],
+        notes: task.task_notes?.map((tn: any) => tn.note).filter(Boolean) || []
       })) || [];
 
       setTasks(formattedTasks);
@@ -436,6 +440,19 @@ const TwelveWeekCycle: React.FC = () => {
   })}
   {task.time && ` at ${task.time}`}
 </p>
+                  )}
+                  {task.notes && task.notes.length > 0 && (
+                    <div className="mt-2">
+                      <p className="text-xs text-gray-600 font-medium">Notes:</p>
+                      {task.notes.slice(0, 1).map((note: any) => (
+                        <p key={note.id} className="text-xs text-gray-500 truncate">
+                          {note.content}
+                        </p>
+                      ))}
+                      {task.notes.length > 1 && (
+                        <p className="text-xs text-gray-400">+{task.notes.length - 1} more note{task.notes.length > 2 ? 's' : ''}</p>
+                      )}
+                    </div>
                   )}
                   {task.is_authentic_deposit && (
                     <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
@@ -928,6 +945,32 @@ const TwelveWeekCycle: React.FC = () => {
           onClose={() => setEditingTask(null)}
         />
       )}
+
+      {/* Notes Section for Goals */}
+      <div className="mt-8">
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">12-Week Cycle Notes</h2>
+          <div className="space-y-4">
+            <div>
+              <textarea
+                placeholder="Add notes about your 12-week cycle progress, insights, or reflections..."
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                rows={4}
+              />
+              <div className="mt-2 flex justify-end">
+                <button className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors text-sm">
+                  Add Note
+                </button>
+              </div>
+            </div>
+            
+            {/* Display existing cycle notes */}
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500 italic">No cycle notes yet. Add your first note above.</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

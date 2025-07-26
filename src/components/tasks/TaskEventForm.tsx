@@ -223,7 +223,6 @@ console.log("DEBUG: Early return for depositIdea path");
         is_important: form.important || false,
         is_authentic_deposit: form.authenticDeposit || false,
         is_twelve_week_goal: form.twelveWeekGoalChecked || false,
-        notes: form.notes.trim() || null,
         status: 'pending',
         percent_complete: 0
       };
@@ -261,6 +260,31 @@ console.log("DEBUG: Early return for depositIdea path");
         setLoading(false);
         console.log("DEBUG: handleSubmit returning due to missing taskId");
         return;
+      }
+
+      // --- Handle Notes ---
+      if (form.notes.trim()) {
+        // Create note in centralized notes table
+        const { data: noteData, error: noteError } = await supabase
+          .from("0007-ap-notes")
+          .insert([{
+            user_id: user.id,
+            content: form.notes.trim(),
+          }])
+          .select()
+          .single();
+
+        if (noteError) {
+          console.error("Error creating note:", noteError);
+        } else if (noteData) {
+          // Link note to task
+          await supabase
+            .from("0007-ap-task-notes")
+            .insert([{
+              task_id: taskId,
+              note_id: noteData.id,
+            }]);
+        }
       }
 
       // --- Pivot tables (roles, domains, relationships, 12-week goals) ---
