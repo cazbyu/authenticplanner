@@ -52,6 +52,7 @@ interface Task {
   task_roles?: Array<{ role_id: string }>;
   task_domains?: Array<{ domain_id: string }>;
   task_key_relationships?: Array<{ key_relationship_id: string }>;
+  task_12wkgoals?: Array<{ goal?: { id: string } }>; // <-- ADD THIS LINE
 }
 
 interface GlobalCycle {
