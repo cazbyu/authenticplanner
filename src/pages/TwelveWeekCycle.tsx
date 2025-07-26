@@ -902,20 +902,27 @@ const TwelveWeekCycle: React.FC = () => {
               return date.toTimeString().slice(0, 5);
             })() : '',
             endTime: editingTask.end_time ? (() => {
-              const date = new Date(editingTask.end_time);
-              return date.toTimeString().slice(0, 5);
+              // Handle both timestamp and time-only formats
+              if (editingTask.end_time.includes('T')) {
+                // Full timestamp format
+                const date = new Date(editingTask.end_time);
+                return date.toTimeString().slice(0, 5);
+              } else {
+                // Time-only format (HH:MM:SS)
+                return editingTask.end_time.slice(0, 5);
+              }
             })() : '',
             isAllDay: editingTask.is_all_day || false,
             urgent: editingTask.is_urgent,
             important: editingTask.is_important,
             authenticDeposit: editingTask.is_authentic_deposit,
-            twelveWeekGoalChecked: true, // Always true for 12-week cycle tasks
-            twelveWeekGoalId: editingTask.goal_tasks?.[0]?.goal?.id || '',
+            twelveWeekGoalChecked: editingTask.is_twelve_week_goal || true, // Always true for 12-week cycle tasks
+            twelveWeekGoalId: editingTask.task_12wkgoals?.[0]?.goal?.id || '',
             notes: editingTask.notes || '',
             selectedRoleIds: editingTask.task_roles?.map(tr => tr.role_id) || [],
             selectedDomainIds: editingTask.task_domains?.map(td => td.domain_id) || [],
             selectedKeyRelationshipIds: editingTask.task_key_relationships?.map(tkr => tkr.key_relationship_id) || [],
-            schedulingType: editingTask.start_time ? 'event' : 'task'
+            schedulingType: 'task' // Always default to 'task' for 12-week cycle tasks, user can change if needed
           }}
           onSubmitSuccess={handleTaskUpdated}
           onClose={() => setEditingTask(null)}
