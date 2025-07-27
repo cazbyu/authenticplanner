@@ -320,6 +320,56 @@ const TwelveWeekCycle: React.FC = () => {
       setSavingNote(false);
     }
   };
+
+const handleAddGoalNote = async (goalId: string) => {
+    const noteContent = newGoalNotes[goalId]?.trim();
+    if (!noteContent || !user) return;
+
+    setSavingNotes(prev => ({ ...prev, [goalId]: true }));
+    try {
+      // Step 1: Create the note in the centralized '0007-ap-notes' table
+      const { data: noteData, error: noteError } = await supabase
+        .from('0007-ap-notes')
+        .insert([{ user_id: user.id, content: noteContent }])
+        .select('id')
+        .single();
+
+      if (noteError || !noteData) {
+        throw noteError || new Error('Failed to create note.');
+      }
+
+      // Step 2: Link the new note to the goal in the '0007-ap-goal-notes' junction table
+      const { error: linkError } = await supabase
+        .from('0007-ap-goal-notes')
+        .insert([{ goal_id: goalId, note_id: noteData.id }]);
+
+      if (linkError) {
+        throw linkError;
+      }
+
+      // Step 3: Clear the input and refresh the data
+      setNewGoalNotes(prev => ({ ...prev, [goalId]: '' }));
+      // NOTE: You don't have a specific function to fetch only notes for one goal.
+      // Calling fetchGoals() will refresh all goal data, including their notes if you adjust the query.
+      // For now, let's add the new note to the local state for an instant update.
+      const newNote = {
+          id: noteData.id,
+          content: noteContent,
+          created_at: new Date().toISOString()
+      };
+      setGoalNotes(prev => ({
+          ...prev,
+          [goalId]: [...(prev[goalId] || []), newNote]
+      }));
+
+    } catch (error) {
+      console.error('Error adding goal note:', error);
+      alert('Failed to add the note. Please try again.');
+    } finally {
+      setSavingNotes(prev => ({ ...prev, [goalId]: false }));
+    }
+  };
+  
   const handleGoalCreated = (newGoal: TwelveWeekGoal) => {
     setShowGoalForm(false);
     fetchGoals(); // Refresh goals instead of manual state update
