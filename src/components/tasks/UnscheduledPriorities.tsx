@@ -298,7 +298,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
               {/* Header - Always visible, compact when collapsed */}
               <button 
                 className={`w-full ${bgColor} ${textColor} px-3 py-2 rounded-lg flex-shrink-0 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                onClick={() => toggleQuadrant(id)}
+                onClick={() => ontoggleQuadrant(id)}
                 type="button"
               >
                 <div className="flex items-center justify-between">
