@@ -46,7 +46,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   // State to track if a task is being dragged
   const [isDragging, setIsDragging] = useState(false);
   
-  // Simplified collapsed state - no complex initialization
+  // Collapsed state - start with all sections expanded (false = expanded)
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
     'urgent-important': false,
     'not-urgent-important': false,
@@ -79,11 +79,11 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
     }
   };
 
-  // Ultra-simplified toggle function
+  // Toggle function for collapsing/expanding quadrants
   const toggleQuadrant = (quadrantId: string) => {
     setCollapsedQuadrants(prev => ({
       ...prev,
-      [quadrantId]: !prev[quadrantId]
+      [quadrantId]: !prev[quadrantId as keyof typeof prev]
     }));
   };
 
@@ -322,9 +322,9 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
                   </div>
                   <div className="flex-shrink-0 ml-2">
                     {isCollapsed ? (
-                      <ChevronDown className="h-3 w-3" />
-                    ) : (
                       <ChevronUp className="h-3 w-3" />
+                    ) : (
+                      <ChevronDown className="h-3 w-3" />
                     )}
                   </div>
                 </div>
