@@ -4,7 +4,6 @@ import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from
 import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
 import { format, isValid, parseISO } from 'date-fns';
 import EditTask from './EditTask';
-import { DragDropContext } from 'react-beautiful-dnd';
 
 interface Task {
   id: string;
