@@ -556,7 +556,7 @@ const AuthenticCalendar: React.FC = () => {
                     <ChevronLeft className="h-4 w-4 text-gray-500" />
                   </button>
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1">
   <DragDropContext onDragEnd={() => {}}>
     <UnscheduledPriorities
       key={JSON.stringify(collapsedQuadrants)} // <-- ADD THIS LINE
