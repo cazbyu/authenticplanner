@@ -70,6 +70,20 @@ const AuthenticCalendar: React.FC = () => {
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const calendarRef = useRef<FullCalendar | null>(null);
+  const [collapsedQuadrants, setCollapsedQuadrants] = useState({
+    'urgent-important': false,
+    'not-urgent-important': false,
+    'urgent-not-important': false,
+    'not-urgent-not-important': false,
+  });
+
+  const handleToggleQuadrant = (quadrantId: string) => {
+    setCollapsedQuadrants(prev => ({
+      ...prev,
+      [quadrantId]: !prev[quadrantId],
+    }));
+  };
+  
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
 
