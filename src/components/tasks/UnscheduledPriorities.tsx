@@ -42,20 +42,13 @@ interface UnscheduledPrioritiesProps {
   onToggleQuadrant: (quadrantId: string) => void;
 }
 
-const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode, collapsedQuadrants, onToggleQuadrant = 'quadrant' }) => {
+const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode, collapsedQuadrants, onToggleQuadrant }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
   // State to track if a task is being dragged
   const [isDragging, setIsDragging] = useState(false);
   
-  // Collapsed state - start with all sections expanded (false = expanded)
-  const [collapsedQuadrants, setCollapsedQuadrants] = useState({
-    'urgent-important': false,
-    'not-urgent-important': false,
-    'urgent-not-important': false,
-    'not-urgent-not-important': false,
-  });
-
+  
   const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel', event?: React.MouseEvent) => {
     // Prevent event bubbling to avoid triggering edit modal
     if (event) {
@@ -81,15 +74,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
     }
   };
 
-  // Toggle function for collapsing/expanding quadrants
-  const toggleQuadrant = (quadrantId: string) => {
-    setCollapsedQuadrants(prev => ({
-      ...prev,
-      [quadrantId]: !prev[quadrantId as keyof typeof prev]
-    }));
-  };
-
-  const handleTaskEdit = (task: Task) => {
+    const handleTaskEdit = (task: Task) => {
     setEditingTask(task);
   };
 
