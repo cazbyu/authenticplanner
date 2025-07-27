@@ -42,7 +42,7 @@ interface UnscheduledPrioritiesProps {
   onToggleQuadrant: (quadrantId: string) => void;
 }
 
-const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode = 'quadrant' }) => {
+const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode, collapsedQuadrants, onToggleQuadrant = 'quadrant' }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
   // State to track if a task is being dragged
