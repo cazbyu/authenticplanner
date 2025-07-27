@@ -38,17 +38,22 @@ interface UnscheduledPrioritiesProps {
   domains: Record<string, Domain>;
   loading: boolean;
   viewMode?: 'quadrant' | 'list';
-  collapsedQuadrants: Record<string, boolean>;
-  onToggleQuadrant: (quadrantId: string) => void;
 }
 
-const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode, collapsedQuadrants, onToggleQuadrant }) => {
+const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode = 'quadrant' }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   
   // State to track if a task is being dragged
   const [isDragging, setIsDragging] = useState(false);
   
-  
+  // Collapsed state - start with all sections expanded (false = expanded)
+  const [collapsedQuadrants, setCollapsedQuadrants] = useState({
+    'urgent-important': false,
+    'not-urgent-important': false,
+    'urgent-not-important': false,
+    'not-urgent-not-important': false,
+  });
+
   const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel', event?: React.MouseEvent) => {
     // Prevent event bubbling to avoid triggering edit modal
     if (event) {
@@ -74,7 +79,15 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
     }
   };
 
-    const handleTaskEdit = (task: Task) => {
+  // Toggle function for collapsing/expanding quadrants
+  const toggleQuadrant = (quadrantId: string) => {
+    setCollapsedQuadrants(prev => ({
+      ...prev,
+      [quadrantId]: !prev[quadrantId as keyof typeof prev]
+    }));
+  };
+
+  const handleTaskEdit = (task: Task) => {
     setEditingTask(task);
   };
 
@@ -298,7 +311,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
               {/* Header - Always visible, compact when collapsed */}
               <button 
                 className={`w-full ${bgColor} ${textColor} px-3 py-2 rounded-lg flex-shrink-0 hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-                onClick={() => onToggleQuadrant(id)}
+                onClick={() => toggleQuadrant(id)}
                 type="button"
               >
                 <div className="flex items-center justify-between">
@@ -422,7 +435,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
           </div>
         )}
       </div>
-     );
+  );
 };
 
 export default UnscheduledPriorities;
