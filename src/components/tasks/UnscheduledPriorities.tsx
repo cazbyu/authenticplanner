@@ -38,6 +38,8 @@ interface UnscheduledPrioritiesProps {
   domains: Record<string, Domain>;
   loading: boolean;
   viewMode?: 'quadrant' | 'list';
+  collapsedQuadrants: Record<string, boolean>;
+  onToggleQuadrant: (quadrantId: string) => void;
 }
 
 const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode = 'quadrant' }) => {
