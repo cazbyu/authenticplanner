@@ -298,74 +298,76 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   }
 
   return (
-    <div className="h-full flex flex-col overflow-visible" style={{ minHeight: '100%' }}>
-      <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin space-y-4" style={{ height: '100%', overflowY: 'auto' }}>
-        
-        <QuadrantSection
-          id="urgent-important"
-          title="Urgent & Important"
-          tasks={categorizedTasks.urgentImportant}
-          bgColor="bg-red-500"
-          borderColor="border-l-red-500"
-          textColor="text-white"
-          icon={<AlertTriangle className="h-3 w-3 flex-shrink-0" />}
-          isCollapsed={collapsedQuadrants['urgent-important']}
-          onToggle={toggleQuadrant}
-          onTaskCardClick={handleTaskEdit}
-        />
+    <>
+      <div className="h-full flex flex-col overflow-visible" style={{ minHeight: '100%' }}>
+        <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin space-y-4" style={{ height: '100%', overflowY: 'auto' }}>
+          
+          <QuadrantSection
+            id="urgent-important"
+            title="Urgent & Important"
+            tasks={categorizedTasks.urgentImportant}
+            bgColor="bg-red-500"
+            borderColor="border-l-red-500"
+            textColor="text-white"
+            icon={<AlertTriangle className="h-3 w-3 flex-shrink-0" />}
+            isCollapsed={collapsedQuadrants['urgent-important']}
+            onToggle={toggleQuadrant}
+            onTaskCardClick={handleTaskEdit}
+          />
 
-        <QuadrantSection
-          id="not-urgent-important"
-          title="Not Urgent & Important"
-          tasks={categorizedTasks.notUrgentImportant}
-          bgColor="bg-green-500"
-          borderColor="border-l-green-500"
-          textColor="text-white"
-          icon={<Check className="h-3 w-3 flex-shrink-0" />}
-          isCollapsed={collapsedQuadrants['not-urgent-important']}
-          onToggle={toggleQuadrant}
-          onTaskCardClick={handleTaskEdit}
-        />
-        
-        <QuadrantSection
-          id="urgent-not-important"
-          title="Urgent & Not Important"
-          tasks={categorizedTasks.urgentNotImportant}
-          bgColor="bg-orange-500"
-          borderColor="border-l-orange-500"
-          textColor="text-white"
-          icon={<Clock className="h-3 w-3 flex-shrink-0" />}
-          isCollapsed={collapsedQuadrants['urgent-not-important']}
-          onToggle={toggleQuadrant}
-          onTaskCardClick={handleTaskEdit}
-        />
+          <QuadrantSection
+            id="not-urgent-important"
+            title="Not Urgent & Important"
+            tasks={categorizedTasks.notUrgentImportant}
+            bgColor="bg-green-500"
+            borderColor="border-l-green-500"
+            textColor="text-white"
+            icon={<Check className="h-3 w-3 flex-shrink-0" />}
+            isCollapsed={collapsedQuadrants['not-urgent-important']}
+            onToggle={toggleQuadrant}
+            onTaskCardClick={handleTaskEdit}
+          />
+          
+          <QuadrantSection
+            id="urgent-not-important"
+            title="Urgent & Not Important"
+            tasks={categorizedTasks.urgentNotImportant}
+            bgColor="bg-orange-500"
+            borderColor="border-l-orange-500"
+            textColor="text-white"
+            icon={<Clock className="h-3 w-3 flex-shrink-0" />}
+            isCollapsed={collapsedQuadrants['urgent-not-important']}
+            onToggle={toggleQuadrant}
+            onTaskCardClick={handleTaskEdit}
+          />
 
-        <QuadrantSection
-          id="not-urgent-not-important"
-          title="Not Urgent & Not Important"
-          tasks={categorizedTasks.notUrgentNotImportant}
-          bgColor="bg-gray-500"
-          borderColor="border-l-gray-500"
-          textColor="text-white"
-          icon={<X className="h-3 w-3 flex-shrink-0" />}
-          isCollapsed={collapsedQuadrants['not-urgent-not-important']}
-          onToggle={toggleQuadrant}
-          onTaskCardClick={handleTaskEdit}
-        />
+          <QuadrantSection
+            id="not-urgent-not-important"
+            title="Not Urgent & Not Important"
+            tasks={categorizedTasks.notUrgentNotImportant}
+            bgColor="bg-gray-500"
+            borderColor="border-l-gray-500"
+            textColor="text-white"
+            icon={<X className="h-3 w-3 flex-shrink-0" />}
+            isCollapsed={collapsedQuadrants['not-urgent-not-important']}
+            onToggle={toggleQuadrant}
+            onTaskCardClick={handleTaskEdit}
+          />
+        </div>
+
+        {editingTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <EditTask
+                task={editingTask}
+                onTaskUpdated={handleTaskUpdated}
+                onCancel={() => setEditingTask(null)}
+              />
+            </div>
+          </div>
+        )}
       </div>
 
-      {editingTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-2xl mx-4">
-            <EditTask
-              task={editingTask}
-              onTaskUpdated={handleTaskUpdated}
-              onCancel={() => setEditingTask(null)}
-            />
-          </div>
-        </div>
-      )}
-    </div>
       {/* Delegate Task Modal */}
       {delegatingTask && (
         <DelegateTaskModal
@@ -375,7 +377,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
           onDelegated={handleTaskDelegated}
         />
       )}
-
+    </>
   );
 };
 
