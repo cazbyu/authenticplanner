@@ -559,15 +559,15 @@ const AuthenticCalendar: React.FC = () => {
                 <div className="flex-1 overflow-hidden">
                   <DragDropContext onDragEnd={() => {}}>
                     <UnscheduledPriorities
-                      viewMode="quadrant"
-                      viewMode={sidebarOpen ? 'quadrant' : 'list'}
-                      viewMode={sidebarOpen ? 'quadrant' : 'list'}
-                      tasks={tasks}
-                      setTasks={setTasks}
-                      roles={roles}
-                      domains={domains}
-                      loading={loading}
-                    />
+    viewMode={sidebarOpen ? 'quadrant' : 'list'}
+    tasks={tasks}
+    setTasks={setTasks}
+    roles={roles}
+    domains={domains}
+    loading={loading}
+    collapsedQuadrants={collapsedQuadrants}
+    onToggleQuadrant={handleToggleQuadrant}
+/>>
                   </DragDropContext>
                 </div>
               </div>
