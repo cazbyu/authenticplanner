@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
-import { format, isValid, parseISO } from 'date-fns';
+import { formatDate } from '../../utils/helpers';
 import EditTask from './EditTask';
 import DelegateTaskModal from './DelegateTaskModal';
 
@@ -47,6 +47,9 @@ interface QuadrantSectionProps {
   isCollapsed: boolean;
   onToggle: (id: string) => void;
   onTaskCardClick: (task: Task) => void;
+  roles: Record<string, Role>;
+  domains: Record<string, Domain>;
+  handleTaskAction: (taskId: string, action: 'complete' | 'delegate' | 'cancel') => void;
 }
 
 const QuadrantSection: React.FC<QuadrantSectionProps> = ({
@@ -60,6 +63,9 @@ const QuadrantSection: React.FC<QuadrantSectionProps> = ({
   isCollapsed,
   onToggle,
   onTaskCardClick,
+  roles,
+  domains,
+  handleTaskAction,
 }) => {
   return (
     <div className="mb-4">
@@ -313,6 +319,9 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
             isCollapsed={collapsedQuadrants['urgent-important']}
             onToggle={toggleQuadrant}
             onTaskCardClick={handleTaskEdit}
+            roles={roles}
+            domains={domains}
+            handleTaskAction={handleTaskAction}
           />
 
           <QuadrantSection
@@ -326,6 +335,9 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
             isCollapsed={collapsedQuadrants['not-urgent-important']}
             onToggle={toggleQuadrant}
             onTaskCardClick={handleTaskEdit}
+            roles={roles}
+            domains={domains}
+            handleTaskAction={handleTaskAction}
           />
           
           <QuadrantSection
@@ -339,6 +351,9 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
             isCollapsed={collapsedQuadrants['urgent-not-important']}
             onToggle={toggleQuadrant}
             onTaskCardClick={handleTaskEdit}
+            roles={roles}
+            domains={domains}
+            handleTaskAction={handleTaskAction}
           />
 
           <QuadrantSection
@@ -352,6 +367,9 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
             isCollapsed={collapsedQuadrants['not-urgent-not-important']}
             onToggle={toggleQuadrant}
             onTaskCardClick={handleTaskEdit}
+            roles={roles}
+            domains={domains}
+            handleTaskAction={handleTaskAction}
           />
         </div>
 
