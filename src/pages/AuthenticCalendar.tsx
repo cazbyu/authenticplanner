@@ -567,7 +567,7 @@ const AuthenticCalendar: React.FC = () => {
     loading={loading}
     collapsedQuadrants={collapsedQuadrants}
     onToggleQuadrant={handleToggleQuadrant}
-/>>
+/>
                   </DragDropContext>
                 </div>
               </div>
