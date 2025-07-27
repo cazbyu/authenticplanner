@@ -4,6 +4,7 @@ import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { format, isValid, parseISO } from 'date-fns';
 import EditTask from './EditTask';
+import DelegateTaskModal from './DelegateTaskModal';
 
 // Helper Interfaces
 interface Task {
@@ -94,9 +95,76 @@ const QuadrantSection: React.FC<QuadrantSectionProps> = ({
                           {...providedDraggable.dragHandleProps}
                           onClick={() => onTaskCardClick(task)}
                           className={`bg-white border-l-4 ${borderColor} border-r border-t border-b border-gray-200 rounded-r-lg p-3 hover:shadow-md transition-all cursor-pointer select-none`}
+                          data-task-id={task.id}
                         >
-                          <h4 className="font-medium text-gray-900 text-sm leading-tight">{task.title}</h4>
-                          {/* Add other task details here if needed */}
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-medium text-gray-900 text-sm mb-1">{task.title}</h4>
+                              
+                              {task.due_date && (
+                                <div className="flex items-center text-xs text-gray-600 mb-2">
+                                  <Clock className="h-3 w-3 mr-1" />
+                                  <span>Due {formatDate(task.due_date)}</span>
+                                </div>
+                              )}
+
+                              {/* Role and Domain Tags */}
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                {task.task_roles?.slice(0, 1).map(({ role_id }) => (
+                                  roles[role_id] && (
+                                    <span key={role_id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-700">
+                                      {roles[role_id].label}
+                                    </span>
+                                  )
+                                ))}
+                                {task.task_domains?.slice(0, 1).map(({ domain_id }) => (
+                                  domains[domain_id] && (
+                                    <span key={domain_id} className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
+                                      {domains[domain_id].name}
+                                    </span>
+                                  )
+                                ))}
+                                {task.is_authentic_deposit && (
+                                  <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">
+                                    Deposit
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center space-x-1 ml-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTaskAction(task.id, 'complete');
+                                }}
+                                className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
+                                title="Complete"
+                              >
+                                <Check className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTaskAction(task.id, 'delegate');
+                                }}
+                                className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+                                title="Delegate"
+                              >
+                                <UserPlus className="h-3 w-3" />
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTaskAction(task.id, 'cancel');
+                                }}
+                                className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+                                title="Cancel"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </Draggable>
@@ -128,6 +196,7 @@ interface UnscheduledPrioritiesProps {
 
 const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode = 'quadrant' }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
 
   // Internal state for collapsing sections
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
@@ -151,7 +220,65 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
 
   const handleTaskUpdated = () => {
     setEditingTask(null);
-    // You may need a way to trigger a refresh in the parent here
+    // Refresh tasks after update
+    window.location.reload(); // Simple refresh for now
+  };
+
+  const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
+    if (action === 'delegate') {
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        setDelegatingTask(task);
+      }
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      let updates: any = {};
+      
+      if (action === 'complete') {
+        updates.completed_at = new Date().toISOString();
+        updates.status = 'completed';
+      } else if (action === 'cancel') {
+        updates.status = 'cancelled';
+      }
+
+      const { error } = await supabase
+        .from('0007-ap-tasks')
+        .update(updates)
+        .eq('id', taskId);
+
+      if (error) {
+        console.error('Error updating task:', error);
+        return;
+      }
+
+      // Remove task from local state
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+    } catch (error) {
+      console.error('Error in handleTaskAction:', error);
+    }
+  };
+
+  const handleTaskDelegated = () => {
+    setDelegatingTask(null);
+    // Remove the delegated task from the current view
+    if (delegatingTask) {
+      setTasks(prevTasks => prevTasks.filter(task => task.id !== delegatingTask.id));
+    }
+  };
+
+  const formatDate = (dateStr: string | undefined) => {
+    if (!dateStr) return null;
+    try {
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+    } catch {
+      return null;
+    }
   };
 
   // Categorize tasks
@@ -239,6 +366,16 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
         </div>
       )}
     </div>
+      {/* Delegate Task Modal */}
+      {delegatingTask && (
+        <DelegateTaskModal
+          taskId={delegatingTask.id}
+          taskTitle={delegatingTask.title}
+          onClose={() => setDelegatingTask(null)}
+          onDelegated={handleTaskDelegated}
+        />
+      )}
+
   );
 };
 

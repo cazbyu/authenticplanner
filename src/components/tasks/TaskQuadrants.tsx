@@ -235,8 +235,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
   };
 
   const TaskCard: React.FC<{ task: Task; borderColor: string }> = ({ task, borderColor }) => {
-    const handleCardDoubleClick = (event: React.MouseEvent) => {
-      event.preventDefault();
+    const handleCardClick = (event: React.MouseEvent) => {
+      event.preventDefault(); 
       event.stopPropagation();
       handleTaskEdit(task);
     };
@@ -244,8 +244,8 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     return (
     <div 
       className={`bg-white border-l-4 ${borderColor} border-r border-t border-b border-gray-200 rounded-r-lg p-3 mb-2 hover:shadow-md transition-all cursor-pointer`}
-      onDoubleClick={handleCardDoubleClick}
-      title="Double-click to edit task"
+      onClick={handleCardClick}
+      title="Click to edit task"
     >
       <div className="flex items-start justify-between">
         <div className="flex-1 min-w-0">
