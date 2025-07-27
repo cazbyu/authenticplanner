@@ -206,17 +206,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
     .fc-timegrid-axis { padding-right: 0.5rem; }
     .fc-timegrid-now-indicator-line { 
-      border-color: #EF4444; 
-      border-width: 2px; 
+      border-color: #EF4444 !important; 
+      border-width: 3px !important; 
       left: 0 !important; 
       right: 0 !important; 
       margin-left: 0 !important;
-      box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.5) !important;
+      z-index: 10 !important;
     }
     .fc-timegrid-now-indicator-arrow { 
-      border-color: #EF4444;
-      border-width: 6px 0 6px 8px;
-      margin-top: -6px;
+      border-color: #EF4444 !important;
+      border-width: 8px 0 8px 10px !important;
+      margin-top: -8px !important;
+      z-index: 10 !important;
     }
     .fc-scroller { 
       overflow-y: auto !important;
@@ -269,7 +271,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={true}
-          scrollTime="06:00:00"
+          scrollTime={(() => {
+            const now = new Date();
+            const currentHour = now.getHours();
+            // Center on current time, but ensure we don't go too early or late
+            const scrollHour = Math.max(6, Math.min(18, currentHour - 2));
+            return `${scrollHour.toString().padStart(2, '0')}:00:00`;
+          })()}
           nowIndicator={true}
           slotDuration="00:15:00"
           slotLabelInterval="01:00"
@@ -291,7 +299,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               firstDay: 0, // Start week on Sunday
               slotDuration: '00:15:00',
               slotLabelInterval: '01:00',
-              scrollTime: '06:00:00',
+              scrollTime: (() => {
+                const now = new Date();
+                const currentHour = now.getHours();
+                // Center on current time, but ensure we don't go too early or late
+                const scrollHour = Math.max(6, Math.min(18, currentHour - 2));
+                return `${scrollHour.toString().padStart(2, '0')}:00:00`;
+              })(),
               allDaySlot: true,
               expandRows: true,
             },
@@ -300,7 +314,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               firstDay: 0, // Start week on Sunday
               slotDuration: '00:15:00',
               slotLabelInterval: '01:00',
-              scrollTime: '06:00:00',
+              scrollTime: (() => {
+                const now = new Date();
+                const currentHour = now.getHours();
+                // Center on current time, but ensure we don't go too early or late
+                const scrollHour = Math.max(6, Math.min(18, currentHour - 2));
+                return `${scrollHour.toString().padStart(2, '0')}:00:00`;
+              })(),
               allDaySlot: true,
               expandRows: true,
             },
