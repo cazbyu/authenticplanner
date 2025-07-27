@@ -557,16 +557,19 @@ const AuthenticCalendar: React.FC = () => {
                   </button>
                 </div>
                 <div className="flex-1 overflow-hidden">
+  <DragDropContext onDragEnd={() => {}}>
     <UnscheduledPriorities
-        viewMode={sidebarOpen ? 'quadrant' : 'list'}
-        tasks={tasks}
-        setTasks={setTasks}
-        roles={roles}
-        domains={domains}
-        loading={loading}
-        collapsedQuadrants={collapsedQuadrants}
-        onToggleQuadrant={handleToggleQuadrant}
+      key={JSON.stringify(collapsedQuadrants)} // <-- ADD THIS LINE
+      viewMode={sidebarOpen ? 'quadrant' : 'list'}
+      tasks={tasks}
+      setTasks={setTasks}
+      roles={roles}
+      domains={domains}
+      loading={loading}
+      collapsedQuadrants={collapsedQuadrants}
+      onToggleQuadrant={handleToggleQuadrant}
     />
+  </DragDropContext>
 </div>
               </div>
               
