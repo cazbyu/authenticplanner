@@ -310,6 +310,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         is_important: form.important || false,
         is_authentic_deposit: form.authenticDeposit || false,
         is_twelve_week_goal: form.twelveWeekGoalChecked || false,
+        deposit_idea: form.isFromDepositIdea || false,
         status: 'pending',
         percent_complete: 0
       };
