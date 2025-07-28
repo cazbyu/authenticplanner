@@ -271,7 +271,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     if (!deletingDepositIdea) return;
     const { error } = await supabase.from('0007-ap-deposit-ideas').delete().eq('id', deletingDepositIdea.id);
     if (error) {
-      toast.error("Failed to delete deposit idea.");
+                    className="p-3 bg-white rounded-lg border border-gray-200 hover:bg-blue-50 hover:border-blue-300 transition-colors cursor-pointer group"
+                    onClick={() => setEditingTask(task)}
     } else {
       toast.success("Deposit idea deleted.");
       if (selectedRole) fetchRoleData(selectedRole.id);
@@ -281,6 +282,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
   // --- RENDER LOGIC ---
 
+                            e.stopPropagation();
   if (selectedRole) {
     // --- INDIVIDUAL ROLE VIEW ---
     return (
@@ -290,6 +292,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             <ChevronLeft className="h-5 w-5" />
           </button>
           <h1 className="text-2xl font-bold text-gray-900">{selectedRole.label}</h1>
+                            e.stopPropagation();
         </div>
         
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
@@ -299,6 +302,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               <h2 className="text-lg font-semibold">Current Tasks</h2>
               <button onClick={() => setShowTaskEventForm(true)} className="flex items-center gap-2 text-blue-600 font-medium">
                 <Plus className="h-4 w-4" /> Add Task
+                            e.stopPropagation();
               </button>
             </div>
             {loading ? <p>Loading tasks...</p> : (
@@ -308,10 +312,12 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                     <div key={task.id} className="p-4 bg-white rounded-lg border relative group">
                       <div className="pr-20">
                         <p className="font-medium">{task.title}</p>
+                            e.stopPropagation();
                         <p className="text-sm text-gray-500">Due: {new Date(task.due_date).toLocaleDateString()}</p>
                       </div>
                       <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleTaskAction(task.id, 'complete')} title="Complete"><Check className="h-4 w-4 text-green-500" /></button>
+                    className="p-3 bg-white rounded-lg border border-gray-200 hover:bg-green-50 hover:border-green-300 transition-colors cursor-pointer group"
+                    onClick={() => setEditingDepositIdea(idea)}
                         <button onClick={() => handleTaskAction(task.id, 'delegate')} title="Delegate"><UserPlus className="h-4 w-4 text-blue-500" /></button>
                         <button onClick={() => setEditingTask(task)} title="Edit"><Edit className="h-4 w-4 text-gray-500" /></button>
                         <button onClick={() => handleTaskAction(task.id, 'cancel')} title="Cancel"><X className="h-4 w-4 text-red-500" /></button>
@@ -397,7 +403,13 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             <button onClick={() => setSortBy('inactive')} className={`px-2 py-1 text-xs rounded ${sortBy === 'inactive' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>Inactive</button>
           </div>
           <button onClick={() => setShowAddDepositIdeaForm(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-            <Plus className="h-4 w-4" /> Add Deposit Idea
+                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => setActivatingDepositIdea(idea)}
+                        className="flex-1 bg-green-600 text-white px-1.5 py-0.5 rounded text-xs hover:bg-green-700 transition-colors"
+                      >
+                        Activate
+                      </button>
           </button>
         </div>
       </div>
