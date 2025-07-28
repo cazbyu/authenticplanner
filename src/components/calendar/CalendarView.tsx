@@ -7,6 +7,7 @@ import { supabase } from '../../supabaseClient';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
 
+// Props interface for the component
 interface CalendarViewProps {
   view: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth';
   currentDate: Date;
@@ -15,6 +16,7 @@ interface CalendarViewProps {
   onTaskUpdated?: () => void;
 }
 
+// Interface for a Task object
 interface Task {
   id: string;
   title: string;
@@ -28,6 +30,7 @@ interface Task {
   notes: string | null;
 }
 
+// The main CalendarView component
 const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
   ({ view, currentDate, onDateChange, onTaskUpdated, refreshTrigger }, ref) => {
     const [events, setEvents] = useState<any[]>([]);
@@ -78,6 +81,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       fetchTasks();
     }, [refreshTrigger]);
 
+    // Handles dropping an external task onto the calendar
     const handleDrop = async (info: any) => {
       const taskId = info.draggedEl.getAttribute('data-task-id');
       if (!taskId) return;
@@ -107,6 +111,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     };
 
+    // Handles dragging or resizing an event already on the calendar
     const handleEventChange = async (info: any) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -132,6 +137,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     };
 
+    // Updates the calendar view when props change
     useEffect(() => {
       if (ref && 'current' in ref && ref.current) {
         const calendarApi = ref.current.getApi();
@@ -140,14 +146,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     }, [view, currentDate]);
 
+    // Placeholder for event click logic
     const handleEventClick = (info: any) => {};
+
+    // Updates parent component with the new date range when the view changes
     const handleDatesSet = (arg: DateSetArg) => { onDateChange(arg.view.currentStart); };
 
+    // Helper to check if a date is today
     const isToday = (date: Date) => {
       const today = new Date();
       return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
     };
 
+    // Custom renderer for day headers
     const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
       html: `
         <div class="day-name">${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][arg.date.getDay()]}</div>
@@ -157,37 +168,33 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     return (
       <div className="h-full">
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-              .fc { font-family: inherit; }
-              .fc-scrollgrid-sync-inner { padding: 8px 0; }
-              .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
-              .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
-              .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
-              .fc-timegrid-axis { padding-right: 0.5rem; }
-              .fc-timegrid-now-indicator-line { border-top: 3px solid #EF4444 !important; left: 0 !important; right: 0 !important; margin-left: 0 !important; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important; z-index: 1000 !important; }
-              .fc-timegrid-now-indicator-arrow { border-color: #EF4444 !important; border-width: 8px 0 8px 10px !important; margin-top: -8px !important; z-index: 1000 !important; }
-              .fc-scroller { overflow-y: auto !important; overflow-x: hidden !important; height: 100% !important; max-height: calc(100vh - 200px) !important; }
-              .fc-timegrid-body { overflow-y: auto !important; max-height: calc(100vh - 200px) !important; }
-              .fc-col-header-cell { padding: 0; background: #fff; }
-              .fc-col-header-cell.fc-day-today { background: transparent !important; }
-              .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
-              .fc-col-header-cell-cushion { display: flex; flex-direction: column; align-items: center; padding: 8px 0; color: #4B5563; font-weight: 500; }
-              .fc-col-header-cell-cushion .day-name { font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
-              .fc-col-header-cell-cushion .day-number { font-size: 20px; font-weight: 400; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-              .fc-col-header-cell-cushion .day-number.today { background: #3B82F6; color: white; }
-              .fc-dayGridMonth-view .fc-col-header-cell { text-align: center; padding: 8px 0; }
-              .fc-dayGridMonth-view .fc-daygrid-day-top { justify-content: center; padding-top: 4px; }
-              .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px; color: #4B5563; }
-              .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: #3B82F6; color: white; border-radius: 50%; }
-              .fc-header-toolbar { display: none !important; }
-              .fc-event-dragging { opacity: 0.75; }
-              .fc-timegrid-col.fc-day-today { background-color: rgba(59, 130, 246, 0.05); }
-              .fc-unthemed .fc-event { border-radius: 4px; border: 1px solid; font-size: 0.85em; padding: 2px 4px; }
-            `
-          }}
-        />
+        <style>{`
+          .fc { font-family: inherit; }
+          .fc-scrollgrid-sync-inner { padding: 8px 0; }
+          .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
+          .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
+          .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
+          .fc-timegrid-axis { padding-right: 0.5rem; }
+          .fc-timegrid-now-indicator-line { border-top: 3px solid #EF4444 !important; left: 0 !important; right: 0 !important; margin-left: 0 !important; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important; z-index: 40 !important; }
+          .fc-timegrid-now-indicator-arrow { border-color: #EF4444 !important; border-width: 8px 0 8px 10px !important; margin-top: -8px !important; z-index: 40 !important; }
+          .fc-scroller { overflow-y: auto !important; overflow-x: hidden !important; height: 100% !important; max-height: calc(100vh - 200px) !important; }
+          .fc-timegrid-body { overflow-y: auto !important; max-height: calc(100vh - 200px) !important; }
+          .fc-col-header-cell { padding: 0; background: #fff; }
+          .fc-col-header-cell.fc-day-today { background: transparent !important; }
+          .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
+          .fc-col-header-cell-cushion { display: flex; flex-direction: column; align-items: center; padding: 8px 0; color: #4B5563; font-weight: 500; }
+          .fc-col-header-cell-cushion .day-name { font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+          .fc-col-header-cell-cushion .day-number { font-size: 20px; font-weight: 400; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+          .fc-col-header-cell-cushion .day-number.today { background: #3B82F6; color: white; }
+          .fc-dayGridMonth-view .fc-col-header-cell { text-align: center; padding: 8px 0; }
+          .fc-dayGridMonth-view .fc-daygrid-day-top { justify-content: center; padding-top: 4px; }
+          .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px; color: #4B5563; }
+          .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: #3B82F6; color: white; border-radius: 50%; }
+          .fc-header-toolbar { display: none !important; }
+          .fc-event-dragging { opacity: 0.75; }
+          .fc-timegrid-col.fc-day-today { background-color: rgba(59, 130, 246, 0.05); }
+          .fc-unthemed .fc-event { border-radius: 4px; border: 1px solid; font-size: 0.85em; padding: 2px 4px; }
+        `}</style>
 
         <FullCalendar
           key={view}
