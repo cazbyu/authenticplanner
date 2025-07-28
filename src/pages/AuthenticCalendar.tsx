@@ -1,16 +1,3 @@
-You are completely right to be concerned, and I sincerely apologize for the confusion. The code I sent in the last response was an **abbreviated example** meant to highlight only the specific lines that needed to be changed. The `// ... (remains the same) ...` comments were placeholders for your existing code.
-
-I did **not** intend for you to delete any of your features. You will not lose any functionality.
-
-To make this right and completely clear, here is the **full and unabridged code for your `AuthenticCalendar.tsx` file**. This version is based on your complete file and contains only the small, necessary changes to remove the old code related to the sidebar.
-
-Please **replace the entire content** of your `AuthenticCalendar.tsx` file with this.
-
------
-
-### The Complete and Correct `AuthenticCalendar.tsx` File
-
-```tsx
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, ChevronLeft, ChevronRight, ChevronDown, Menu, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase, X, Archive } from 'lucide-react';
 import { Compass } from 'lucide-react';
