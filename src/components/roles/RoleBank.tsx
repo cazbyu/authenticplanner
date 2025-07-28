@@ -437,7 +437,7 @@ const ActivationTypeSelector: React.FC<{
 
   useEffect(() => {
     const fetchLinks = async () => {
-      const { data: roles } = await supabase.from('0007-ap-deposit-idea-roles').select('role_id').eq('deposit_idea_id', depositIdea.id);
+      const { data: roles } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', depositIdea.id);
       const { data: domains } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', depositIdea.id);
       const { data: krs } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', depositIdea.id);
       setPivotIds({
