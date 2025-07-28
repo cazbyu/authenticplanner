@@ -339,7 +339,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               <span className="text-xs bg-gray-100 rounded px-2">{tasks.length}</span>
               <button
                 onClick={() => setShowAddTaskForm(true)}
-                className="ml-auto text-xs bg-blue-600 text-white rounded px-2 py-1 hover:bg-blue-700 transition-colors"
+                className="ml-auto text-xs bg-blue-600 text-white rounded px-1.5 py-0.5 hover:bg-blue-700 transition-colors"
               >
                 Add
               </button>
@@ -357,7 +357,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                       {task.is_authentic_deposit && <span className="text-xs bg-green-100 text-green-700 rounded px-1">Deposit</span>}
                       <button
                         onClick={() => handleEditTask(task)}
-                        className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2"
+                        className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2 px-1"
                       >
                         Edit
                       </button>
@@ -375,30 +375,35 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               <span className="text-xs bg-gray-100 rounded px-2">{depositIdeas.length}</span>
               <button
                 onClick={() => setShowAddDepositIdeaForm(true)}
-                className="ml-auto text-xs bg-green-600 text-white rounded px-2 py-1 hover:bg-green-700 transition-colors"
+                className="ml-auto text-xs bg-green-600 text-white rounded px-1.5 py-0.5 hover:bg-green-700 transition-colors"
               >
                 Add
               </button>
             </div>
-            {depositIdeas.length === 0 ? (
+            {/* Remove duplicates by filtering unique IDs */}
+            {depositIdeas.filter((idea, index, self) => 
+              index === self.findIndex(i => i.id === idea.id)
+            ).length === 0 ? (
               <div className="text-gray-400 text-sm">No deposit ideas for this relationship.</div>
             ) : (
               <ul className="space-y-2">
-                {depositIdeas.map((idea) => (
+                {depositIdeas.filter((idea, index, self) => 
+                  index === self.findIndex(i => i.id === idea.id)
+                ).map((idea) => (
                   <li key={idea.id} className="p-2 border rounded">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
                     </div>
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 text-xs">
                       <button
                         onClick={() => handleEditDepositIdea(idea)}
-                        className="text-xs bg-blue-600 text-white rounded px-2 py-1 hover:bg-blue-700 transition-colors flex-1"
+                        className="bg-blue-600 text-white rounded px-1.5 py-0.5 hover:bg-blue-700 transition-colors flex-1"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => setDeletingDepositIdea(idea)}
-                        className="text-xs bg-red-600 text-white rounded px-2 py-1 hover:bg-red-700 transition-colors flex-1"
+                        className="bg-red-600 text-white rounded px-1.5 py-0.5 hover:bg-red-700 transition-colors flex-1"
                       >
                         Delete
                       </button>
@@ -423,7 +428,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             <button
               onClick={addNote}
               disabled={!newNote.trim() || addingNote}
-              className="mb-2 px-3 py-1 rounded bg-primary-600 text-white disabled:bg-gray-300 text-sm"
+              className="mb-2 px-2 py-0.5 rounded bg-primary-600 text-white disabled:bg-gray-300 text-xs"
             >
               {addingNote ? 'Saving...' : 'Add Note'}
             </button>
@@ -473,6 +478,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                 id: editingTask.id,
                 title: editingTask.title,
                 schedulingType: 'task',
+                selectedRoleIds: [relationship.role_id],
                 selectedKeyRelationshipIds: [relationship.id],
                 // The TaskEventForm will fetch and prefill other data via useEffect
               }}
@@ -512,6 +518,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                 title: editingDepositIdea.title || editingDepositIdea.notes || '',
                 notes: editingDepositIdea.notes || '',
                 schedulingType: 'depositIdea',
+                selectedRoleIds: [relationship.role_id],
                 selectedKeyRelationshipIds: [relationship.id],
                 // The TaskEventForm will fetch and prefill roles/domains via useEffect
               }}
