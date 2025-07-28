@@ -160,7 +160,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       const taskIds = taskRoleLinks?.map(link => link.task_id) || [];
 
       // Now fetch only those tasks
-         const fetchRoleData = async (roleId: string) => {
+           const fetchRoleData = async (roleId: string) => {
     try {
       setLoading(true);
 
