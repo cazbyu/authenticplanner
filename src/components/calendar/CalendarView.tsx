@@ -199,26 +199,26 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       <div className="h-full">
         <style>
   {`
-    .fc { font-family: inherit; } /* Remove height: 100% */
+    .fc { font-family: inherit; }
     .fc-scrollgrid-sync-inner { padding: 8px 0; }
     .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
     .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
     .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
     .fc-timegrid-axis { padding-right: 0.5rem; }
     .fc-timegrid-now-indicator-line { 
-  border-top: 3px solid #EF4444 !important; 
-  left: 0 !important; 
-  right: 0 !important; 
-  margin-left: 0 !important;
-  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important;
-  z-index: 1000 !important;
-}
-.fc-timegrid-now-indicator-arrow { 
-  border-color: #EF4444 !important;
-  border-width: 8px 0 8px 10px !important;
-  margin-top: -8px !important;
-  z-index: 1000 !important;
-}
+      border-top: 3px solid #EF4444 !important; 
+      left: 0 !important; 
+      right: 0 !important; 
+      margin-left: 0 !important;
+      box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important;
+      z-index: 1000 !important;
+    }
+    .fc-timegrid-now-indicator-arrow { 
+      border-color: #EF4444 !important;
+      border-width: 8px 0 8px 10px !important;
+      margin-top: -8px !important;
+      z-index: 1000 !important;
+    }
     .fc-scroller { 
       overflow-y: auto !important;
       overflow-x: hidden !important;
@@ -241,10 +241,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px; color: #4B5563; }
     .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: #3B82F6; color: white; border-radius: 50%; }
     .fc-header-toolbar { display: none !important; }
-    /* Drag and drop styling */
     .fc-event-dragging { opacity: 0.75; }
     .fc-timegrid-col.fc-day-today { background-color: rgba(59, 130, 246, 0.05); }
-    /* External drag styling */
     .fc-unthemed .fc-event { border-radius: 4px; border: 1px solid; font-size: 0.85em; padding: 2px 4px; }
   `}
 </style>
