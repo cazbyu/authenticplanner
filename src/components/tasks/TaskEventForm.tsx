@@ -200,14 +200,13 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       // --- Deposit Idea Logic (Unchanged) ---
       if (form.schedulingType === "depositIdea") {
 
-        // Create the deposit idea
+        // Create the deposit idea in the main table
         const { data: depositIdea, error: depositIdeaError } = await supabase
           .from("0007-ap-deposit-ideas")
           .insert([{
             user_id: user.id,
             title: form.title.trim(),
-            notes: form.notes.trim() || null,
-            key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
+            key_relationship_id: form.selectedKeyRelationshipIds[0] || null, // Primary key relationship
             is_active: true
           }])
           .select()
@@ -215,6 +214,36 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 
         if (depositIdeaError || !depositIdea) {
           throw new Error("Failed to create deposit idea: " + (depositIdeaError?.message || "Unknown error"));
+        }
+
+        // Handle notes separately - create note and link it
+        if (form.notes.trim()) {
+          const { data: noteData, error: noteError } = await supabase
+            .from("0007-ap-notes")
+            .insert([{
+              user_id: user.id,
+              content: form.notes.trim(),
+            }])
+            .select()
+            .single();
+
+          if (noteError) {
+            console.error("Error creating note:", noteError);
+          } else if (noteData) {
+            // Link note to key relationships if any are selected
+            if (form.selectedKeyRelationshipIds.length > 0) {
+              const noteKeyRelationshipInserts = form.selectedKeyRelationshipIds.map(krId => ({
+                note_id: noteData.id,
+                key_relationship_id: krId
+              }));
+              const { error: noteKrError } = await supabase
+                .from("0007-ap-note-key-relationships")
+                .insert(noteKeyRelationshipInserts);
+              if (noteKrError) {
+                console.error("Error linking note to key relationships:", noteKrError);
+              }
+            }
+          }
         }
 
         // Link to roles
@@ -245,9 +274,9 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
           }
         }
 
-        // Link to key relationships (if not already set via key_relationship_id)
-        if (form.selectedKeyRelationshipIds.length > 1) {
-          // If multiple key relationships selected, use the junction table
+        // Link to additional key relationships via junction table (beyond the primary one)
+        if (form.selectedKeyRelationshipIds.length > 1 || 
+            (form.selectedKeyRelationshipIds.length === 1 && !depositIdea.key_relationship_id)) {
           const krInserts = form.selectedKeyRelationshipIds.map(krId => ({
             deposit_idea_id: depositIdea.id,
             key_relationship_id: krId
