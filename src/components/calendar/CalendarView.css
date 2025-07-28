@@ -49,10 +49,12 @@
   z-index: 40 !important;
 }
 
-/* Scrolling container fixes */
+/* CRITICAL: Fix scrolling behavior */
 .fc-scroller {
   overflow-y: auto !important;
   overflow-x: hidden !important;
+  /* Remove any conflicting positioning */
+  position: relative !important;
 }
 
 .fc-scroller-liquid-absolute {
@@ -61,24 +63,37 @@
   left: 0 !important;
   right: 0 !important;
   bottom: 0 !important;
+  /* Ensure smooth scrolling */
+  scroll-behavior: smooth !important;
+}
+
+/* Fix timegrid container scrolling */
+.fc-timegrid-container {
+  height: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
 }
 
 .fc-timegrid-body {
   min-height: 100% !important;
+  overflow: visible !important;
+  position: relative !important;
 }
 
 .fc-timegrid-slots {
   position: relative !important;
 }
 
-/* Ensure proper scrolling for time grid views */
-.fc-timegrid-container {
+/* Prevent scroll conflicts */
+.fc-view {
   height: 100% !important;
   overflow: hidden !important;
 }
 
-.fc-timegrid-body {
-  overflow: visible !important;
+.fc-view-harness-active > .fc-view {
+  position: relative !important;
+  height: 100% !important;
+  overflow: hidden !important;
 }
 
 /* Header styling */
@@ -179,12 +194,18 @@
   border-top: none !important;
 }
 
-/* Fix for proper calendar height and scrolling */
-.fc-view {
-  height: 100% !important;
+/* Remove any touch-action restrictions that might cause scroll issues */
+.fc-scroller,
+.fc-timegrid-container,
+.fc-timegrid-body {
+  touch-action: pan-y !important;
 }
 
-.fc-view-harness-active > .fc-view {
-  position: relative !important;
-  height: 100% !important;
+/* Ensure proper z-index stacking */
+.fc-timegrid-slots {
+  z-index: 1 !important;
+}
+
+.fc-timegrid-now-indicator-container {
+  z-index: 40 !important;
 }
