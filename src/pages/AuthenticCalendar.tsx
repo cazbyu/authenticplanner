@@ -89,6 +89,28 @@ const AuthenticCalendar: React.FC = () => {
 
   // Enable external dragging for FullCalendar
   useEffect(() => {
+    // Set initial scroll position to current time when component mounts
+    const scrollToCurrentTime = () => {
+      const calendarEl = document.querySelector('.fc-scroller-liquid-absolute');
+      if (calendarEl && view !== 'dayGridMonth') {
+        const now = new Date();
+        const currentHour = now.getHours();
+        const currentMinute = now.getMinutes();
+        
+        // Calculate scroll position based on current time
+        // Each hour is approximately 48px in FullCalendar
+        const hourHeight = 48;
+        const scrollPosition = (currentHour - 2) * hourHeight + (currentMinute / 60) * hourHeight;
+        
+        // Ensure we don't scroll too high or too low
+        const maxScroll = Math.max(0, scrollPosition);
+        
+        setTimeout(() => {
+          calendarEl.scrollTop = maxScroll;
+        }, 100);
+      }
+    };
+
     // Initialize external dragging for FullCalendar
     const initializeExternalDragging = () => {
       if (typeof window !== 'undefined' && window.FullCalendar) {
@@ -117,6 +139,7 @@ const AuthenticCalendar: React.FC = () => {
 
     // Initialize after a short delay to ensure DOM is ready
     const timer = setTimeout(initializeExternalDragging, 100);
+    const scrollTimer = setTimeout(scrollToCurrentTime, 200);
     
     // Re-initialize when tasks change
     const observer = new MutationObserver(initializeExternalDragging);
@@ -127,6 +150,7 @@ const AuthenticCalendar: React.FC = () => {
 
     return () => {
       clearTimeout(timer);
+      clearTimeout(scrollTimer);
       observer.disconnect();
     };
   }, [tasks, activeView]);
