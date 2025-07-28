@@ -160,7 +160,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       const taskIds = taskRoleLinks?.map(link => link.task_id) || [];
 
       // Now fetch only those tasks
-       const fetchRoleData = async (roleId: string) => {
+         const fetchRoleData = async (roleId: string) => {
     try {
       setLoading(true);
 
@@ -180,14 +180,14 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       // Now fetch only those tasks with the corrected query
       const { data: tasksData, error: tasksError } = taskIds.length > 0 
         ? await supabase
-        .from('0007-ap-tasks')
-        .select(`
-          *,
-          task_roles:0007-ap-task-roles!task_id(role_id)
-        `)
-        .eq('user_id', user.id)
-        .in('id', taskIds)
-        .in('status', ['pending', 'in_progress'])
+            .from('0007-ap-tasks')
+            .select(`
+              *,
+              task_roles:0007-ap-task-roles!task_id(role_id)
+            `)
+            .eq('user_id', user.id)
+            .in('id', taskIds)
+            .in('status', ['pending', 'in_progress'])
         : { data: [], error: null };
 
       if (tasksError) throw tasksError;
@@ -268,6 +268,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       setLoading(false);
     }
   };
+
 
         .eq('user_id', user.id)
         .in('id', taskIds)
