@@ -56,17 +56,22 @@ const NotesFollowUp: React.FC = () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) return;
 
-      const { data: notesData, error } = await supabase
-        .from('0007-ap-notes')
+      const { data: noteLinks, error } = await supabase
+        .from('0007-ap-note-key-relationships')
         .select(`
-          *,
+          note:0007-ap-notes(
+            id,
+            content,
+            created_at,
+            updated_at,
+            user_id
+          ),
           key_relationship:0007-ap-key-relationships(
+            id,
             name,
             role_id
           )
-        `)
-        .eq('user_id', authUser.id)
-        .order('created_at', { ascending: false });
+        `);
 
       if (error) {
         console.error('Error fetching notes:', error);
@@ -74,7 +79,17 @@ const NotesFollowUp: React.FC = () => {
         return;
       }
 
-      setNotes(notesData || []);
+      // Transform the data to match the expected Note interface
+      const transformedNotes = noteLinks?.map(link => ({
+        ...link.note,
+        key_relationship_id: link.key_relationship?.id,
+        key_relationship: link.key_relationship
+      })).filter(note => note.user_id === authUser.id) || [];
+
+      // Sort by created_at descending
+      transformedNotes.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      setNotes(transformedNotes);
     } catch (error) {
       console.error('Error fetching notes:', error);
       toast.error('Failed to load notes');
@@ -117,18 +132,36 @@ const NotesFollowUp: React.FC = () => {
       const { data: { user: authUser } } = await supabase.auth.getUser();
       if (!authUser) return;
 
-      const { error } = await supabase
+      // First, insert the note
+      const { data: noteData, error: noteError } = await supabase
         .from('0007-ap-notes')
-        .insert([{
+        .insert({
           user_id: authUser.id,
           content: newNote.content.trim(),
-          key_relationship_id: newNote.key_relationship_id || null,
-        }]);
+        })
+        .select()
+        .single();
 
-      if (error) {
-        console.error('Error adding note:', error);
+      if (noteError) {
+        console.error('Error adding note:', noteError);
         toast.error('Failed to add note');
         return;
+      }
+
+      // If a key relationship is selected, link the note to it
+      if (newNote.key_relationship_id) {
+        const { error: linkError } = await supabase
+          .from('0007-ap-note-key-relationships')
+          .insert({
+            note_id: noteData.id,
+            key_relationship_id: newNote.key_relationship_id,
+          });
+
+        if (linkError) {
+          console.error('Error linking note:', linkError);
+          toast.error('Failed to link note to relationship');
+          return;
+        }
       }
 
       toast.success('Note added successfully!');

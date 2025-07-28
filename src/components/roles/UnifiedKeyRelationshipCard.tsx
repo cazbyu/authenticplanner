@@ -128,7 +128,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           deposit_idea:0007-ap-deposit-ideas(
             id,
             title,
-            description,
+            notes,
             is_active,
             activated_at,
             archived
@@ -167,14 +167,21 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: notesData } = await supabase
-        .from('0007-ap-notes')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('key_relationship_id', relationship.id)
-        .order('created_at', { ascending: false });
+      const { data: noteLinks } = await supabase
+        .from('0007-ap-note-key-relationships')
+        .select(`
+          note:0007-ap-notes(
+            id,
+            content,
+            created_at,
+            updated_at,
+            user_id
+          )
+        `)
+        .eq('key_relationship_id', relationship.id);
 
-      setNotes(notesData || []);
+      const relationshipNotes = noteLinks?.map(link => link.note).filter(Boolean) || [];
+      setNotes(relationshipNotes);
     } catch (error) {
       console.error('Error loading notes:', error);
     }
@@ -188,18 +195,36 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      const { error } = await supabase
+      // First, insert the note
+      const { data: noteData, error: noteError } = await supabase
         .from('0007-ap-notes')
-        .insert([{
+        .insert({
           user_id: user.id,
-          key_relationship_id: relationship.id,
           content: newNote.trim(),
-        }]);
-      if (error) {
-        toast.error("Failed to add note: " + error.message);
+        })
+        .select()
+        .single();
+
+      if (noteError) {
+        toast.error("Failed to add note: " + noteError.message);
         setAddingNote(false);
         return;
       }
+
+      // Then, link the note to the key relationship
+      const { error: linkError } = await supabase
+        .from('0007-ap-note-key-relationships')
+        .insert({
+          note_id: noteData.id,
+          key_relationship_id: relationship.id,
+        });
+
+      if (linkError) {
+        toast.error("Failed to link note: " + linkError.message);
+        setAddingNote(false);
+        return;
+      }
+
       setNewNote('');
       loadNotes();
       toast.success("Note added!");
@@ -268,7 +293,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               <ul className="space-y-2">
                 {depositIdeas.map((idea) => (
                   <li key={idea.id} className="flex items-center gap-2 p-2 border rounded">
-                    <span>{idea.title || idea.description || "No Title"}</span>
+                    <span>{idea.title || idea.notes || "No Title"}</span>
                   </li>
                 ))}
               </ul>
