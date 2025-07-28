@@ -270,6 +270,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={true}
+          nowIndicator={true}
           scrollTime={(() => {
             const now = new Date();
             const currentHour = now.getHours();
