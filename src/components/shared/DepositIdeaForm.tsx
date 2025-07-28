@@ -87,6 +87,74 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
 
   // Reset form state on open or when editing a different idea
   useEffect(() => {
+    if (!open) return;
+    
+    // If editing an existing idea, fetch its role and domain relationships
+    if (idea) {
+      fetchDepositIdeaRelationships(idea.id);
+    } else {
+      // Reset to defaults for new deposit ideas
+      setForm({
+        title: '',
+        notes: '',
+        selectedRoleIds: defaultRoleId ? [defaultRoleId] : [],
+        selectedDomainIds: [],
+        selectedKeyRelationshipIds: defaultKeyRelationshipId ? [defaultKeyRelationshipId] : [],
+      });
+    }
+  }, [idea, open, defaultRoleId, defaultKeyRelationshipId]);
+
+  const fetchDepositIdeaRelationships = async (depositIdeaId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch role relationships
+      const { data: roleLinks } = await supabase
+        .from('0007-ap-roles-deposit-ideas')
+        .select('role_id')
+        .eq('deposit_idea_id', depositIdeaId);
+
+      // Fetch domain relationships
+      const { data: domainLinks } = await supabase
+        .from('0007-ap-deposit-idea-domains')
+        .select('domain_id')
+        .eq('deposit_idea_id', depositIdeaId);
+
+      // Fetch additional key relationship links
+      const { data: krLinks } = await supabase
+        .from('0007-ap-deposit-idea-key-relationships')
+        .select('key_relationship_id')
+        .eq('deposit_idea_id', depositIdeaId);
+
+      // Update form with fetched relationships
+      setForm({
+        title: idea?.title || '',
+        notes: idea?.notes || '',
+        selectedRoleIds: roleLinks?.map(r => r.role_id) || [],
+        selectedDomainIds: domainLinks?.map(d => d.domain_id) || [],
+        selectedKeyRelationshipIds: [
+          ...(idea?.key_relationship_id ? [idea.key_relationship_id] : []),
+          ...(krLinks?.map(kr => kr.key_relationship_id) || [])
+        ],
+      });
+
+    } catch (error) {
+      console.error('Error fetching deposit idea relationships:', error);
+      // Fallback to basic form data
+      setForm({
+        title: idea?.title || '',
+        notes: idea?.notes || '',
+        selectedRoleIds: defaultRoleId ? [defaultRoleId] : [],
+        selectedDomainIds: [],
+        selectedKeyRelationshipIds: idea?.key_relationship_id ? [idea.key_relationship_id] : (defaultKeyRelationshipId ? [defaultKeyRelationshipId] : []),
+      });
+    }
+  };
+
+  // Original reset logic (now moved to useEffect above)
+  /*
+  useEffect(() => {
     setForm({
       title: idea?.title || '',
       notes: idea?.notes || '',
@@ -98,6 +166,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
         : (defaultKeyRelationshipId ? [defaultKeyRelationshipId] : []),
     });
   }, [idea, open, defaultRoleId, defaultKeyRelationshipId]);
+  */
 
   // ----------- HANDLERS -----------
   const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
