@@ -59,17 +59,21 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
 
-  // State for new note input
+  // State for new note input - simplified to single content box
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
-  const [newNoteTitle, setNewNoteTitle] = useState('');
 
   // Collapsible
   const [isExpanded, setIsExpanded] = useState(false);
 
+  // State for task management
+  const [showAddTaskForm, setShowAddTaskForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
   // State for deposit ideas management
   const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
   const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
+  const [deletingDepositIdea, setDeletingDepositIdea] = useState<DepositIdea | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -193,25 +197,20 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     }
   };
 
-  // Add note
+  // Add note - simplified to single content
   const addNote = async () => {
-    if (!newNote.trim() && !newNoteTitle.trim()) return;
+    if (!newNote.trim()) return;
     setAddingNote(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
-
-      // Combine title and note content
-      const noteContent = newNoteTitle.trim() 
-        ? `(${newNoteTitle.trim()}) ${newNote.trim()}`
-        : newNote.trim();
 
       // First, insert the note
       const { data: noteData, error: noteError } = await supabase
         .from('0007-ap-notes')
         .insert({
           user_id: user.id,
-          content: noteContent,
+          content: newNote.trim(),
         })
         .select()
         .single();
@@ -237,13 +236,29 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       }
 
       setNewNote('');
-      setNewNoteTitle('');
       loadNotes();
       toast.success("Note added!");
     } catch (err: any) {
       toast.error("Failed to add note: " + (err.message || err));
     }
     setAddingNote(false);
+  };
+
+  // Handle task creation
+  const handleTaskCreated = () => {
+    setShowAddTaskForm(false);
+    loadRelationshipData(); // Refresh tasks
+  };
+
+  // Handle task editing
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+  };
+
+  // Handle task updated
+  const handleTaskUpdated = () => {
+    setEditingTask(null);
+    loadRelationshipData(); // Refresh tasks
   };
 
   // Handle deposit idea creation
@@ -262,6 +277,35 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     setEditingDepositIdea(null);
     loadRelationshipData(); // Refresh deposit ideas
   };
+
+  // Handle deposit idea deletion
+  const handleDeleteDepositIdea = async () => {
+    if (!deletingDepositIdea) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .delete()
+        .eq('id', deletingDepositIdea.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting deposit idea:', error);
+        toast.error('Failed to delete deposit idea');
+      } else {
+        toast.success('Deposit idea deleted successfully!');
+        setDeletingDepositIdea(null);
+        loadRelationshipData(); // Refresh deposit ideas
+      }
+    } catch (error) {
+      console.error('Error deleting deposit idea:', error);
+      toast.error('Failed to delete deposit idea');
+    }
+  };
+
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm relative">
       <div className="flex items-center mb-3">
@@ -293,22 +337,37 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             <div className="font-semibold mb-2 flex items-center gap-2">
               <span>Tasks</span>
               <span className="text-xs bg-gray-100 rounded px-2">{tasks.length}</span>
+              <button
+                onClick={() => setShowAddTaskForm(true)}
+                className="ml-auto text-xs bg-blue-600 text-white rounded px-2 py-1 hover:bg-blue-700 transition-colors"
+              >
+                Add
+              </button>
             </div>
             {tasks.length === 0 ? (
               <div className="text-gray-400 text-sm">No tasks for this relationship.</div>
             ) : (
               <ul className="space-y-2">
                 {tasks.map((task) => (
-                  <li key={task.id} className="flex items-center gap-2 p-2 border rounded">
+                  <li key={task.id} className="flex items-center justify-between gap-2 p-2 border rounded">
                     <span>{task.title}</span>
-                    {task.is_urgent && <span className="text-xs bg-red-100 text-red-700 rounded px-1 ml-2">Urgent</span>}
-                    {task.is_important && <span className="text-xs bg-blue-100 text-blue-700 rounded px-1 ml-2">Important</span>}
-                    {task.is_authentic_deposit && <span className="text-xs bg-green-100 text-green-700 rounded px-1 ml-2">Deposit</span>}
+                    <div className="flex items-center gap-1">
+                      {task.is_urgent && <span className="text-xs bg-red-100 text-red-700 rounded px-1">Urgent</span>}
+                      {task.is_important && <span className="text-xs bg-blue-100 text-blue-700 rounded px-1">Important</span>}
+                      {task.is_authentic_deposit && <span className="text-xs bg-green-100 text-green-700 rounded px-1">Deposit</span>}
+                      <button
+                        onClick={() => handleEditTask(task)}
+                        className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2"
+                      >
+                        Edit
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </div>
+
           {/* --- Deposit Ideas --- */}
           <div className="mb-4">
             <div className="font-semibold mb-2 flex items-center gap-2">
@@ -326,29 +385,34 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             ) : (
               <ul className="space-y-2">
                 {depositIdeas.map((idea) => (
-                  <li key={idea.id} className="flex items-center justify-between gap-2 p-2 border rounded">
-                    <span>{idea.title || idea.notes || "No Title"}</span>
-                    <button
-                      onClick={() => handleEditDepositIdea(idea)}
-                      className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
-                    >
-                      Edit
-                    </button>
+                  <li key={idea.id} className="p-2 border rounded">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
+                    </div>
+                    <div className="flex gap-1">
+                      <button
+                        onClick={() => handleEditDepositIdea(idea)}
+                        className="text-xs bg-blue-600 text-white rounded px-2 py-1 hover:bg-blue-700 transition-colors flex-1"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setDeletingDepositIdea(idea)}
+                        className="text-xs bg-red-600 text-white rounded px-2 py-1 hover:bg-red-700 transition-colors flex-1"
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </li>
                 ))}
               </ul>
             )}
           </div>
+
           {/* --- Notes Section --- */}
           <div className="mb-4">
             <div className="font-semibold mb-2">Notes</div>
             <div className="space-y-2 mb-2">
-              <input
-                value={newNoteTitle}
-                onChange={e => setNewNoteTitle(e.target.value)}
-                placeholder="Note title (optional)..."
-                className="w-full border rounded px-2 py-1 text-sm"
-              />
               <input
                 value={newNote}
                 onChange={e => setNewNote(e.target.value)}
@@ -358,7 +422,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             </div>
             <button
               onClick={addNote}
-              disabled={(!newNote.trim() && !newNoteTitle.trim()) || addingNote}
+              disabled={!newNote.trim() || addingNote}
               className="mb-2 px-3 py-1 rounded bg-primary-600 text-white disabled:bg-gray-300 text-sm"
             >
               {addingNote ? 'Saving...' : 'Add Note'}
@@ -377,6 +441,44 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             ) : (
               <div className="text-sm text-gray-400 mt-2">No notes yet.</div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Form Modal */}
+      {showAddTaskForm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="create"
+              initialData={{
+                schedulingType: 'task',
+                selectedRoleIds: [relationship.role_id],
+                selectedKeyRelationshipIds: [relationship.id]
+              }}
+              onSubmitSuccess={handleTaskCreated}
+              onClose={() => setShowAddTaskForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Task Form Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="edit"
+              initialData={{
+                id: editingTask.id,
+                title: editingTask.title,
+                schedulingType: 'task',
+                selectedKeyRelationshipIds: [relationship.id],
+                // The TaskEventForm will fetch and prefill other data via useEffect
+              }}
+              onSubmitSuccess={handleTaskUpdated}
+              onClose={() => setEditingTask(null)}
+            />
           </div>
         </div>
       )}
@@ -416,6 +518,32 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               onSubmitSuccess={handleDepositIdeaUpdated}
               onClose={() => setEditingDepositIdea(null)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* Delete Deposit Idea Confirmation Modal */}
+      {deletingDepositIdea && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Deposit Idea</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete "{deletingDepositIdea.title || deletingDepositIdea.notes || 'this deposit idea'}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setDeletingDepositIdea(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteDepositIdea}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}
