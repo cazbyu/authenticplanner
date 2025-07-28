@@ -1062,21 +1062,20 @@ const handleAddGoalNote = async (goalId: string) => {
 
       {showWeeklyGoalForm && (
         <TaskEventForm
-          mode="create"
-          onClose={() => setShowWeeklyGoalForm(null)}
-          onSubmitSuccess={handleWeeklyGoalCreated} // <-- THIS IS WHAT YOUR FORM EXPECTS
-          initialData={{
-            schedulingType: editingTask.start_time ? 'event' : 'task',
-            twelveWeekGoalChecked: true,
-            twelveWeekGoalId: showWeeklyGoalForm.goalId,
-            weekNumber: showWeeklyGoalForm.weekNumber,
-            cycleStartDate: currentCycle?.start_date,
-            selectedRoleIds: showWeeklyGoalForm.roles.map(r => r.id),
-            selectedDomainIds: showWeeklyGoalForm.domains.map(d => d.id),
-            notes: `Week ${showWeeklyGoalForm.weekNumber} task for 12-week goal`,
-            twelveWeekGoalChecked: true
-          }}
-        />
+  mode="create"
+  onClose={() => setShowWeeklyGoalForm(null)}
+  onSubmitSuccess={handleWeeklyGoalCreated}
+  initialData={{
+    schedulingType: 'task', // Set a default value instead of reading from null
+    twelveWeekGoalId: showWeeklyGoalForm.goalId,
+    weekNumber: showWeeklyGoalForm.weekNumber,
+    cycleStartDate: currentCycle?.start_date,
+    selectedRoleIds: showWeeklyGoalForm.roles.map(r => r.id),
+    selectedDomainIds: showWeeklyGoalForm.domains.map(d => d.id),
+    notes: `Week ${showWeeklyGoalForm.weekNumber} task for 12-week goal`,
+    twelveWeekGoalChecked: true // This property only needs to be listed once
+  }}
+/>
       )}
 
       {editingWeeklyGoal && (
