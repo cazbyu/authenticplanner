@@ -1048,7 +1048,8 @@ const ActivationTypeSelector: React.FC<{
     selectedDomainIds: pivotIds.selectedDomainIds,
     selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds,
     authenticDeposit: true,
-    isFromDepositIdea: true
+    isFromDepositIdea: true,
+    originalDepositIdeaId: depositIdea.id
   }}
   onSubmitSuccess={handleFormSuccess}
   onClose={() => {

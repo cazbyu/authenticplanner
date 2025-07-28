@@ -511,7 +511,8 @@ const DepositIdeas: React.FC = () => {
                 selectedRoleIds: activatingDepositIdea.deposit_idea_roles?.map(r => r.role_id) || [],
                 selectedDomainIds: activatingDepositIdea.deposit_idea_domains?.map(d => d.domain_id) || [],
                 selectedKeyRelationshipIds: activatingDepositIdea.key_relationship_id ? [activatingDepositIdea.key_relationship_id] : [],
-                isFromDepositIdea: true
+                isFromDepositIdea: true,
+                originalDepositIdeaId: activatingDepositIdea.id
               }}
               onSubmitSuccess={handleDepositIdeaActivated}
               onClose={() => setActivatingDepositIdea(null)}

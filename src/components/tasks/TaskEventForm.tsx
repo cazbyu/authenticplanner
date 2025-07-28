@@ -375,6 +375,17 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         }
       }
 
+      // --- Handle Deposit Idea Linking ---
+      if (form.isFromDepositIdea && form.originalDepositIdeaId) {
+        // Link the task to the original deposit idea
+        await supabase
+          .from("0007-ap-deposit-idea-tasks")
+          .insert([{
+            deposit_idea_id: form.originalDepositIdeaId,
+            task_id: taskId,
+          }]);
+      }
+
       // --- Pivot tables (roles, domains, relationships, 12-week goals) ---
       await supabase.from("0007-ap-task-roles").delete().eq("task_id", taskId);
       if (form.selectedRoleIds.length > 0) {
