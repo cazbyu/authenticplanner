@@ -66,16 +66,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const handleDrop = async (info: any) => {
       const taskId = info.draggedEl.getAttribute('data-task-id');
       if (!taskId) return;
-
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-
         const startTimeUTC = info.date.toISOString();
         const endTime = new Date(info.date);
         endTime.setHours(endTime.getHours() + 1);
         const endTimeFormatted = endTime.toTimeString().slice(0, 8);
-
         const { error } = await supabase
           .from('0007-ap-tasks')
           .update({
@@ -86,15 +83,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           })
           .eq('id', taskId)
           .eq('user_id', user.id);
-
-        if (error) {
-          throw error;
-        }
-        
+        if (error) { throw error; }
         toast.success('Task scheduled successfully');
-        if (onTaskUpdated) {
-          onTaskUpdated();
-        }
+        if (onTaskUpdated) { onTaskUpdated(); }
       } catch (err) {
         console.error('Error scheduling task:', err);
         toast.error('Failed to schedule task');
@@ -105,11 +96,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
-
         const startTimeUTC = info.event.start.toISOString();
-        const endTimeFormatted = info.event.end ? 
-          info.event.end.toTimeString().slice(0, 8) : null;
-        
+        const endTimeFormatted = info.event.end ? info.event.end.toTimeString().slice(0, 8) : null;
         const { error } = await supabase
           .from('0007-ap-tasks')
           .update({
@@ -120,10 +108,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           })
           .eq('id', info.event.id)
           .eq('user_id', user.id);
-        
-        if (error) {
-          throw error;
-        }
+        if (error) { throw error; }
         toast.success('Task time updated');
       } catch (err) {
         console.error('Error updating task time:', err);
@@ -140,21 +125,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     }, [view, currentDate]);
 
-    const handleEventClick = (info: any) => {
-      // Logic for editing a task can be added here
-    };
-
-    const handleDatesSet = (arg: DateSetArg) => {
-      onDateChange(arg.view.currentStart);
-    };
+    const handleEventClick = (info: any) => {};
+    const handleDatesSet = (arg: DateSetArg) => { onDateChange(arg.view.currentStart); };
 
     const isToday = (date: Date) => {
       const today = new Date();
-      return (
-        date.getDate() === today.getDate() &&
-        date.getMonth() === today.getMonth() &&
-        date.getFullYear() === today.getFullYear()
-      );
+      return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
     };
 
     const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
@@ -175,30 +151,10 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
               .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
               .fc-timegrid-axis { padding-right: 0.5rem; }
-              .fc-timegrid-now-indicator-line { 
-                border-top: 3px solid #EF4444 !important; 
-                left: 0 !important; 
-                right: 0 !important; 
-                margin-left: 0 !important;
-                box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important;
-                z-index: 1000 !important;
-              }
-              .fc-timegrid-now-indicator-arrow { 
-                border-color: #EF4444 !important;
-                border-width: 8px 0 8px 10px !important;
-                margin-top: -8px !important;
-                z-index: 1000 !important;
-              }
-              .fc-scroller { 
-                overflow-y: auto !important;
-                overflow-x: hidden !important;
-                height: 100% !important;
-                max-height: calc(100vh - 200px) !important;
-              }
-              .fc-timegrid-body {
-                overflow-y: auto !important;
-                max-height: calc(100vh - 200px) !important;
-              }
+              .fc-timegrid-now-indicator-line { border-top: 3px solid #EF4444 !important; left: 0 !important; right: 0 !important; margin-left: 0 !important; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important; z-index: 1000 !important; }
+              .fc-timegrid-now-indicator-arrow { border-color: #EF4444 !important; border-width: 8px 0 8px 10px !important; margin-top: -8px !important; z-index: 1000 !important; }
+              .fc-scroller { overflow-y: auto !important; overflow-x: hidden !important; height: 100% !important; max-height: calc(100vh - 200px) !important; }
+              .fc-timegrid-body { overflow-y: auto !important; max-height: calc(100vh - 200px) !important; }
               .fc-col-header-cell { padding: 0; background: #fff; }
               .fc-col-header-cell.fc-day-today { background: transparent !important; }
               .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
@@ -244,33 +200,11 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           slotLabelInterval="01:00"
           expandRows={true}
           stickyHeaderDates={true}
-          slotLabelFormat={{
-            hour: 'numeric',
-            minute: '2-digit',
-            omitZeroMinute: true,
-            meridiem: 'short',
-          }}
+          slotLabelFormat={{ hour: 'numeric', minute: '2-digit', omitZeroMinute: true, meridiem: 'short' }}
           views={{
-            dayGridMonth: {
-              firstDay: 0,
-              fixedWeekCount: false,
-              showNonCurrentDates: true,
-            },
-            timeGridWeek: {
-              firstDay: 0,
-              slotDuration: '00:15:00',
-              slotLabelInterval: '01:00',
-              allDaySlot: true,
-              expandRows: true,
-            },
-            timeGridDay: {
-              dayCount: 1,
-              firstDay: 0,
-              slotDuration: '00:15:00',
-              slotLabelInterval: '01:00',
-              allDaySlot: true,
-              expandRows: true,
-            },
+            dayGridMonth: { firstDay: 0, fixedWeekCount: false, showNonCurrentDates: true },
+            timeGridWeek: { firstDay: 0, slotDuration: '00:15:00', slotLabelInterval: '01:00', allDaySlot: true, expandRows: true },
+            timeGridDay: { dayCount: 1, firstDay: 0, slotDuration: '00:15:00', slotLabelInterval: '01:00', allDaySlot: true, expandRows: true },
           }}
           datesSet={handleDatesSet}
           initialDate={currentDate}
