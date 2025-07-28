@@ -389,6 +389,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               mode="create"
               initialData={{
                 schedulingType: 'depositIdea',
+                selectedRoleIds: [relationship.role_id],
                 selectedKeyRelationshipIds: [relationship.id]
               }}
               onSubmitSuccess={handleDepositIdeaCreated}
