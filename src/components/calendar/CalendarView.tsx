@@ -182,20 +182,27 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
               .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
               .fc-timegrid-axis { padding-right: 0.5rem; }
-              .fc-timegrid-now-indicator-line { 
-                border-top: 3px solid #EF4444 !important; 
+              
+              /* --- MODIFIED FOR CURRENT TIME INDICATOR --- */
+              .fc-timegrid .fc-timegrid-now-indicator-line { 
+                border-color: #f59e0b !important;
+                border-style: solid !important;
+                border-width: 2px 0 0 !important;
                 left: 0 !important; 
                 right: 0 !important; 
-                margin-left: 0 !important;
-                box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important;
-                z-index: 1000 !important;
+                z-index: 4 !important;
               }
-              .fc-timegrid-now-indicator-arrow { 
-                border-color: #EF4444 !important;
+              .fc-timegrid .fc-timegrid-now-indicator-arrow { 
+                border-color: #f59e0b !important;
+                margin-top: -7px !important;
                 border-width: 8px 0 8px 10px !important;
-                margin-top: -8px !important;
-                z-index: 1000 !important;
+                border-top-color: transparent !important;
+                border-bottom-color: transparent !important;
+                left: 0 !important;
+                z-index: 4 !important;
               }
+              /* --- END MODIFICATION --- */
+
               .fc-scroller { 
                 overflow-y: auto !important;
                 overflow-x: hidden !important;
