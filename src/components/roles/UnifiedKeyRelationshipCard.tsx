@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
 import { Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
+import TaskEventForm from '../tasks/TaskEventForm';
 
 interface KeyRelationship {
   id: string;
@@ -61,9 +62,14 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   // State for new note input
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
+  const [newNoteTitle, setNewNoteTitle] = useState('');
 
   // Collapsible
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // State for deposit ideas management
+  const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
+  const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -189,18 +195,23 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 
   // Add note
   const addNote = async () => {
-    if (!newNote.trim()) return;
+    if (!newNote.trim() && !newNoteTitle.trim()) return;
     setAddingNote(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
+
+      // Combine title and note content
+      const noteContent = newNoteTitle.trim() 
+        ? `(${newNoteTitle.trim()}) ${newNote.trim()}`
+        : newNote.trim();
 
       // First, insert the note
       const { data: noteData, error: noteError } = await supabase
         .from('0007-ap-notes')
         .insert({
           user_id: user.id,
-          content: newNote.trim(),
+          content: noteContent,
         })
         .select()
         .single();
@@ -226,6 +237,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       }
 
       setNewNote('');
+      setNewNoteTitle('');
       loadNotes();
       toast.success("Note added!");
     } catch (err: any) {
@@ -234,6 +246,22 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     setAddingNote(false);
   };
 
+  // Handle deposit idea creation
+  const handleDepositIdeaCreated = () => {
+    setShowAddDepositIdeaForm(false);
+    loadRelationshipData(); // Refresh deposit ideas
+  };
+
+  // Handle deposit idea editing
+  const handleEditDepositIdea = (idea: DepositIdea) => {
+    setEditingDepositIdea(idea);
+  };
+
+  // Handle deposit idea updated
+  const handleDepositIdeaUpdated = () => {
+    setEditingDepositIdea(null);
+    loadRelationshipData(); // Refresh deposit ideas
+  };
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm relative">
       <div className="flex items-center mb-3">
@@ -286,14 +314,26 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             <div className="font-semibold mb-2 flex items-center gap-2">
               <span>Deposit Ideas</span>
               <span className="text-xs bg-gray-100 rounded px-2">{depositIdeas.length}</span>
+              <button
+                onClick={() => setShowAddDepositIdeaForm(true)}
+                className="ml-auto text-xs bg-green-600 text-white rounded px-2 py-1 hover:bg-green-700 transition-colors"
+              >
+                Add
+              </button>
             </div>
             {depositIdeas.length === 0 ? (
               <div className="text-gray-400 text-sm">No deposit ideas for this relationship.</div>
             ) : (
               <ul className="space-y-2">
                 {depositIdeas.map((idea) => (
-                  <li key={idea.id} className="flex items-center gap-2 p-2 border rounded">
+                  <li key={idea.id} className="flex items-center justify-between gap-2 p-2 border rounded">
                     <span>{idea.title || idea.notes || "No Title"}</span>
+                    <button
+                      onClick={() => handleEditDepositIdea(idea)}
+                      className="text-xs text-blue-600 hover:text-blue-800 transition-colors"
+                    >
+                      Edit
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -302,21 +342,27 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           {/* --- Notes Section --- */}
           <div className="mb-4">
             <div className="font-semibold mb-2">Notes</div>
-            <div className="flex items-center mb-2">
+            <div className="space-y-2 mb-2">
+              <input
+                value={newNoteTitle}
+                onChange={e => setNewNoteTitle(e.target.value)}
+                placeholder="Note title (optional)..."
+                className="w-full border rounded px-2 py-1 text-sm"
+              />
               <input
                 value={newNote}
                 onChange={e => setNewNote(e.target.value)}
-                placeholder="Add a note..."
+                placeholder="Add note content..."
                 className="w-full border rounded px-2 py-1 text-sm"
               />
-              <button
-                onClick={addNote}
-                disabled={!newNote.trim() || addingNote}
-                className="ml-2 px-3 py-1 rounded bg-primary-600 text-white disabled:bg-gray-300"
-              >
-                {addingNote ? 'Saving...' : <Plus className="w-4 h-4" />}
-              </button>
             </div>
+            <button
+              onClick={addNote}
+              disabled={(!newNote.trim() && !newNoteTitle.trim()) || addingNote}
+              className="mb-2 px-3 py-1 rounded bg-primary-600 text-white disabled:bg-gray-300 text-sm"
+            >
+              {addingNote ? 'Saving...' : 'Add Note'}
+            </button>
             {notes && notes.length > 0 ? (
               <ul className="mt-2 space-y-2">
                 {notes.map((note) => (
@@ -331,6 +377,43 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             ) : (
               <div className="text-sm text-gray-400 mt-2">No notes yet.</div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Deposit Idea Form Modal */}
+      {showAddDepositIdeaForm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="create"
+              initialData={{
+                schedulingType: 'depositIdea',
+                selectedKeyRelationshipIds: [relationship.id]
+              }}
+              onSubmitSuccess={handleDepositIdeaCreated}
+              onClose={() => setShowAddDepositIdeaForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Deposit Idea Form Modal */}
+      {editingDepositIdea && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="edit"
+              initialData={{
+                id: editingDepositIdea.id,
+                title: editingDepositIdea.title || editingDepositIdea.notes || '',
+                notes: editingDepositIdea.notes || '',
+                schedulingType: 'depositIdea',
+                selectedKeyRelationshipIds: [relationship.id]
+              }}
+              onSubmitSuccess={handleDepositIdeaUpdated}
+              onClose={() => setEditingDepositIdea(null)}
+            />
           </div>
         </div>
       )}
