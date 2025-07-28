@@ -166,7 +166,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         .select(`
           *,
           task_roles:0007-ap-task-roles!task_id(role_id)
-        `)
+          deposit_idea_roles:0007-ap-roles-deposit-ideas(role_id),
         .eq('user_id', user.id)
         .in('id', taskIds)
         .in('status', ['pending', 'in_progress'])
