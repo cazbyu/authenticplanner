@@ -198,25 +198,15 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           height="100%"
           events={events}
           editable={true}
-          eventStartEditable={true}
-          eventResizableFromStart={false}
-          eventDurationEditable={true}
           droppable={true}
           selectable={true}
           selectMirror={true}
-          dropAccept="*"
           dayMaxEvents={true}
           weekends={true}
-          eventOverlap={true}
-          selectOverlap={true}
           eventClick={handleEventClick}
           drop={handleDrop}
           eventDrop={handleEventChange}
           eventResize={handleEventChange}
-          eventAllow={(dropInfo, draggedEvent) => {
-            // Allow all event movements
-            return true;
-          }}
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={true}
@@ -224,28 +214,33 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           slotDuration="00:30:00"
           slotLabelInterval="01:00"
           expandRows={true}
-          stickyHeaderDates={false}
-          scrollTime="06:00:00"
-          scrollTimeReset={false}
-          slotLabelFormat={{ hour: 'numeric', minute: '2-digit', omitZeroMinute: true, meridiem: 'short' }}
+          stickyHeaderDates={true}
+          slotLabelFormat={{
+            hour: 'numeric',
+            minute: '2-digit',
+            omitZeroMinute: true,
+            meridiem: 'short',
+          }}
           views={{
-            dayGridMonth: { firstDay: 0, fixedWeekCount: false, showNonCurrentDates: true },
-            timeGridWeek: { 
-              firstDay: 0, 
-              slotDuration: '00:15:00', 
-              slotLabelInterval: '01:00', 
-              allDaySlot: true, 
-              expandRows: true,
-              scrollTime: '06:00:00'
+            dayGridMonth: {
+              firstDay: 0,
+              fixedWeekCount: false,
+              showNonCurrentDates: true,
             },
-            timeGridDay: { 
-              dayCount: 1, 
-              firstDay: 0, 
-              slotDuration: '00:15:00', 
-              slotLabelInterval: '01:00', 
-              allDaySlot: true, 
+            timeGridWeek: {
+              firstDay: 0,
+              slotDuration: '00:15:00',
+              slotLabelInterval: '01:00',
+              allDaySlot: true,
               expandRows: true,
-              scrollTime: '06:00:00'
+            },
+            timeGridDay: {
+              dayCount: 1,
+              firstDay: 0,
+              slotDuration: '00:15:00',
+              slotLabelInterval: '01:00',
+              allDaySlot: true,
+              expandRows: true,
             },
           }}
           datesSet={handleDatesSet}
