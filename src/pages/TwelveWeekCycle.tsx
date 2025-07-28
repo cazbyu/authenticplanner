@@ -122,6 +122,126 @@ const TwelveWeekCycle: React.FC = () => {
     }
   }, [user, currentCycle]);
 
+  // Progress bar interaction handlers
+  const handleProgressBarClick = async (e: React.MouseEvent, goalId: string) => {
+    const progressBar = e.currentTarget as HTMLElement;
+    const rect = progressBar.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const newProgress = Math.round((clickX / rect.width) * 100);
+    const clampedProgress = Math.max(0, Math.min(100, newProgress));
+    
+    await updateGoalProgress(goalId, clampedProgress);
+  };
+
+  const handleProgressDragStart = (e: React.MouseEvent | React.TouchEvent, goalId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const goal = goals.find(g => g.id === goalId);
+    if (!goal) return;
+    
+    const progressBar = (e.currentTarget as HTMLElement).closest('.relative') as HTMLElement;
+    if (!progressBar) return;
+    
+    const rect = progressBar.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    
+    setDraggingProgress({
+      goalId,
+      startX: clientX,
+      startProgress: goal.progress,
+      progressBarWidth: rect.width
+    });
+  };
+
+  const updateGoalProgress = async (goalId: string, newProgress: number) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('0007-ap-goals-12wk')
+        .update({ 
+          progress: newProgress,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', goalId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating goal progress:', error);
+        return;
+      }
+
+      // Update local state
+      setGoals(prev => prev.map(goal => 
+        goal.id === goalId 
+          ? { ...goal, progress: newProgress }
+          : goal
+      ));
+    } catch (error) {
+      console.error('Error updating goal progress:', error);
+    }
+  };
+
+  // Mouse/touch event handlers for dragging
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!draggingProgress) return;
+      
+      const deltaX = e.clientX - draggingProgress.startX;
+      const progressChange = (deltaX / draggingProgress.progressBarWidth) * 100;
+      const newProgress = Math.max(0, Math.min(100, draggingProgress.startProgress + progressChange));
+      
+      // Update local state immediately for smooth dragging
+      setGoals(prev => prev.map(goal => 
+        goal.id === draggingProgress.goalId 
+          ? { ...goal, progress: Math.round(newProgress) }
+          : goal
+      ));
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!draggingProgress) return;
+      e.preventDefault();
+      
+      const deltaX = e.touches[0].clientX - draggingProgress.startX;
+      const progressChange = (deltaX / draggingProgress.progressBarWidth) * 100;
+      const newProgress = Math.max(0, Math.min(100, draggingProgress.startProgress + progressChange));
+      
+      // Update local state immediately for smooth dragging
+      setGoals(prev => prev.map(goal => 
+        goal.id === draggingProgress.goalId 
+          ? { ...goal, progress: Math.round(newProgress) }
+          : goal
+      ));
+    };
+
+    const handleMouseUp = async () => {
+      if (!draggingProgress) return;
+      
+      const goal = goals.find(g => g.id === draggingProgress.goalId);
+      if (goal) {
+        await updateGoalProgress(draggingProgress.goalId, goal.progress);
+      }
+      
+      setDraggingProgress(null);
+    };
+
+    if (draggingProgress) {
+      document.addEventListener('mousemove', handleMouseMove);
+      document.addEventListener('touchmove', handleTouchMove, { passive: false });
+      document.addEventListener('mouseup', handleMouseUp);
+      document.addEventListener('touchend', handleMouseUp);
+    }
+
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('touchmove', handleTouchMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('touchend', handleMouseUp);
+    };
+  }, [draggingProgress, goals]);
 
   const fetchCurrentCycle = async () => {
     try {
