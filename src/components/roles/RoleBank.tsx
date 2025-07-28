@@ -181,8 +181,22 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         depositIdeaIdsFromKR = krDepositLinks?.map(link => link.deposit_idea_id) || [];
       }
 
+      // Also fetch deposit ideas directly linked to key relationships via the main table
+      let directKRDepositIdeas: string[] = [];
+      if (relationshipIds.length > 0) {
+        const { data: directKRDeposits, error: directKRError } = await supabase
+          .from('0007-ap-deposit-ideas')
+          .select('id')
+          .in('key_relationship_id', relationshipIds)
+          .eq('is_active', true)
+          .is('activated_at', null)
+          .or('archived.is.null,archived.eq.false');
+        if (directKRError) throw directKRError;
+        directKRDepositIdeas = directKRDeposits?.map(d => d.id) || [];
+      }
+
       // Combine and fetch all unique deposit ideas
-      const allDepositIdeaIds = [...new Set([...depositIdeaIdsFromRoles, ...depositIdeaIdsFromKR])];
+      const allDepositIdeaIds = [...new Set([...depositIdeaIdsFromRoles, ...depositIdeaIdsFromKR, ...directKRDepositIdeas])];
       if (allDepositIdeaIds.length > 0) {
         const { data: depositIdeasData, error: depositIdeasError } = await supabase
           .from('0007-ap-deposit-ideas')
@@ -190,7 +204,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           .in('id', allDepositIdeaIds)
           .eq('is_active', true)
           .is('activated_at', null)
-          .eq('archived', false);
+          .or('archived.is.null,archived.eq.false');
         if (depositIdeasError) throw depositIdeasError;
         setRoleDepositIdeas(depositIdeasData || []);
       } else {

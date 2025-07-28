@@ -129,7 +129,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         .or('archived.is.null,archived.eq.false');
 
       console.log('Deposit ideas for relationship', relationship.id, ':', depositIdeasData);
-      setDepositIdeas(depositIdeasData || []);
 
       // Also check for deposit ideas linked via the junction table
       const { data: depositIdeaLinks } = await supabase
@@ -138,7 +137,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           deposit_idea:0007-ap-deposit-ideas(
             id,
             title,
-            notes,
+            description,
             is_active,
             activated_at,
             archived
@@ -516,7 +515,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               initialData={{
                 id: editingDepositIdea.id,
                 title: editingDepositIdea.title || editingDepositIdea.notes || '',
-                notes: editingDepositIdea.notes || '',
+                notes: editingDepositIdea.description || editingDepositIdea.notes || '',
                 schedulingType: 'depositIdea',
                 selectedRoleIds: [relationship.role_id],
                 selectedKeyRelationshipIds: [relationship.id],
