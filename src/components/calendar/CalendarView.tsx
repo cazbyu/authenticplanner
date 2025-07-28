@@ -197,7 +197,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     return (
       <div className="h-full">
-        <style>
+  <style>
     .fc { font-family: inherit; }
     .fc-scrollgrid-sync-inner { padding: 8px 0; }
     .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
@@ -243,7 +243,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     .fc-event-dragging { opacity: 0.75; }
     .fc-timegrid-col.fc-day-today { background-color: rgba(59, 130, 246, 0.05); }
     .fc-unthemed .fc-event { border-radius: 4px; border: 1px solid; font-size: 0.85em; padding: 2px 4px; }
-  `}</style>
+  </style>
 
         <FullCalendar
   key={view}                      
