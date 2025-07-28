@@ -39,17 +39,17 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     // This hook scrolls the calendar to the current time when it's ready.
     useEffect(() => {
-      if (ref && 'current' in ref && ref.current) {
+      if (ref && 'current' in ref && ref.current && (view === 'timeGridWeek' || view === 'timeGridDay')) {
         const calendarApi = ref.current.getApi();
-        if (view === 'timeGridWeek' || view === 'timeGridDay') {
-          setTimeout(() => {
-            const now = new Date();
-            const currentTime = format(now, 'HH:mm:ss');
-            calendarApi.scrollToTime(currentTime);
-          }, 50);
-        }
+        
+        // Scroll to current time with a slight delay to ensure calendar is rendered
+        setTimeout(() => {
+          const now = new Date();
+          const currentTime = format(now, 'HH:mm:ss');
+          calendarApi.scrollToTime(currentTime);
+        }, 100);
       }
-    }, [ref, view, refreshTrigger]);
+    }, [ref, view, refreshTrigger, currentDate]);
 
     // This hook fetches tasks when the component loads or is refreshed.
     useEffect(() => {
@@ -186,16 +186,33 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           slotDuration="00:30:00"
           slotLabelInterval="01:00"
           expandRows={true}
-          stickyHeaderDates={true}
+          stickyHeaderDates={false}
           slotLabelFormat={{ hour: 'numeric', minute: '2-digit', omitZeroMinute: true, meridiem: 'short' }}
           views={{
             dayGridMonth: { firstDay: 0, fixedWeekCount: false, showNonCurrentDates: true },
-            timeGridWeek: { firstDay: 0, slotDuration: '00:15:00', slotLabelInterval: '01:00', allDaySlot: true, expandRows: true },
-            timeGridDay: { dayCount: 1, firstDay: 0, slotDuration: '00:15:00', slotLabelInterval: '01:00', allDaySlot: true, expandRows: true },
+            timeGridWeek: { 
+              firstDay: 0, 
+              slotDuration: '00:15:00', 
+              slotLabelInterval: '01:00', 
+              allDaySlot: true, 
+              expandRows: true,
+              scrollTime: '06:00:00'
+            },
+            timeGridDay: { 
+              dayCount: 1, 
+              firstDay: 0, 
+              slotDuration: '00:15:00', 
+              slotLabelInterval: '01:00', 
+              allDaySlot: true, 
+              expandRows: true,
+              scrollTime: '06:00:00'
+            },
           }}
           datesSet={handleDatesSet}
           initialDate={currentDate}
           dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
+          scrollTime="06:00:00"
+          scrollTimeReset={false}
         />
       </div>
     );

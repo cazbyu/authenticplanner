@@ -164,7 +164,6 @@ input:checked + .slider:before {
 html, body, #root {
   height: 100%;
   min-height: 0;
-  overflow: hidden;
 }
 
 .main-layout {
@@ -188,36 +187,4 @@ html, body, #root {
 
 .fc-view-harness {
   height: 100% !important;
-}
-
-.fc-scroller {
-  height: auto !important;
-}
-
-.fc-scroller-liquid-absolute {
-  position: static !important;
-}
-
-.fc-timegrid-container {
-  height: auto !important;
-  min-height: 0;
-  overflow-y: auto !important;
-}
-
-.fc-timegrid-body {
-  overflow: visible !important;
-}
-
-/* Enhanced scrolling for calendar */
-.fc-scroller-liquid-absolute {
-  position: relative !important;
-}
-
-.fc-timegrid-slots {
-  overflow-y: auto !important;
-}
-
-/* Ensure proper scrolling behavior */
-.fc-view-harness-active > .fc-view {
-  overflow-y: auto !important;
 }
