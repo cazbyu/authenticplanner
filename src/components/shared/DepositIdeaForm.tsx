@@ -173,7 +173,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
           const roleInserts = form.selectedRoleIds.map(roleId => ({
             deposit_idea_id: depositIdea.id, role_id: roleId
           }));
-          await supabase.from('0007-ap-deposit-idea-roles').insert(roleInserts);
+          await supabase.from('0007-ap-roles-deposit-ideas').insert(roleInserts);
         }
         // Domains
         if (form.selectedDomainIds.length > 0) {
@@ -205,9 +205,9 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
         }
 
         // 2. Replace roles
-        await supabase.from('0007-ap-deposit-idea-roles').delete().eq('deposit_idea_id', idea.id);
+        await supabase.from('0007-ap-roles-deposit-ideas').delete().eq('deposit_idea_id', idea.id);
         if (form.selectedRoleIds.length > 0) {
-          await supabase.from('0007-ap-deposit-idea-roles')
+          await supabase.from('0007-ap-roles-deposit-ideas')
             .insert(form.selectedRoleIds.map(roleId => ({
               deposit_idea_id: idea.id, role_id: roleId
             })));

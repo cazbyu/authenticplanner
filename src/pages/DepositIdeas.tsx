@@ -199,7 +199,7 @@ const DepositIdeas: React.FC = () => {
           .select(`
             *,
             key_relationship:0007-ap-key-relationships(*),
-            deposit_idea_roles:0007-ap-deposit-idea-roles(role_id),
+            deposit_idea_roles:0007-ap-roles-deposit-ideas(role_id),
             deposit_idea_domains:0007-ap-deposit-idea-domains(domain_id)
           `)
           .eq('user_id', user.id)

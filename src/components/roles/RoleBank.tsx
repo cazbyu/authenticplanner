@@ -193,7 +193,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
       // Fetch deposit ideas specifically associated with this role
       const { data: roleDepositIdeaLinks, error: roleDepositError } = await supabase
-        .from('0007-ap-deposit-idea-roles')
+        .from('0007-ap-roles-deposit-ideas')
         .select('deposit_idea_id')
         .eq('role_id', roleId);
 
