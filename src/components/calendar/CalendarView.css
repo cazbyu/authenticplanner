@@ -49,51 +49,22 @@
   z-index: 40 !important;
 }
 
-/* CRITICAL: Fix scrolling behavior */
+/* CRITICAL: Simplify scroll behavior - let FullCalendar handle everything */
 .fc-scroller {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-  /* Remove any conflicting positioning */
-  position: relative !important;
+  /* Remove all custom overrides and let FullCalendar manage scrolling */
 }
 
 .fc-scroller-liquid-absolute {
-  position: absolute !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  /* Ensure smooth scrolling */
-  scroll-behavior: smooth !important;
+  /* Remove all custom overrides and let FullCalendar manage scrolling */
 }
 
-/* Fix timegrid container scrolling */
-.fc-timegrid-container {
-  height: 100% !important;
-  overflow: hidden !important;
-  position: relative !important;
-}
-
-.fc-timegrid-body {
-  min-height: 100% !important;
-  overflow: visible !important;
-  position: relative !important;
-}
-
-.fc-timegrid-slots {
-  position: relative !important;
-}
-
-/* Prevent scroll conflicts */
-.fc-view {
-  height: 100% !important;
-  overflow: hidden !important;
-}
-
+/* Remove all custom positioning that might conflict */
+.fc-timegrid-container,
+.fc-timegrid-body,
+.fc-timegrid-slots,
+.fc-view,
 .fc-view-harness-active > .fc-view {
-  position: relative !important;
-  height: 100% !important;
-  overflow: hidden !important;
+  /* Let FullCalendar handle all positioning and scrolling */
 }
 
 /* Header styling */
@@ -194,18 +165,13 @@
   border-top: none !important;
 }
 
-/* Remove any touch-action restrictions that might cause scroll issues */
-.fc-scroller,
-.fc-timegrid-container,
-.fc-timegrid-body {
-  touch-action: pan-y !important;
-}
-
 /* Ensure proper z-index stacking */
-.fc-timegrid-slots {
-  z-index: 1 !important;
-}
-
 .fc-timegrid-now-indicator-container {
   z-index: 40 !important;
+}
+
+/* Force smooth scrolling behavior */
+.fc-scroller {
+  scroll-behavior: smooth !important;
+  -webkit-overflow-scrolling: touch !important;
 }
