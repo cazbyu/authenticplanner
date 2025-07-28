@@ -200,12 +200,70 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       // --- Deposit Idea Logic (Unchanged) ---
       if (form.schedulingType === "depositIdea") {
 
-console.log("DEBUG: Early return for depositIdea path");
+        // Create the deposit idea
+        const { data: depositIdea, error: depositIdeaError } = await supabase
+          .from("0007-ap-deposit-ideas")
+          .insert([{
+            user_id: user.id,
+            title: form.title.trim(),
+            notes: form.notes.trim() || null,
+            key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
+            is_active: true
+          }])
+          .select()
+          .single();
+
+        if (depositIdeaError || !depositIdea) {
+          throw new Error("Failed to create deposit idea: " + (depositIdeaError?.message || "Unknown error"));
+        }
+
+        // Link to roles
+        if (form.selectedRoleIds.length > 0) {
+          const roleInserts = form.selectedRoleIds.map(roleId => ({
+            deposit_idea_id: depositIdea.id,
+            role_id: roleId
+          }));
+          const { error: roleError } = await supabase
+            .from("0007-ap-roles-deposit-ideas")
+            .insert(roleInserts);
+          if (roleError) {
+            console.error("Error linking deposit idea to roles:", roleError);
+          }
+        }
+
+        // Link to domains
+        if (form.selectedDomainIds.length > 0) {
+          const domainInserts = form.selectedDomainIds.map(domainId => ({
+            deposit_idea_id: depositIdea.id,
+            domain_id: domainId
+          }));
+          const { error: domainError } = await supabase
+            .from("0007-ap-deposit-idea-domains")
+            .insert(domainInserts);
+          if (domainError) {
+            console.error("Error linking deposit idea to domains:", domainError);
+          }
+        }
+
+        // Link to key relationships (if not already set via key_relationship_id)
+        if (form.selectedKeyRelationshipIds.length > 1) {
+          // If multiple key relationships selected, use the junction table
+          const krInserts = form.selectedKeyRelationshipIds.map(krId => ({
+            deposit_idea_id: depositIdea.id,
+            key_relationship_id: krId
+          }));
+          const { error: krError } = await supabase
+            .from("0007-ap-deposit-idea-key-relationships")
+            .insert(krInserts);
+          if (krError) {
+            console.error("Error linking deposit idea to key relationships:", krError);
+          }
+        }
+
+        toast.success("Deposit idea created successfully!");
         
-          // ... logic for deposit ideas
           onSubmitSuccess();
           onClose();
-        console.log("DEBUG: handleSubmit returning after deposit idea logic");
         
           return;
       }
