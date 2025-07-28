@@ -33,28 +33,21 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
-    // =========================================================
-    // 👇 ADD THIS NEW CODE BLOCK HERE
-    // =========================================================
+    // This hook scrolls the calendar to the current time when it's ready.
     useEffect(() => {
-      // Check if the ref is connected and holds the calendar API
       if (ref && 'current' in ref && ref.current) {
         const calendarApi = ref.current.getApi();
-        // Only scroll in time-based views
         if (view === 'timeGridWeek' || view === 'timeGridDay') {
-          // Use a small timeout to ensure the view has finished rendering
           setTimeout(() => {
             const now = new Date();
             const currentTime = format(now, 'HH:mm:ss');
             calendarApi.scrollToTime(currentTime);
-          }, 50); 
+          }, 50);
         }
       }
-    }, [ref, view, refreshTrigger]); // Reruns when the calendar is ready or the view changes
-    // =========================================================
-    // 👆 END OF NEW CODE BLOCK
-    // =========================================================
-    
+    }, [ref, view, refreshTrigger]);
+
+    // This hook fetches tasks when the component loads or is refreshed.
     useEffect(() => {
       const fetchTasks = async () => {
         setLoading(true);
@@ -163,116 +156,78 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     });
 
     return (
-    <div className="h-full">
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-            .fc { font-family: inherit; }
-            .fc-scrollgrid-sync-inner { padding: 8px 0; }
-            .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
-            .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
-            .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
-            .fc-timegrid-axis { padding-right: 0.5rem; }
-            .fc-timegrid-now-indicator-line { 
-              border-top: 3px solid #EF4444 !important; 
-              left: 0 !important; 
-              right: 0 !important; 
-              margin-left: 0 !important;
-              box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important;
-              z-index: 1000 !important;
-            }
-            .fc-timegrid-now-indicator-arrow { 
-              border-color: #EF4444 !important;
-              border-width: 8px 0 8px 10px !important;
-              margin-top: -8px !important;
-              z-index: 1000 !important;
-            }
-            .fc-scroller { 
-              overflow-y: auto !important;
-              overflow-x: hidden !important;
-              height: 100% !important;
-              max-height: calc(100vh - 200px) !important;
-            }
-            .fc-timegrid-body {
-              overflow-y: auto !important;
-              max-height: calc(100vh - 200px) !important;
-            }
-            .fc-col-header-cell { padding: 0; background: #fff; }
-            .fc-col-header-cell.fc-day-today { background: transparent !important; }
-            .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
-            .fc-col-header-cell-cushion { display: flex; flex-direction: column; align-items: center; padding: 8px 0; color: #4B5563; font-weight: 500; }
-            .fc-col-header-cell-cushion .day-name { font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
-            .fc-col-header-cell-cushion .day-number { font-size: 20px; font-weight: 400; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
-            .fc-col-header-cell-cushion .day-number.today { background: #3B82F6; color: white; }
-            .fc-dayGridMonth-view .fc-col-header-cell { text-align: center; padding: 8px 0; }
-            .fc-dayGridMonth-view .fc-daygrid-day-top { justify-content: center; padding-top: 4px; }
-            .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px; color: #4B5563; }
-            .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: #3B82F6; color: white; border-radius: 50%; }
-            .fc-header-toolbar { display: none !important; }
-            .fc-event-dragging { opacity: 0.75; }
-            .fc-timegrid-col.fc-day-today { background-color: rgba(59, 130, 246, 0.05); }
-            .fc-unthemed .fc-event { border-radius: 4px; border: 1px solid; font-size: 0.85em; padding: 2px 4px; }
-          `,
-        }}
-      />
+      <div className="h-full">
+        <style
+          dangerouslySetInnerHTML={{
+            __html: `
+              .fc { font-family: inherit; }
+              .fc-scrollgrid-sync-inner { padding: 8px 0; }
+              .fc-theme-standard td, .fc-theme-standard th { border-color: #e5e7eb; }
+              .fc-timegrid-slot { height: 24px !important; border-bottom: 1px solid #f3f4f6 !important; }
+              .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
+              .fc-timegrid-axis { padding-right: 0.5rem; }
+              .fc-timegrid-now-indicator-line { border-top: 3px solid #EF4444 !important; left: 0 !important; right: 0 !important; margin-left: 0 !important; box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important; z-index: 1000 !important; }
+              .fc-timegrid-now-indicator-arrow { border-color: #EF4444 !important; border-width: 8px 0 8px 10px !important; margin-top: -8px !important; z-index: 1000 !important; }
+              .fc-scroller { overflow-y: auto !important; overflow-x: hidden !important; height: 100% !important; max-height: calc(100vh - 200px) !important; }
+              .fc-timegrid-body { overflow-y: auto !important; max-height: calc(100vh - 200px) !important; }
+              .fc-col-header-cell { padding: 0; background: #fff; }
+              .fc-col-header-cell.fc-day-today { background: transparent !important; }
+              .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion { color: #4B5563; }
+              .fc-col-header-cell-cushion { display: flex; flex-direction: column; align-items: center; padding: 8px 0; color: #4B5563; font-weight: 500; }
+              .fc-col-header-cell-cushion .day-name { font-size: 11px; text-transform: uppercase; margin-bottom: 4px; }
+              .fc-col-header-cell-cushion .day-number { font-size: 20px; font-weight: 400; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 50%; }
+              .fc-col-header-cell-cushion .day-number.today { background: #3B82F6; color: white; }
+              .fc-dayGridMonth-view .fc-col-header-cell { text-align: center; padding: 8px 0; }
+              .fc-dayGridMonth-view .fc-daygrid-day-top { justify-content: center; padding-top: 4px; }
+              .fc-dayGridMonth-view .fc-daygrid-day-number { font-size: 14px; padding: 4px 8px; color: #4B5563; }
+              .fc-dayGridMonth-view .fc-day-today .fc-daygrid-day-number { background: #3B82F6; color: white; border-radius: 50%; }
+              .fc-header-toolbar { display: none !important; }
+              .fc-event-dragging { opacity: 0.75; }
+              .fc-timegrid-col.fc-day-today { background-color: rgba(59, 130, 246, 0.05); }
+              .fc-unthemed .fc-event { border-radius: 4px; border: 1px solid; font-size: 0.85em; padding: 2px 4px; }
+            `
+          }}
+        />
 
-      <FullCalendar
-        key={view}
-        ref={ref}
-        plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-        initialView={view}
-        headerToolbar={false}
-        height="100%"
-        events={events}
-        editable={true}
-        droppable={true}
-        selectable={true}
-        selectMirror={true}
-        dayMaxEvents={true}
-        weekends={true}
-        eventClick={handleEventClick}
-        drop={handleDrop}
-        eventDrop={handleEventChange}
-        eventResize={handleEventChange}
-        dayMinTime="00:00:00"
-        dayMaxTime="24:00:00"
-        allDaySlot={true}
-        nowIndicator={true}
-        slotDuration="00:30:00"
-        slotLabelInterval="01:00"
-        expandRows={true}
-        stickyHeaderDates={true}
-        slotLabelFormat={{
-          hour: 'numeric',
-          minute: '2-digit',
-          omitZeroMinute: true,
-          meridiem: 'short',
-        }}
-        views={{
-          dayGridMonth: {
-            firstDay: 0,
-            fixedWeekCount: false,
-            showNonCurrentDates: true,
-          },
-          timeGridWeek: {
-            firstDay: 0,
-            slotDuration: '00:15:00',
-            slotLabelInterval: '01:00',
-            allDaySlot: true,
-            expandRows: true,
-          },
-          timeGridDay: {
-            dayCount: 1,
-            firstDay: 0,
-            slotDuration: '00:15:00',
-            slotLabelInterval: '01:00',
-            allDaySlot: true,
-            expandRows: true,
-          },
-        }}
-        datesSet={handleDatesSet}
-        initialDate={currentDate}
-        dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
-      />
-    </div>
-  );
+        <FullCalendar
+          key={view}
+          ref={ref}
+          plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
+          initialView={view}
+          headerToolbar={false}
+          height="100%"
+          events={events}
+          editable={true}
+          droppable={true}
+          selectable={true}
+          selectMirror={true}
+          dayMaxEvents={true}
+          weekends={true}
+          eventClick={handleEventClick}
+          drop={handleDrop}
+          eventDrop={handleEventChange}
+          eventResize={handleEventChange}
+          dayMinTime="00:00:00"
+          dayMaxTime="24:00:00"
+          allDaySlot={true}
+          nowIndicator={true}
+          slotDuration="00:30:00"
+          slotLabelInterval="01:00"
+          expandRows={true}
+          stickyHeaderDates={true}
+          slotLabelFormat={{ hour: 'numeric', minute: '2-digit', omitZeroMinute: true, meridiem: 'short' }}
+          views={{
+            dayGridMonth: { firstDay: 0, fixedWeekCount: false, showNonCurrentDates: true },
+            timeGridWeek: { firstDay: 0, slotDuration: '00:15:00', slotLabelInterval: '01:00', allDaySlot: true, expandRows: true },
+            timeGridDay: { dayCount: 1, firstDay: 0, slotDuration: '00:15:00', slotLabelInterval: '01:00', allDaySlot: true, expandRows: true },
+          }}
+          datesSet={handleDatesSet}
+          initialDate={currentDate}
+          dayHeaderContent={view === 'dayGridMonth' ? undefined : customDayHeaderContent}
+        />
+      </div>
+    );
+  }
+);
+
+export default CalendarView;
