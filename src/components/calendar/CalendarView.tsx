@@ -199,31 +199,34 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           events={events}
           editable={true}
           eventStartEditable={true}
-          eventResizableFromStart={false}
+          eventResizableFromStart={true}
           eventDurationEditable={true}
           droppable={true}
           selectable={true}
           selectMirror={true}
-          dropAccept="*"
           dayMaxEvents={true}
           weekends={true}
           eventOverlap={true}
           selectOverlap={true}
+          longPressDelay={300}
+          eventLongPressDelay={300}
           eventClick={handleEventClick}
           drop={handleDrop}
           eventDrop={handleEventChange}
           eventResize={handleEventChange}
-          eventAllow={(dropInfo, draggedEvent) => {
-            // Allow all event movements
-            return true;
-          }}
+          selectAllow={(selectInfo) => true}
+          eventAllow={(dropInfo, draggedEvent) => true}
           eventMouseEnter={(info) => {
-            info.el.style.cursor = 'move';
+            info.el.style.cursor = 'grab';
             info.el.style.zIndex = '999';
           }}
           eventMouseLeave={(info) => {
-            info.el.style.cursor = 'default';
+            info.el.style.cursor = 'auto';
             info.el.style.zIndex = 'auto';
+          }}
+          eventDidMount={(info) => {
+            // Ensure events are draggable
+            info.el.style.cursor = 'grab';
           }}
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
@@ -231,7 +234,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           nowIndicator={true}
           slotDuration="00:30:00"
           slotLabelInterval="01:00"
-          expandRows={true} // Changed back to true
+          expandRows={true}
           stickyHeaderDates={false}
           scrollTime="06:00:00"
           scrollTimeReset={false}
@@ -243,7 +246,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotDuration: '00:15:00', 
               slotLabelInterval: '01:00', 
               allDaySlot: true, 
-              expandRows: true, // Changed back to true
+              expandRows: true,
               scrollTime: '06:00:00'
             },
             timeGridDay: { 
@@ -252,7 +255,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotDuration: '00:15:00', 
               slotLabelInterval: '01:00', 
               allDaySlot: true, 
-              expandRows: true, // Changed back to true
+              expandRows: true,
               scrollTime: '06:00:00'
             },
           }}

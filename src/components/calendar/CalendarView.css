@@ -144,10 +144,12 @@
 .fc-event-dragging {
   opacity: 0.75;
   z-index: 999;
+  cursor: grabbing !important;
 }
 
 .fc-event-resizing {
   opacity: 0.75;
+  cursor: ns-resize !important;
 }
 
 /* Event resize handles */
@@ -161,21 +163,37 @@
   bottom: 0;
   left: 0;
   right: 0;
+  z-index: 10;
 }
 
 .fc-event .fc-event-resizer:hover {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.4);
 }
 
 /* Make events more interactive */
 .fc-event {
-  cursor: move;
+  cursor: grab;
   transition: opacity 0.2s ease;
+  position: relative;
+}
+
+.fc-event:active {
+  cursor: grabbing;
 }
 
 .fc-event:hover {
   opacity: 0.9;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+/* Ensure proper event interaction */
+.fc-event-main {
+  pointer-events: auto;
+}
+
+.fc-event-title {
+  pointer-events: none;
 }
 
 .fc-timegrid-col.fc-day-today {
