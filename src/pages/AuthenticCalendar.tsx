@@ -88,48 +88,18 @@ const AuthenticCalendar: React.FC = () => {
   const { user, logout } = useAuth();
 
   // Enable external dragging for FullCalendar
-  useEffect(() => {
-    // Initialize external dragging for FullCalendar
-    const initializeExternalDragging = () => {
-      if (typeof window !== 'undefined' && window.FullCalendar) {
-        const { Draggable } = window.FullCalendar;
-        
-        // Initialize draggable for task cards
-        const taskCards = document.querySelectorAll('[data-task-id]');
-        taskCards.forEach(card => {
-          if (!card.classList.contains('fc-draggable-initialized')) {
-            new Draggable(card, {
-              eventData: function(eventEl) {
-                const taskId = eventEl.getAttribute('data-task-id');
-                const title = eventEl.textContent?.split('\n')[0] || 'Task';
-                return {
-                  id: taskId,
-                  title: title,
-                  duration: '01:00' // Default 1 hour duration
-                };
-              }
-            });
-            card.classList.add('fc-draggable-initialized');
-          }
-        });
-      }
-    };
-
-    // Initialize after a short delay to ensure DOM is ready
-    const timer = setTimeout(initializeExternalDragging, 100);
-    
-    // Re-initialize when tasks change
-    const observer = new MutationObserver(initializeExternalDragging);
-    const sidebarElement = document.querySelector('[data-task-id]')?.closest('.overflow-hidden');
-    if (sidebarElement) {
-      observer.observe(sidebarElement, { childList: true, subtree: true });
-    }
-
-    return () => {
-      clearTimeout(timer);
-      observer.disconnect();
-    };
-  }, [tasks, activeView]);
+  // Add this new block to AuthenticCalendar.tsx
+useEffect(() => {
+  const calendarApi = calendarRef.current?.getApi();
+  if (calendarApi && (view === 'timeGridWeek' || view === 'timeGridDay')) {
+    // Use a short timeout to ensure the calendar has finished rendering
+    setTimeout(() => {
+      const now = new Date();
+      const currentTime = format(now, 'HH:mm:ss');
+      calendarApi.scrollToTime(currentTime);
+    }, 100);
+  }
+}, [view, refreshTrigger]); // Reruns when the view or data changes
 
   // Fetch all task data
   useEffect(() => {
@@ -556,7 +526,7 @@ const AuthenticCalendar: React.FC = () => {
                     <ChevronLeft className="h-4 w-4 text-gray-500" />
                   </button>
                 </div>
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1">
   <DragDropContext onDragEnd={() => {}}>
     <UnscheduledPriorities
       key={JSON.stringify(collapsedQuadrants)} // <-- ADD THIS LINE
