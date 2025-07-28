@@ -88,6 +88,48 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [showRoleError, setShowRoleError] = useState(false);
 
+  // Fetch existing deposit idea data for editing
+  useEffect(() => {
+    if (mode === "edit" && initialData?.id && initialData?.schedulingType === "depositIdea") {
+      fetchDepositIdeaData(initialData.id);
+    }
+  }, [mode, initialData?.id, initialData?.schedulingType]);
+
+  const fetchDepositIdeaData = async (depositIdeaId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch deposit idea with role and domain relationships
+      const { data: depositIdea, error } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .select(`
+          *,
+          roles_deposit_ideas:0007-ap-roles-deposit-ideas(role_id),
+          deposit_idea_domains:0007-ap-deposit-idea-domains(domain_id)
+        `)
+        .eq('id', depositIdeaId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error || !depositIdea) {
+        console.error('Error fetching deposit idea data:', error);
+        return;
+      }
+
+      // Update form with existing role and domain selections
+      setForm(prev => ({
+        ...prev,
+        selectedRoleIds: depositIdea.roles_deposit_ideas?.map((r: any) => r.role_id) || [],
+        selectedDomainIds: depositIdea.deposit_idea_domains?.map((d: any) => d.domain_id) || [],
+        selectedKeyRelationshipIds: depositIdea.key_relationship_id ? [depositIdea.key_relationship_id] : [],
+      }));
+
+    } catch (error) {
+      console.error('Error fetching deposit idea data:', error);
+    }
+  };
+
   // Generates time options for 24 hours in 15-min increments
   const generateTimeOptions = () => {
     const options = [];
