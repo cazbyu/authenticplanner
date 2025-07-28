@@ -78,7 +78,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [relationshipDepositIdeas, setRelationshipDepositIdeas] = useState<Record<string, DepositIdea[]>>({});
   
   useEffect(() => {
-     console.log("Domains passed to DepositIdeaForm in RoleBank:", domains);
     fetchRoles();
     fetchDomains();
   }, []);
@@ -952,7 +951,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       </div>
 
       {/* Add Deposit Idea Form Modal - Global */}
-      {showAddDepositIdeaForm && (
+      {showAddDepositIdeaForm && !selectedRole && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl mx-4">
             <TaskEventForm
@@ -962,7 +961,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               }}
               onSubmitSuccess={() => {
                 setShowAddDepositIdeaForm(false);
-                // Refresh data if needed
+                fetchRoles(); // Refresh roles data
               }}
               onClose={() => setShowAddDepositIdeaForm(false)}
             />
