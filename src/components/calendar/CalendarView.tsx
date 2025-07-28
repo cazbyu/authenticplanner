@@ -122,8 +122,22 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        
+        // Get the new start and end times from the event
         const startTimeUTC = info.event.start.toISOString();
-        const endTimeFormatted = info.event.end ? info.event.end.toTimeString().slice(0, 8) : null;
+        
+        // Handle end time - could be from resize or drag
+        let endTimeFormatted = null;
+        if (info.event.end) {
+          endTimeFormatted = info.event.end.toTimeString().slice(0, 8);
+        } else if (info.event.start) {
+          // If no end time, default to 1 hour duration
+          const defaultEnd = new Date(info.event.start);
+          defaultEnd.setHours(defaultEnd.getHours() + 1);
+          endTimeFormatted = defaultEnd.toTimeString().slice(0, 8);
+        }
+        
+        // Update the task in the database
         const { error } = await supabase
           .from('0007-ap-tasks')
           .update({
@@ -134,12 +148,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           })
           .eq('id', info.event.id)
           .eq('user_id', user.id);
+          
         if (error) { throw error; }
-        toast.success('Task time updated');
+        
+        // Show appropriate success message
+        if (info.oldEvent && info.event.start.getTime() !== info.oldEvent.start.getTime()) {
+          toast.success('Event moved successfully');
+        } else {
+          toast.success('Event duration updated');
+        }
       } catch (err) {
         console.error('Error updating task time:', err);
         info.revert();
-        toast.error('Failed to update task time');
+        toast.error('Failed to update event');
       }
     };
 
@@ -177,6 +198,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           height="100%"
           events={events}
           editable={true}
+          eventResizableFromStart={false}
+          eventDurationEditable={true}
+          eventStartEditable={true}
           droppable={true}
           selectable={true}
           selectMirror={true}
@@ -187,6 +211,12 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           drop={handleDrop}
           eventDrop={handleEventChange}
           eventResize={handleEventChange}
+          eventMouseEnter={(info) => {
+            info.el.style.cursor = 'move';
+          }}
+          eventMouseLeave={(info) => {
+            info.el.style.cursor = 'default';
+          }}
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={true}
