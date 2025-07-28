@@ -248,7 +248,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 </style>
 
         <FullCalendar
-  key={view}                      // ← ADD THIS LINE! (anywhere in the tag's props)
+  key={view}                      
   ref={ref}
   plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
   initialView={view}
