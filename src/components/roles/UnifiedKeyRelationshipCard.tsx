@@ -26,7 +26,7 @@ interface Task {
 interface DepositIdea {
   id: string;
   title?: string;
-  description?: string;
+  notes?: string;
   is_active: boolean;
 }
 
@@ -137,7 +137,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           deposit_idea:0007-ap-deposit-ideas(
             id,
             title,
-            description,
+            notes,
             is_active,
             activated_at,
             archived
@@ -515,7 +515,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               initialData={{
                 id: editingDepositIdea.id,
                 title: editingDepositIdea.title || editingDepositIdea.notes || '',
-                notes: editingDepositIdea.description || editingDepositIdea.notes || '',
+                notes: editingDepositIdea.notes || '',
                 schedulingType: 'depositIdea',
                 selectedRoleIds: [relationship.role_id],
                 selectedKeyRelationshipIds: [relationship.id],
