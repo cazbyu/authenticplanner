@@ -285,16 +285,16 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           headerToolbar={false}
           height="100%"
           events={events}
-          editable={true}
-          droppable={true}
-          selectable={true}
-          selectMirror={true}
+          editable={false}
+          droppable={false}
+          selectable={false}
+          selectMirror={false}
           dayMaxEvents={true}
           weekends={true}
           eventClick={handleEventClick}
-          drop={handleDrop}
-          eventDrop={handleEventChange}
-          eventResize={handleEventChange}
+          eventMouseEnter={(info) => {
+            info.el.style.cursor = 'pointer';
+          }}
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={true}

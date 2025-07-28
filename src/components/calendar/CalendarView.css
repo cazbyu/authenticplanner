@@ -221,9 +221,3 @@
 .fc-timegrid-now-indicator-container {
   z-index: 40 !important;
 }
-
-/* Force smooth scrolling behavior */
-.fc-scroller {
-  scroll-behavior: smooth !important;
-  -webkit-overflow-scrolling: touch !important;
-}
