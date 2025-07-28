@@ -311,22 +311,10 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                         <p className="text-sm text-gray-500">Due: {new Date(task.due_date).toLocaleDateString()}</p>
                       </div>
                       <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={(e) => {
-                          e.stopPropagation();
-                          handleTaskAction(task.id, 'complete');
-                        }} title="Complete"><Check className="h-4 w-4 text-green-500" /></button>
-                        <button onClick={(e) => {
-                          e.stopPropagation();
-                          handleTaskAction(task.id, 'delegate');
-                        }} title="Delegate"><UserPlus className="h-4 w-4 text-blue-500" /></button>
-                        <button onClick={(e) => {
-                          e.stopPropagation();
-                          setEditingTask(task);
-                        }} title="Edit"><Edit className="h-4 w-4 text-gray-500" /></button>
-                        <button onClick={(e) => {
-                          e.stopPropagation();
-                          handleTaskAction(task.id, 'cancel');
-                        }} title="Cancel"><X className="h-4 w-4 text-red-500" /></button>
+                        <button onClick={() => handleTaskAction(task.id, 'complete')} title="Complete"><Check className="h-4 w-4 text-green-500" /></button>
+                        <button onClick={() => handleTaskAction(task.id, 'delegate')} title="Delegate"><UserPlus className="h-4 w-4 text-blue-500" /></button>
+                        <button onClick={() => setEditingTask(task)} title="Edit"><Edit className="h-4 w-4 text-gray-500" /></button>
+                        <button onClick={() => handleTaskAction(task.id, 'cancel')} title="Cancel"><X className="h-4 w-4 text-red-500" /></button>
                       </div>
                     </div>
                   ))}
@@ -409,7 +397,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             <button onClick={() => setSortBy('inactive')} className={`px-2 py-1 text-xs rounded ${sortBy === 'inactive' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>Inactive</button>
           </div>
           <button onClick={() => setShowAddDepositIdeaForm(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
-            <Plus className="h-4 w-4" /> Add Idea
+            <Plus className="h-4 w-4" /> Add Deposit Idea
           </button>
         </div>
       </div>
