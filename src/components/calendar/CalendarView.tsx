@@ -206,21 +206,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     .fc-timegrid-slot-label { font-size: 0.75rem; color: #6B7280; padding-right: 1rem; }
     .fc-timegrid-axis { padding-right: 0.5rem; }
     .fc-timegrid-now-indicator-line { 
-      border-top: 3px solid #EF4444 !important; 
-      left: 0 !important; 
-      right: 0 !important; 
-      margin-left: 0 !important;
-      box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important;
-      z-index: 1000 !important;
-      position: relative !important;
-    }
-    .fc-timegrid-now-indicator-arrow { 
-      border-color: #EF4444 !important;
-      border-width: 8px 0 8px 10px !important;
-      margin-top: -8px !important;
-      z-index: 1000 !important;
-      position: relative !important;
-    }
+  border-top: 3px solid #EF4444 !important; 
+  left: 0 !important; 
+  right: 0 !important; 
+  margin-left: 0 !important;
+  box-shadow: 0 0 8px rgba(239, 68, 68, 0.8) !important;
+  z-index: 1000 !important;
+}
+.fc-timegrid-now-indicator-arrow { 
+  border-color: #EF4444 !important;
+  border-width: 8px 0 8px 10px !important;
+  margin-top: -8px !important;
+  z-index: 1000 !important;
+}
     .fc-scroller { 
       overflow-y: auto !important;
       overflow-x: hidden !important;
