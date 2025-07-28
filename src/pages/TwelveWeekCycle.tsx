@@ -102,6 +102,8 @@ const TwelveWeekCycle: React.FC = () => {
   const [goalNotes, setGoalNotes] = useState<Record<string, any[]>>({});
   const [newGoalNotes, setNewGoalNotes] = useState<Record<string, string>>({});
   const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({});
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingNoteContent, setEditingNoteContent] = useState<string>('');
   const [draggingProgress, setDraggingProgress] = useState<{
     goalId: string;
     startX: number;
@@ -121,6 +123,63 @@ const TwelveWeekCycle: React.FC = () => {
       fetchTasks();
     }
   }, [user, currentCycle]);
+
+  // Fetch notes for all goals
+  useEffect(() => {
+    if (goals.length > 0) {
+      fetchGoalNotes();
+    }
+  }, [goals]);
+
+  const fetchGoalNotes = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const goalIds = goals.map(goal => goal.id);
+      if (goalIds.length === 0) return;
+
+      const { data: goalNotesData, error } = await supabase
+        .from('0007-ap-goal-notes')
+        .select(`
+          goal_id,
+          note:0007-ap-notes(
+            id,
+            content,
+            created_at,
+            updated_at
+          )
+        `)
+        .in('goal_id', goalIds);
+
+      if (error) {
+        console.error('Error fetching goal notes:', error);
+        return;
+      }
+
+      // Group notes by goal_id
+      const notesByGoal: Record<string, any[]> = {};
+      goalNotesData?.forEach(item => {
+        if (item.note) {
+          if (!notesByGoal[item.goal_id]) {
+            notesByGoal[item.goal_id] = [];
+          }
+          notesByGoal[item.goal_id].push(item.note);
+        }
+      });
+
+      // Sort notes by created_at (newest first)
+      Object.keys(notesByGoal).forEach(goalId => {
+        notesByGoal[goalId].sort((a, b) => 
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+        );
+      });
+
+      setGoalNotes(notesByGoal);
+    } catch (error) {
+      console.error('Error fetching goal notes:', error);
+    }
+  };
 
   // Progress bar interaction handlers
   const handleProgressBarClick = async (e: React.MouseEvent, goalId: string) => {
@@ -475,18 +534,7 @@ const handleAddGoalNote = async (goalId: string) => {
 
       // Step 3: Clear the input and refresh the data
       setNewGoalNotes(prev => ({ ...prev, [goalId]: '' }));
-      // NOTE: You don't have a specific function to fetch only notes for one goal.
-      // Calling fetchGoals() will refresh all goal data, including their notes if you adjust the query.
-      // For now, let's add the new note to the local state for an instant update.
-      const newNote = {
-          id: noteData.id,
-          content: noteContent,
-          created_at: new Date().toISOString()
-      };
-      setGoalNotes(prev => ({
-          ...prev,
-          [goalId]: [...(prev[goalId] || []), newNote]
-      }));
+      fetchGoalNotes(); // Refresh all goal notes
 
     } catch (error) {
       console.error('Error adding goal note:', error);
@@ -496,6 +544,69 @@ const handleAddGoalNote = async (goalId: string) => {
     }
   };
   
+  const handleEditNote = (note: any) => {
+    setEditingNoteId(note.id);
+    setEditingNoteContent(note.content);
+  };
+
+  const handleSaveNoteEdit = async () => {
+    if (!editingNoteId || !editingNoteContent.trim()) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('0007-ap-notes')
+        .update({
+          content: editingNoteContent.trim(),
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingNoteId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error updating note:', error);
+        return;
+      }
+
+      setEditingNoteId(null);
+      setEditingNoteContent('');
+      fetchGoalNotes(); // Refresh notes
+    } catch (error) {
+      console.error('Error updating note:', error);
+    }
+  };
+
+  const handleCancelNoteEdit = () => {
+    setEditingNoteId(null);
+    setEditingNoteContent('');
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    if (!confirm('Are you sure you want to delete this note?')) return;
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('0007-ap-notes')
+        .delete()
+        .eq('id', noteId)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting note:', error);
+        return;
+      }
+
+      fetchGoalNotes(); // Refresh notes
+    } catch (error) {
+      console.error('Error deleting note:', error);
+    }
+  };
+
   const handleGoalCreated = (newGoal: TwelveWeekGoal) => {
     setShowGoalForm(false);
     fetchGoals(); // Refresh goals instead of manual state update
@@ -1038,18 +1149,80 @@ const handleAddGoalNote = async (goalId: string) => {
                       <div className="space-y-3">
                         {goalNotes[goal.id] && goalNotes[goal.id].length > 0 ? (
                           goalNotes[goal.id].map((note: any) => (
-                            <div key={note.id} className="bg-gray-50 rounded-lg p-3 border">
-                              <p className="text-sm text-gray-900 mb-2">{note.content}</p>
-                              <p className="text-xs text-gray-500">
-                                {new Date(note.created_at).toLocaleDateString('en-US', {
-                                  day: 'numeric',
-                                  month: 'short',
-                                  year: 'numeric',
-                                  hour: 'numeric',
-                                  minute: '2-digit',
-                                  hour12: true
-                                })}
-                              </p>
+                            <div key={note.id} className="bg-gray-50 rounded-lg p-3 border hover:bg-gray-100 transition-colors">
+                              {editingNoteId === note.id ? (
+                                <div className="space-y-2">
+                                  <textarea
+                                    value={editingNoteContent}
+                                    onChange={(e) => setEditingNoteContent(e.target.value)}
+                                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                                    rows={3}
+                                  />
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={handleSaveNoteEdit}
+                                      className="px-3 py-1 bg-blue-600 text-white rounded-md hover:bg-blue-700 text-sm"
+                                    >
+                                      Save
+                                    </button>
+                                    <button
+                                      onClick={handleCancelNoteEdit}
+                                      className="px-3 py-1 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 text-sm"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
+                              ) : (
+                                <div>
+                                  <div className="flex items-start justify-between mb-2">
+                                    <p className="text-sm text-gray-900 flex-1">{note.content}</p>
+                                    <div className="flex gap-1 ml-2">
+                                      <button
+                                        onClick={() => handleEditNote(note)}
+                                        className="p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                                        title="Edit note"
+                                      >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteNote(note.id)}
+                                        className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                        title="Delete note"
+                                      >
+                                        <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                        </svg>
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs text-gray-500">
+                                      {new Date(note.created_at).toLocaleDateString('en-US', {
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric',
+                                        hour: 'numeric',
+                                        minute: '2-digit',
+                                        hour12: true
+                                      })}
+                                    </p>
+                                    {note.updated_at !== note.created_at && (
+                                      <p className="text-xs text-gray-400">
+                                        (edited {new Date(note.updated_at).toLocaleDateString('en-US', {
+                                          day: 'numeric',
+                                          month: 'short',
+                                          hour: 'numeric',
+                                          minute: '2-digit',
+                                          hour12: true
+                                        })})
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           ))
                         ) : (
