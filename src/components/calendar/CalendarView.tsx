@@ -39,23 +39,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     // This hook scrolls the calendar to the current time when it's ready.
     useEffect(() => {
-      if (ref && 'current' in ref && ref.current && (view === 'timeGridWeek' || view === 'timeGridDay')) {
+      if (ref && 'current' in ref && ref.current && (view === 'timeGridWeek' || view === 'timeGridDay') && !loading) {
         const calendarApi = ref.current.getApi();
         
-        // Use requestAnimationFrame to ensure DOM is ready, then scroll
-        setTimeout(() => {
-          requestAnimationFrame(() => {
-            const now = new Date();
-            const currentTime = format(now, 'HH:mm:ss');
-            try {
-              calendarApi.scrollToTime(currentTime);
-            } catch (error) {
-              console.warn('Could not scroll to current time:', error);
-            }
-          });
-        }, 100);
+        // Only scroll to current time on initial load, not on every render
+        const now = new Date();
+        const currentTime = format(now, 'HH:mm:ss');
+        try {
+          calendarApi.scrollToTime(currentTime);
+        } catch (error) {
+          console.warn('Could not scroll to current time:', error);
+        }
       }
-    }, [ref, view, currentDate]);
+    }, [ref, view, loading]); // Removed currentDate to prevent auto-scrolling on date changes
 
     // This hook fetches tasks when the component loads or is refreshed.
     useEffect(() => {
@@ -89,15 +85,19 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
     }, [refreshTrigger]);
 
     const handleDrop = async (info: any) => {
-      const taskId = info.draggedEl.getAttribute('data-task-id');
+      // Get task ID from the dragged element
+      const taskId = info.draggedEl?.getAttribute('data-task-id') || info.draggedEl?.dataset?.taskId;
       if (!taskId) return;
+      
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) return;
+        
         const startTimeUTC = info.date.toISOString();
         const endTime = new Date(info.date);
         endTime.setHours(endTime.getHours() + 1);
         const endTimeFormatted = endTime.toTimeString().slice(0, 8);
+        
         const { error } = await supabase
           .from('0007-ap-tasks')
           .update({
@@ -108,6 +108,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           })
           .eq('id', taskId)
           .eq('user_id', user.id);
+          
         if (error) { throw error; }
         toast.success('Task scheduled successfully');
         if (onTaskUpdated) { onTaskUpdated(); }
@@ -179,6 +180,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           droppable={true}
           selectable={true}
           selectMirror={true}
+          dropAccept="*"
           dayMaxEvents={true}
           weekends={true}
           eventClick={handleEventClick}
@@ -191,10 +193,10 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           nowIndicator={true}
           slotDuration="00:30:00"
           slotLabelInterval="01:00"
-          expandRows={true}
+          expandRows={false}
           stickyHeaderDates={false}
-          scrollTime="08:00:00"
-          scrollTimeReset={true}
+          scrollTime="06:00:00"
+          scrollTimeReset={false}
           slotLabelFormat={{ hour: 'numeric', minute: '2-digit', omitZeroMinute: true, meridiem: 'short' }}
           views={{
             dayGridMonth: { firstDay: 0, fixedWeekCount: false, showNonCurrentDates: true },
@@ -203,8 +205,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotDuration: '00:15:00', 
               slotLabelInterval: '01:00', 
               allDaySlot: true, 
-              expandRows: true,
-              scrollTime: '08:00:00'
+              expandRows: false,
+              scrollTime: '06:00:00'
             },
             timeGridDay: { 
               dayCount: 1, 
@@ -212,8 +214,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotDuration: '00:15:00', 
               slotLabelInterval: '01:00', 
               allDaySlot: true, 
-              expandRows: true,
-              scrollTime: '08:00:00'
+              expandRows: false,
+              scrollTime: '06:00:00'
             },
           }}
           datesSet={handleDatesSet}
