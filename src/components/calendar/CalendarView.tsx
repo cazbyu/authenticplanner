@@ -32,6 +32,28 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
   ({ view, currentDate, onDateChange, onTaskUpdated, refreshTrigger }, ref) => {
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+
+    // =========================================================
+    // 👇 ADD THIS NEW CODE BLOCK HERE
+    // =========================================================
+    useEffect(() => {
+      // Check if the ref is connected and holds the calendar API
+      if (ref && 'current' in ref && ref.current) {
+        const calendarApi = ref.current.getApi();
+        // Only scroll in time-based views
+        if (view === 'timeGridWeek' || view === 'timeGridDay') {
+          // Use a small timeout to ensure the view has finished rendering
+          setTimeout(() => {
+            const now = new Date();
+            const currentTime = format(now, 'HH:mm:ss');
+            calendarApi.scrollToTime(currentTime);
+          }, 50); 
+        }
+      }
+    }, [ref, view, refreshTrigger]); // Reruns when the calendar is ready or the view changes
+    // =========================================================
+    // 👆 END OF NEW CODE BLOCK
+    // =========================================================
     
     useEffect(() => {
       const fetchTasks = async () => {
