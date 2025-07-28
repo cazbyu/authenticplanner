@@ -409,7 +409,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                 title: editingDepositIdea.title || editingDepositIdea.notes || '',
                 notes: editingDepositIdea.notes || '',
                 schedulingType: 'depositIdea',
-                selectedKeyRelationshipIds: [relationship.id]
+                selectedKeyRelationshipIds: [relationship.id],
+                // The TaskEventForm will fetch and prefill roles/domains via useEffect
               }}
               onSubmitSuccess={handleDepositIdeaUpdated}
               onClose={() => setEditingDepositIdea(null)}
