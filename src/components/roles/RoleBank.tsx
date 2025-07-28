@@ -160,14 +160,115 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       const taskIds = taskRoleLinks?.map(link => link.task_id) || [];
 
       // Now fetch only those tasks
+       const fetchRoleData = async (roleId: string) => {
+    try {
+      setLoading(true);
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // First get task IDs that are linked to this specific role
+      const { data: taskRoleLinks, error: taskRoleError } = await supabase
+        .from('0007-ap-task-roles')
+        .select('task_id')
+        .eq('role_id', roleId);
+
+      if (taskRoleError) throw taskRoleError;
+
+      const taskIds = taskRoleLinks?.map(link => link.task_id) || [];
+
+      // Now fetch only those tasks with the corrected query
       const { data: tasksData, error: tasksError } = taskIds.length > 0 
         ? await supabase
         .from('0007-ap-tasks')
         .select(`
           *,
-          task_roles:0007-ap-task-roles!task_id(role_id),
-          deposit_idea_roles:0007-ap-roles-deposit-ideas(role_id)
+          task_roles:0007-ap-task-roles!task_id(role_id)
         `)
+        .eq('user_id', user.id)
+        .in('id', taskIds)
+        .in('status', ['pending', 'in_progress'])
+        : { data: [], error: null };
+
+      if (tasksError) throw tasksError;
+      setTasks(tasksData || []);
+
+      // Fetch key relationships
+      const { data: relationshipsData, error: relationshipsError } = await supabase
+        .from('0007-ap-key-relationships')
+        .select('*')
+        .eq('role_id', roleId);
+
+      if (relationshipsError) throw relationshipsError;
+      setRelationships(relationshipsData || []);
+      setKeyRelationships(relationshipsData || []);
+
+      // Fetch tasks and deposit ideas for each key relationship
+      if (relationshipsData && relationshipsData.length > 0) {
+        await fetchRelationshipContent(relationshipsData);
+      }
+
+      // Fetch deposit ideas specifically associated with this role
+      const { data: roleDepositIdeaLinks, error: roleDepositError } = await supabase
+        .from('0007-ap-roles-deposit-ideas')
+        .select('deposit_idea_id')
+        .eq('role_id', roleId);
+
+      if (roleDepositError) throw roleDepositError;
+
+      const depositIdeaIds = roleDepositIdeaLinks?.map(link => link.deposit_idea_id) || [];
+
+      // Now fetch the actual deposit ideas
+      const { data: roleDepositIdeasData, error: depositIdeasError } = depositIdeaIds.length > 0
+        ? await supabase
+            .from('0007-ap-deposit-ideas')
+            .select('*')
+            .in('id', depositIdeaIds)
+            .eq('is_active', true)
+            .is('activated_at', null)  // Not activated
+            .eq('archived', false)     // Not archived
+        : { data: [], error: null };
+
+      if (depositIdeasError) throw depositIdeasError;
+      setRoleDepositIdeas(roleDepositIdeasData || []);
+
+      // Also fetch deposit ideas for key relationships (existing functionality)
+      if (relationshipsData && relationshipsData.length > 0) {
+        const relationshipIds = relationshipsData.map(rel => rel.id);
+        const { data: relationshipDepositIdeas, error: relationshipDepositError } = await supabase
+          .from('0007-ap-deposit-ideas')
+          .select('*')
+          .in('key_relationship_id', relationshipIds)
+          .eq('is_active', true)
+          .is('activated_at', null)  // Not activated
+          .eq('archived', false);    // Not archived
+
+        if (relationshipDepositError) throw relationshipDepositError;
+        
+        // Combine role-specific deposit ideas with relationship deposit ideas
+        const allDepositIdeas = [
+          ...(roleDepositIdeasData || []),
+          ...(relationshipDepositIdeas || [])
+        ];
+        
+        // Remove duplicates based on ID
+        const uniqueDepositIdeas = allDepositIdeas.filter((idea, index, self) => 
+          index === self.findIndex(i => i.id === idea.id)
+        );
+        
+        setRoleDepositIdeas(uniqueDepositIdeas);
+      } else {
+        // If no relationships, just use role-specific deposit ideas
+        setRoleDepositIdeas(roleDepositIdeasData || []);
+      }
+
+    } catch (error) {
+      console.error('Error fetching role data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
         .eq('user_id', user.id)
         .in('id', taskIds)
         .in('status', ['pending', 'in_progress'])
