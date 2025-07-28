@@ -217,21 +217,13 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
             // Allow all event movements
             return true;
           }}
-          eventMouseEnter={(info) => {
-            info.el.style.cursor = 'move';
-            info.el.style.zIndex = '999';
-          }}
-          eventMouseLeave={(info) => {
-            info.el.style.cursor = 'default';
-            info.el.style.zIndex = 'auto';
-          }}
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
           allDaySlot={true}
           nowIndicator={true}
           slotDuration="00:30:00"
           slotLabelInterval="01:00"
-          expandRows={true} // Changed back to true
+          expandRows={true}
           stickyHeaderDates={false}
           scrollTime="06:00:00"
           scrollTimeReset={false}
@@ -243,7 +235,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotDuration: '00:15:00', 
               slotLabelInterval: '01:00', 
               allDaySlot: true, 
-              expandRows: true, // Changed back to true
+              expandRows: true,
               scrollTime: '06:00:00'
             },
             timeGridDay: { 
@@ -252,7 +244,7 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotDuration: '00:15:00', 
               slotLabelInterval: '01:00', 
               allDaySlot: true, 
-              expandRows: true, // Changed back to true
+              expandRows: true,
               scrollTime: '06:00:00'
             },
           }}
