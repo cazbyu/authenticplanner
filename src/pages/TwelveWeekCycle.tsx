@@ -102,6 +102,12 @@ const TwelveWeekCycle: React.FC = () => {
   const [goalNotes, setGoalNotes] = useState<Record<string, any[]>>({});
   const [newGoalNotes, setNewGoalNotes] = useState<Record<string, string>>({});
   const [savingNotes, setSavingNotes] = useState<Record<string, boolean>>({});
+  const [draggingProgress, setDraggingProgress] = useState<{
+    goalId: string;
+    startX: number;
+    startProgress: number;
+    progressBarWidth: number;
+  } | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -718,21 +724,36 @@ const handleAddGoalNote = async (goalId: string) => {
                   <div className="flex items-start justify-between">
                     <div className="flex-1">
                       <h2 className="text-xl font-semibold text-gray-900 mb-2">{goal.title}</h2>
+                      
+                      {/* Interactive Progress Bar */}
+                      <div className="mb-4">
+                        <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                          <span>Progress</span>
+                          <span>{goal.progress}%</span>
+                        </div>
+                        <div 
+                          className="relative w-full bg-gray-200 rounded-full h-3 cursor-pointer"
+                          onClick={(e) => handleProgressBarClick(e, goal.id)}
+                        >
+                          <div 
+                            className="bg-blue-600 h-3 rounded-full transition-all duration-300 relative"
+                            style={{ width: `${goal.progress}%` }}
+                          >
+                            {/* Draggable handle */}
+                            <div
+                              className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-blue-600 border-2 border-white rounded-full cursor-grab active:cursor-grabbing shadow-md hover:scale-110 transition-transform"
+                              onMouseDown={(e) => handleProgressDragStart(e, goal.id)}
+                              onTouchStart={(e) => handleProgressDragStart(e, goal.id)}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      
                       {goal.description && (
                         <p className="text-gray-600 mb-4">{goal.description}</p>
                       )}
                       
                       <div className="flex items-center gap-6 text-sm text-gray-500">
-                        <div className="flex items-center gap-2">
-                          <div className="w-full bg-gray-200 rounded-full h-2 max-w-xs">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                              style={{ width: `${goal.progress}%` }}
-                            ></div>
-                          </div>
-                          <span>{goal.progress}%</span>
-                        </div>
-                        
                         {goal.domains && goal.domains.length > 0 && (
                           <div className="flex items-center gap-1">
                             <span>Domains:</span>
