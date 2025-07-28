@@ -6,6 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { supabase } from '../../supabaseClient';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import './CalendarView.css'; // This line imports the CSS file
 
 // Props interface for the component
 interface CalendarViewProps {
@@ -81,7 +82,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       fetchTasks();
     }, [refreshTrigger]);
 
-    // Handles dropping an external task onto the calendar
     const handleDrop = async (info: any) => {
       const taskId = info.draggedEl.getAttribute('data-task-id');
       if (!taskId) return;
@@ -111,7 +111,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     };
 
-    // Handles dragging or resizing an event already on the calendar
     const handleEventChange = async (info: any) => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
@@ -137,7 +136,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     };
 
-    // Updates the calendar view when props change
     useEffect(() => {
       if (ref && 'current' in ref && ref.current) {
         const calendarApi = ref.current.getApi();
@@ -146,19 +144,14 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       }
     }, [view, currentDate]);
 
-    // Placeholder for event click logic
     const handleEventClick = (info: any) => {};
-
-    // Updates parent component with the new date range when the view changes
     const handleDatesSet = (arg: DateSetArg) => { onDateChange(arg.view.currentStart); };
 
-    // Helper to check if a date is today
     const isToday = (date: Date) => {
       const today = new Date();
       return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
     };
 
-    // Custom renderer for day headers
     const customDayHeaderContent = (arg: DateHeaderContentArg) => ({
       html: `
         <div class="day-name">${['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][arg.date.getDay()]}</div>
@@ -166,7 +159,9 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
       `,
     });
 
-          <FullCalendar
+    return (
+      <div className="h-full">
+        <FullCalendar
           key={view}
           ref={ref}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
