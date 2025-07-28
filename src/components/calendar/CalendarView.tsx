@@ -198,24 +198,33 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           height="100%"
           events={events}
           editable={true}
+          eventStartEditable={true}
           eventResizableFromStart={false}
           eventDurationEditable={true}
-          eventStartEditable={true}
+          eventResizableFromStart={false}
           droppable={true}
           selectable={true}
           selectMirror={true}
           dropAccept="*"
           dayMaxEvents={true}
           weekends={true}
+          eventOverlap={true}
+          selectOverlap={true}
           eventClick={handleEventClick}
           drop={handleDrop}
           eventDrop={handleEventChange}
           eventResize={handleEventChange}
+          eventAllow={(dropInfo, draggedEvent) => {
+            // Allow all event movements
+            return true;
+          }}
           eventMouseEnter={(info) => {
             info.el.style.cursor = 'move';
+            info.el.style.zIndex = '999';
           }}
           eventMouseLeave={(info) => {
             info.el.style.cursor = 'default';
+            info.el.style.zIndex = 'auto';
           }}
           dayMinTime="00:00:00"
           dayMaxTime="24:00:00"
