@@ -129,7 +129,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         // Handle end time - could be from resize or drag
         let endTimeFormatted = null;
         if (info.event.end) {
-          endTimeFormatted = info.event.end.toTimeString().slice(0, 8);
+          const endTime = new Date(info.event.end);
+          endTimeFormatted = endTime.toTimeString().slice(0, 8);
         } else if (info.event.start) {
           // If no end time, default to 1 hour duration
           const defaultEnd = new Date(info.event.start);
@@ -152,11 +153,24 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
         if (error) { throw error; }
         
         // Show appropriate success message
-        if (info.oldEvent && info.event.start.getTime() !== info.oldEvent.start.getTime()) {
+        const wasMoved = info.oldEvent && (
+          info.event.start.getTime() !== info.oldEvent.start.getTime() ||
+          info.event.end?.getTime() !== info.oldEvent.end?.getTime()
+        );
+        
+        const wasResized = info.oldEvent && info.event.end && info.oldEvent.end &&
+          info.event.end.getTime() !== info.oldEvent.end.getTime() &&
+          info.event.start.getTime() === info.oldEvent.start.getTime();
+        
+        if (wasResized) {
+          toast.success('Event duration updated');
+        } else if (wasMoved) {
           toast.success('Event moved successfully');
         } else {
-          toast.success('Event duration updated');
+          toast.success('Event updated successfully');
         }
+        
+        if (onTaskUpdated) { onTaskUpdated(); }
       } catch (err) {
         console.error('Error updating task time:', err);
         info.revert();
