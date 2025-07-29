@@ -85,7 +85,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const loadImage = async () => {
     if (relationship.image_path) {
       const signedUrl = await getSignedImageUrl(relationship.image_path);
-       }
+      setImagePreview(signedUrl);
+    }
+  };
 
   // Fetch tasks and deposit ideas for this key relationship
   const loadRelationshipData = async () => {
