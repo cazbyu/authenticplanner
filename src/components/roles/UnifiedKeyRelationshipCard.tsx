@@ -453,7 +453,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         <ActivationTypeSelector
           depositIdea={activatingDepositIdea}
           selectedRole={{ id: relationship.role_id, label: roleName }}
-          relationship={relationship} {/* <--- Add this line */}
+          relationship={relationship} 
           onClose={() => setActivatingDepositIdea(null)}
           onActivated={() => {
             setActivatingDepositIdea(null);
