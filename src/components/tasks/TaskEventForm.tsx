@@ -81,6 +81,16 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
     ...defaultForm,
     ...initialData,
   });
+
+ useEffect(() => {
+  if (initialData) {
+    setForm((prev) => ({
+      ...prev,
+      ...initialData,
+    }));
+  }
+}, [initialData]);
+  
   const [roles, setRoles] = useState<Role[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
