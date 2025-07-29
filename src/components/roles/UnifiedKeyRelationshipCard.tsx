@@ -210,49 +210,48 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const handleDepositIdeaCreated = () => { setShowAddDepositIdeaForm(false); loadRelationshipData(); };
   
   const handleEditDepositIdea = async (idea: DepositIdea) => {
-    // Fetch linked roles
-    const { data: rolesData } = await supabase
-      .from('0007-ap-roles-deposit-ideas')
-      .select('role_id')
-      .eq('deposit_idea_id', idea.id);
+  // Fetch linked roles
+  const { data: rolesData } = await supabase
+    .from('0007-ap-roles-deposit-ideas')
+    .select('role_id')
+    .eq('deposit_idea_id', idea.id);
 
-    // Fetch linked domains
-    const { data: domainsData } = await supabase
-      .from('0007-ap-deposit-idea-domains')
-      .select('domain_id')
-      .eq('deposit_idea_id', idea.id);
+  // Fetch linked domains
+  const { data: domainsData } = await supabase
+    .from('0007-ap-deposit-idea-domains')
+    .select('domain_id')
+    .eq('deposit_idea_id', idea.id);
 
-    // Fetch linked key relationships
-    const { data: krsData } = await supabase
-      .from('0007-ap-deposit-idea-key-relationships')
-      .select('key_relationship_id')
-      .eq('deposit_idea_id', idea.id);
+  // Fetch linked key relationships
+  const { data: krsData } = await supabase
+    .from('0007-ap-deposit-idea-key-relationships')
+    .select('key_relationship_id')
+    .eq('deposit_idea_id', idea.id);
 
-    // Fetch linked notes
-    let noteContent = '';
-    const { data: noteLink } = await supabase
-      .from('0007-ap-note-deposit-ideas')
-      .select('note:0007-ap-notes(content)')
-      .eq('deposit_idea_id', idea.id)
-      .single();
+  // Fetch linked notes
+  let noteContent = '';
+  const { data: noteLink } = await supabase
+    .from('0007-ap-note-deposit-ideas')
+    .select('note:0007-ap-notes(content)')
+    .eq('deposit_idea_id', idea.id)
+    .single();
 
-    if (noteLink && noteLink.note) {
-      noteContent = noteLink.note.content;
-    }
-    
-    const fullIdeaData = {
-      ...idea,
-      notes: noteContent,
-      schedulingType: 'depositIdea',
-      selectedRoleIds: rolesData?.map(r => r.role_id) || [],
-      selectedDomainIds: domainsData?.map(d => d.domain_id) || [],
-      selectedKeyRelationshipIds: krsData?.map(kr => kr.key_relationship_id) || [],
-    };
-   
-    console.log("Setting editingDepositIdea:", fullIdeaData);
+  if (noteLink && noteLink.note) {
+    noteContent = noteLink.note.content;
+  }
 
-    setEditingDepositIdea(fullIdeaData);
+  const fullIdeaData = {
+    ...idea,
+    notes: noteContent,
+    schedulingType: 'depositIdea',
+    selectedRoleIds: rolesData?.map(r => String(r.role_id)) || [],
+    selectedDomainIds: domainsData?.map(d => String(d.domain_id)) || [],
+    selectedKeyRelationshipIds: krsData?.map(kr => String(kr.key_relationship_id)) || [],
   };
+  console.log('Setting editingDepositIdea:', fullIdeaData);
+  setEditingDepositIdea(fullIdeaData);
+};
+
 
   const handleDepositIdeaUpdated = () => { setEditingDepositIdea(null); loadRelationshipData(); };
 
