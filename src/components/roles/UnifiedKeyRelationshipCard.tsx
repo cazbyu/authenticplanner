@@ -385,28 +385,28 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                   index === self.findIndex(i => i.id === idea.id)
                 ).map((idea) => (
                   <li key={idea.id} className="p-2 border rounded">
-                    <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="flex items-center justify-between">
                       <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
-                      <button
-                        onClick={() => setActivatingDepositIdea(idea)}
-                        className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors w-16 text-center"
-                      >
-                        Activate
-                      </button>
                     </div>
-                    <div className="flex gap-0.5 text-xs">
-                      <button
-                        onClick={() => handleEditDepositIdea(idea)}
-                        className="bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors flex-1"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => setDeletingDepositIdea(idea)}
-                        className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors"
-                      >
-                        Delete
-                      </button>
+                    <div className="flex justify-end items-center gap-2 mt-2 text-xs">
+                        <button
+                          onClick={() => setActivatingDepositIdea(idea)}
+                          className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors"
+                        >
+                          Activate
+                        </button>
+                        <button
+                          onClick={() => handleEditDepositIdea(idea)}
+                          className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700 transition-colors"
+                        >
+                          Update
+                        </button>
+                        <button
+                          onClick={() => setDeletingDepositIdea(idea)}
+                          className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors"
+                        >
+                          Delete
+                        </button>
                     </div>
                   </li>
                 ))}
