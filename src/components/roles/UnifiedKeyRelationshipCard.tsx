@@ -210,9 +210,35 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const handleDepositIdeaCreated = () => { setShowAddDepositIdeaForm(false); loadRelationshipData(); };
   
   const handleEditDepositIdea = async (idea: DepositIdea) => {
-    const { data: rolesData } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', idea.id);
-    const { data: domainsData } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', idea.id);
-    const { data: krsData } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', idea.id);
+    // Fetch linked roles
+    const { data: rolesData } = await supabase
+      .from('0007-ap-roles-deposit-ideas')
+      .select('role_id')
+      .eq('deposit_idea_id', idea.id);
+
+    // Fetch linked domains
+    const { data: domainsData } = await supabase
+      .from('0007-ap-deposit-idea-domains')
+      .select('domain_id')
+      .eq('deposit_idea_id', idea.id);
+
+    // Fetch linked key relationships
+    const { data: krsData } = await supabase
+      .from('0007-ap-deposit-idea-key-relationships')
+      .select('key_relationship_id')
+      .eq('deposit_idea_id', idea.id);
+
+    // --- NEW: Fetch linked note ---
+    let noteContent = '';
+    const { data: noteLink } = await supabase
+      .from('0007-ap-note-deposit-ideas')
+      .select('note:0007-ap-notes(content)') // Fetches the note's content
+      .eq('deposit_idea_id', idea.id)
+      .single(); // We expect only one note per idea
+
+    if (noteLink && noteLink.note) {
+      noteContent = noteLink.note.content;
+    }
     
     const fullIdeaData = {
       ...idea,
