@@ -228,13 +228,13 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       .select('key_relationship_id')
       .eq('deposit_idea_id', idea.id);
 
-    // --- NEW: Fetch linked note ---
+    // Fetch linked notes
     let noteContent = '';
     const { data: noteLink } = await supabase
       .from('0007-ap-note-deposit-ideas')
-      .select('note:0007-ap-notes(content)') // Fetches the note's content
+      .select('note:0007-ap-notes(content)')
       .eq('deposit_idea_id', idea.id)
-      .single(); // We expect only one note per idea
+      .single();
 
     if (noteLink && noteLink.note) {
       noteContent = noteLink.note.content;
@@ -242,6 +242,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     
     const fullIdeaData = {
       ...idea,
+      notes: noteContent,
       schedulingType: 'depositIdea',
       selectedRoleIds: rolesData?.map(r => r.role_id) || [],
       selectedDomainIds: domainsData?.map(d => d.domain_id) || [],
@@ -420,21 +421,57 @@ const ActivationTypeSelector: React.FC<{
   onActivated: () => void;
 }> = ({ depositIdea, selectedRole, relationship, onClose, onActivated }) => {
   const [showTaskEventForm, setShowTaskEventForm] = useState<'task' | 'event' | null>(null);
+  const [linkedRoleIds, setLinkedRoleIds] = useState<string[]>([]);
   const [linkedDomainIds, setLinkedDomainIds] = useState<string[]>([]);
+  const [linkedKeyRelationshipIds, setLinkedKeyRelationshipIds] = useState<string[]>([]);
+  const [noteContent, setNoteContent] = useState<string>('');
 
   useEffect(() => {
     if (depositIdea) {
+      const fetchAllLinkedData = async () => {
+        // Fetch linked roles
+        const { data: rolesData } = await supabase
+          .from('0007-ap-roles-deposit-ideas')
+          .select('role_id')
+          .eq('deposit_idea_id', depositIdea.id);
+        
+        if (rolesData) {
+          setLinkedRoleIds(rolesData.map(r => r.role_id));
+        }
+
+        // Fetch linked domains
       const fetchLinkedDomains = async () => {
         const { data } = await supabase
           .from('0007-ap-deposit-idea-domains')
           .select('domain_id')
-          .eq('deposit_idea_id', depositIdea.id); // Corrected this line
+          .eq('deposit_idea_id', depositIdea.id);
         
         if (data) {
           setLinkedDomainIds(data.map(d => d.domain_id));
         }
+
+        // Fetch linked key relationships
+        const { data: krsData } = await supabase
+          .from('0007-ap-deposit-idea-key-relationships')
+          .select('key_relationship_id')
+          .eq('deposit_idea_id', depositIdea.id);
+        
+        if (krsData) {
+          setLinkedKeyRelationshipIds(krsData.map(kr => kr.key_relationship_id));
+        }
+
+        // Fetch linked notes
+        const { data: noteLink } = await supabase
+          .from('0007-ap-note-deposit-ideas')
+          .select('note:0007-ap-notes(content)')
+          .eq('deposit_idea_id', depositIdea.id)
+          .single();
+
+        if (noteLink && noteLink.note) {
+          setNoteContent(noteLink.note.content);
+        }
       };
-      fetchLinkedDomains();
+      fetchAllLinkedData();
     }
   }, [depositIdea]);
 
@@ -446,9 +483,9 @@ const ActivationTypeSelector: React.FC<{
             mode="create"
             initialData={{
               title: depositIdea.title,
-              notes: depositIdea.notes || "",
+              notes: noteContent,
               schedulingType: showTaskEventForm,
-              selectedRoleIds: [selectedRole.id],
+              selectedRoleIds: linkedRoleIds.length > 0 ? linkedRoleIds : [selectedRole.id],
               selectedKeyRelationshipIds: [relationship.id],
               selectedDomainIds: linkedDomainIds,
               authenticDeposit: true,
