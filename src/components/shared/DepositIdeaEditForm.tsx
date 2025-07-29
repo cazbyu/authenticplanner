@@ -138,11 +138,11 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
         await supabase.from('0007-ap-deposit-ideas').update({ title: form.title.trim() }).eq('id', ideaId);
 
         // 2. Update Notes (Delete old links, create new note and link)
-        await supabase.from('0007-ap-deposit-idea-notes').delete().eq('deposit_idea_id', ideaId);
+        await supabase.from('0007-ap-note-deposit-ideas').delete().eq('deposit_idea_id', ideaId);
         if (form.notes.trim()) {
           const { data: note } = await supabase.from('0007-ap-notes').insert({ user_id: user.id, content: form.notes.trim() }).select().single();
           if (note) {
-            await supabase.from('0007-ap-deposit-idea-notes').insert({ deposit_idea_id: ideaId, note_id: note.id });
+            await supabase.from('0007-ap-note-deposit-ideas').insert({ deposit_idea_id: ideaId, note_id: note.id });
           }
         }
         
@@ -174,7 +174,7 @@ const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
         if (form.notes.trim()) {
           const { data: note } = await supabase.from('0007-ap-notes').insert({ user_id: user.id, content: form.notes.trim() }).select().single();
           if (note) {
-            await supabase.from('0007-ap-deposit-idea-notes').insert({ deposit_idea_id: newIdea.id, note_id: note.id });
+            await supabase.from('0007-note-deposit-ideas').insert({ deposit_idea_id: newIdea.id, note_id: note.id });
           }
         }
         
