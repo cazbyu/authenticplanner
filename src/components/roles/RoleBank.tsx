@@ -280,6 +280,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   };
 
 const handleEditDepositIdea = async (idea: DepositIdea) => {
+  const { data: { user } } = await supabase.auth.getUser();
     // Fetch linked roles
     const { data: rolesData } = await supabase
       .from('0007-ap-roles-deposit-ideas')
