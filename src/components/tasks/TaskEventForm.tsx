@@ -238,100 +238,97 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Not signed in");
 
       // --- Deposit Idea Logic ---
       if (form.schedulingType === "depositIdea") {
-        // 1. Fetch the user's actual roles to validate against
-        const { data: userRoles, error: userRolesError } = await supabase
-          .from("0007-ap-roles")
-          .select("id")
-          .eq("user_id", user.id);
-
-        if (userRolesError) {
-          throw new Error("Could not verify user roles: " + userRolesError.message);
-        }
-        const validRoleIds = new Set(userRoles.map(r => r.id));
-
-        // 2. Filter the selected roles to ensure they are valid for the current user
-        const filteredRoleIds = form.selectedRoleIds.filter(id => validRoleIds.has(id));
-
-        if (filteredRoleIds.length === 0) {
-            toast.error("You must select at least one of your own roles to create a deposit idea.");
-            setLoading(false);
-            return; // Stop the submission
-        }
-
-        // 3. Create the deposit idea in the main table
-        // This is the corrected code
-const { data: depositIdea, error: depositIdeaError } = await supabase
-  .from("0007-ap-deposit-ideas")
-  .insert([{
-    user_id: user.id,
-    title: form.title.trim(),
-    // key_relationship_id line is now gone
-    is_active: true,
-     }])
-  .select()
-  .single();
-
-        // Paste this new block into your code
-// Link Notes
-if (form.notes.trim()) {
-  const { data: noteData } = await supabase
-    .from("0007-ap-notes")
-    .insert([{ user_id: user.id, content: form.notes.trim() }])
-    .select()
-    .single();
-
-  if (noteData) {
-    await supabase
-      .from("0007-ap-note-deposit-ideas")
-      .insert([{ deposit_idea_id: depositIdea.id, note_id: noteData.id }]);
-  }
-}
-
-        if (depositIdeaError || !depositIdea) {
-          throw new Error("Failed to create deposit idea: " + (depositIdeaError?.message || "Unknown error"));
-        }
-
-        // 4. Link to roles using the VALIDATED list of IDs
-        if (filteredRoleIds.length > 0) {
-          const roleInserts = filteredRoleIds.map(roleId => ({
-            deposit_idea_id: depositIdea.id,
-            role_id: roleId
-          }));
-          const { error: roleError } = await supabase
-            .from("0007-ap-roles-deposit-ideas")
-            .insert(roleInserts);
-          if (roleError) {
-            console.error("Error linking deposit idea to roles:", roleError);
-            throw roleError;
-          }
-        }
-
-        // 5. Link to domains
-        if (form.selectedDomainIds.length > 0) {
-          const domainInserts = form.selectedDomainIds.map(domainId => ({
-            deposit_idea_id: depositIdea.id,
-            domain_id: domainId
-          }));
-          await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
-        }
         
-        // 6. Link to key relationships
-        if (form.selectedKeyRelationshipIds.length > 0) {
-           const krInserts = form.selectedKeyRelationshipIds.map(krId => ({
-            deposit_idea_id: depositIdea.id,
-            key_relationship_id: krId
-          }));
-          await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
+        // Use the idea's ID from initialData if we are in edit mode
+        const ideaId = mode === 'edit' ? form.id : null;
+
+        if (ideaId) {
+          // ---------- EDIT MODE ----------
+          // 1. Update the main deposit idea title
+          const { error: updateError } = await supabase
+            .from("0007-ap-deposit-ideas")
+            .update({ title: form.title.trim() })
+            .eq('id', ideaId);
+
+          if (updateError) throw updateError;
+          
+          // 2. Clear old note links and create new ones
+          await supabase.from("0007-ap-note-deposit-ideas").delete().eq("deposit_idea_id", ideaId);
+          if (form.notes.trim()) {
+            const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
+            if (noteData) {
+              await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: ideaId, note_id: noteData.id }]);
+            }
+          }
+
+          // 3. Re-link roles, domains, and key relationships
+          await supabase.from("0007-ap-roles-deposit-ideas").delete().eq("deposit_idea_id", ideaId);
+          if (form.selectedRoleIds.length > 0) {
+            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: ideaId, role_id: roleId }));
+            await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
+          }
+
+          await supabase.from("0007-ap-deposit-idea-domains").delete().eq("deposit_idea_id", ideaId);
+          if (form.selectedDomainIds.length > 0) {
+            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: ideaId, domain_id: domainId }));
+            await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
+          }
+
+          await supabase.from("0007-ap-deposit-idea-key-relationships").delete().eq("deposit_idea_id", ideaId);
+          if (form.selectedKeyRelationshipIds.length > 0) {
+            const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: ideaId, key_relationship_id: krId }));
+            await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
+          }
+          
+          toast.success("Deposit idea updated successfully!");
+
+        } else {
+          // ---------- CREATE MODE ----------
+          // 1. Create the deposit idea in the main table
+          const { data: depositIdea, error: depositIdeaError } = await supabase
+            .from("0007-ap-deposit-ideas")
+            .insert([{ user_id: user.id, title: form.title.trim(), is_active: true }])
+            .select()
+            .single();
+
+          if (depositIdeaError || !depositIdea) {
+            throw new Error("Failed to create deposit idea: " + (depositIdeaError?.message || "Unknown error"));
+          }
+          
+          const newIdeaId = depositIdea.id;
+
+          // 2. Link Notes
+          if (form.notes.trim()) {
+            const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
+            if (noteData) {
+              await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: newIdeaId, note_id: noteData.id }]);
+            }
+          }
+
+          // 3. Link to roles, domains, and key relationships
+          if (form.selectedRoleIds.length > 0) {
+            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: newIdeaId, role_id: roleId }));
+            await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
+          }
+          if (form.selectedDomainIds.length > 0) {
+            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: newIdeaId, domain_id: domainId }));
+            await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
+          }
+          if (form.selectedKeyRelationshipIds.length > 0) {
+             const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: newIdeaId, key_relationship_id: krId }));
+             await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
+          }
+
+          toast.success("Deposit idea created successfully!");
         }
 
-        toast.success("Deposit idea created successfully!");
         onSubmitSuccess();
         onClose();
         return; // End execution for deposit ideas
@@ -353,7 +350,6 @@ if (form.notes.trim()) {
       };
 
       let taskId = form.id;
-
       if (mode === "create") {
         const { data, error } = await supabase.from("0007-ap-tasks").insert([record]).select().single();
         if (error) throw error;
@@ -368,7 +364,7 @@ if (form.notes.trim()) {
         throw new Error("Could not create or find task ID to update relations.");
       }
       
-      // Link Notes
+      // Link Notes for Tasks
       if (form.notes.trim()) {
         const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
         if (noteData) {
@@ -376,7 +372,7 @@ if (form.notes.trim()) {
         }
       }
 
-      // Link Relations
+      // Link Relations for Tasks
       await supabase.from("0007-ap-task-roles").delete().eq("task_id", taskId);
       if (form.selectedRoleIds.length > 0) {
         await supabase.from("0007-ap-task-roles").insert(form.selectedRoleIds.map((roleId) => ({ task_id: taskId, role_id: roleId })));
