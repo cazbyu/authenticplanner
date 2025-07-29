@@ -1,444 +1,554 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
-
-// ----------- INTERFACES -----------
-interface Role {
-  id: string;
-  label: string;
-  category: string;
-}
-
-interface Domain {
-  id: string;
-  name: string;
-}
+import { Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { getSignedImageUrl } from '../../utils/imageHelpers';
+import TaskEventForm from '../tasks/TaskEventForm';
 
 interface KeyRelationship {
   id: string;
-  name: string;
   role_id: string;
+  name: string;
+  notes?: string;
+  image_path?: string;
+}
+
+interface Task {
+  id: string;
+  title: string;
+  status: string;
+  due_date?: string;
+  is_urgent: boolean;
+  is_important: boolean;
+  is_authentic_deposit: boolean;
 }
 
 interface DepositIdea {
   id: string;
-  title: string;
+  title?: string;
   notes?: string;
   is_active: boolean;
-  key_relationship_id?: string;
-  key_relationship?: KeyRelationship;
-  deposit_idea_roles?: Array<{ role_id: string }>;
-  deposit_idea_domains?: Array<{ domain_id: string }>;
 }
 
-interface DepositIdeaFormProps {
-  open: boolean;
-  onClose: () => void;
-  onSuccess: () => void;
-  roles: Record<string, Role>;
-  domains: Record<string, Domain>;
-  idea?: DepositIdea | null; // If provided, triggers "edit" mode
-  defaultRoleId?: string;
-  defaultKeyRelationshipId?: string;
+interface Note {
+  id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
 }
 
-// ----------- COMPONENT -----------
-const DepositIdeaForm: React.FC<DepositIdeaFormProps> = ({
-  open,
-  onClose,
-  onSuccess,
-  roles,
-  domains,
-  idea,
-  defaultRoleId,
-  defaultKeyRelationshipId
+interface UnifiedKeyRelationshipCardProps {
+  relationship: KeyRelationship;
+  roleName: string;
+  onRelationshipUpdated: () => void;
+  onRelationshipDeleted: () => void;
+}
+
+const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
+  relationship,
+  roleName,
+  onRelationshipUpdated,
+  onRelationshipDeleted,
 }) => {
-  // ----------- STATE INIT -----------
-  const [form, setForm] = useState({
-    title: idea?.title || '',
-    notes: idea?.notes || '',
-    selectedRoleIds: idea?.deposit_idea_roles?.map(r => r.role_id)
-      || (defaultRoleId ? [defaultRoleId] : []),
-    selectedDomainIds: idea?.deposit_idea_domains?.map(d => d.domain_id) || [],
-    selectedKeyRelationshipIds: idea?.key_relationship_id
-      ? [idea.key_relationship_id]
-      : (defaultKeyRelationshipId ? [defaultKeyRelationshipId] : []),
-  });
-  const [loading, setLoading] = useState(false);
+  // State for the relationship data
+  const [name, setName] = useState(relationship.name);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // Internal state for key relationships
-  const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
+  // State for tasks, deposit ideas, and notes
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
 
-  // Fetch active key relationships for the user whenever modal opens
+  // State for new note input - simplified to single content box
+  const [newNote, setNewNote] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
+
+  // Collapsible
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // State for task management
+  const [showAddTaskForm, setShowAddTaskForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  // State for deposit ideas management
+  const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
+  const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
+  const [deletingDepositIdea, setDeletingDepositIdea] = useState<DepositIdea | null>(null);
+
+  // Load initial data
   useEffect(() => {
-    if (!open) return;
-    const fetchKeyRelationships = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-      const { data: relationshipData } = await supabase
-        .from("0007-ap-key-relationships")
-        .select("id,name,role_id")
-        .eq("user_id", user.id)
-        .eq("is_active", true);
-      setKeyRelationships(relationshipData || []);
-    };
-    fetchKeyRelationships();
-  }, [open]);
+    loadRelationshipData();
+    loadNotes();
+    loadImage();
+  }, [relationship.id]);
 
-  // Reset form state on open or when editing a different idea
-  useEffect(() => {
-    if (!open) return;
-    
-    // If editing an existing idea, fetch its role and domain relationships
-    if (idea) {
-      fetchDepositIdeaRelationships(idea.id);
+  const loadImage = async () => {
+    if (relationship.image_path) {
+      const signedUrl = await getSignedImageUrl(relationship.image_path);
+      if (signedUrl) {
+        setImagePreview(signedUrl);
+      }
     } else {
-      // Reset to defaults for new deposit ideas
-      setForm({
-        title: '',
-        notes: '',
-        selectedRoleIds: defaultRoleId ? [defaultRoleId] : [],
-        selectedDomainIds: [],
-        selectedKeyRelationshipIds: defaultKeyRelationshipId ? [defaultKeyRelationshipId] : [],
-      });
+      setImagePreview(null);
     }
-  }, [idea, open, defaultRoleId, defaultKeyRelationshipId]);
+  };
 
-  const fetchDepositIdeaRelationships = async (depositIdeaId: string) => {
+  // Fetch tasks and deposit ideas for this key relationship
+  const loadRelationshipData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch role relationships
-      const { data: roleLinks } = await supabase
-        .from('0007-ap-roles-deposit-ideas')
-        .select('role_id')
-        .eq('deposit_idea_id', depositIdeaId);
+      // Fetch tasks
+      const { data: taskLinks } = await supabase
+        .from('0007-ap-task-key-relationships')
+        .select(`
+          task:0007-ap-tasks(
+            id,
+            title,
+            status,
+            due_date,
+            is_urgent,
+            is_important,
+            is_authentic_deposit
+          )
+        `)
+        .eq('key_relationship_id', relationship.id);
 
-      // Fetch domain relationships
-      const { data: domainLinks } = await supabase
-        .from('0007-ap-deposit-idea-domains')
-        .select('domain_id')
-        .eq('deposit_idea_id', depositIdeaId);
+      const relationshipTasks = taskLinks?.map(link => link.task).filter(Boolean) || [];
+      setTasks(relationshipTasks.filter(
+        (task: Task) => task.status === 'pending' || task.status === 'in_progress'
+      ));
 
-      // Fetch additional key relationship links
-      const { data: krLinks } = await supabase
+      // Fetch deposit ideas linked directly to this key relationship
+      const { data: depositIdeasData } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('key_relationship_id', relationship.id)
+        .eq('is_active', true)
+        .is('activated_at', null)
+        .or('archived.is.null,archived.eq.false');
+
+      console.log('Deposit ideas for relationship', relationship.id, ':', depositIdeasData);
+
+      // Also check for deposit ideas linked via the junction table
+      const { data: depositIdeaLinks } = await supabase
         .from('0007-ap-deposit-idea-key-relationships')
-        .select('key_relationship_id')
-        .eq('deposit_idea_id', depositIdeaId);
+        .select(`
+          deposit_idea:0007-ap-deposit-ideas(
+            id,
+            title,
+            notes,
+            is_active,
+            activated_at,
+            archived
+          )
+        `)
+        .eq('key_relationship_id', relationship.id);
 
-      // Update form with fetched relationships
-      setForm({
-        title: idea?.title || '',
-        notes: idea?.notes || '',
-        selectedRoleIds: roleLinks?.map(r => r.role_id) || [],
-        selectedDomainIds: domainLinks?.map(d => d.domain_id) || [],
-        selectedKeyRelationshipIds: [
-          ...(idea?.key_relationship_id ? [idea.key_relationship_id] : []),
-          ...(krLinks?.map(kr => kr.key_relationship_id) || [])
-        ],
-      });
+      const linkedDepositIdeas = depositIdeaLinks?.map(link => link.deposit_idea).filter(idea => 
+        idea && 
+        idea.is_active && 
+        !idea.activated_at && 
+        (!idea.archived || idea.archived === false)
+      ) || [];
 
+      console.log('Linked deposit ideas for relationship', relationship.id, ':', linkedDepositIdeas);
+
+      // Combine both direct and linked deposit ideas, removing duplicates
+      const allDepositIdeas = [
+        ...(depositIdeasData || []),
+        ...linkedDepositIdeas
+      ];
+      
+      const uniqueDepositIdeas = allDepositIdeas.filter((idea, index, self) => 
+        index === self.findIndex(i => i.id === idea.id)
+      );
+
+      setDepositIdeas(uniqueDepositIdeas);
     } catch (error) {
-      console.error('Error fetching deposit idea relationships:', error);
-      // Fallback to basic form data
-      setForm({
-        title: idea?.title || '',
-        notes: idea?.notes || '',
-        selectedRoleIds: defaultRoleId ? [defaultRoleId] : [],
-        selectedDomainIds: [],
-        selectedKeyRelationshipIds: idea?.key_relationship_id ? [idea.key_relationship_id] : (defaultKeyRelationshipId ? [defaultKeyRelationshipId] : []),
-      });
+      console.error('Error loading relationship data:', error);
     }
   };
 
-  // Original reset logic (now moved to useEffect above)
-  /*
-  useEffect(() => {
-    setForm({
-      title: idea?.title || '',
-      notes: idea?.notes || '',
-      selectedRoleIds: idea?.deposit_idea_roles?.map(r => r.role_id)
-        || (defaultRoleId ? [defaultRoleId] : []),
-      selectedDomainIds: idea?.deposit_idea_domains?.map(d => d.domain_id) || [],
-      selectedKeyRelationshipIds: idea?.key_relationship_id
-        ? [idea.key_relationship_id]
-        : (defaultKeyRelationshipId ? [defaultKeyRelationshipId] : []),
-    });
-  }, [idea, open, defaultRoleId, defaultKeyRelationshipId]);
-  */
-
-  // ----------- HANDLERS -----------
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-  };
-
-  const toggleRole = (roleId: string) => {
-    setForm(prev => ({
-      ...prev,
-      selectedRoleIds: prev.selectedRoleIds.includes(roleId)
-        ? prev.selectedRoleIds.filter(id => id !== roleId)
-        : [...prev.selectedRoleIds, roleId]
-    }));
-  };
-
-  const toggleDomain = (domainId: string) => {
-    setForm(prev => ({
-      ...prev,
-      selectedDomainIds: prev.selectedDomainIds.includes(domainId)
-        ? prev.selectedDomainIds.filter(id => id !== domainId)
-        : [...prev.selectedDomainIds, domainId]
-    }));
-  };
-
-  const toggleKeyRelationship = (relationshipId: string) => {
-    setForm(prev => ({
-      ...prev,
-      selectedKeyRelationshipIds: prev.selectedKeyRelationshipIds.includes(relationshipId)
-        ? prev.selectedKeyRelationshipIds.filter(id => id !== relationshipId)
-        : [relationshipId] // Only allow one selected
-    }));
-  };
-
-  // ----------- SUBMIT (ADD/EDIT) -----------
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.title.trim()) {
-      toast.error('Title is required');
-      return;
-    }
-    setLoading(true);
-
+  // Fetch notes
+  const loadNotes = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setLoading(false);
+      if (!user) return;
+
+      const { data: noteLinks } = await supabase
+        .from('0007-ap-note-key-relationships')
+        .select(`
+          note:0007-ap-notes(id, content, created_at, updated_at, user_id)
+        `)
+        .eq('key_relationship_id', relationship.id);
+
+      const relationshipNotes = noteLinks?.map(link => link.note).filter(Boolean) || [];
+      setNotes(relationshipNotes);
+    } catch (error) {
+      console.error('Error loading notes:', error);
+    }
+  };
+
+  // Add note - simplified to single content
+  const addNote = async () => {
+    if (!newNote.trim()) return;
+    setAddingNote(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      // First, insert the note
+      const { data: noteData, error: noteError } = await supabase
+        .from('0007-ap-notes')
+        .insert({
+          user_id: user.id,
+          content: newNote.trim(),
+        })
+        .select()
+        .single();
+
+      if (noteError) {
+        toast.error("Failed to add note: " + noteError.message);
+        setAddingNote(false);
         return;
       }
 
-      if (!idea) {
-        // ---------- ADD MODE ----------
-        const { data: depositIdea, error: ideaError } = await supabase
-          .from('0007-ap-deposit-ideas')
-          .insert([{
-            user_id: user.id,
-            title: form.title.trim(),
-            notes: form.notes.trim() || null,
-            key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
-            is_active: true
-          }])
-          .select()
-          .single();
+      // Then, link the note to the key relationship
+      const { error: linkError } = await supabase
+        .from('0007-ap-note-key-relationships')
+        .insert({
+          note_id: noteData.id,
+          key_relationship_id: relationship.id,
+        });
 
-        if (ideaError || !depositIdea) {
-          toast.error('Failed to create deposit idea');
-          setLoading(false);
-          return;
-        }
-
-        // Roles
-        if (form.selectedRoleIds.length > 0) {
-          const roleInserts = form.selectedRoleIds.map(roleId => ({
-            deposit_idea_id: depositIdea.id, role_id: roleId
-          }));
-          await supabase.from('0007-ap-roles-deposit-ideas').insert(roleInserts);
-        }
-        // Domains
-        if (form.selectedDomainIds.length > 0) {
-          const domainInserts = form.selectedDomainIds.map(domainId => ({
-            deposit_idea_id: depositIdea.id, domain_id: domainId
-          }));
-          await supabase.from('0007-ap-deposit-idea-domains').insert(domainInserts);
-        }
-
-        toast.success('Deposit idea created!');
-      } else {
-        // ---------- EDIT MODE ----------
-        // 1. Update idea
-        const { error: updateError } = await supabase
-          .from('0007-ap-deposit-ideas')
-          .update({
-            title: form.title.trim(),
-            notes: form.notes.trim() || null,
-            key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', idea.id)
-          .eq('user_id', user.id);
-
-        if (updateError) {
-          toast.error('Failed to update deposit idea');
-          setLoading(false);
-          return;
-        }
-
-        // 2. Replace roles
-        await supabase.from('0007-ap-roles-deposit-ideas').delete().eq('deposit_idea_id', idea.id);
-        if (form.selectedRoleIds.length > 0) {
-          await supabase.from('0007-ap-roles-deposit-ideas')
-            .insert(form.selectedRoleIds.map(roleId => ({
-              deposit_idea_id: idea.id, role_id: roleId
-            })));
-        }
-        // 3. Replace domains
-        await supabase.from('0007-ap-deposit-idea-domains').delete().eq('deposit_idea_id', idea.id);
-        if (form.selectedDomainIds.length > 0) {
-          await supabase.from('0007-ap-deposit-idea-domains')
-            .insert(form.selectedDomainIds.map(domainId => ({
-              deposit_idea_id: idea.id, domain_id: domainId
-            })));
-        }
-
-        toast.success('Deposit idea updated!');
+      if (linkError) {
+        toast.error("Failed to link note: " + linkError.message);
+        setAddingNote(false);
+        return;
       }
 
-      setForm({
-        title: '',
-        notes: '',
-        selectedRoleIds: defaultRoleId ? [defaultRoleId] : [],
-        selectedDomainIds: [],
-        selectedKeyRelationshipIds: defaultKeyRelationshipId ? [defaultKeyRelationshipId] : [],
-      });
-      onSuccess();
-      onClose();
+      setNewNote('');
+      loadNotes();
+      toast.success("Note added!");
+    } catch (err: any) {
+      toast.error("Failed to add note: " + (err.message || err));
+    }
+    setAddingNote(false);
+  };
 
+  // Handle task creation
+  const handleTaskCreated = () => {
+    setShowAddTaskForm(false);
+    loadRelationshipData(); // Refresh tasks
+  };
+
+  // Handle task editing
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+  };
+
+  // Handle task updated
+  const handleTaskUpdated = () => {
+    setEditingTask(null);
+    loadRelationshipData(); // Refresh tasks
+  };
+
+  // Handle deposit idea creation
+  const handleDepositIdeaCreated = () => {
+    setShowAddDepositIdeaForm(false);
+    loadRelationshipData(); // Refresh deposit ideas
+  };
+
+  // Handle deposit idea editing
+  const handleEditDepositIdea = (idea: DepositIdea) => {
+    setEditingDepositIdea(idea);
+  };
+
+  // Handle deposit idea updated
+  const handleDepositIdeaUpdated = () => {
+    setEditingDepositIdea(null);
+    loadRelationshipData(); // Refresh deposit ideas
+  };
+
+  // Handle deposit idea deletion
+  const handleDeleteDepositIdea = async () => {
+    if (!deletingDepositIdea) return;
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { error } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .delete()
+        .eq('id', deletingDepositIdea.id)
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error deleting deposit idea:', error);
+        toast.error('Failed to delete deposit idea');
+      } else {
+        toast.success('Deposit idea deleted successfully!');
+        setDeletingDepositIdea(null);
+        loadRelationshipData(); // Refresh deposit ideas
+      }
     } catch (error) {
-      toast.error('Something went wrong');
-    } finally {
-      setLoading(false);
+      console.error('Error deleting deposit idea:', error);
+      toast.error('Failed to delete deposit idea');
     }
   };
 
-  // ----------- RENDER -----------
-  if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto space-y-6 m-4 w-full">
-        <div className="flex justify-between items-center">
-          <h2 className="text-xl font-semibold text-gray-900">
-            {idea ? 'Edit Deposit Idea' : 'Add Deposit Idea'}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-gray-600"
-            disabled={loading}
-          >
-            ×
-          </button>
+    <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm relative">
+      <div className="flex items-center mb-3">
+        {imagePreview && (
+          <img
+            src={imagePreview}
+            alt={name}
+            className="h-10 w-10 rounded-full object-cover border mr-3"
+          />
+        )}
+        <div>
+          <div className="font-bold text-lg text-gray-900">{name}</div>
+          <div className="text-sm text-gray-500">{roleName}</div>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Title */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Title *</label>
-            <input
-              type="text"
-              name="title"
-              value={form.title}
-              onChange={handleFormChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              placeholder="Enter deposit idea title..."
-              required
-              disabled={loading}
-            />
-          </div>
-          {/* Notes */}
-          <div>
-            <label className="block text-sm font-medium mb-2">Notes</label>
-            <textarea
-              name="notes"
-              value={form.notes}
-              onChange={handleFormChange}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              rows={4}
-              placeholder="Describe your authentic deposit idea..."
-              disabled={loading}
-            />
-          </div>
-          {/* Roles */}
-          <div>
-            <label className="block text-sm font-medium mb-3">Associated Roles</label>
-            <div className="grid grid-cols-2 gap-2 border border-gray-200 p-3 rounded-md max-h-40 overflow-y-auto">
-              {Object.values(roles).map(role => (
-                <label key={role.id} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={form.selectedRoleIds.includes(role.id)}
-                    onChange={() => toggleRole(role.id)}
-                    className="h-4 w-4"
-                    disabled={loading}
-                  />
-                  <span>{role.label}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          {/* Domains */}
-          <div>
-            <label className="block text-sm font-medium mb-3">Associated Domains</label>
-            <div className="grid grid-cols-2 gap-2 border border-gray-200 p-3 rounded-md max-h-40 overflow-y-auto">
-              {Object.values(domains).map(domain => (
-                <label key={domain.id} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={form.selectedDomainIds.includes(domain.id)}
-                    onChange={() => toggleDomain(domain.id)}
-                    className="h-4 w-4"
-                    disabled={loading}
-                  />
-                  <span>{domain.name}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-          {/* Key Relationships */}
-          {form.selectedRoleIds.length > 0 && (
-            <div>
-              <label className="block text-sm mb-1">Choose Key Relationship</label>
-              <div className="grid grid-cols-2 gap-2 border border-gray-200 p-2 rounded-md">
-                {keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id)).map(kr => (
-                  <label key={kr.id} className="flex items-center gap-1 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={form.selectedKeyRelationshipIds.includes(kr.id)}
-                      onChange={() => toggleKeyRelationship(kr.id)}
-                      className="h-4 w-4"
-                      disabled={loading}
-                    />
-                    <span className="text-xs">{kr.name}</span>
-                  </label>
-                ))}
-                {keyRelationships.filter(kr => form.selectedRoleIds.includes(kr.role_id)).length === 0 && (
-                  <div className="text-gray-400 text-xs italic px-2 py-2">
-                    No Key Relationships selected yet.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-          {/* Buttons */}
-          <div className="flex justify-end space-x-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-              disabled={loading}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors"
-              disabled={loading || !form.title.trim()}
-            >
-              {loading ? (idea ? 'Updating...' : 'Creating...') : (idea ? 'Update' : 'Create')} Deposit Idea
-            </button>
-          </div>
-        </form>
+        <button
+          className="ml-auto text-gray-400 hover:text-primary-600 transition"
+          onClick={() => setIsExpanded(!isExpanded)}
+          title={isExpanded ? 'Collapse' : 'Expand'}
+        >
+          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        </button>
       </div>
+
+      {/* COLLAPSIBLE SECTION */}
+      {isExpanded && (
+        <div>
+          {/* --- Tasks --- */}
+          <div className="mb-4">
+            <div className="font-semibold mb-2 flex items-center gap-2">
+              <span>Tasks</span>
+              <span className="text-xs bg-gray-100 rounded px-2">{tasks.length}</span>
+              <button
+                onClick={() => setShowAddTaskForm(true)}
+                className="ml-auto text-xs bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {tasks.length === 0 ? (
+              <div className="text-gray-400 text-sm">No tasks for this relationship.</div>
+            ) : (
+              <ul className="space-y-2">
+                {tasks.map((task) => (
+                  <li key={task.id} className="flex items-center justify-between gap-2 p-2 border rounded">
+                    <span>{task.title}</span>
+                    <div className="flex items-center gap-1">
+                      {task.is_urgent && <span className="text-xs bg-red-100 text-red-700 rounded px-1">Urgent</span>}
+                      {task.is_important && <span className="text-xs bg-blue-100 text-blue-700 rounded px-1">Important</span>}
+                      {task.is_authentic_deposit && <span className="text-xs bg-green-100 text-green-700 rounded px-1">Deposit</span>}
+                      <button
+                        onClick={() => handleEditTask(task)}
+                        className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2 px-0.5"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* --- Deposit Ideas --- */}
+          <div className="mb-4">
+            <div className="font-semibold mb-2 flex items-center gap-2">
+              <span>Deposit Ideas</span>
+              <span className="text-xs bg-gray-100 rounded px-2">{depositIdeas.length}</span>
+              <button
+                onClick={() => setShowAddDepositIdeaForm(true)}
+                className="ml-auto text-xs bg-green-600 text-white rounded px-1 py-0.5 hover:bg-green-700 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {/* Remove duplicates by filtering unique IDs */}
+            {depositIdeas.filter((idea, index, self) => 
+              index === self.findIndex(i => i.id === idea.id)
+            ).length === 0 ? (
+              <div className="text-gray-400 text-sm">No deposit ideas for this relationship.</div>
+            ) : (
+              <ul className="space-y-2">
+                {depositIdeas.filter((idea, index, self) => 
+                  index === self.findIndex(i => i.id === idea.id)
+                ).map((idea) => (
+                  <li key={idea.id} className="p-2 border rounded">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
+                    </div>
+                    <div className="flex gap-0.5 text-xs">
+                      <button
+                        onClick={() => handleEditDepositIdea(idea)}
+                        className="bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors flex-1"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setDeletingDepositIdea(idea)}
+                        className="bg-red-600 text-white rounded px-1 py-0.5 hover:bg-red-700 transition-colors flex-1"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* --- Notes Section --- */}
+          <div className="mb-4">
+            <div className="font-semibold mb-2">Notes</div>
+            <input
+              value={newNote}
+              onChange={e => setNewNote(e.target.value)}
+              placeholder="Add note content..."
+              className="w-full border rounded px-2 py-1 text-sm mb-2"
+            />
+            <button
+              onClick={addNote}
+              disabled={!newNote.trim() || addingNote}
+              className="mb-2 px-1.5 py-0.5 rounded bg-primary-600 text-white disabled:bg-gray-300 text-xs"
+            >
+              {addingNote ? 'Saving...' : 'Add Note'}
+            </button>
+            {notes && notes.length > 0 ? (
+              <ul className="mt-2 space-y-2">
+                {notes.map((note) => (
+                  <li key={note.id} className="p-2 bg-gray-50 rounded border text-sm">
+                    <span>{note.content}</span>
+                    <span className="block text-xs text-gray-400 mt-1">
+                      {new Date(note.created_at).toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-400 mt-2">No notes yet.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Form Modal */}
+      {showAddTaskForm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="create"
+              initialData={{
+                schedulingType: 'task',
+                selectedRoleIds: [relationship.role_id],
+                selectedKeyRelationshipIds: [relationship.id]
+              }}
+              onSubmitSuccess={handleTaskCreated}
+              onClose={() => setShowAddTaskForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Task Form Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="edit"
+              initialData={{
+                id: editingTask.id,
+                title: editingTask.title,
+                schedulingType: 'task',
+                selectedRoleIds: [relationship.role_id],
+                selectedKeyRelationshipIds: [relationship.id],
+                // The TaskEventForm will fetch and prefill other data via useEffect
+              }}
+              onSubmitSuccess={handleTaskUpdated}
+              onClose={() => setEditingTask(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Add Deposit Idea Form Modal */}
+      {showAddDepositIdeaForm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="create"
+              initialData={{
+                schedulingType: 'depositIdea',
+                selectedRoleIds: [relationship.role_id],
+                selectedKeyRelationshipIds: [relationship.id]
+              }}
+              onSubmitSuccess={handleDepositIdeaCreated}
+              onClose={() => setShowAddDepositIdeaForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Deposit Idea Form Modal */}
+      {editingDepositIdea && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="edit"
+              initialData={{
+                id: editingDepositIdea.id,
+                title: editingDepositIdea.title || editingDepositIdea.notes || '',
+                notes: editingDepositIdea.notes || '',
+                schedulingType: 'depositIdea',
+                selectedRoleIds: [relationship.role_id],
+                selectedKeyRelationshipIds: [relationship.id],
+                // The TaskEventForm will fetch and prefill roles/domains via useEffect
+              }}
+              onSubmitSuccess={handleDepositIdeaUpdated}
+              onClose={() => setEditingDepositIdea(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Delete Deposit Idea Confirmation Modal */}
+      {deletingDepositIdea && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Deposit Idea</h3>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to delete "{deletingDepositIdea.title || deletingDepositIdea.notes || 'this deposit idea'}"? This action cannot be undone.
+            </p>
+            <div className="flex justify-end space-x-3">
+              <button
+                onClick={() => setDeletingDepositIdea(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteDepositIdea}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default DepositIdeaForm;
+export default UnifiedKeyRelationshipCard;
