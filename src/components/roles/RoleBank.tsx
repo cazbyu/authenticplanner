@@ -368,7 +368,7 @@ const handleEditDepositIdea = async (idea: DepositIdea) => {
                     <DepositIdeaCard
                       key={idea.id}
                       idea={idea}
-                      onEdit={() => setEditingDepositIdea(idea)}
+                      onEdit={() => handleEditDepositIdea(idea)}
                       onActivate={() => setActivatingDepositIdea(idea)}
                       onDelete={() => setDeletingDepositIdea(idea)}
                     />
