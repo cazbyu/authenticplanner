@@ -388,12 +388,18 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
                     </div>
-                    <div className="flex justify-end items-center gap-2 mt-2 text-xs">
+                    * <div className="flex justify-end items-center gap-2 mt-2 text-xs">
+                        <button
+                          onClick={() => setActivatingDepositIdea(idea)}
+                          className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors"
+                        >
+                          Activate
+                        </button>
                         <button
                           onClick={() => handleEditDepositIdea(idea)}
                           className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700 transition-colors"
                         >
-                          Edit
+                          Update
                         </button>
                         <button
                           onClick={() => setDeletingDepositIdea(idea)}
@@ -401,13 +407,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                         >
                           Delete
                         </button>
-                        <button
-                          onClick={() => setActivatingDepositIdea(idea)}
-                          className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors"
-                        >
-                          Activate Idea
-                        </button>
-                    </div>
+                    </div> *
                   </li> 
                 ))}
               </ul>
