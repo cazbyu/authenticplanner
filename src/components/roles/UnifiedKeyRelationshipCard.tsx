@@ -50,13 +50,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   onRelationshipUpdated,
   onRelationshipDeleted,
 }) => {
-  // ----------- ADD THIS GUARD CLAUSE RIGHT BELOW THE ARGUMENTS ----------
-  if (!relationship || typeof relationship.name !== 'string' || !relationship.name) {
-    console.warn("Invalid relationship object passed to UnifiedKeyRelationshipCard:", relationship);
-    return null;
-  }
-  // -----------------------------------------------------------------------
-  
   // State for the relationship data
   const [name, setName] = useState(relationship.name);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -81,6 +74,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
   const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
   const [deletingDepositIdea, setDeletingDepositIdea] = useState<DepositIdea | null>(null);
+  const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
 
   // Load initial data
   useEffect(() => {
@@ -93,6 +87,10 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     if (relationship.image_path) {
       const signedUrl = await getSignedImageUrl(relationship.image_path);
       if (signedUrl) setImagePreview(signedUrl);
+                      >
+                        Activate
+                      </button>
+                      <button
     } else {
       setImagePreview(null);
     }
@@ -403,7 +401,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                       </button>
                       <button
                         onClick={() => setDeletingDepositIdea(idea)}
-                        className="bg-red-600 text-white rounded px-1 py-0.5 hover:bg-red-700 transition-colors flex-1"
+                        className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors"
                       >
                         Delete
                       </button>
@@ -446,6 +444,19 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             )}
           </div>
         </div>
+      )}
+
+      {/* Activate Deposit Idea Modal */}
+      {activatingDepositIdea && (
+        <ActivationTypeSelector
+          depositIdea={activatingDepositIdea}
+          selectedRole={{ id: relationship.role_id, label: roleName }}
+          onClose={() => setActivatingDepositIdea(null)}
+          onActivated={() => {
+            setActivatingDepositIdea(null);
+            loadRelationshipData();
+          }}
+        />
       )}
 
       {/* Add Task Form Modal */}
@@ -552,6 +563,52 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           </div>
         </div>
       )}
+    </div>
+  );
+};
+
+// Helper component for activating deposit ideas
+const ActivationTypeSelector: React.FC<{
+  depositIdea: DepositIdea;
+  selectedRole: { id: string; label: string };
+  onClose: () => void;
+  onActivated: () => void;
+}> = ({ depositIdea, selectedRole, onClose, onActivated }) => {
+  const [showTaskEventForm, setShowTaskEventForm] = useState<'task' | 'event' | null>(null);
+
+  if (showTaskEventForm) {
+    return (
+      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+        <div className="w-full max-w-2xl mx-4">
+          <TaskEventForm
+            mode="create"
+            initialData={{
+              title: depositIdea.title,
+              notes: depositIdea.notes || "",
+              schedulingType: showTaskEventForm,
+              selectedRoleIds: [selectedRole.id],
+              authenticDeposit: true,
+              isFromDepositIdea: true,
+              originalDepositIdeaId: depositIdea.id
+            }}
+            onSubmitSuccess={onActivated}
+            onClose={() => setShowTaskEventForm(null)}
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+        <h3 className="text-lg font-medium mb-4">Activate "{depositIdea.title}" as:</h3>
+        <div className="space-y-3">
+          <button onClick={() => setShowTaskEventForm('task')} className="w-full p-3 text-left border rounded-lg hover:bg-gray-50">Task</button>
+          <button onClick={() => setShowTaskEventForm('event')} className="w-full p-3 text-left border rounded-lg hover:bg-gray-50">Event</button>
+        </div>
+        <div className="text-right mt-4"><button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">Cancel</button></div>
+      </div>
     </div>
   );
 };
