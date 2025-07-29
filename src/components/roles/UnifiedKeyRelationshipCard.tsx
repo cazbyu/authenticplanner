@@ -119,6 +119,18 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         (task: Task) => task.status === 'pending' || task.status === 'in_progress'
       ));
 
+      // Fetch deposit ideas linked directly to this key relationship
+      const { data: depositIdeasData } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('key_relationship_id', relationship.id)
+        .eq('is_active', true)
+        .is('activated_at', null)
+        .or('archived.is.null,archived.eq.false');
+
+      console.log('Deposit ideas for relationship', relationship.id, ':', depositIdeasData);
+
       // Also check for deposit ideas linked via the junction table
       const { data: depositIdeaLinks } = await supabase
         .from('0007-ap-deposit-idea-key-relationships')
@@ -145,8 +157,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 
       // Combine both direct and linked deposit ideas, removing duplicates
       const allDepositIdeas = [
-  ...linkedDepositIdeas
-];
+        ...(depositIdeasData || []),
+        ...linkedDepositIdeas
+      ];
       
       const uniqueDepositIdeas = allDepositIdeas.filter((idea, index, self) => 
         index === self.findIndex(i => i.id === idea.id)
@@ -287,6 +300,22 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     }
   };
 
+ const archiveDepositIdea = async (ideaId: string) => {
+    const { error } = await supabase
+      .from('0007-ap-deposit-ideas')
+      .update({
+        is_active: false,
+        archived: true,
+        activated_at: new Date().toISOString()
+      })
+      .eq('id', ideaId);
+    if (error) {
+      toast.error("Failed to archive the original deposit idea.");
+    } else {
+      toast.success("Deposit Idea has been activated!");
+    }
+  };
+  
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm relative">
       <div className="flex items-center mb-3">
