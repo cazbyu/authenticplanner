@@ -484,9 +484,9 @@ const ActivationTypeSelector: React.FC<{
             mode="create"
             initialData={{
               title: depositIdea.title,
-              notes: noteContent,
+              notes: depositIdea.notes || "",
               schedulingType: showTaskEventForm,
-              selectedRoleIds: linkedRoleIds.length > 0 ? linkedRoleIds : [selectedRole.id],
+              selectedRoleIds: [selectedRole.id],
               selectedKeyRelationshipIds: [relationship.id],
               selectedDomainIds: linkedDomainIds,
               authenticDeposit: true,
