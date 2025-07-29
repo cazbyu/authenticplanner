@@ -1,500 +1,552 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
-import { X, Check, Trash2 } from 'lucide-react';
+import { Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { getSignedImageUrl } from '../../utils/imageHelpers';
+import TaskEventForm from '../tasks/TaskEventForm';
 
-interface Role {
+interface KeyRelationship {
   id: string;
-  label: string;
-  category: string;
-}
-
-interface Domain {
-  id: string;
+  role_id: string;
   name: string;
+  notes?: string;
+  image_path?: string;
 }
 
-interface TwelveWeekGoal {
+interface Task {
   id: string;
   title: string;
-  description?: string;
-  status: 'active' | 'completed' | 'paused' | 'cancelled';
-  progress: number;
-  domains: Domain[];
-  roles: Role[];
+  status: string;
+  due_date?: string;
+  is_urgent: boolean;
+  is_important: boolean;
+  is_authentic_deposit: boolean;
 }
 
-interface TwelveWeekGoalEditFormProps {
-  goal: TwelveWeekGoal;
-  onClose: () => void;
-  onGoalUpdated: () => void;
-  onGoalDeleted: () => void;
+interface DepositIdea {
+  id: string;
+  title?: string;
+  notes?: string;
+  is_active: boolean;
 }
 
-const WELLNESS_DOMAINS = [
-  { id: 'physical', name: 'Physical' },
-  { id: 'emotional', name: 'Emotional' },
-  { id: 'intellectual', name: 'Intellectual' },
-  { id: 'spiritual', name: 'Spiritual' },
-  { id: 'financial', name: 'Financial' },
-  { id: 'social', name: 'Social' },
-  { id: 'recreational', name: 'Recreational' },
-  { id: 'community', name: 'Community' }
-];
+interface Note {
+  id: string;
+  content: string;
+  created_at: string;
+  updated_at: string;
+}
 
-const TwelveWeekGoalEditForm: React.FC<TwelveWeekGoalEditFormProps> = ({ 
-  goal, 
-  onClose, 
-  onGoalUpdated, 
-  onGoalDeleted 
+interface UnifiedKeyRelationshipCardProps {
+  relationship: KeyRelationship;
+  roleName: string;
+  onRelationshipUpdated: () => void;
+  onRelationshipDeleted: () => void;
+}
+
+const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
+  relationship,
+  roleName,
+  onRelationshipUpdated,
+  onRelationshipDeleted,
 }) => {
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [deleting, setDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [activeRoles, setActiveRoles] = useState<Role[]>([]);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  
-  const [form, setForm] = useState({
-    title: goal.title,
-    description: goal.description || '',
-    status: goal.status,
-    progress: goal.progress,
-    selectedDomains: goal.domains.map(d => d.name),
-    selectedRoles: goal.roles.map(r => r.id),
-  });
+  // State for the relationship data
+  const [name, setName] = useState(relationship.name);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+  // State for tasks, deposit ideas, and notes
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
+  const [notes, setNotes] = useState<Note[]>([]);
+
+  // State for new note input - simplified to single content box
+  const [newNote, setNewNote] = useState('');
+  const [addingNote, setAddingNote] = useState(false);
+
+  // Collapsible
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // State for task management
+  const [showAddTaskForm, setShowAddTaskForm] = useState(false);
+  const [editingTask, setEditingTask] = useState<Task | null>(null);
+
+  // State for deposit ideas management
+  const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
+  const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
+  const [deletingDepositIdea, setDeletingDepositIdea] = useState<DepositIdea | null>(null);
+
+  // Load initial data
   useEffect(() => {
-    fetchActiveRoles();
-  }, []);
+    loadRelationshipData();
+    loadNotes();
+    loadImage();
+  }, [relationship.id]);
 
-  const fetchActiveRoles = async () => {
+  const loadImage = async () => {
+    if (relationship.image_path) {
+      const signedUrl = await getSignedImageUrl(relationship.image_path);
+      if (signedUrl) setImagePreview(signedUrl);
+    } else {
+      setImagePreview(null);
+    }
+  };
+
+  // Fetch tasks and deposit ideas for this key relationship
+  const loadRelationshipData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError('User not authenticated');
-        return;
-      }
+      if (!user) return;
 
-      const { data: roles, error } = await supabase
-        .from('0007-ap-roles')
-        .select('id, label, category')
+      // Fetch tasks
+      const { data: taskLinks } = await supabase
+        .from('0007-ap-task-key-relationships')
+        .select(`
+          task:0007-ap-tasks(
+            id,
+            title,
+            status,
+            due_date,
+            is_urgent,
+            is_important,
+            is_authentic_deposit
+          )
+        `)
+        .eq('key_relationship_id', relationship.id);
+
+      const relationshipTasks = taskLinks?.map(link => link.task).filter(Boolean) || [];
+      setTasks(relationshipTasks.filter(
+        (task: Task) => task.status === 'pending' || task.status === 'in_progress'
+      ));
+
+      // Fetch deposit ideas linked directly to this key relationship
+      const { data: depositIdeasData } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .select('*')
         .eq('user_id', user.id)
+        .eq('key_relationship_id', relationship.id)
         .eq('is_active', true)
-        .order('category', { ascending: true })
-        .order('label', { ascending: true });
+        .is('activated_at', null)
+        .or('archived.is.null,archived.eq.false');
 
-      if (error) {
-        console.error('Error fetching roles:', error);
-        setError('Failed to load roles');
-        return;
-      }
+      console.log('Deposit ideas for relationship', relationship.id, ':', depositIdeasData);
 
-      setActiveRoles(roles || []);
-    } catch (err) {
-      console.error('Error fetching roles:', err);
-      setError('Failed to load roles');
-    } finally {
-      setLoading(false);
+      // Also check for deposit ideas linked via the junction table
+      const { data: depositIdeaLinks } = await supabase
+        .from('0007-ap-deposit-idea-key-relationships')
+        .select(`
+          deposit_idea:0007-ap-deposit-ideas(
+            id,
+            title,
+            notes,
+            is_active,
+            activated_at,
+            archived
+          )
+        `)
+        .eq('key_relationship_id', relationship.id);
+
+      const linkedDepositIdeas = depositIdeaLinks?.map(link => link.deposit_idea).filter(idea => 
+        idea && 
+        idea.is_active && 
+        !idea.activated_at && 
+        (!idea.archived || idea.archived === false)
+      ) || [];
+
+      console.log('Linked deposit ideas for relationship', relationship.id, ':', linkedDepositIdeas);
+
+      // Combine both direct and linked deposit ideas, removing duplicates
+      const allDepositIdeas = [
+        ...(depositIdeasData || []),
+        ...linkedDepositIdeas
+      ];
+      
+      const uniqueDepositIdeas = allDepositIdeas.filter((idea, index, self) => 
+        index === self.findIndex(i => i.id === idea.id)
+      );
+
+      setDepositIdeas(uniqueDepositIdeas);
+    } catch (error) {
+      console.error('Error loading relationship data:', error);
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    setForm(prev => ({ 
-      ...prev, 
-      [name]: type === 'number' ? parseInt(value) || 0 : value 
-    }));
-  };
-
-  const toggleDomain = (domainName: string) => {
-    setForm(prev => ({
-      ...prev,
-      selectedDomains: prev.selectedDomains.includes(domainName)
-        ? prev.selectedDomains.filter(name => name !== domainName)
-        : [...prev.selectedDomains, domainName]
-    }));
-  };
-
-  const toggleRole = (roleId: string) => {
-    setForm(prev => ({
-      ...prev,
-      selectedRoles: prev.selectedRoles.includes(roleId)
-        ? prev.selectedRoles.filter(id => id !== roleId)
-        : [...prev.selectedRoles, roleId]
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!form.title.trim()) {
-      setError('Goal title is required');
-      return;
-    }
-
-    if (form.selectedDomains.length === 0) {
-      setError('Please select at least one wellness domain');
-      return;
-    }
-
-    setSubmitting(true);
-    setError(null);
-
+  // Fetch notes
+  const loadNotes = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError('User not authenticated');
-        return;
-      }
+      if (!user) return;
 
-      // Update the main goal
-      const { error: goalError } = await supabase
-        .from('0007-ap-goals-12wk')
-        .update({
-          title: form.title.trim(),
-          description: form.description.trim() || null,
-          status: form.status,
-          progress: form.progress,
-          updated_at: new Date().toISOString()
+      const { data: noteLinks } = await supabase
+        .from('0007-ap-note-key-relationships')
+        .select(`
+          note:0007-ap-notes(id, content, created_at, updated_at, user_id)
+        `)
+        .eq('key_relationship_id', relationship.id);
+
+      const relationshipNotes = noteLinks?.map(link => link.note).filter(Boolean) || [];
+      setNotes(relationshipNotes);
+    } catch (error) {
+      console.error('Error loading notes:', error);
+    }
+  };
+
+  // Add note - simplified to single content
+  const addNote = async () => {
+    if (!newNote.trim()) return;
+    setAddingNote(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      // First, insert the note
+      const { data: noteData, error: noteError } = await supabase
+        .from('0007-ap-notes')
+        .insert({
+          user_id: user.id,
+          content: newNote.trim(),
         })
-        .eq('id', goal.id)
-        .eq('user_id', user.id);
+        .select()
+        .single();
 
-      if (goalError) {
-        console.error('Error updating goal:', goalError);
-        setError('Failed to update goal');
+      if (noteError) {
+        toast.error("Failed to add note: " + noteError.message);
+        setAddingNote(false);
         return;
       }
 
-      // Update domain relationships
-      // First, delete existing domain relationships
-      await supabase
-        .from('0007-ap-goal-domains')
-        .delete()
-        .eq('goal_id', goal.id);
+      // Then, link the note to the key relationship
+      const { error: linkError } = await supabase
+        .from('0007-ap-note-key-relationships')
+        .insert({
+          note_id: noteData.id,
+          key_relationship_id: relationship.id,
+        });
 
-      // Get domain IDs from the domains table
-      const { data: domains, error: domainsError } = await supabase
-        .from('0007-ap-domains')
-        .select('id, name')
-        .in('name', form.selectedDomains);
-
-      if (domainsError) {
-        console.error('Error fetching domains:', domainsError);
-        setError('Failed to update domains');
+      if (linkError) {
+        toast.error("Failed to link note: " + linkError.message);
+        setAddingNote(false);
         return;
       }
 
-      // Create new domain relationships
-      if (domains && domains.length > 0) {
-        const domainInserts = domains.map(domain => ({
-          goal_id: goal.id,
-          domain_id: domain.id
-        }));
-
-        const { error: domainLinkError } = await supabase
-          .from('0007-ap-goal-domains')
-          .insert(domainInserts);
-
-        if (domainLinkError) {
-          console.error('Error linking domains:', domainLinkError);
-          setError('Failed to update domain links');
-          return;
-        }
-      }
-
-      // Update role relationships
-      // First, delete existing role relationships
-      await supabase
-        .from('0007-ap-goal-roles')
-        .delete()
-        .eq('goal_id', goal.id);
-
-      // Create new role relationships
-      if (form.selectedRoles.length > 0) {
-        const roleInserts = form.selectedRoles.map(roleId => ({
-          goal_id: goal.id,
-          role_id: roleId
-        }));
-
-        const { error: roleLinkError } = await supabase
-          .from('0007-ap-goal-roles')
-          .insert(roleInserts);
-
-        if (roleLinkError) {
-          console.error('Error linking roles:', roleLinkError);
-          setError('Failed to update role links');
-          return;
-        }
-      }
-
-      toast.success('12-Week Goal updated successfully!');
-      onGoalUpdated();
-
-    } catch (err) {
-      console.error('Error updating goal:', err);
-      setError('An unexpected error occurred');
-    } finally {
-      setSubmitting(false);
+      setNewNote('');
+      loadNotes();
+      toast.success("Note added!");
+    } catch (err: any) {
+      toast.error("Failed to add note: " + (err.message || err));
     }
+    setAddingNote(false);
   };
 
-  const handleDelete = async () => {
-    setDeleting(true);
-    setError(null);
+  // Handle task creation
+  const handleTaskCreated = () => {
+    setShowAddTaskForm(false);
+    loadRelationshipData(); // Refresh tasks
+  };
 
+  // Handle task editing
+  const handleEditTask = (task: Task) => {
+    setEditingTask(task);
+  };
+
+  // Handle task updated
+  const handleTaskUpdated = () => {
+    setEditingTask(null);
+    loadRelationshipData(); // Refresh tasks
+  };
+
+  // Handle deposit idea creation
+  const handleDepositIdeaCreated = () => {
+    setShowAddDepositIdeaForm(false);
+    loadRelationshipData(); // Refresh deposit ideas
+  };
+
+  // Handle deposit idea editing
+  const handleEditDepositIdea = (idea: DepositIdea) => {
+    setEditingDepositIdea(idea);
+  };
+
+  // Handle deposit idea updated
+  const handleDepositIdeaUpdated = () => {
+    setEditingDepositIdea(null);
+    loadRelationshipData(); // Refresh deposit ideas
+  };
+
+  // Handle deposit idea deletion
+  const handleDeleteDepositIdea = async () => {
+    if (!deletingDepositIdea) return;
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        setError('User not authenticated');
-        return;
-      }
+      if (!user) return;
 
       const { error } = await supabase
-        .from('0007-ap-goals-12wk')
+        .from('0007-ap-deposit-ideas')
         .delete()
-        .eq('id', goal.id)
+        .eq('id', deletingDepositIdea.id)
         .eq('user_id', user.id);
 
       if (error) {
-        console.error('Error deleting goal:', error);
-        setError('Failed to delete goal');
-        return;
+        console.error('Error deleting deposit idea:', error);
+        toast.error('Failed to delete deposit idea');
+      } else {
+        toast.success('Deposit idea deleted successfully!');
+        setDeletingDepositIdea(null);
+        loadRelationshipData(); // Refresh deposit ideas
       }
-
-      toast.success('12-Week Goal deleted successfully!');
-      onGoalDeleted();
-
-    } catch (err) {
-      console.error('Error deleting goal:', err);
-      setError('An unexpected error occurred');
-    } finally {
-      setDeleting(false);
+    } catch (error) {
+      console.error('Error deleting deposit idea:', error);
+      toast.error('Failed to delete deposit idea');
     }
   };
 
-  if (loading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="bg-white rounded-lg p-6">
-          <div className="flex items-center justify-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
-            <span className="ml-2">Loading...</span>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <>
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-        <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-6 max-h-[90vh] overflow-y-auto space-y-6 m-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-xl font-semibold text-gray-900">Edit 12-Week Goal</h2>
-            <button
-              type="button"
-              onClick={onClose}
-              className="text-gray-400 hover:text-gray-600 text-lg"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3">
-              <p className="text-sm text-red-700">{error}</p>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Goal Title */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Goal Title *</label>
-              <input
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                placeholder="Enter your 12-week goal..."
-                required
-              />
-            </div>
-
-            {/* Goal Description */}
-            <div>
-              <label className="block text-sm font-medium mb-2">Description</label>
-              <textarea
-                name="description"
-                value={form.description}
-                onChange={handleChange}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                rows={3}
-                placeholder="Add more details about your goal..."
-              />
-            </div>
-
-            {/* Status and Progress */}
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">Status</label>
-                <select
-                  name="status"
-                  value={form.status}
-                  onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                >
-                  <option value="active">Active</option>
-                  <option value="completed">Completed</option>
-                  <option value="paused">Paused</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">Progress (%)</label>
-                <input
-                  type="number"
-                  name="progress"
-                  value={form.progress}
-                  onChange={handleChange}
-                  min="0"
-                  max="100"
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-                />
-              </div>
-            </div>
-
-            {/* Wellness Domains */}
-            <div>
-              <label className="block text-sm font-medium mb-3">
-                Wellness Domains *
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                {WELLNESS_DOMAINS.map((domain) => (
-                  <button
-                    key={domain.id}
-                    type="button"
-                    onClick={() => toggleDomain(domain.name)}
-                    className={`
-                      flex items-center justify-between px-3 py-2 rounded-md border text-left transition-colors
-                      ${form.selectedDomains.includes(domain.name)
-                        ? 'bg-primary-50 border-primary-200 text-primary-700'
-                        : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
-                      }
-                    `}
-                  >
-                    <span className="font-medium">{domain.name}</span>
-                    {form.selectedDomains.includes(domain.name) && (
-                      <Check className="h-4 w-4 text-primary-600" />
-                    )}
-                  </button>
-                ))}
-              </div>
-              {form.selectedDomains.length === 0 && (
-                <p className="text-sm text-red-600 mt-1">Please select at least one domain</p>
-              )}
-            </div>
-
-            {/* Active Roles */}
-            <div>
-              <label className="block text-sm font-medium mb-3">
-                Associated Roles
-              </label>
-              {activeRoles.length > 0 ? (
-                <div className="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto">
-                  {activeRoles.map((role) => (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => toggleRole(role.id)}
-                      className={`
-                        flex items-center justify-between px-3 py-2 rounded-md border text-left transition-colors
-                        ${form.selectedRoles.includes(role.id)
-                          ? 'bg-secondary-50 border-secondary-200 text-secondary-700'
-                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
-                        }
-                      `}
-                    >
-                      <div>
-                        <span className="font-medium block">{role.label}</span>
-                        <span className="text-xs text-gray-500">{role.category}</span>
-                      </div>
-                      {form.selectedRoles.includes(role.id) && (
-                        <Check className="h-4 w-4 text-secondary-600" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 italic">
-                  No active roles found. You can add roles in Settings to link them to your goals.
-                </p>
-              )}
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex justify-between pt-4">
-              <button
-                type="button"
-                onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center px-4 py-2 text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Goal
-              </button>
-              
-              <div className="flex space-x-3">
-                <button
-                  type="button"
-                  onClick={onClose}
-                  className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting || !form.title.trim() || form.selectedDomains.length === 0}
-                  className="px-6 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {submitting ? 'Updating...' : 'Update Goal'}
-                </button>
-              </div>
-            </div>
-          </form>
+    <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm relative">
+      <div className="flex items-center mb-3">
+        {imagePreview && (
+          <img
+            src={imagePreview}
+            alt={name}
+            className="h-10 w-10 rounded-full object-cover border mr-3"
+          />
+        )}
+        <div>
+          <div className="font-bold text-lg text-gray-900">{name}</div>
+          <div className="text-sm text-gray-500">{roleName}</div>
         </div>
+        <button
+          className="ml-auto text-gray-400 hover:text-primary-600 transition"
+          onClick={() => setIsExpanded(!isExpanded)}
+          title={isExpanded ? 'Collapse' : 'Expand'}
+        >
+          {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+        </button>
       </div>
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 z-60 flex items-center justify-center bg-black bg-opacity-50">
+      {/* COLLAPSIBLE SECTION */}
+      {isExpanded && (
+        <div>
+          {/* --- Tasks --- */}
+          <div className="mb-4">
+            <div className="font-semibold mb-2 flex items-center gap-2">
+              <span>Tasks</span>
+              <span className="text-xs bg-gray-100 rounded px-2">{tasks.length}</span>
+              <button
+                onClick={() => setShowAddTaskForm(true)}
+                className="ml-auto text-xs bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {tasks.length === 0 ? (
+              <div className="text-gray-400 text-sm">No tasks for this relationship.</div>
+            ) : (
+              <ul className="space-y-2">
+                {tasks.map((task) => (
+                  <li key={task.id} className="flex items-center justify-between gap-2 p-2 border rounded">
+                    <span>{task.title}</span>
+                    <div className="flex items-center gap-1">
+                      {task.is_urgent && <span className="text-xs bg-red-100 text-red-700 rounded px-1">Urgent</span>}
+                      {task.is_important && <span className="text-xs bg-blue-100 text-blue-700 rounded px-1">Important</span>}
+                      {task.is_authentic_deposit && <span className="text-xs bg-green-100 text-green-700 rounded px-1">Deposit</span>}
+                      <button
+                        onClick={() => handleEditTask(task)}
+                        className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2 px-0.5"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* --- Deposit Ideas --- */}
+          <div className="mb-4">
+            <div className="font-semibold mb-2 flex items-center gap-2">
+              <span>Deposit Ideas</span>
+              <span className="text-xs bg-gray-100 rounded px-2">{depositIdeas.length}</span>
+              <button
+                onClick={() => setShowAddDepositIdeaForm(true)}
+                className="ml-auto text-xs bg-green-600 text-white rounded px-1 py-0.5 hover:bg-green-700 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {/* Remove duplicates by filtering unique IDs */}
+            {depositIdeas.filter((idea, index, self) => 
+              index === self.findIndex(i => i.id === idea.id)
+            ).length === 0 ? (
+              <div className="text-gray-400 text-sm">No deposit ideas for this relationship.</div>
+            ) : (
+              <ul className="space-y-2">
+                {depositIdeas.filter((idea, index, self) => 
+                  index === self.findIndex(i => i.id === idea.id)
+                ).map((idea) => (
+                  <li key={idea.id} className="p-2 border rounded">
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
+                    </div>
+                    <div className="flex gap-0.5 text-xs">
+                      <button
+                        onClick={() => handleEditDepositIdea(idea)}
+                        className="bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors flex-1"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setDeletingDepositIdea(idea)}
+                        className="bg-red-600 text-white rounded px-1 py-0.5 hover:bg-red-700 transition-colors flex-1"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* --- Notes Section --- */}
+          <div className="mb-4">
+            <div className="font-semibold mb-2">Notes</div>
+            <input
+              value={newNote}
+              onChange={e => setNewNote(e.target.value)}
+              placeholder="Add note content..."
+              className="w-full border rounded px-2 py-1 text-sm mb-2"
+            />
+            <button
+              onClick={addNote}
+              disabled={!newNote.trim() || addingNote}
+              className="mb-2 px-1.5 py-0.5 rounded bg-primary-600 text-white disabled:bg-gray-300 text-xs"
+            >
+              {addingNote ? 'Saving...' : 'Add Note'}
+            </button>
+            {notes && notes.length > 0 ? (
+              <ul className="mt-2 space-y-2">
+                {notes.map((note) => (
+                  <li key={note.id} className="p-2 bg-gray-50 rounded border text-sm">
+                    <span>{note.content}</span>
+                    <span className="block text-xs text-gray-400 mt-1">
+                      {new Date(note.created_at).toLocaleString()}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="text-sm text-gray-400 mt-2">No notes yet.</div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Add Task Form Modal */}
+      {showAddTaskForm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="create"
+              initialData={{
+                schedulingType: 'task',
+                selectedRoleIds: [relationship.role_id],
+                selectedKeyRelationshipIds: [relationship.id]
+              }}
+              onSubmitSuccess={handleTaskCreated}
+              onClose={() => setShowAddTaskForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Task Form Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="edit"
+              initialData={{
+                id: editingTask.id,
+                title: editingTask.title,
+                schedulingType: 'task',
+                selectedRoleIds: [relationship.role_id],
+                selectedKeyRelationshipIds: [relationship.id],
+                // The TaskEventForm will fetch and prefill other data via useEffect
+              }}
+              onSubmitSuccess={handleTaskUpdated}
+              onClose={() => setEditingTask(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Add Deposit Idea Form Modal */}
+      {showAddDepositIdeaForm && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="create"
+              initialData={{
+                schedulingType: 'depositIdea',
+                selectedRoleIds: [relationship.role_id],
+                selectedKeyRelationshipIds: [relationship.id]
+              }}
+              onSubmitSuccess={handleDepositIdeaCreated}
+              onClose={() => setShowAddDepositIdeaForm(false)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Edit Deposit Idea Form Modal */}
+      {editingDepositIdea && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              mode="edit"
+              initialData={{
+                id: editingDepositIdea.id,
+                title: editingDepositIdea.title || editingDepositIdea.notes || '',
+                notes: editingDepositIdea.notes || '',
+                schedulingType: 'depositIdea',
+                selectedRoleIds: [relationship.role_id],
+                selectedKeyRelationshipIds: [relationship.id],
+                // The TaskEventForm will fetch and prefill roles/domains via useEffect
+              }}
+              onSubmitSuccess={handleDepositIdeaUpdated}
+              onClose={() => setEditingDepositIdea(null)}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Delete Deposit Idea Confirmation Modal */}
+      {deletingDepositIdea && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Goal</h3>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Deposit Idea</h3>
             <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to delete "{goal.title}"? This action cannot be undone and will remove all associated weekly goals and task links.
+              Are you sure you want to delete "{deletingDepositIdea.title || deletingDepositIdea.notes || 'this deposit idea'}"? This action cannot be undone.
             </p>
             <div className="flex justify-end space-x-3">
               <button
-                onClick={() => setShowDeleteConfirm(false)}
-                disabled={deleting}
-                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                onClick={() => setDeletingDepositIdea(null)}
+                className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
               >
                 Cancel
               </button>
               <button
-                onClick={handleDelete}
-                disabled={deleting}
-                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 disabled:opacity-50"
+                onClick={handleDeleteDepositIdea}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700"
               >
-                {deleting ? 'Deleting...' : 'Delete'}
+                Delete
               </button>
             </div>
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };
 
-export default TwelveWeekGoalEditForm;
+export default UnifiedKeyRelationshipCard;
