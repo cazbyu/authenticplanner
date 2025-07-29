@@ -274,8 +274,7 @@ const { data: depositIdea, error: depositIdeaError } = await supabase
     title: form.title.trim(),
     // key_relationship_id line is now gone
     is_active: true,
-    notes: form.notes.trim() || null
-  }])
+     }])
   .select()
   .single();
 
