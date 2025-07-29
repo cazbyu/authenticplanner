@@ -115,17 +115,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         (task: Task) => task.status === 'pending' || task.status === 'in_progress'
       ));
 
-      // Fetch deposit ideas linked directly to this key relationship
-      const { data: depositIdeasData } = await supabase
-        .from('0007-ap-deposit-ideas')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('key_relationship_id', relationship.id)
-        .eq('is_active', true)
-        .is('activated_at', null)
-        .or('archived.is.null,archived.eq.false');
-
-      // Also check for deposit ideas linked via the junction table
+            // Also check for deposit ideas linked via the junction table
       const { data: depositIdeaLinks } = await supabase
         .from('0007-ap-deposit-idea-key-relationships')
         .select(`
@@ -148,7 +138,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 
       // Combine both direct and linked deposit ideas, removing duplicates
       const allDepositIdeas = [
-        ...(depositIdeasData || []),
         ...linkedDepositIdeas
       ];
       const uniqueDepositIdeas = allDepositIdeas.filter((idea, index, self) => 
