@@ -91,7 +91,8 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   // Fetch existing deposit idea data for editing
   useEffect(() => {
     if (mode === "edit" && initialData?.id && initialData?.schedulingType === "depositIdea") {
-      fetchDepositIdeaData(initialData.id);
+      // We no longer need this, as the parent component now provides all the data.
+      // fetchDepositIdeaData(initialData.id);
     }
   }, [mode, initialData?.id, initialData?.schedulingType]);
 
