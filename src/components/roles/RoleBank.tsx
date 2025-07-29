@@ -91,6 +91,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
+
+      console.log("DEBUG: Current auth user.id is", user?.id);
+      
       if (!user) return;
 
       let query = supabase
