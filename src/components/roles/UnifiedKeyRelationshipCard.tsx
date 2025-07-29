@@ -300,22 +300,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     }
   };
 
- const archiveDepositIdea = async (ideaId: string) => {
-    const { error } = await supabase
-      .from('0007-ap-deposit-ideas')
-      .update({
-        is_active: false,
-        archived: true,
-        activated_at: new Date().toISOString()
-      })
-      .eq('id', ideaId);
-    if (error) {
-      toast.error("Failed to archive the original deposit idea.");
-    } else {
-      toast.success("Deposit Idea has been activated!");
-    }
-  };
-  
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm relative">
       <div className="flex items-center mb-3">
