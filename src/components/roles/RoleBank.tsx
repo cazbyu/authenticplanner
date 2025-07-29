@@ -305,7 +305,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               tasks.length > 0 ? (
                 <div className="space-y-3">
                   {tasks.map((task) => (
-                    <div key={task.id} className="p-4 bg-white rounded-lg border relative group">
+                    <div key={task.id} className="p-4 bg-white rounded-lg border relative group transition-all hover:border-blue-500 hover:shadow-sm">
                       <div className="pr-20">
                         <p className="font-medium">{task.title}</p>
                         <p className="text-sm text-gray-500">Due: {new Date(task.due_date).toLocaleDateString()}</p>
