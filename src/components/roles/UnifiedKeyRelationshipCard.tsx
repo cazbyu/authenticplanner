@@ -602,24 +602,30 @@ const ActivationTypeSelector: React.FC<{
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-        <h3 className="text-lg font-medium mb-4">Activate "{depositIdea.title}" as:</h3>
-        <div className="space-y-3">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
+      <div className="bg-gray-50 rounded-xl p-6 w-full max-w-sm shadow-xl">
+        <h3 className="text-lg font-semibold text-center text-gray-800 mb-5">
+          Activate "{depositIdea.title}" as:
+        </h3>
+        <div className="grid grid-cols-2 gap-3">
           <button 
             onClick={() => setShowTaskEventForm('task')} 
-            className="w-full p-2 text-center text-sm border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
+            className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200"
           >
             Task
           </button>
           <button 
             onClick={() => setShowTaskEventForm('event')} 
-            className="w-full p-2 text-center text-sm border rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors"
+            className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200"
           >
             Event
           </button>
-        </div> 
-        <div className="text-right mt-4"><button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">Cancel</button></div>
+        </div>
+        <div className="text-center mt-6">
+          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors">
+            Cancel
+          </button>
+        </div>
       </div>
     </div>
   );
