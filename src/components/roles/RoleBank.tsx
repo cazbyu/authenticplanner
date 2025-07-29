@@ -298,6 +298,18 @@ const handleEditDepositIdea = async (idea: DepositIdea) => {
       .select('key_relationship_id')
       .eq('deposit_idea_id', idea.id);
 
+    // --- NEW: Fetch linked note ---
+    let noteContent = '';
+    const { data: noteLink } = await supabase
+      .from('0007-ap-note-deposit-ideas')
+      .select('note:0007-ap-notes(content)') // Fetches the note's content
+      .eq('deposit_idea_id', idea.id)
+      .single(); // We expect only one note per idea
+
+    if (noteLink && noteLink.note) {
+      noteContent = noteLink.note.content;
+    }
+
     const fullIdeaData = {
       ...idea,
       schedulingType: 'depositIdea',
