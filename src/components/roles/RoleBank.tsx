@@ -371,16 +371,25 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               </button>
             </div>
             {loading ? <p>Loading relationships...</p> : (
-              relationships.length > 0 ? (
+              {relationships.length > 0 ? (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
     {relationships
-      .filter(rel => rel && typeof rel.name === "string" && rel.name.length > 0)
+      .filter(rel => rel && typeof rel.name === 'string' && rel.name.length > 0)
       .map((rel) => (
         <UnifiedKeyRelationshipCard
           key={rel.id}
           relationship={rel}
-          onRelationshipUpdated={() => fetchRoleData(selectedRole.id)}
-          onRelationshipDeleted={() => fetchRoleData(selectedRole.id)}
+          roleName={selectedRole.label}
+          onRelationshipUpdated={() => {
+            if (selectedRole) {
+              fetchRoleData(selectedRole.id);
+            }
+          }}
+          onRelationshipDeleted={() => {
+            if (selectedRole) {
+              fetchRoleData(selectedRole.id);
+            }
+          }}
         />
       ))}
   </div>
