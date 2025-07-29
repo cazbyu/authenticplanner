@@ -114,8 +114,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       setTasks(relationshipTasks.filter(
         (task: Task) => task.status === 'pending' || task.status === 'in_progress'
       ));
-
-            // Also check for deposit ideas linked via the junction table
+      
+      // Also check for deposit ideas linked via the junction table
       const { data: depositIdeaLinks } = await supabase
         .from('0007-ap-deposit-idea-key-relationships')
         .select(`
@@ -136,10 +136,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         (!idea.archived || idea.archived === false)
       ) || [];
 
-      // Combine both direct and linked deposit ideas, removing duplicates
-      const allDepositIdeas = [
-        ...linkedDepositIdeas
-      ];
+      // Combine and remove duplicates
+      const allDepositIdeas = [...linkedDepositIdeas];
       const uniqueDepositIdeas = allDepositIdeas.filter((idea, index, self) => 
         index === self.findIndex(i => i.id === idea.id)
       );
@@ -176,13 +174,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      // First, insert the note
       const { data: noteData, error: noteError } = await supabase
         .from('0007-ap-notes')
-        .insert({
-          user_id: user.id,
-          content: newNote.trim(),
-        })
+        .insert({ user_id: user.id, content: newNote.trim() })
         .select()
         .single();
       if (noteError) {
@@ -191,13 +185,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         return;
       }
 
-      // Then, link the note to the key relationship
       const { error: linkError } = await supabase
         .from('0007-ap-note-key-relationships')
-        .insert({
-          note_id: noteData.id,
-          key_relationship_id: relationship.id,
-        });
+        .insert({ note_id: noteData.id, key_relationship_id: relationship.id });
       if (linkError) {
         toast.error("Failed to link note: " + linkError.message);
         setAddingNote(false);
@@ -213,47 +203,17 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     setAddingNote(false);
   };
 
-  // Handle task creation
-  const handleTaskCreated = () => {
-    setShowAddTaskForm(false);
-    loadRelationshipData(); // Refresh tasks
-  };
-
-  // Handle task editing
-  const handleEditTask = (task: Task) => {
-    setEditingTask(task);
-  };
-
-  // Handle task updated
-  const handleTaskUpdated = () => {
-    setEditingTask(null);
-    loadRelationshipData(); // Refresh tasks
-  };
-
-  // Handle deposit idea creation
-  const handleDepositIdeaCreated = () => {
-    setShowAddDepositIdeaForm(false);
-    loadRelationshipData(); // Refresh deposit ideas
-  };
-
-  // *** UPDATED FUNCTION ***
-  // Fetches all data before opening the form
+  // Handlers for tasks and ideas
+  const handleTaskCreated = () => { setShowAddTaskForm(false); loadRelationshipData(); };
+  const handleEditTask = (task: Task) => { setEditingTask(task); };
+  const handleTaskUpdated = () => { setEditingTask(null); loadRelationshipData(); };
+  const handleDepositIdeaCreated = () => { setShowAddDepositIdeaForm(false); loadRelationshipData(); };
+  
   const handleEditDepositIdea = async (idea: DepositIdea) => {
-    const { data: rolesData } = await supabase
-      .from('0007-ap-roles-deposit-ideas')
-      .select('role_id')
-      .eq('deposit_idea_id', idea.id);
-
-    const { data: domainsData } = await supabase
-      .from('0007-ap-deposit-idea-domains')
-      .select('domain_id')
-      .eq('deposit_idea_id', idea.id);
-
-    const { data: krsData } = await supabase
-      .from('0007-ap-deposit-idea-key-relationships')
-      .select('key_relationship_id')
-      .eq('deposit_idea_id', idea.id);
-
+    const { data: rolesData } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', idea.id);
+    const { data: domainsData } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', idea.id);
+    const { data: krsData } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', idea.id);
+    
     const fullIdeaData = {
       ...idea,
       schedulingType: 'depositIdea',
@@ -261,65 +221,58 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       selectedDomainIds: domainsData?.map(d => d.domain_id) || [],
       selectedKeyRelationshipIds: krsData?.map(kr => kr.key_relationship_id) || [],
     };
-    
     setEditingDepositIdea(fullIdeaData);
   };
 
-  // Handle deposit idea updated
-  const handleDepositIdeaUpdated = () => {
-    setEditingDepositIdea(null);
-    loadRelationshipData(); // Refresh deposit ideas
-  };
+  const handleDepositIdeaUpdated = () => { setEditingDepositIdea(null); loadRelationshipData(); };
 
-  // Handle deposit idea deletion
   const handleDeleteDepositIdea = async () => {
     if (!deletingDepositIdea) return;
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-      const { error } = await supabase
-        .from('0007-ap-deposit-ideas')
-        .delete()
-        .eq('id', deletingDepositIdea.id)
-        .eq('user_id', user.id);
+      const { error } = await supabase.from('0007-ap-deposit-ideas').delete().eq('id', deletingDepositIdea.id).eq('user_id', user.id);
       if (error) {
-        console.error('Error deleting deposit idea:', error);
         toast.error('Failed to delete deposit idea');
       } else {
         toast.success('Deposit idea deleted successfully!');
         setDeletingDepositIdea(null);
-        loadRelationshipData(); // Refresh deposit ideas
+        loadRelationshipData();
       }
     } catch (error) {
-      console.error('Error deleting deposit idea:', error);
       toast.error('Failed to delete deposit idea');
+    }
+  };
+  
+  const archiveDepositIdea = async (ideaId: string) => {
+    const { error } = await supabase
+      .from('0007-ap-deposit-ideas')
+      .update({
+        is_active: false,
+        archived: true,
+        activated_at: new Date().toISOString()
+      })
+      .eq('id', ideaId);
+    if (error) {
+      toast.error("Failed to archive the original deposit idea.");
+    } else {
+      toast.success("Deposit Idea has been activated!");
     }
   };
 
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm relative">
       <div className="flex items-center mb-3">
-        {imagePreview && (
-          <img
-            src={imagePreview}
-            alt={name}
-            className="h-10 w-10 rounded-full object-cover border mr-3"
-          />
-        )}
+        {imagePreview && <img src={imagePreview} alt={name} className="h-10 w-10 rounded-full object-cover border mr-3" />}
         <div>
           <div className="font-bold text-lg text-gray-900">{name}</div>
           <div className="text-sm text-gray-500">{roleName}</div>
         </div>
-        <button
-          className="ml-auto text-gray-400 hover:text-primary-600 transition"
-          onClick={() => setIsExpanded(!isExpanded)}
-          title={isExpanded ? 'Collapse' : 'Expand'}
-        >
+        <button className="ml-auto text-gray-400 hover:text-primary-600 transition" onClick={() => setIsExpanded(!isExpanded)} title={isExpanded ? 'Collapse' : 'Expand'}>
           {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
         </button>
       </div>
 
-      {/* COLLAPSIBLE SECTION */}
       {isExpanded && (
         <div>
           {/* --- Tasks --- */}
@@ -327,16 +280,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             <div className="font-semibold mb-2 flex items-center gap-2">
               <span>Tasks</span>
               <span className="text-xs bg-gray-100 rounded px-2">{tasks.length}</span>
-              <button
-                onClick={() => setShowAddTaskForm(true)}
-                className="ml-auto text-xs bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors"
-              >
-                Add
-              </button>
+              <button onClick={() => setShowAddTaskForm(true)} className="ml-auto text-xs bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors">Add</button>
             </div>
-            {tasks.length === 0 ? (
-              <div className="text-gray-400 text-sm">No tasks for this relationship.</div>
-            ) : (
+            {tasks.length === 0 ? <div className="text-gray-400 text-sm">No tasks for this relationship.</div> : (
               <ul className="space-y-2">
                 {tasks.map((task) => (
                   <li key={task.id} className="flex items-center justify-between gap-2 p-2 border rounded">
@@ -345,12 +291,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                       {task.is_urgent && <span className="text-xs bg-red-100 text-red-700 rounded px-1">Urgent</span>}
                       {task.is_important && <span className="text-xs bg-blue-100 text-blue-700 rounded px-1">Important</span>}
                       {task.is_authentic_deposit && <span className="text-xs bg-green-100 text-green-700 rounded px-1">Deposit</span>}
-                      <button
-                        onClick={() => handleEditTask(task)}
-                        className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2 px-0.5"
-                      >
-                        Edit
-                      </button>
+                      <button onClick={() => handleEditTask(task)} className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2 px-0.5">Edit</button>
                     </div>
                   </li>
                 ))}
@@ -363,46 +304,19 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             <div className="font-semibold mb-2 flex items-center gap-2">
               <span>Deposit Ideas</span>
               <span className="text-xs bg-gray-100 rounded px-2">{depositIdeas.length}</span>
-              <button
-                onClick={() => setShowAddDepositIdeaForm(true)}
-                className="ml-auto text-xs bg-green-600 text-white rounded px-1 py-0.5 hover:bg-green-700 transition-colors"
-              >
-                Add
-              </button>
+              <button onClick={() => setShowAddDepositIdeaForm(true)} className="ml-auto text-xs bg-green-600 text-white rounded px-1 py-0.5 hover:bg-green-700 transition-colors">Add</button>
             </div>
-            {depositIdeas.filter((idea, index, self) => 
-              index === self.findIndex(i => i.id === idea.id)
-            ).length === 0 ? (
-              <div className="text-gray-400 text-sm">No deposit ideas for this relationship.</div>
-            ) : (
+            {depositIdeas.length === 0 ? <div className="text-gray-400 text-sm">No deposit ideas for this relationship.</div> : (
               <ul className="space-y-2">
-                {depositIdeas.filter((idea, index, self) => 
-                  index === self.findIndex(i => i.id === idea.id)
-                ).map((idea) => (
-                  // *** UPDATED BUTTONS ***
+                {depositIdeas.map((idea) => (
                   <li key={idea.id} className="p-2 border rounded">
                     <div className="flex items-center justify-between">
                       <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
                     </div>
                     <div className="flex justify-end items-center gap-2 mt-2 text-xs">
-                        <button
-                          onClick={() => setActivatingDepositIdea(idea)}
-                          className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors"
-                        >
-                          Activate
-                        </button>
-                        <button
-                          onClick={() => handleEditDepositIdea(idea)}
-                          className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700 transition-colors"
-                        >
-                          Update
-                        </button>
-                        <button
-                          onClick={() => setDeletingDepositIdea(idea)}
-                          className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors"
-                        >
-                          Delete
-                        </button>
+                      <button onClick={() => setActivatingDepositIdea(idea)} className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors">Activate</button>
+                      <button onClick={() => handleEditDepositIdea(idea)} className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700 transition-colors">Update</button>
+                      <button onClick={() => setDeletingDepositIdea(idea)} className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors">Delete</button>
                     </div>
                   </li>
                 ))}
@@ -413,33 +327,20 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           {/* --- Notes Section --- */}
           <div className="mb-4">
             <div className="font-semibold mb-2">Notes</div>
-            <input
-              value={newNote}
-              onChange={e => setNewNote(e.target.value)}
-              placeholder="Add note content..."
-              className="w-full border rounded px-2 py-1 text-sm mb-2"
-            />
-            <button
-              onClick={addNote}
-              disabled={!newNote.trim() || addingNote}
-              className="mb-2 px-1.5 py-0.5 rounded bg-primary-600 text-white disabled:bg-gray-300 text-xs"
-            >
+            <input value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add note content..." className="w-full border rounded px-2 py-1 text-sm mb-2" />
+            <button onClick={addNote} disabled={!newNote.trim() || addingNote} className="mb-2 px-1.5 py-0.5 rounded bg-primary-600 text-white disabled:bg-gray-300 text-xs">
               {addingNote ? 'Saving...' : 'Add Note'}
             </button>
-            {notes && notes.length > 0 ? (
+            {notes.length > 0 ? (
               <ul className="mt-2 space-y-2">
                 {notes.map((note) => (
                   <li key={note.id} className="p-2 bg-gray-50 rounded border text-sm">
                     <span>{note.content}</span>
-                    <span className="block text-xs text-gray-400 mt-1">
-                      {new Date(note.created_at).toLocaleString()}
-                    </span>
+                    <span className="block text-xs text-gray-400 mt-1">{new Date(note.created_at).toLocaleString()}</span>
                   </li>
                 ))}
               </ul>
-            ) : (
-              <div className="text-sm text-gray-400 mt-2">No notes yet.</div>
-            )}
+            ) : <div className="text-sm text-gray-400 mt-2">No notes yet.</div>}
           </div>
         </div>
       )}
@@ -451,25 +352,27 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           selectedRole={{ id: relationship.role_id, label: roleName }}
           relationship={relationship}
           onClose={() => setActivatingDepositIdea(null)}
-          onActivated={() => {
+          onActivated={async () => {
+            if (activatingDepositIdea) {
+              await archiveDepositIdea(activatingDepositIdea.id);
+            }
             setActivatingDepositIdea(null);
             loadRelationshipData();
+            onRelationshipUpdated();
           }}
         />
       )}
 
-      {showAddTaskForm && ( <TaskEventForm mode="create" initialData={{ schedulingType: 'task', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleTaskCreated} onClose={() => setShowAddTaskForm(false)} /> )}
-      {editingTask && ( <TaskEventForm mode="edit" initialData={{ id: editingTask.id, title: editingTask.title, schedulingType: 'task', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleTaskUpdated} onClose={() => setEditingTask(null)} /> )}
-      {showAddDepositIdeaForm && ( <TaskEventForm mode="create" initialData={{ schedulingType: 'depositIdea', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleDepositIdeaCreated} onClose={() => setShowAddDepositIdeaForm(false)} /> )}
-      {editingDepositIdea && ( <TaskEventForm mode="edit" initialData={editingDepositIdea} onSubmitSuccess={handleDepositIdeaUpdated} onClose={() => setEditingDepositIdea(null)} /> )}
+      {showAddTaskForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'task', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleTaskCreated} onClose={() => setShowAddTaskForm(false)} />}
+      {editingTask && <TaskEventForm mode="edit" initialData={{ id: editingTask.id, title: editingTask.title, schedulingType: 'task', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleTaskUpdated} onClose={() => setEditingTask(null)} />}
+      {showAddDepositIdeaForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'depositIdea', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleDepositIdeaCreated} onClose={() => setShowAddDepositIdeaForm(false)} />}
+      {editingDepositIdea && <TaskEventForm mode="edit" initialData={editingDepositIdea} onSubmitSuccess={handleDepositIdeaUpdated} onClose={() => setEditingDepositIdea(null)} />}
       
       {deletingDepositIdea && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg p-6 max-w-md mx-4">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Delete Deposit Idea</h3>
-            <p className="text-sm text-gray-600 mb-4">
-              Are you sure you want to delete "{deletingDepositIdea.title || deletingDepositIdea.notes || 'this deposit idea'}"? This action cannot be undone.
-            </p>
+            <p className="text-sm text-gray-600 mb-4">Are you sure you want to delete "{deletingDepositIdea.title || deletingDepositIdea.notes || 'this deposit idea'}"? This action cannot be undone.</p>
             <div className="flex justify-end space-x-3">
               <button onClick={() => setDeletingDepositIdea(null)} className="px-4 py-2 text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200">Cancel</button>
               <button onClick={handleDeleteDepositIdea} className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Delete</button>
@@ -481,7 +384,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   );
 };
 
-// *** UPDATED POP-UP ***
 // Helper component for activating deposit ideas
 const ActivationTypeSelector: React.FC<{
   depositIdea: DepositIdea;
@@ -499,7 +401,7 @@ const ActivationTypeSelector: React.FC<{
         const { data } = await supabase
           .from('0007-ap-deposit-idea-domains')
           .select('domain_id')
-          .eq('deposit_idea_id', idea.id);
+          .eq('deposit_idea_id', depositIdea.id); // Corrected this line
         
         if (data) {
           setLinkedDomainIds(data.map(d => d.domain_id));
@@ -536,20 +438,12 @@ const ActivationTypeSelector: React.FC<{
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
       <div className="bg-gray-50 rounded-xl p-6 w-full max-w-sm shadow-xl">
-        <h3 className="text-lg font-semibold text-center text-gray-800 mb-5">
-          Activate "{depositIdea.title}" as:
-        </h3>
+        <h3 className="text-lg font-semibold text-center text-gray-800 mb-5">Activate "{depositIdea.title}" as:</h3>
         <div className="grid grid-cols-2 gap-3">
-          <button 
-            onClick={() => setShowTaskEventForm('task')} 
-            className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200"
-          >
+          <button onClick={() => setShowTaskEventForm('task')} className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200">
             Task
           </button>
-          <button 
-            onClick={() => setShowTaskEventForm('event')} 
-            className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200"
-          >
+          <button onClick={() => setShowTaskEventForm('event')} className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200">
             Event
           </button>
         </div>
