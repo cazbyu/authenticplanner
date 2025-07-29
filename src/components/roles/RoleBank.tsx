@@ -395,7 +395,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   </div>
 ) : (
     <p className="text-center text-gray-500 py-4">No key relationships for this role.</p>
-            )}
+            )
           </section>
         </div>
         
