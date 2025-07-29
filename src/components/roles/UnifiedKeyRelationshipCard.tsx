@@ -573,10 +573,29 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 const ActivationTypeSelector: React.FC<{
   depositIdea: DepositIdea;
   selectedRole: { id: string; label: string };
+  relationship: KeyRelationship; // Add relationship to props
   onClose: () => void;
   onActivated: () => void;
-}> = ({ depositIdea, selectedRole, onClose, onActivated }) => {
+}> = ({ depositIdea, selectedRole, relationship, onClose, onActivated }) => {
   const [showTaskEventForm, setShowTaskEventForm] = useState<'task' | 'event' | null>(null);
+  const [linkedDomainIds, setLinkedDomainIds] = useState<string[]>([]);
+
+  // Fetch linked domains when the component opens
+  useEffect(() => {
+    if (depositIdea) {
+      const fetchLinkedDomains = async () => {
+        const { data } = await supabase
+          .from('0007-ap-deposit-idea-domains')
+          .select('domain_id')
+          .eq('deposit_idea_id', depositIdea.id);
+        
+        if (data) {
+          setLinkedDomainIds(data.map(d => d.domain_id));
+        }
+      };
+      fetchLinkedDomains();
+    }
+  }, [depositIdea]);
 
   if (showTaskEventForm) {
     return (
@@ -589,9 +608,10 @@ const ActivationTypeSelector: React.FC<{
               notes: depositIdea.notes || "",
               schedulingType: showTaskEventForm,
               selectedRoleIds: [selectedRole.id],
+              selectedKeyRelationshipIds: [relationship.id], // Pre-fill Key Relationship
+              selectedDomainIds: linkedDomainIds, // Pre-fill Domains
               authenticDeposit: true,
-              isFromDepositIdea: true,
-              originalDepositIdeaId: depositIdea.id
+              originalDepositIdeaId: depositIdea.id,
             }}
             onSubmitSuccess={onActivated}
             onClose={() => setShowTaskEventForm(null)}
