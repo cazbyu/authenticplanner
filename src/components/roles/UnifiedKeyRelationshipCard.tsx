@@ -415,100 +415,74 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 // Helper component for activating deposit ideas
 const ActivationTypeSelector: React.FC<{
   depositIdea: DepositIdea;
-  selectedRole: { id: string; label: string };
-  relationship: KeyRelationship;
+  selectedRole: Role;
   onClose: () => void;
   onActivated: () => void;
-}> = ({ depositIdea, selectedRole, relationship, onClose, onActivated }) => {
+  relationship?: KeyRelationship; // Optional relationship prop
+}> = ({ depositIdea, selectedRole, onClose, onActivated, relationship }) => {
   const [showTaskEventForm, setShowTaskEventForm] = useState<'task' | 'event' | null>(null);
-  const [linkedRoleIds, setLinkedRoleIds] = useState<string[]>([]);
-  const [linkedDomainIds, setLinkedDomainIds] = useState<string[]>([]);
-  const [linkedKeyRelationshipIds, setLinkedKeyRelationshipIds] = useState<string[]>([]);
-  const [noteContent, setNoteContent] = useState<string>('');
+  const [pivotIds, setPivotIds] = useState({ 
+    selectedRoleIds: [], 
+    selectedDomainIds: [], 
+    selectedKeyRelationshipIds: [],
+    notes: '' 
+  });
 
   useEffect(() => {
     if (depositIdea) {
-      const fetchAllLinkedData = async () => {
-        // Fetch linked roles
-        const { data: rolesData } = await supabase
-          .from('0007-ap-roles-deposit-ideas')
-          .select('role_id')
-          .eq('deposit_idea_id', depositIdea.id);
-        
-        if (rolesData) {
-          setLinkedRoleIds(rolesData.map(r => r.role_id));
-        }
+      const fetchLinks = async () => {
+        const { data: roles } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', depositIdea.id);
+        const { data: domains } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', depositIdea.id);
+        const { data: krs } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', depositIdea.id);
+        const { data: noteLink } = await supabase.from('0007-ap-note-deposit-ideas').select('note:0007-ap-notes(content)').eq('deposit_idea_id', depositIdea.id).single();
 
-        // Fetch linked domains
-        const fetchLinkedDomains = async () => {
-          const { data } = await supabase
-            .from('0007-ap-deposit-idea-domains')
-            .select('domain_id')
-            .eq('deposit_idea_id', depositIdea.id);
-          
-          if (data) {
-            setLinkedDomainIds(data.map(d => d.domain_id));
-          }
-        };
-
-        // Fetch linked key relationships
-        const { data: krsData } = await supabase
-          .from('0007-ap-deposit-idea-key-relationships')
-          .select('key_relationship_id')
-          .eq('deposit_idea_id', depositIdea.id);
-        
-        if (krsData) {
-          setLinkedKeyRelationshipIds(krsData.map(kr => kr.key_relationship_id));
-        }
-
-        // Fetch linked notes
-        const { data: noteLink } = await supabase
-          .from('0007-ap-note-deposit-ideas')
-          .select('note:0007-ap-notes(content)')
-          .eq('deposit_idea_id', depositIdea.id)
-          .single();
-
-        if (noteLink && noteLink.note) {
-          setNoteContent(noteLink.note.content);
-        }
+        setPivotIds({
+          selectedRoleIds: roles?.map(r => r.role_id) || [],
+          selectedDomainIds: domains?.map(d => d.domain_id) || [],
+          selectedKeyRelationshipIds: krs?.map(k => k.key_relationship_id) || [],
+          notes: noteLink?.note?.content || ''
+        });
       };
-      fetchAllLinkedData();
+      fetchLinks();
     }
   }, [depositIdea]);
 
   if (showTaskEventForm) {
-    return (
-      <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black bg-opacity-50">
-        <div className="w-full max-w-2xl mx-4">
-          <TaskEventForm
-            mode="create"
-            initialData={{
-              title: depositIdea.title,
-              notes: depositIdea.notes || "",
-              schedulingType: showTaskEventForm,
-              selectedRoleIds: [selectedRole.id],
-              selectedKeyRelationshipIds: [relationship.id],
-              selectedDomainIds: linkedDomainIds,
-              authenticDeposit: true,
-              originalDepositIdeaId: depositIdea.id,
-            }}
-            onSubmitSuccess={onActivated}
-            onClose={() => setShowTaskEventForm(null)}
-          />
-        </div>
-      </div>
-    );
+    return <TaskEventForm
+      mode="create"
+      initialData={{
+        title: depositIdea.title,
+        notes: pivotIds.notes, // Use fetched notes
+        schedulingType: showTaskEventForm,
+        selectedRoleIds: pivotIds.selectedRoleIds.length ? pivotIds.selectedRoleIds : [selectedRole.id],
+        selectedDomainIds: pivotIds.selectedDomainIds, // Use fetched domains
+        selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds.length ? pivotIds.selectedKeyRelationshipIds : (relationship ? [relationship.id] : []),
+        authenticDeposit: true,
+        isFromDepositIdea: true,
+        originalDepositIdeaId: depositIdea.id
+      }}
+      onSubmitSuccess={onActivated}
+      onClose={() => setShowTaskEventForm(null)}
+    />;
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
       <div className="bg-gray-50 rounded-xl p-6 w-full max-w-sm shadow-xl">
-        <h3 className="text-lg font-semibold text-center text-gray-800 mb-5">Activate "{depositIdea.title}" as:</h3>
+        <h3 className="text-lg font-semibold text-center text-gray-800 mb-5">
+          Activate "{depositIdea.title}" as:
+        </h3>
         <div className="grid grid-cols-2 gap-3">
-          <button onClick={() => setShowTaskEventForm('task')} className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200">
+          <button 
+            onClick={() => setShowTaskEventForm('task')} 
+            className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200"
+          >
             Task
           </button>
-          <button onClick={() => setShowTaskEventForm('event')} className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200">
+          <button 
+            onClick={() => setShowTaskEventForm('event')} 
+            className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200"
+          >
             Event
           </button>
         </div>
