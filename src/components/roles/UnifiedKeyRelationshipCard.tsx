@@ -243,6 +243,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     .single()
     .eq('user_id', user.id);
 
+    console.log("Fetched rolesData for Deposit Idea:", rolesData);
+
   if (noteLink && noteLink.note) {
     noteContent = noteLink.note.content;
   }
