@@ -326,11 +326,10 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       // --- Deposit Idea Logic ---
       if (form.schedulingType === "depositIdea") {
         
-        // Use the idea's ID from initialData if we are in edit mode
         const ideaId = mode === 'edit' ? form.id : null;
 
         if (ideaId) {
-          // ---------- EDIT MODE ----------
+          // ---------- EDIT MODE (CORRECTED) ----------
           // 1. Update the main deposit idea title
           const { error: updateError } = await supabase
             .from("0007-ap-deposit-ideas")
@@ -344,34 +343,37 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
           if (form.notes.trim()) {
             const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
             if (noteData) {
-              await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: newIdeaId, note_id: noteData.id, user_id: user.id }]);
+              // Use the correct 'ideaId' variable
+              await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: ideaId, note_id: noteData.id, user_id: user.id }]);
             }
           }
 
           // 3. Re-link roles, domains, and key relationships
           await supabase.from("0007-ap-roles-deposit-ideas").delete().eq("deposit_idea_id", ideaId);
           if (form.selectedRoleIds.length > 0) {
-            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: newIdeaId, role_id: roleId, user_id: user.id }));
+            // Use the correct 'ideaId' variable
+            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: ideaId, role_id: roleId, user_id: user.id }));
             await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
           }
 
           await supabase.from("0007-ap-deposit-idea-domains").delete().eq("deposit_idea_id", ideaId);
           if (form.selectedDomainIds.length > 0) {
-            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: newIdeaId, domain_id: domainId, user_id: user.id }));
+            // Use the correct 'ideaId' variable
+            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: ideaId, domain_id: domainId, user_id: user.id }));
             await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
           }
 
           await supabase.from("0007-ap-deposit-idea-key-relationships").delete().eq("deposit_idea_id", ideaId);
           if (form.selectedKeyRelationshipIds.length > 0) {
-            const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: newIdeaId, key_relationship_id: krId, user_id: user.id }));
+            // Use the correct 'ideaId' variable
+            const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: ideaId, key_relationship_id: krId, user_id: user.id }));
             await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
           }
           
           toast.success("Deposit idea updated successfully!");
 
         } else {
-          // ---------- CREATE MODE ----------
-          // 1. Create the deposit idea in the main table
+          // ---------- CREATE MODE (Already Correct) ----------
           const { data: depositIdea, error: depositIdeaError } = await supabase
             .from("0007-ap-deposit-ideas")
             .insert([{ user_id: user.id, title: form.title.trim(), is_active: true }])
@@ -384,7 +386,6 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
           
           const newIdeaId = depositIdea.id;
 
-          // 2. Link Notes
           if (form.notes.trim()) {
             const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
             if (noteData) {
@@ -392,7 +393,6 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             }
           }
 
-          // 3. Link to roles, domains, and key relationships
           if (form.selectedRoleIds.length > 0) {
             const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: newIdeaId, role_id: roleId, user_id: user.id }));
             await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
