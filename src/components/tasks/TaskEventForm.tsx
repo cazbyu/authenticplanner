@@ -100,14 +100,14 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch deposit idea with ALL relationships: roles, domains, and key relationships
+      // Fetch deposit idea with corrected syntax for all relationships
       const { data: depositIdea, error } = await supabase
         .from('0007-ap-deposit-ideas')
         .select(`
           *,
-          roles_deposit_ideas:f_0007-ap-roles-deposit-ideas(role_id),
-          deposit_idea_domains:f_0007-ap-deposit-idea-domains(domain_id),
-          deposit_idea_key_relationships:f_0007-ap-deposit-idea-key-relationships(key_relationship_id)
+          roles_deposit_ideas:0007-ap-roles-deposit-ideas(role_id),
+          deposit_idea_domains:0007-ap-deposit-idea-domains(domain_id),
+          deposit_idea_key_relationships:0007-ap-deposit-idea-key-relationships(key_relationship_id)
         `)
         .eq('id', depositIdeaId)
         .eq('user_id', user.id)
@@ -133,7 +133,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
     } catch (error) {
       console.error('Error fetching deposit idea data:', error);
     }
-  };
+  }; 
 
   // Generates time options for 24 hours in 15-min increments
   const generateTimeOptions = () => {
