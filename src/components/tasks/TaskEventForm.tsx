@@ -88,53 +88,133 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [showRoleError, setShowRoleError] = useState(false);
 
-  // Fetch existing deposit idea data for editing
+  // Fetch existing deposit idea data for editing - including roles, domains, key relationships, and notes
   useEffect(() => {
-    if (mode === "edit" && initialData?.id && initialData?.schedulingType === "depositIdea") {
-      // We no longer need this, as the parent component now provides all the data.
-      // fetchDepositIdeaData(initialData.id);
+    if (mode === "edit" && initialData?.id) {
+      if (initialData?.schedulingType === "depositIdea") {
+        fetchDepositIdeaData(initialData.id);
+      } else if (initialData?.schedulingType === "task" || initialData?.schedulingType === "event") {
+        fetchTaskData(initialData.id);
+      }
     }
   }, [mode, initialData?.id, initialData?.schedulingType]);
+
+  const fetchTaskData = async (taskId: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      // Fetch task with all relationships
+      const { data: task, error } = await supabase
+        .from('0007-ap-tasks')
+        .select(`
+          *,
+          task_roles:0007-ap-task-roles(role_id),
+          task_domains:0007-ap-task-domains(domain_id),
+          task_key_relationships:0007-ap-task-key-relationships(key_relationship_id)
+        `)
+        .eq('id', taskId)
+        .eq('user_id', user.id)
+        .single();
+
+      if (error || !task) {
+        console.error('Error fetching task data:', error);
+        return;
+      }
+
+      // Fetch notes for this task
+      const { data: taskNotes } = await supabase
+        .from('0007-ap-task-notes')
+        .select(`
+          note:0007-ap-notes(content)
+        `)
+        .eq('task_id', taskId);
+
+      const noteContent = taskNotes?.[0]?.note?.content || '';
+
+      // Update form with task data
+      setForm(prev => ({
+        ...prev,
+        title: task.title || '',
+        dueDate: task.due_date || prev.dueDate,
+        startTime: task.start_time ? new Date(task.start_time).toTimeString().slice(0, 5) : prev.startTime,
+        endTime: task.end_time ? new Date(task.end_time).toTimeString().slice(0, 5) : prev.endTime,
+        isAllDay: task.is_all_day || false,
+        urgent: task.is_urgent || false,
+        important: task.is_important || false,
+        authenticDeposit: task.is_authentic_deposit || false,
+        twelveWeekGoalChecked: task.is_twelve_week_goal || false,
+        notes: noteContent,
+        selectedRoleIds: task.task_roles?.map((tr: any) => tr.role_id) || [],
+        selectedDomainIds: task.task_domains?.map((td: any) => td.domain_id) || [],
+        selectedKeyRelationshipIds: task.task_key_relationships?.map((tkr: any) => tkr.key_relationship_id) || [],
+      }));
+
+    } catch (error) {
+      console.error('Error fetching task data:', error);
+    }
+  };
 
   const fetchDepositIdeaData = async (depositIdeaId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch deposit idea with ALL relationships: roles, domains, and key relationships
+      // Fetch deposit idea with ALL relationships: roles, domains, key relationships, and notes
       const { data: depositIdea, error } = await supabase
         .from('0007-ap-deposit-ideas')
-        .select(`
-          *,
-          roles_deposit_ideas:f_0007-ap-roles-deposit-ideas(role_id),
-          deposit_idea_domains:f_0007-ap-deposit-idea-domains(domain_id),
-          deposit_idea_key_relationships:f_0007-ap-deposit-idea-key-relationships(key_relationship_id)
-        `)
-        
- .eq('id', depositIdeaId)
+        .select('*')
+        .eq('id', depositIdeaId)
         .eq('user_id', user.id)
         .single();
+
       if (error || !depositIdea) {
         console.error('Error fetching deposit idea data:', error);
         return;
- }
+      }
 
-      // Combine directly linked KR with those linked via the junction table
-      const directKrId = depositIdea.key_relationship_id ?
- [depositIdea.key_relationship_id] : [];
-      const linkedKrIds = depositIdea.deposit_idea_key_relationships?.map((kr: any) => kr.key_relationship_id) || [];
-      const allKrIds = [...new Set([...directKrId, ...linkedKrIds])];
- // Update form with all existing selections
+      // Fetch roles linked to this deposit idea
+      const { data: rolesData } = await supabase
+        .from('0007-ap-roles-deposit-ideas')
+        .select('role_id')
+        .eq('deposit_idea_id', depositIdeaId);
+
+      // Fetch domains linked to this deposit idea
+      const { data: domainsData } = await supabase
+        .from('0007-ap-deposit-idea-domains')
+        .select('domain_id')
+        .eq('deposit_idea_id', depositIdeaId);
+
+      // Fetch key relationships linked to this deposit idea
+      const { data: keyRelationshipsData } = await supabase
+        .from('0007-ap-deposit-idea-key-relationships')
+        .select('key_relationship_id')
+        .eq('deposit_idea_id', depositIdeaId);
+
+      // Fetch notes linked to this deposit idea
+      const { data: notesData } = await supabase
+        .from('0007-ap-note-deposit-ideas')
+        .select(`
+          note:0007-ap-notes(content)
+        `)
+        .eq('deposit_idea_id', depositIdeaId);
+
+      const noteContent = notesData?.[0]?.note?.content || '';
+
+      // Update form with all existing selections
       setForm(prev => ({
         ...prev,
-        selectedRoleIds: depositIdea.roles_deposit_ideas?.map((r: any) => r.role_id) || [],
-        selectedDomainIds: depositIdea.deposit_idea_domains?.map((d: any) => d.domain_id) || [],
-        selectedKeyRelationshipIds: allKrIds,
+        title: depositIdea.title || '',
+        notes: noteContent,
+        selectedRoleIds: rolesData?.map((r: any) => r.role_id) || [],
+        selectedDomainIds: domainsData?.map((d: any) => d.domain_id) || [],
+        selectedKeyRelationshipIds: keyRelationshipsData?.map((kr: any) => kr.key_relationship_id) || [],
       }));
- } catch (error) {
+
+    } catch (error) {
       console.error('Error fetching deposit idea data:', error);
     }
-  }; 
+  };
 
   // Generates time options for 24 hours in 15-min increments
   const generateTimeOptions = () => {
