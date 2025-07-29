@@ -119,6 +119,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         (task: Task) => task.status === 'pending' || task.status === 'in_progress'
       ));
 
+
       
       // Also check for deposit ideas linked via the junction table
       const { data: depositIdeaLinks } = await supabase
@@ -146,7 +147,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 
       // Combine both direct and linked deposit ideas, removing duplicates
       const allDepositIdeas = [
-        ...(depositIdeasData || []),
         ...linkedDepositIdeas
       ];
       
