@@ -279,6 +279,36 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     setDeletingDepositIdea(null);
   };
 
+const handleEditDepositIdea = async (idea: DepositIdea) => {
+    // Fetch linked roles
+    const { data: rolesData } = await supabase
+      .from('0007-ap-roles-deposit-ideas')
+      .select('role_id')
+      .eq('deposit_idea_id', idea.id);
+
+    // Fetch linked domains
+    const { data: domainsData } = await supabase
+      .from('0007-ap-deposit-idea-domains')
+      .select('domain_id')
+      .eq('deposit_idea_id', idea.id);
+
+    // Fetch linked key relationships
+    const { data: krsData } = await supabase
+      .from('0007-ap-deposit-idea-key-relationships')
+      .select('key_relationship_id')
+      .eq('deposit_idea_id', idea.id);
+
+    const fullIdeaData = {
+      ...idea,
+      schedulingType: 'depositIdea',
+      selectedRoleIds: rolesData?.map(r => r.role_id) || [],
+      selectedDomainIds: domainsData?.map(d => d.domain_id) || [],
+      selectedKeyRelationshipIds: krsData?.map(kr => kr.key_relationship_id) || [],
+    };
+    
+    setEditingDepositIdea(fullIdeaData);
+  };
+  
   // --- RENDER LOGIC ---
 
   if (selectedRole) {
