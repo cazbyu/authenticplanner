@@ -119,18 +119,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         (task: Task) => task.status === 'pending' || task.status === 'in_progress'
       ));
 
-      // Fetch deposit ideas linked directly to this key relationship
-      const { data: depositIdeasData } = await supabase
-        .from('0007-ap-deposit-ideas')
-        .select('*')
-        .eq('user_id', user.id)
-        .eq('key_relationship_id', relationship.id)
-        .eq('is_active', true)
-        .is('activated_at', null)
-        .or('archived.is.null,archived.eq.false');
-
-      console.log('Deposit ideas for relationship', relationship.id, ':', depositIdeasData);
-
+      
       // Also check for deposit ideas linked via the junction table
       const { data: depositIdeaLinks } = await supabase
         .from('0007-ap-deposit-idea-key-relationships')
@@ -399,7 +388,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                         onClick={() => handleEditDepositIdea(idea)}
                         className="bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors flex-1"
                       >
-                        Update
+                        Edit
                       </button>
                       <button
                         onClick={() => setDeletingDepositIdea(idea)}
