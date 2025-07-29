@@ -284,7 +284,6 @@ const handleEditDepositIdea = async (idea: DepositIdea) => {
     const { data: rolesData } = await supabase
       .from('0007-ap-roles-deposit-ideas')
       .select('role_id')
-      .eq('deposit_idea_id', idea.id)
       .eq('deposit_idea_id', idea.id);
 
     // Fetch linked domains
