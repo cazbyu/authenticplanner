@@ -57,12 +57,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   }
   // -----------------------------------------------------------------------
 
-const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
-  relationship,
-  roleName,
-  onRelationshipUpdated,
-  onRelationshipDeleted,
-}) => {
+  
   // State for the relationship data
   const [name, setName] = useState(relationship.name);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
