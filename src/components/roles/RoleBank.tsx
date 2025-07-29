@@ -319,8 +319,8 @@ console.log("DEBUG: Current auth user.id is", user?.id);
       .from('0007-ap-note-deposit-ideas')
       .select('note:0007-ap-notes(content)')
       .eq('deposit_idea_id', idea.id)
-      .single()
-  .eq('user_id', user.id);
+      .eq('user_id', user.id)
+  .single();
 
     if (noteLink && noteLink.note) {
       noteContent = noteLink.note.content;
