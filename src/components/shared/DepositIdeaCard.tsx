@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Edit, Heart, Users } from 'lucide-react';
+import { Heart, Users } from 'lucide-react';
 
 interface Role {
   id: string;
@@ -49,7 +49,7 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
   onDelete,
   showEditButton = true,
   showActivateButton = true,
-  showDeleteButton = false,
+  showDeleteButton = true,
   className = ''
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -58,7 +58,7 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
   const handleCardClick = () => {
     if (onEdit) {
       setIsSelected(true);
-      setTimeout(() => setIsSelected(false), 200); // Brief selection effect
+      setTimeout(() => setIsSelected(false), 200);
       onEdit(idea);
     }
   };
@@ -87,49 +87,36 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
   return (
     <div 
       className={`
-        bg-gray-50 rounded-lg p-4 border border-gray-200 transition-all duration-200 cursor-pointer
-        ${isHovered ? 'shadow-md border-blue-300 bg-blue-50' : ''}
-        ${isSelected ? 'ring-2 ring-blue-500 ring-opacity-50 bg-blue-100' : ''}
+        bg-white rounded-lg p-4 border transition-all duration-200 cursor-pointer
+        ${isHovered ? 'shadow-md border-blue-300' : 'border-gray-200'}
+        ${isSelected ? 'ring-2 ring-blue-500' : ''}
         ${className}
       `}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleCardClick}
     >
-      <div className="mb-3">
-        <div className="flex items-start justify-between mb-2">
-          <p className="text-gray-900 font-medium flex-1">{idea.title}</p>
-          {showEditButton && onEdit && (
-            <button
-              onClick={handleEdit}
-              className={`
-                p-1 rounded-full transition-all duration-200 ml-2
-                ${isHovered ? 'bg-blue-100 text-blue-600' : 'text-gray-400 hover:text-gray-600'}
-              `}
-              title="Edit deposit idea"
-            >
-              <Edit className="h-4 w-4" />
-            </button>
-          )}
-        </div>
+ 
+      {/* Title, Notes, & Tags Section */}
+      <div className="mb-4">
+        <p className="text-gray-900 font-medium">{idea.title}</p>
         
         {idea.notes && (
-          <p className="text-sm text-gray-600 mb-2">{idea.notes}</p>
+          <p className="text-sm text-gray-600 mt-1">{idea.notes}</p>
         )}
         
-        {/* Show associated roles and domains */}
-        <div className="flex flex-wrap gap-1 mb-3">
+        <div className="flex flex-wrap gap-1 mt-3">
           {idea.deposit_idea_roles?.map(({ role_id }) => (
             roles[role_id] && (
-              <span key={role_id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800">
-                <Users className="h-3 w-3 mr-1" />
+              <span key={role_id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                <Users className="h-3 w-3 mr-1.5" />
                 {roles[role_id].label}
               </span>
             )
           ))}
           {idea.deposit_idea_domains?.map(({ domain_id }) => (
             domains[domain_id] && (
-              <span key={domain_id} className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-purple-100 text-purple-800">
+              <span key={domain_id} className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
                 {domains[domain_id].name}
               </span>
             )
@@ -137,51 +124,39 @@ const DepositIdeaCard: React.FC<DepositIdeaCardProps> = ({
         </div>
 
         {idea.key_relationship && (
-          <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2 mt-3">
             <Heart className="h-4 w-4 text-pink-500" />
-            <span className="text-sm text-gray-600">
+            <span className="text-sm text-gray-700 font-medium">
               For: {idea.key_relationship.name}
             </span>
           </div>
         )}
       </div>
 
-      <div className="flex gap-2">
+      {/* Button Section */}
+      <div className="flex justify-end items-center gap-2 text-xs">
         {showActivateButton && onActivate && (
           <button
             onClick={handleActivate}
-            className={`
-              ${showDeleteButton ? 'flex-1' : showEditButton ? 'flex-1' : 'w-full'} bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 transition-colors flex items-center justify-center gap-2
-              ${isHovered ? 'bg-green-700' : ''}
-            `}
+            className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors"
           >
-            <Target className="h-4 w-4" />
             Activate
           </button>
         )}
-        
         {showEditButton && onEdit && (
           <button
             onClick={handleEdit}
-            className={`
-              ${(showActivateButton && onActivate) || (showDeleteButton && onDelete) ? 'flex-1' : 'w-full'} bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 transition-colors flex items-center justify-center gap-2
-              ${isHovered ? 'bg-blue-700' : ''}
-            `}
+            className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700 transition-colors"
           >
-            <Edit className="h-4 w-4" />
             Update
           </button>
         )}
-        
         {showDeleteButton && onDelete && (
           <button
             onClick={handleDelete}
-            className={`
-              ${(showActivateButton && onActivate) || (showEditButton && onEdit) ? 'flex-1' : 'w-full'} bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors flex items-center justify-center gap-2
-              ${isHovered ? 'bg-red-700' : ''}
-            `}
+            className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors"
           >
-            🗑️ Delete
+            Delete
           </button>
         )}
       </div>
