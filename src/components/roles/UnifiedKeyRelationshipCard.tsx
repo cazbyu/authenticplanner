@@ -262,8 +262,34 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   };
 
   // Handle deposit idea editing
-  const handleEditDepositIdea = (idea: DepositIdea) => {
-    setEditingDepositIdea(idea);
+  const handleEditDepositIdea = async (idea: DepositIdea) => {
+    // 1. Fetch all relationship IDs for the given idea
+    const { data: rolesData } = await supabase
+      .from('0007-ap-roles-deposit-ideas')
+      .select('role_id')
+      .eq('deposit_idea_id', idea.id);
+
+    const { data: domainsData } = await supabase
+      .from('0007-ap-deposit-idea-domains')
+      .select('domain_id')
+      .eq('deposit_idea_id', idea.id);
+
+    const { data: krsData } = await supabase
+      .from('0007-ap-deposit-idea-key-relationships')
+      .select('key_relationship_id')
+      .eq('deposit_idea_id', idea.id);
+
+    // 2. Prepare the complete initialData object
+    const fullIdeaData = {
+      ...idea,
+      schedulingType: 'depositIdea', // Set the scheduling type for the form
+      selectedRoleIds: rolesData?.map(r => r.role_id) || [],
+      selectedDomainIds: domainsData?.map(d => d.domain_id) || [],
+      selectedKeyRelationshipIds: krsData?.map(kr => kr.key_relationship_id) || [],
+    };
+
+    // 3. Set the state to open the modal with this complete data
+    setEditingDepositIdea(fullIdeaData);
   };
 
   // Handle deposit idea updated
@@ -385,28 +411,28 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                   index === self.findIndex(i => i.id === idea.id)
                 ).map((idea) => (
                   <li key={idea.id} className="p-2 border rounded">
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-start justify-between gap-2 mb-2">
                       <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
+                      <button
+                        onClick={() => setActivatingDepositIdea(idea)}
+                        className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors w-16 text-center"
+                      >
+                        Activate
+                      </button>
                     </div>
-                    <div className="flex justify-end items-center gap-2 mt-2 text-xs">
-                        <button
-                          onClick={() => setActivatingDepositIdea(idea)}
-                          className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors"
-                        >
-                          Activate
-                        </button>
-                        <button
-                          onClick={() => handleEditDepositIdea(idea)}
-                          className="bg-blue-600 text-white rounded px-3 py-1 hover:bg-blue-700 transition-colors"
-                        >
-                          Update
-                        </button>
-                        <button
-                          onClick={() => setDeletingDepositIdea(idea)}
-                          className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors"
-                        >
-                          Delete
-                        </button>
+                    <div className="flex gap-0.5 text-xs">
+                      <button
+                        onClick={() => handleEditDepositIdea(idea)}
+                        className="bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors flex-1"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => setDeletingDepositIdea(idea)}
+                        className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors"
+                      >
+                        Delete
+                      </button>
                     </div>
                   </li>
                 ))}
@@ -453,7 +479,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         <ActivationTypeSelector
           depositIdea={activatingDepositIdea}
           selectedRole={{ id: relationship.role_id, label: roleName }}
-          relationship={relationship} 
           onClose={() => setActivatingDepositIdea(null)}
           onActivated={() => {
             setActivatingDepositIdea(null);
@@ -574,29 +599,10 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 const ActivationTypeSelector: React.FC<{
   depositIdea: DepositIdea;
   selectedRole: { id: string; label: string };
-  relationship: KeyRelationship; // Add relationship to props
   onClose: () => void;
   onActivated: () => void;
-}> = ({ depositIdea, selectedRole, relationship, onClose, onActivated }) => {
+}> = ({ depositIdea, selectedRole, onClose, onActivated }) => {
   const [showTaskEventForm, setShowTaskEventForm] = useState<'task' | 'event' | null>(null);
-  const [linkedDomainIds, setLinkedDomainIds] = useState<string[]>([]);
-
-  // Fetch linked domains when the component opens
-  useEffect(() => {
-    if (depositIdea) {
-      const fetchLinkedDomains = async () => {
-        const { data } = await supabase
-          .from('0007-ap-deposit-idea-domains')
-          .select('domain_id')
-          .eq('deposit_idea_id', depositIdea.id);
-        
-        if (data) {
-          setLinkedDomainIds(data.map(d => d.domain_id));
-        }
-      };
-      fetchLinkedDomains();
-    }
-  }, [depositIdea]);
 
   if (showTaskEventForm) {
     return (
@@ -609,10 +615,9 @@ const ActivationTypeSelector: React.FC<{
               notes: depositIdea.notes || "",
               schedulingType: showTaskEventForm,
               selectedRoleIds: [selectedRole.id],
-              selectedKeyRelationshipIds: [relationship.id], // Pre-fill Key Relationship
-              selectedDomainIds: linkedDomainIds, // Pre-fill Domains
               authenticDeposit: true,
-              originalDepositIdeaId: depositIdea.id,
+              isFromDepositIdea: true,
+              originalDepositIdeaId: depositIdea.id
             }}
             onSubmitSuccess={onActivated}
             onClose={() => setShowTaskEventForm(null)}
@@ -623,30 +628,14 @@ const ActivationTypeSelector: React.FC<{
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 px-4">
-      <div className="bg-gray-50 rounded-xl p-6 w-full max-w-sm shadow-xl">
-        <h3 className="text-lg font-semibold text-center text-gray-800 mb-5">
-          Activate "{depositIdea.title}" as:
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
-          <button 
-            onClick={() => setShowTaskEventForm('task')} 
-            className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200"
-          >
-            Task
-          </button>
-          <button 
-            onClick={() => setShowTaskEventForm('event')} 
-            className="w-full py-2.5 text-center text-sm font-medium border border-gray-300 bg-white rounded-lg hover:bg-blue-50 hover:border-blue-400 hover:text-blue-600 transition-all duration-200"
-          >
-            Event
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg p-6 max-w-md mx-4">
+        <h3 className="text-lg font-medium mb-4">Activate "{depositIdea.title}" as:</h3>
+        <div className="space-y-3">
+          <button onClick={() => setShowTaskEventForm('task')} className="w-full p-3 text-left border rounded-lg hover:bg-gray-50">Task</button>
+          <button onClick={() => setShowTaskEventForm('event')} className="w-full p-3 text-left border rounded-lg hover:bg-gray-50">Event</button>
         </div>
-        <div className="text-center mt-6">
-          <button onClick={onClose} className="text-sm text-gray-500 hover:text-gray-900 font-medium transition-colors">
-            Cancel
-          </button>
-        </div>
+        <div className="text-right mt-4"><button onClick={onClose} className="px-4 py-2 bg-gray-200 rounded">Cancel</button></div>
       </div>
     </div>
   );
