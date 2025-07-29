@@ -100,36 +100,37 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // The final corrected query with the proper prefixes for each relationship
+      // Fetch deposit idea with ALL relationships: roles, domains, and key relationships
       const { data: depositIdea, error } = await supabase
         .from('0007-ap-deposit-ideas')
         .select(`
           *,
           roles_deposit_ideas:f_0007-ap-roles-deposit-ideas(role_id),
-          deposit_idea_domains:0007-ap-deposit-idea-domains(domain_id),
+          deposit_idea_domains:f_0007-ap-deposit-idea-domains(domain_id),
           deposit_idea_key_relationships:f_0007-ap-deposit-idea-key-relationships(key_relationship_id)
         `)
-        .eq('id', depositIdeaId)
+        
+ .eq('id', depositIdeaId)
         .eq('user_id', user.id)
         .single();
-
       if (error || !depositIdea) {
         console.error('Error fetching deposit idea data:', error);
         return;
-      }
+ }
 
-      // This logic remains correct
-      const directKrId = depositIdea.key_relationship_id ? [depositIdea.key_relationship_id] : [];
+      // Combine directly linked KR with those linked via the junction table
+      const directKrId = depositIdea.key_relationship_id ?
+ [depositIdea.key_relationship_id] : [];
       const linkedKrIds = depositIdea.deposit_idea_key_relationships?.map((kr: any) => kr.key_relationship_id) || [];
       const allKrIds = [...new Set([...directKrId, ...linkedKrIds])];
-
+ // Update form with all existing selections
       setForm(prev => ({
         ...prev,
         selectedRoleIds: depositIdea.roles_deposit_ideas?.map((r: any) => r.role_id) || [],
         selectedDomainIds: depositIdea.deposit_idea_domains?.map((d: any) => d.domain_id) || [],
         selectedKeyRelationshipIds: allKrIds,
       }));
-    } catch (error) {
+ } catch (error) {
       console.error('Error fetching deposit idea data:', error);
     }
   }; 
