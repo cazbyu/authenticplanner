@@ -351,13 +351,13 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
           // 3. Re-link roles, domains, and key relationships
           await supabase.from("0007-ap-roles-deposit-ideas").delete().eq("deposit_idea_id", ideaId);
           if (form.selectedRoleIds.length > 0) {
-            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: ideaId, role_id: roleId }));
+            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: newIdeaId, role_id: roleId, user_id: user.id }));
             await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
           }
 
           await supabase.from("0007-ap-deposit-idea-domains").delete().eq("deposit_idea_id", ideaId);
           if (form.selectedDomainIds.length > 0) {
-            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: ideaId, domain_id: domainId }));
+            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: newIdeaId, domain_id: domainId, user_id: user.id }));
             await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
           }
 
@@ -394,11 +394,11 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 
           // 3. Link to roles, domains, and key relationships
           if (form.selectedRoleIds.length > 0) {
-            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: newIdeaId, role_id: roleId }));
+            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: newIdeaId, role_id: roleId, user_id: user.id }));
             await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
           }
           if (form.selectedDomainIds.length > 0) {
-            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: newIdeaId, domain_id: domainId }));
+            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: newIdeaId, domain_id: domainId, user_id: user.id }));
             await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
           }
           if (form.selectedKeyRelationshipIds.length > 0) {
