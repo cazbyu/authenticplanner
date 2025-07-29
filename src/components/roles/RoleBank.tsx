@@ -506,7 +506,7 @@ const ActivationTypeSelector: React.FC<{
   selectedRole: Role;
   onClose: () => void;
   onActivated: () => void;
-  relationship?: KeyRelationship; // Optional relationship prop
+  relationship?: KeyRelationship;
 }> = ({ depositIdea, selectedRole, onClose, onActivated, relationship }) => {
   const [showTaskEventForm, setShowTaskEventForm] = useState<'task' | 'event' | null>(null);
   const [pivotIds, setPivotIds] = useState({ 
@@ -519,17 +519,32 @@ const ActivationTypeSelector: React.FC<{
   useEffect(() => {
     if (depositIdea) {
       const fetchLinks = async () => {
-        const { data: roles } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', depositIdea.id);
-        const { data: domains } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', depositIdea.id);
-        const { data: krs } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', depositIdea.id);
-        const { data: noteLink } = await supabase.from('0007-ap-note-deposit-ideas').select('note:0007-ap-notes(content)').eq('deposit_idea_id', depositIdea.id).single();
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
 
-        setPivotIds({
-          selectedRoleIds: roles?.map(r => r.role_id) || [],
-          selectedDomainIds: domains?.map(d => d.domain_id) || [],
-          selectedKeyRelationshipIds: krs?.map(k => k.key_relationship_id) || [],
-          notes: noteLink?.note?.content || ''
-        });
+            // Securely fetch all related data with user_id check
+            const { data: roles } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id);
+            const { data: domains } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id);
+            const { data: krs } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id);
+            
+            const { data: noteLink, error: noteError } = await supabase.from('0007-ap-note-deposit-ideas').select('note:0007-ap-notes(content)').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id).single();
+
+            // Ignore the expected error if no note is found
+            if (noteError && noteError.code !== 'PGRST116') {
+                throw noteError;
+            }
+
+            setPivotIds({
+              selectedRoleIds: roles?.map(r => r.role_id) || [],
+              selectedDomainIds: domains?.map(d => d.domain_id) || [],
+              selectedKeyRelationshipIds: krs?.map(k => k.key_relationship_id) || [],
+              notes: noteLink?.note?.content || ''
+            });
+        } catch (error) {
+            toast.error("Failed to load idea details for activation.");
+            console.error("Error fetching activation links:", error);
+        }
       };
       fetchLinks();
     }
@@ -540,10 +555,10 @@ const ActivationTypeSelector: React.FC<{
       mode="create"
       initialData={{
         title: depositIdea.title,
-        notes: pivotIds.notes, // Use fetched notes
+        notes: pivotIds.notes,
         schedulingType: showTaskEventForm,
         selectedRoleIds: pivotIds.selectedRoleIds.length ? pivotIds.selectedRoleIds : [selectedRole.id],
-        selectedDomainIds: pivotIds.selectedDomainIds, // Use fetched domains
+        selectedDomainIds: pivotIds.selectedDomainIds,
         selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds.length ? pivotIds.selectedKeyRelationshipIds : (relationship ? [relationship.id] : []),
         authenticDeposit: true,
         isFromDepositIdea: true,
@@ -583,19 +598,5 @@ const ActivationTypeSelector: React.FC<{
     </div>
   );
 };
-
-const ConfirmationModal: React.FC<{ title: string, onConfirm: () => void, onCancel: () => void, children: React.ReactNode }> = 
-({ title, onConfirm, onCancel, children }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-      <h3 className="text-lg font-medium mb-4">{title}</h3>
-      <div className="mb-4">{children}</div>
-      <div className="flex justify-end gap-3">
-        <button onClick={onCancel} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-        <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded">Confirm</button>
-      </div>
-    </div>
-  </div>
-);
 
 export default RoleBank;
