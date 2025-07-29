@@ -214,7 +214,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const { data: rolesData } = await supabase
     .from('0007-ap-roles-deposit-ideas')
     .select('role_id')
-    .eq('deposit_idea_id', idea.id);
+    .eq('deposit_idea_id', idea.id)
     .eq('user_id', user.id);
     
     console.log('Fetched rolesData for Deposit Idea:', rolesData);
