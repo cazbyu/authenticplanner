@@ -93,6 +93,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const loadRelationshipData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+
+      console.log("DEBUG: Current auth user.id is", user?.id);
+
       if (!user) return;
 
       // Fetch tasks
@@ -151,6 +154,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const loadNotes = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
+
+      console.log("DEBUG: Current auth user.id is", user?.id);
+
       if (!user) return;
 
       const { data: noteLinks } = await supabase
@@ -172,6 +178,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     setAddingNote(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
+
+      console.log("DEBUG: Current auth user.id is", user?.id);
+
       if (!user) throw new Error("User not authenticated");
 
       const { data: noteData, error: noteError } = await supabase
@@ -268,6 +277,9 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     if (!deletingDepositIdea) return;
     try {
       const { data: { user } } = await supabase.auth.getUser();
+
+      console.log("DEBUG: Current auth user.id is", user?.id);
+
       if (!user) return;
       const { error } = await supabase.from('0007-ap-deposit-ideas').delete().eq('id', deletingDepositIdea.id).eq('user_id', user.id);
       if (error) {
