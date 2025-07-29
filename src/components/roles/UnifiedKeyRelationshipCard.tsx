@@ -51,8 +51,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   onRelationshipDeleted,
 }) => {
   // ----------- ADD THIS GUARD CLAUSE RIGHT BELOW THE ARGUMENTS ----------
-  if (!relationship || typeof relationship.name !== 'string' || relationship.name.length === 0) {
-    // You could also render a warning here if you want!
+  if (!relationship || typeof relationship.name !== 'string' || !relationship.name) {
+    console.warn("Invalid relationship object passed to UnifiedKeyRelationshipCard:", relationship);
     return null;
   }
   // -----------------------------------------------------------------------
