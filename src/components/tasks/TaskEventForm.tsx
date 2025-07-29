@@ -363,7 +363,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 
           await supabase.from("0007-ap-deposit-idea-key-relationships").delete().eq("deposit_idea_id", ideaId);
           if (form.selectedKeyRelationshipIds.length > 0) {
-            const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: ideaId, key_relationship_id: krId }));
+            const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: newIdeaId, key_relationship_id: krId, user_id: user.id }));
             await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
           }
           
@@ -402,7 +402,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
           }
           if (form.selectedKeyRelationshipIds.length > 0) {
-             const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: newIdeaId, key_relationship_id: krId }));
+             const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: newIdeaId, key_relationship_id: krId, user_id: user.id }));
              await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
           }
 
