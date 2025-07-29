@@ -182,7 +182,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       }
 
       // Combine and fetch all unique deposit ideas
-      const allDepositIdeaIds = [...new Set([...depositIdeaIdsFromRoles, ...depositIdeaIdsFromKR, ...directKRDepositIdeas])];
+      const allDepositIdeaIds = [...new Set([...depositIdeaIdsFromRoles, ...depositIdeaIdsFromKR])];
       if (allDepositIdeaIds.length > 0) {
         const { data: depositIdeasData, error: depositIdeasError } = await supabase
           .from('0007-ap-deposit-ideas')
