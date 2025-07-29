@@ -216,6 +216,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     .select('role_id')
     .eq('deposit_idea_id', idea.id);
 
+    console.log('Fetched rolesData for Deposit Idea:', rolesData);
+
   // Fetch linked domains
   const { data: domainsData } = await supabase
     .from('0007-ap-deposit-idea-domains')
