@@ -88,17 +88,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   const [loading, setLoading] = useState(false);
   const [showRoleError, setShowRoleError] = useState(false);
 
-  // Fetch existing deposit idea data for editing - including roles, domains, key relationships, and notes
-  useEffect(() => {
-    if (mode === "edit" && initialData?.id) {
-      if (initialData?.schedulingType === "depositIdea") {
-        fetchDepositIdeaData(initialData.id);
-      } else if (initialData?.schedulingType === "task" || initialData?.schedulingType === "event") {
-        fetchTaskData(initialData.id);
-      }
-    }
-  }, [mode, initialData?.id, initialData?.schedulingType]);
-
+  
   const fetchTaskData = async (taskId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
