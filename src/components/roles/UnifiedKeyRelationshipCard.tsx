@@ -235,10 +235,11 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       if (error) {
         toast.error('Failed to delete deposit idea');
       } else {
-        toast.success('Deposit idea deleted successfully!');
-        setDeletingDepositIdea(null);
-        loadRelationshipData();
-      }
+  toast.success('Deposit idea deleted successfully!');
+  setDeletingDepositIdea(null);
+  loadRelationshipData(); // This only refreshes the current card
+  onRelationshipUpdated(); // This tells the parent page to refresh
+}
     } catch (error) {
       toast.error('Failed to delete deposit idea');
     }
