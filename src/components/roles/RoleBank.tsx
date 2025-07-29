@@ -318,7 +318,9 @@ const handleEditDepositIdea = async (idea: DepositIdea) => {
       selectedDomainIds: domainsData?.map(d => d.domain_id) || [],
       selectedKeyRelationshipIds: krsData?.map(kr => kr.key_relationship_id) || [],
     };
-    
+
+  console.log("Setting editingDepositIdea:", fullIdeaData);
+
     setEditingDepositIdea(fullIdeaData);
   };
   
