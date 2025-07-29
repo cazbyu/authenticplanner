@@ -315,7 +315,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
   }, [form.selectedRoleIds]);
 
    // ----- SUBMIT -----
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
@@ -330,42 +330,42 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
 
         if (ideaId) {
           // ---------- EDIT MODE (CORRECTED) ----------
-          // 1. Update the main deposit idea title
           const { error: updateError } = await supabase
             .from("0007-ap-deposit-ideas")
             .update({ title: form.title.trim() })
             .eq('id', ideaId);
-
           if (updateError) throw updateError;
           
-          // 2. Clear old note links and create new ones
-          await supabase.from("0007-ap-note-deposit-ideas").delete().eq("deposit_idea_id", ideaId);
+          // --- Re-link Notes ---
+          // BUG FIX: Added user_id to the delete query to satisfy RLS
+          await supabase.from("0007-ap-note-deposit-ideas").delete().eq("user_id", user.id).eq("deposit_idea_id", ideaId);
           if (form.notes.trim()) {
             const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
             if (noteData) {
-              // Use the correct 'ideaId' variable
               await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: ideaId, note_id: noteData.id, user_id: user.id }]);
             }
           }
 
-          // 3. Re-link roles, domains, and key relationships
-          await supabase.from("0007-ap-roles-deposit-ideas").delete().eq("deposit_idea_id", ideaId);
+          // --- Re-link Roles ---
+          // BUG FIX: Added user_id to the delete query to satisfy RLS
+          await supabase.from("0007-ap-roles-deposit-ideas").delete().eq("user_id", user.id).eq("deposit_idea_id", ideaId);
           if (form.selectedRoleIds.length > 0) {
-            // Use the correct 'ideaId' variable
             const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: ideaId, role_id: roleId, user_id: user.id }));
             await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
           }
 
-          await supabase.from("0007-ap-deposit-idea-domains").delete().eq("deposit_idea_id", ideaId);
+          // --- Re-link Domains ---
+          // BUG FIX: Added user_id to the delete query to satisfy RLS
+          await supabase.from("0007-ap-deposit-idea-domains").delete().eq("user_id", user.id).eq("deposit_idea_id", ideaId);
           if (form.selectedDomainIds.length > 0) {
-            // Use the correct 'ideaId' variable
             const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: ideaId, domain_id: domainId, user_id: user.id }));
             await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
           }
 
-          await supabase.from("0007-ap-deposit-idea-key-relationships").delete().eq("deposit_idea_id", ideaId);
+          // --- Re-link Key Relationships ---
+          // BUG FIX: Added user_id to the delete query to satisfy RLS
+          await supabase.from("0007-ap-deposit-idea-key-relationships").delete().eq("user_id", user.id).eq("deposit_idea_id", ideaId);
           if (form.selectedKeyRelationshipIds.length > 0) {
-            // Use the correct 'ideaId' variable
             const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: ideaId, key_relationship_id: krId, user_id: user.id }));
             await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
           }
@@ -379,20 +379,12 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             .insert([{ user_id: user.id, title: form.title.trim(), is_active: true }])
             .select()
             .single();
-
-          if (depositIdeaError || !depositIdea) {
-            throw new Error("Failed to create deposit idea: " + (depositIdeaError?.message || "Unknown error"));
-          }
-          
+          if (depositIdeaError || !depositIdea) throw new Error("Failed to create deposit idea: " + (depositIdeaError?.message || "Unknown error"));
           const newIdeaId = depositIdea.id;
-
           if (form.notes.trim()) {
             const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
-            if (noteData) {
-              await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: newIdeaId, note_id: noteData.id, user_id: user.id }]);
-            }
+            if (noteData) await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: newIdeaId, note_id: noteData.id, user_id: user.id }]);
           }
-
           if (form.selectedRoleIds.length > 0) {
             const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: newIdeaId, role_id: roleId, user_id: user.id }));
             await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
@@ -405,7 +397,6 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
              const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: newIdeaId, key_relationship_id: krId, user_id: user.id }));
              await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
           }
-
           toast.success("Deposit idea created successfully!");
         }
 
