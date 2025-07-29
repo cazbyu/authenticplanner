@@ -266,17 +266,18 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         }
 
         // 3. Create the deposit idea in the main table
-        const { data: depositIdea, error: depositIdeaError } = await supabase
-          .from("0007-ap-deposit-ideas")
-          .insert([{
-            user_id: user.id,
-            title: form.title.trim(),
-            key_relationship_id: form.selectedKeyRelationshipIds[0] || null,
-            is_active: true,
-            notes: form.notes.trim() || null
-          }])
-          .select()
-          .single();
+        // This is the corrected code
+const { data: depositIdea, error: depositIdeaError } = await supabase
+  .from("0007-ap-deposit-ideas")
+  .insert([{
+    user_id: user.id,
+    title: form.title.trim(),
+    // key_relationship_id line is now gone
+    is_active: true,
+    notes: form.notes.trim() || null
+  }])
+  .select()
+  .single();
 
         if (depositIdeaError || !depositIdea) {
           throw new Error("Failed to create deposit idea: " + (depositIdeaError?.message || "Unknown error"));
