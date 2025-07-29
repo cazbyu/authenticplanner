@@ -87,7 +87,11 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     if (relationship.image_path) {
       const signedUrl = await getSignedImageUrl(relationship.image_path);
       if (signedUrl) setImagePreview(signedUrl);
-    } else {
+                      >
+                        Activate
+                      </button>
+                      <button
+                        className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors w-16 text-center"
       setImagePreview(null);
     }
   };
@@ -394,12 +398,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                         className="bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors flex-1"
                       >
                         Edit
-                      </button>
-                      <button
-                        onClick={() => setActivatingDepositIdea(idea)}
-                        className="bg-green-600 text-white rounded px-1 py-0.5 hover:bg-green-700 transition-colors flex-1"
-                      >
-                        Activate
                       </button>
                       <button
                         onClick={() => setDeletingDepositIdea(idea)}
