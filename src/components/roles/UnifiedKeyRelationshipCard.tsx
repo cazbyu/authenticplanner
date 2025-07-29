@@ -210,6 +210,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const handleDepositIdeaCreated = () => { setShowAddDepositIdeaForm(false); loadRelationshipData(); };
   
   const handleEditDepositIdea = async (idea: DepositIdea) => {
+    const { data: { user } } = await supabase.auth.getUser();
   // Fetch linked roles
   const { data: rolesData } = await supabase
     .from('0007-ap-roles-deposit-ideas')
