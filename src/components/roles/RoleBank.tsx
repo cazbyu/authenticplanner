@@ -488,22 +488,33 @@ const ActivationTypeSelector: React.FC<{
   selectedRole: Role;
   onClose: () => void;
   onActivated: () => void;
-}> = ({ depositIdea, selectedRole, onClose, onActivated }) => {
+  relationship?: KeyRelationship; // Optional relationship prop
+}> = ({ depositIdea, selectedRole, onClose, onActivated, relationship }) => {
   const [showTaskEventForm, setShowTaskEventForm] = useState<'task' | 'event' | null>(null);
-  const [pivotIds, setPivotIds] = useState({ selectedRoleIds: [], selectedDomainIds: [], selectedKeyRelationshipIds: [] });
+  const [pivotIds, setPivotIds] = useState({ 
+    selectedRoleIds: [], 
+    selectedDomainIds: [], 
+    selectedKeyRelationshipIds: [],
+    notes: '' 
+  });
 
   useEffect(() => {
-    const fetchLinks = async () => {
-      const { data: roles } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', depositIdea.id);
-      const { data: domains } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', depositIdea.id);
-      const { data: krs } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', depositIdea.id);
-      setPivotIds({
-        selectedRoleIds: roles?.map(r => r.role_id) || [],
-        selectedDomainIds: domains?.map(d => d.domain_id) || [],
-        selectedKeyRelationshipIds: krs?.map(k => k.key_relationship_id) || [],
-      });
-    };
-    fetchLinks();
+    if (depositIdea) {
+      const fetchLinks = async () => {
+        const { data: roles } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', depositIdea.id);
+        const { data: domains } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', depositIdea.id);
+        const { data: krs } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', depositIdea.id);
+        const { data: noteLink } = await supabase.from('0007-ap-note-deposit-ideas').select('note:0007-ap-notes(content)').eq('deposit_idea_id', depositIdea.id).single();
+
+        setPivotIds({
+          selectedRoleIds: roles?.map(r => r.role_id) || [],
+          selectedDomainIds: domains?.map(d => d.domain_id) || [],
+          selectedKeyRelationshipIds: krs?.map(k => k.key_relationship_id) || [],
+          notes: noteLink?.note?.content || ''
+        });
+      };
+      fetchLinks();
+    }
   }, [depositIdea]);
 
   if (showTaskEventForm) {
@@ -511,11 +522,11 @@ const ActivationTypeSelector: React.FC<{
       mode="create"
       initialData={{
         title: depositIdea.title,
-        notes: depositIdea.notes || "",
+        notes: pivotIds.notes, // Use fetched notes
         schedulingType: showTaskEventForm,
         selectedRoleIds: pivotIds.selectedRoleIds.length ? pivotIds.selectedRoleIds : [selectedRole.id],
-        selectedDomainIds: pivotIds.selectedDomainIds,
-        selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds,
+        selectedDomainIds: pivotIds.selectedDomainIds, // Use fetched domains
+        selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds.length ? pivotIds.selectedKeyRelationshipIds : (relationship ? [relationship.id] : []),
         authenticDeposit: true,
         isFromDepositIdea: true,
         originalDepositIdeaId: depositIdea.id
