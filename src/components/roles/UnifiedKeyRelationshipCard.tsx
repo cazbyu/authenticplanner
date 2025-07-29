@@ -87,11 +87,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     if (relationship.image_path) {
       const signedUrl = await getSignedImageUrl(relationship.image_path);
       if (signedUrl) setImagePreview(signedUrl);
-                      >
-                        Activate
-                      </button>
-                      <button
-                        className="bg-red-600 text-white rounded px-3 py-1 hover:bg-red-700 transition-colors w-16 text-center"
+    } else {
       setImagePreview(null);
     }
   };
@@ -391,6 +387,12 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                   <li key={idea.id} className="p-2 border rounded">
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
+                      <button
+                        onClick={() => setActivatingDepositIdea(idea)}
+                        className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors w-16 text-center"
+                      >
+                        Activate
+                      </button>
                     </div>
                     <div className="flex gap-0.5 text-xs">
                       <button
