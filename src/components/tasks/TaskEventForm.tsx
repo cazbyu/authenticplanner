@@ -289,7 +289,7 @@ if (form.notes.trim()) {
 
   if (noteData) {
     await supabase
-      .from("0007-ap-deposit-idea-notes")
+      .from("0007-ap-note-deposit-ideas")
       .insert([{ deposit_idea_id: depositIdea.id, note_id: noteData.id }]);
   }
 }
