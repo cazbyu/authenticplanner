@@ -278,6 +278,22 @@ const { data: depositIdea, error: depositIdeaError } = await supabase
   .select()
   .single();
 
+        // Paste this new block into your code
+// Link Notes
+if (form.notes.trim()) {
+  const { data: noteData } = await supabase
+    .from("0007-ap-notes")
+    .insert([{ user_id: user.id, content: form.notes.trim() }])
+    .select()
+    .single();
+
+  if (noteData) {
+    await supabase
+      .from("0007-ap-deposit-idea-notes")
+      .insert([{ deposit_idea_id: depositIdea.id, note_id: noteData.id }]);
+  }
+}
+
         if (depositIdeaError || !depositIdea) {
           throw new Error("Failed to create deposit idea: " + (depositIdeaError?.message || "Unknown error"));
         }
