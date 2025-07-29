@@ -344,7 +344,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
           if (form.notes.trim()) {
             const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
             if (noteData) {
-              await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: ideaId, note_id: noteData.id }]);
+              await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: newIdeaId, note_id: noteData.id, user_id: user.id }]);
             }
           }
 
