@@ -415,7 +415,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                         onClick={() => handleEditDepositIdea(idea)}
                         className="bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors flex-1"
                       >
-                        Edit
+                        Update
                       </button>
                       <button
                         onClick={() => setDeletingDepositIdea(idea)}
