@@ -270,11 +270,11 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const archiveDepositIdea = async (ideaId: string) => {
     const { error } = await supabase
       .from('0007-ap-deposit-ideas')
-      .update({ archived: true, activated_at: new Date().toISOString() })
+      .update({ is_active: false, archived: true, activated_at: new Date().toISOString() })
       .eq('id', ideaId);
 
     if (error) {
-      toast.error("Failed to archive deposit idea.");
+      toast.error("Failed to archive the original deposit idea.");
     } else {
       toast.success("Deposit idea activated and archived.");
       if (selectedRole) fetchRoleData(selectedRole.id);
@@ -396,6 +396,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 ) : (
     <p className="text-center text-gray-500 py-4">No key relationships for this role.</p>
             )
+        )}
           </section>
         </div>
         
