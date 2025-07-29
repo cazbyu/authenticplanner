@@ -388,8 +388,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
                       <button
-                        className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors w-16 text-center"
                         onClick={() => setActivatingDepositIdea(idea)}
+                        className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors w-16 text-center"
                       >
                         Activate
                       </button>
