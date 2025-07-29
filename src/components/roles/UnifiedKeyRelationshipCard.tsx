@@ -50,6 +50,19 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   onRelationshipUpdated,
   onRelationshipDeleted,
 }) => {
+  // ----------- ADD THIS GUARD CLAUSE RIGHT BELOW THE ARGUMENTS ----------
+  if (!relationship || typeof relationship.name !== 'string' || relationship.name.length === 0) {
+    // You could also render a warning here if you want!
+    return null;
+  }
+  // -----------------------------------------------------------------------
+
+const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
+  relationship,
+  roleName,
+  onRelationshipUpdated,
+  onRelationshipDeleted,
+}) => {
   // State for the relationship data
   const [name, setName] = useState(relationship.name);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -179,13 +192,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       const { data: noteLinks } = await supabase
         .from('0007-ap-note-key-relationships')
         .select(`
-          note:0007-ap-notes(
-            id,
-            content,
-            created_at,
-            updated_at,
-            user_id
-          )
+          note:0007-ap-notes(id, content, created_at, updated_at, user_id)
         `)
         .eq('key_relationship_id', relationship.id);
 
@@ -338,7 +345,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               <span className="text-xs bg-gray-100 rounded px-2">{tasks.length}</span>
               <button
                 onClick={() => setShowAddTaskForm(true)}
-                className="ml-auto text-xs bg-blue-600 text-white rounded px-1.5 py-0.5 hover:bg-blue-700 transition-colors"
+                className="ml-auto text-xs bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors"
               >
                 Add
               </button>
@@ -356,7 +363,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                       {task.is_authentic_deposit && <span className="text-xs bg-green-100 text-green-700 rounded px-1">Deposit</span>}
                       <button
                         onClick={() => handleEditTask(task)}
-                        className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2 px-1"
+                        className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2 px-0.5"
                       >
                         Edit
                       </button>
@@ -374,7 +381,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
               <span className="text-xs bg-gray-100 rounded px-2">{depositIdeas.length}</span>
               <button
                 onClick={() => setShowAddDepositIdeaForm(true)}
-                className="ml-auto text-xs bg-green-600 text-white rounded px-1.5 py-0.5 hover:bg-green-700 transition-colors"
+                className="ml-auto text-xs bg-green-600 text-white rounded px-1 py-0.5 hover:bg-green-700 transition-colors"
               >
                 Add
               </button>
@@ -393,16 +400,16 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <span className="flex-1">{idea.title || idea.notes || "No Title"}</span>
                     </div>
-                    <div className="flex gap-1 text-xs">
+                    <div className="flex gap-0.5 text-xs">
                       <button
                         onClick={() => handleEditDepositIdea(idea)}
-                        className="bg-blue-600 text-white rounded px-1.5 py-0.5 hover:bg-blue-700 transition-colors flex-1"
+                        className="bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors flex-1"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => setDeletingDepositIdea(idea)}
-                        className="bg-red-600 text-white rounded px-1.5 py-0.5 hover:bg-red-700 transition-colors flex-1"
+                        className="bg-red-600 text-white rounded px-1 py-0.5 hover:bg-red-700 transition-colors flex-1"
                       >
                         Delete
                       </button>
@@ -416,18 +423,16 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           {/* --- Notes Section --- */}
           <div className="mb-4">
             <div className="font-semibold mb-2">Notes</div>
-            <div className="space-y-2 mb-2">
-              <input
-                value={newNote}
-                onChange={e => setNewNote(e.target.value)}
-                placeholder="Add note content..."
-                className="w-full border rounded px-2 py-1 text-sm"
-              />
-            </div>
+            <input
+              value={newNote}
+              onChange={e => setNewNote(e.target.value)}
+              placeholder="Add note content..."
+              className="w-full border rounded px-2 py-1 text-sm mb-2"
+            />
             <button
               onClick={addNote}
               disabled={!newNote.trim() || addingNote}
-              className="mb-2 px-2 py-0.5 rounded bg-primary-600 text-white disabled:bg-gray-300 text-xs"
+              className="mb-2 px-1.5 py-0.5 rounded bg-primary-600 text-white disabled:bg-gray-300 text-xs"
             >
               {addingNote ? 'Saving...' : 'Add Note'}
             </button>
