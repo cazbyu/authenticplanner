@@ -133,6 +133,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
+
+console.log("DEBUG: Current auth user.id is", user?.id);
+      
       if (!user) return;
 
       // Fetch Task IDs linked to the role
@@ -284,6 +287,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
 const handleEditDepositIdea = async (idea: DepositIdea) => {
   const { data: { user } } = await supabase.auth.getUser();
+
+console.log("DEBUG: Current auth user.id is", user?.id);
+  
     // Fetch linked roles
     const { data: rolesData } = await supabase
       .from('0007-ap-roles-deposit-ideas')
