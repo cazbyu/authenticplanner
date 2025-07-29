@@ -287,6 +287,8 @@ const handleEditDepositIdea = async (idea: DepositIdea) => {
       .eq('deposit_idea_id', idea.id)
       .eq('user_id', user.id);
 
+  console.log("Fetched rolesData for Deposit Idea:", rolesData);
+
     // Fetch linked domains
     const { data: domainsData } = await supabase
       .from('0007-ap-deposit-idea-domains')
