@@ -262,11 +262,11 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       if (error) {
         toast.error('Failed to delete deposit idea');
       } else {
-  toast.success('Deposit idea deleted successfully!');
-  setDeletingDepositIdea(null);
-  loadRelationshipData(); // This only refreshes the current card
-  onRelationshipUpdated(); // This tells the parent page to refresh
-}
+        toast.success('Deposit idea deleted successfully!');
+        setDeletingDepositIdea(null);
+        loadRelationshipData(); // This only refreshes the current card
+        onRelationshipUpdated(); // This tells the parent page to refresh
+      }
     } catch (error) {
       toast.error('Failed to delete deposit idea');
     }
@@ -440,15 +440,16 @@ const ActivationTypeSelector: React.FC<{
         }
 
         // Fetch linked domains
-      const fetchLinkedDomains = async () => {
-        const { data } = await supabase
-          .from('0007-ap-deposit-idea-domains')
-          .select('domain_id')
-          .eq('deposit_idea_id', depositIdea.id);
-        
-        if (data) {
-          setLinkedDomainIds(data.map(d => d.domain_id));
-        }
+        const fetchLinkedDomains = async () => {
+          const { data } = await supabase
+            .from('0007-ap-deposit-idea-domains')
+            .select('domain_id')
+            .eq('deposit_idea_id', depositIdea.id);
+          
+          if (data) {
+            setLinkedDomainIds(data.map(d => d.domain_id));
+          }
+        };
 
         // Fetch linked key relationships
         const { data: krsData } = await supabase
