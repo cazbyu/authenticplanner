@@ -56,7 +56,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     return null;
   }
   // -----------------------------------------------------------------------
-
   
   // State for the relationship data
   const [name, setName] = useState(relationship.name);
