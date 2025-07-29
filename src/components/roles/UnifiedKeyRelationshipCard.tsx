@@ -224,13 +224,15 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   const { data: domainsData } = await supabase
     .from('0007-ap-deposit-idea-domains')
     .select('domain_id')
-    .eq('deposit_idea_id', idea.id);
+    .eq('deposit_idea_id', idea.id)
+    .eq('user_id', user.id);
 
   // Fetch linked key relationships
   const { data: krsData } = await supabase
     .from('0007-ap-deposit-idea-key-relationships')
     .select('key_relationship_id')
-    .eq('deposit_idea_id', idea.id);
+    .eq('deposit_idea_id', idea.id)
+    .eq('user_id', user.id);
 
   // Fetch linked notes
   let noteContent = '';
@@ -238,7 +240,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     .from('0007-ap-note-deposit-ideas')
     .select('note:0007-ap-notes(content)')
     .eq('deposit_idea_id', idea.id)
-    .single();
+    .single()
+    .eq('user_id', user.id);
 
   if (noteLink && noteLink.note) {
     noteContent = noteLink.note.content;
