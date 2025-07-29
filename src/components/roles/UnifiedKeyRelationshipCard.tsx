@@ -87,6 +87,10 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     if (relationship.image_path) {
       const signedUrl = await getSignedImageUrl(relationship.image_path);
       if (signedUrl) setImagePreview(signedUrl);
+                      
+                      <button
+                        onClick={() => setActivatingDepositIdea(idea)}
+                        className="bg-green-600 text-white rounded px-3 py-1 hover:bg-green-700 transition-colors"
                       >
                         Activate
                       </button>
