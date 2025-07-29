@@ -371,7 +371,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
               </button>
             </div>
             {loading ? <p>Loading relationships...</p> : (
-              {relationships.length > 0 ? (
+              relationships.length > 0 ? (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
     {relationships
       .filter(rel => rel && typeof rel.name === 'string' && rel.name.length > 0)
@@ -393,7 +393,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         />
       ))}
   </div>
-) : <p className="text-center text-gray-500 py-4">No key relationships for this role.</p>
+) : (
+    <p className="text-center text-gray-500 py-4">No key relationships for this role.</p>
             )}
           </section>
         </div>
