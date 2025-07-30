@@ -56,41 +56,26 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
         return;
       }
 
-      // Check if delegate already exists for this user by name
-      const { data: existingDelegate, error: delegateQueryError } = await supabase
+      // Step 1: Find or create the delegate contact (without the notes).
+      const { data: existingDelegate } = await supabase
         .from('0007-ap-delegates')
-        .select('*')
+        .select('id')
         .eq('user_id', user.id)
         .eq('name', form.name.trim())
         .maybeSingle();
 
-      if (delegateQueryError) {
-        throw delegateQueryError;
-      }
-      
       let delegateId: string;
 
       if (existingDelegate) {
-        // Use existing delegate ID
         delegateId = existingDelegate.id;
-        
+        // Optionally update phone/email if they are provided
         const updateData: any = {};
         if (form.phone.trim()) updateData.phone = form.phone.trim();
         if (form.email.trim()) updateData.email = form.email.trim();
-        if (form.notes.trim()) updateData.notes = form.notes.trim();
-
         if (Object.keys(updateData).length > 0) {
-          const { error: updateError } = await supabase
-            .from('0007-ap-delegates')
-            .update(updateData)
-            .eq('id', delegateId);
-          
-          if (updateError) {
-            console.warn('Could not update delegate info:', updateError.message);
-          }
+            await supabase.from('0007-ap-delegates').update(updateData).eq('id', delegateId);
         }
       } else {
-        // Create new delegate
         const { data: newDelegate, error: delegateError } = await supabase
           .from('0007-ap-delegates')
           .insert([{
@@ -98,18 +83,42 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
             name: form.name.trim(),
             phone: form.phone.trim() || null,
             email: form.email.trim() || null,
-            notes: form.notes.trim() || null
+            // Note is no longer saved here
           }])
-          .select()
+          .select('id')
           .single();
 
-        if (delegateError || !newDelegate) {
-          throw delegateError || new Error("Failed to create delegate contact");
-        }
+        if (delegateError || !newDelegate) throw delegateError || new Error("Failed to create delegate");
         delegateId = newDelegate.id;
       }
 
-      // Update the task with delegation information
+      // Step 2: If there are notes, save them and create the link.
+      if (form.notes.trim()) {
+        // Create the note in the central notes table
+        const { data: newNote, error: noteError } = await supabase
+          .from('0007-ap-notes')
+          .insert({
+            user_id: user.id,
+            content: form.notes.trim()
+          })
+          .select('id')
+          .single();
+        
+        if (noteError || !newNote) throw noteError || new Error("Failed to save note");
+
+        // Create the link in the new join table
+        const { error: linkError } = await supabase
+          .from('0007-ap-note-delegates')
+          .insert({
+            note_id: newNote.id,
+            delegate_id: delegateId,
+            user_id: user.id
+          });
+        
+        if (linkError) throw linkError;
+      }
+
+      // Step 3: Update the task to delegate it.
       const { error: taskError } = await supabase
         .from('0007-ap-tasks')
         .update({
@@ -120,9 +129,7 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
         .eq('id', taskId)
         .eq('user_id', user.id);
 
-      if (taskError) {
-        throw taskError;
-      }
+      if (taskError) throw taskError;
 
       toast.success(`Task delegated to ${form.name}`);
       onDelegated();
