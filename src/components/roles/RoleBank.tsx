@@ -944,9 +944,6 @@ const ConfirmationModal: React.FC<{ title: string, onConfirm: () => void, onCanc
 );
 
 export default RoleBank;
-Got it. I have the latest version of `RoleBank.tsx` and will make the necessary updates to use the reusable `TaskEventForm` for editing tasks.
-
-I have updated the Canvas with the corrected code. I've preserved all of your new task view and sorting functionality and only changed the parts necessary to replace the old `<EditTask>` component.
 
 
 ```javascript
