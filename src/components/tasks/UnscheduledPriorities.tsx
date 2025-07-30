@@ -3,7 +3,7 @@ import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Draggable, Droppable } from 'react-beautiful-dnd';
 import { formatDate } from '../../utils/helpers';
-import EditTask from './EditTask';
+import TaskEventForm from './TaskEventForm'; // Import TaskEventForm instead of EditTask
 import DelegateTaskModal from './DelegateTaskModal';
 
 // Helper Interfaces
@@ -21,6 +21,7 @@ interface Task {
   notes: string | null;
   task_roles: { role_id: string }[];
   task_domains: { domain_id: string }[];
+  task_key_relationships: { key_relationship_id: string }[]; // Added for completeness
 }
 
 interface Role {
@@ -34,7 +35,7 @@ interface Domain {
 }
 
 // =========================================================
-// 1. QuadrantSection Component (Moved Outside)
+// 1. QuadrantSection Component (Unchanged)
 // =========================================================
 interface QuadrantSectionProps {
   id: string;
@@ -204,7 +205,6 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
 
-  // Internal state for collapsing sections
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
     'urgent-important': false,
     'not-urgent-important': false,
@@ -212,7 +212,6 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
     'not-urgent-not-important': false,
   });
 
-  // Internal function to toggle sections
   const toggleQuadrant = (quadrantId: string) => {
     setCollapsedQuadrants(prev => ({
       ...prev,
@@ -226,8 +225,8 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
 
   const handleTaskUpdated = () => {
     setEditingTask(null);
-    // Refresh tasks after update
-    window.location.reload(); // Simple refresh for now
+    // You might want a more sophisticated refresh logic, but for now this works
+    window.location.reload(); 
   };
 
   const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
@@ -262,7 +261,6 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
         return;
       }
 
-      // Remove task from local state
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error in handleTaskAction:', error);
@@ -271,23 +269,11 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
 
   const handleTaskDelegated = () => {
     setDelegatingTask(null);
-    // Remove the delegated task from the current view
     if (delegatingTask) {
       setTasks(prevTasks => prevTasks.filter(task => task.id !== delegatingTask.id));
     }
   };
 
-  const formatDate = (dateStr: string | undefined) => {
-    if (!dateStr) return null;
-    try {
-      const date = new Date(dateStr);
-      return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
-    } catch {
-      return null;
-    }
-  };
-
-  // Categorize tasks
   const categorizedTasks = {
     urgentImportant: tasks.filter(task => task.is_urgent && task.is_important),
     notUrgentImportant: tasks.filter(task => !task.is_urgent && task.is_important),
@@ -302,6 +288,28 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
       </div>
     );
   }
+
+  // --- Helper to format task data for the form ---
+  const formatTaskForForm = (task: Task) => {
+    const convertToTime = (isoString: string | null) => isoString ? new Date(isoString).toTimeString().slice(0, 5) : '';
+    
+    return {
+      id: task.id,
+      title: task.title,
+      schedulingType: 'task' as const,
+      dueDate: task.due_date || (task.start_time ? new Date(task.start_time).toISOString().split('T')[0] : ''),
+      startTime: convertToTime(task.start_time),
+      endTime: convertToTime(task.end_time),
+      notes: task.notes || '',
+      urgent: task.is_urgent,
+      important: task.is_important,
+      authenticDeposit: task.is_authentic_deposit,
+      twelveWeekGoalChecked: task.is_twelve_week_goal,
+      selectedRoleIds: task.task_roles?.map(r => r.role_id) || [],
+      selectedDomainIds: task.task_domains?.map(d => d.domain_id) || [],
+      selectedKeyRelationshipIds: task.task_key_relationships?.map(kr => kr.key_relationship_id) || [],
+    };
+  };
 
   return (
     <>
@@ -373,20 +381,17 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
           />
         </div>
 
+        {/* --- MODAL SECTION --- */}
         {editingTask && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="w-full max-w-2xl mx-4">
-              <EditTask
-                task={editingTask}
-                onTaskUpdated={handleTaskUpdated}
-                onCancel={() => setEditingTask(null)}
-              />
-            </div>
-          </div>
+          <TaskEventForm
+            mode="edit"
+            initialData={formatTaskForForm(editingTask)}
+            onSubmitSuccess={handleTaskUpdated}
+            onClose={() => setEditingTask(null)}
+          />
         )}
       </div>
 
-      {/* Delegate Task Modal */}
       {delegatingTask && (
         <DelegateTaskModal
           taskId={delegatingTask.id}
