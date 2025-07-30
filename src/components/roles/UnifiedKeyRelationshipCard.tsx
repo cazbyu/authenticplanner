@@ -50,6 +50,11 @@ interface Note {
   updated_at: string;
 }
 
+interface Role {
+  id: string;
+  label: string;
+}
+
 interface UnifiedKeyRelationshipCardProps {
   relationship: KeyRelationship;
   roleName: string;
@@ -250,6 +255,111 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
     setAddingNote(false);
   };
 
+  // Helper function to sort tasks
+  const sortTasks = (tasksToSort: Task[]) => {
+    switch (taskSortBy) {
+      case 'due_date':
+        return [...tasksToSort].sort((a, b) => {
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        });
+      case 'completed':
+        return [...tasksToSort].sort((a, b) => {
+          if (!a.completed_at && !b.completed_at) return 0;
+          if (!a.completed_at) return 1;
+          if (!b.completed_at) return -1;
+          return new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime();
+        });
+      default:
+        return tasksToSort;
+    }
+  };
+
+  // Helper component for quadrant sections
+  const QuadrantSection: React.FC<{
+    id: string;
+    title: string;
+    tasks: Task[];
+    bgColor: string;
+    textColor: string;
+    borderColor: string;
+    icon: React.ReactNode;
+  }> = ({ id, title, tasks, bgColor, textColor, borderColor, icon }) => {
+    const isCollapsed = collapsedTaskQuadrants[id as keyof typeof collapsedTaskQuadrants];
+    
+    return (
+      <div className="border rounded-lg">
+        <div 
+          className={`${bgColor} ${textColor} px-3 py-2 rounded-t-lg flex items-center justify-between cursor-pointer`}
+          onClick={() => setCollapsedTaskQuadrants(prev => ({ ...prev, [id]: !prev[id as keyof typeof prev] }))}
+        >
+          <div className="flex items-center gap-2">
+            {icon}
+            <span className="text-sm font-medium">{title}</span>
+            <span className="text-xs bg-white bg-opacity-20 rounded px-2">{tasks.length}</span>
+          </div>
+          {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+        </div>
+        {!isCollapsed && (
+          <div className="p-2 space-y-1">
+            {tasks.length === 0 ? (
+              <div className="text-gray-400 text-sm text-center py-2">No tasks</div>
+            ) : (
+              tasks.map((task) => (
+                <TaskCard 
+                  key={task.id} 
+                  task={task} 
+                  borderColor={borderColor}
+                />
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Helper component for task cards
+  const TaskCard: React.FC<{
+    task: Task;
+    borderColor: string;
+  }> = ({ task, borderColor }) => (
+    <div className={`p-2 border-l-4 ${borderColor} bg-gray-50 rounded text-sm`}>
+      <div className="flex items-center justify-between">
+        <span className="flex-1">{task.title}</span>
+        <div className="flex items-center gap-1">
+          {task.is_authentic_deposit && (
+            <span className="text-xs bg-green-100 text-green-700 px-1 rounded">AD</span>
+          )}
+          {task.is_twelve_week_goal && (
+            <span className="text-xs bg-blue-100 text-blue-700 px-1 rounded">12W</span>
+          )}
+        </div>
+      </div>
+      {task.due_date && (
+        <div className="text-xs text-gray-500 mt-1">
+          Due: {new Date(task.due_date).toLocaleDateString()}
+        </div>
+      )}
+      <div className="flex justify-end items-center gap-1 mt-2">
+        <button 
+          onClick={() => handleEditTask(task)}
+          className="text-xs bg-blue-600 text-white rounded px-2 py-1 hover:bg-blue-700 transition-colors"
+        >
+          Edit
+        </button>
+        <button 
+          onClick={() => setDelegatingTask(task)}
+          className="text-xs bg-purple-600 text-white rounded px-2 py-1 hover:bg-purple-700 transition-colors"
+        >
+          <UserPlus className="h-3 w-3" />
+        </button>
+      </div>
+    </div>
+  );
+
   // Handlers for tasks and ideas
   const handleTaskCreated = () => { setShowAddTaskForm(false); loadRelationshipData(); };
   const handleEditTask = (task: Task) => { setEditingTask(task); };
@@ -368,23 +478,109 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           <div className="mb-4">
             <div className="font-semibold mb-2 flex items-center gap-2">
               <span>Tasks</span>
-              <span className="text-xs bg-gray-100 rounded px-2">{tasks.length}</span>
+              <span className="text-xs bg-gray-100 rounded px-2">
+                {taskSortBy === 'completed' ? completedTasks.length : tasks.length}
+              </span>
               <button onClick={() => setShowAddTaskForm(true)} className="ml-auto text-xs bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors">Add</button>
             </div>
-            {tasks.length === 0 ? <div className="text-gray-400 text-sm">No tasks for this relationship.</div> : (
-              <ul className="space-y-2">
-                {tasks.map((task) => (
-                  <li key={task.id} className="flex items-center justify-between gap-2 p-2 border rounded">
-                    <span>{task.title}</span>
-                    <div className="flex items-center gap-1">
-                      {task.is_urgent && <span className="text-xs bg-red-100 text-red-700 rounded px-1">Urgent</span>}
-                      {task.is_important && <span className="text-xs bg-blue-100 text-blue-700 rounded px-1">Important</span>}
-                      {task.is_authentic_deposit && <span className="text-xs bg-green-100 text-green-700 rounded px-1">Deposit</span>}
-                      <button onClick={() => handleEditTask(task)} className="text-xs text-blue-600 hover:text-blue-800 transition-colors ml-2 px-0.5">Edit</button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+            
+            {/* Task View Controls */}
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setTaskViewMode('quadrant')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    taskViewMode === 'quadrant'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  Quadrant
+                </button>
+                <button
+                  onClick={() => setTaskViewMode('list')}
+                  className={`px-2 py-1 text-xs rounded ${
+                    taskViewMode === 'list'
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  List
+                </button>
+              </div>
+              
+              <select
+                value={taskSortBy}
+                onChange={(e) => setTaskSortBy(e.target.value as 'priority' | 'due_date' | 'completed')}
+                className="text-xs border border-gray-300 rounded px-2 py-1"
+              >
+                <option value="priority">Priority</option>
+                <option value="due_date">Due Date</option>
+                <option value="completed">Completed</option>
+              </select>
+            </div>
+
+            {/* Task Content */}
+            {taskViewMode === 'quadrant' && taskSortBy === 'priority' ? (
+              // Quadrant View
+              <div className="space-y-2">
+                <QuadrantSection
+                  id="urgent-important"
+                  title="Urgent & Important"
+                  tasks={tasks.filter(task => task.is_urgent && task.is_important)}
+                  bgColor="bg-red-500"
+                  textColor="text-white"
+                  borderColor="border-l-red-500"
+                  icon={<AlertTriangle className="h-3 w-3" />}
+                />
+                
+                <QuadrantSection
+                  id="not-urgent-important"
+                  title="Not Urgent & Important"
+                  tasks={tasks.filter(task => !task.is_urgent && task.is_important)}
+                  bgColor="bg-green-500"
+                  textColor="text-white"
+                  borderColor="border-l-green-500"
+                  icon={<Check className="h-3 w-3" />}
+                />
+                
+                <QuadrantSection
+                  id="urgent-not-important"
+                  title="Urgent & Not Important"
+                  tasks={tasks.filter(task => task.is_urgent && !task.is_important)}
+                  bgColor="bg-orange-500"
+                  textColor="text-white"
+                  borderColor="border-l-orange-500"
+                  icon={<Clock className="h-3 w-3" />}
+                />
+                
+                <QuadrantSection
+                  id="not-urgent-not-important"
+                  title="Not Urgent & Not Important"
+                  tasks={tasks.filter(task => !task.is_urgent && !task.is_important)}
+                  bgColor="bg-gray-500"
+                  textColor="text-white"
+                  borderColor="border-l-gray-500"
+                  icon={<X className="h-3 w-3" />}
+                />
+              </div>
+            ) : (
+              // List View
+              <div className="space-y-1">
+                {sortTasks(taskSortBy === 'completed' ? completedTasks : tasks).length === 0 ? (
+                  <div className="text-gray-400 text-sm text-center py-4">
+                    {taskSortBy === 'completed' ? 'No completed tasks' : 'No tasks for this relationship'}
+                  </div>
+                ) : (
+                  sortTasks(taskSortBy === 'completed' ? completedTasks : tasks).map((task) => (
+                    <TaskCard 
+                      key={task.id} 
+                      task={task} 
+                      borderColor="border-l-blue-500"
+                    />
+                  ))
+                )}
+              </div>
             )}
           </div>
 
@@ -454,6 +650,7 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
 
       {showAddTaskForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'task', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleTaskCreated} onClose={() => setShowAddTaskForm(false)} />}
       {editingTask && <TaskEventForm mode="edit" initialData={{ id: editingTask.id, title: editingTask.title, schedulingType: 'task', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleTaskUpdated} onClose={() => setEditingTask(null)} />}
+      {delegatingTask && <DelegateTaskModal task={delegatingTask} onClose={() => setDelegatingTask(null)} onTaskUpdated={loadRelationshipData} />}
       {showAddDepositIdeaForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'depositIdea', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleDepositIdeaCreated} onClose={() => setShowAddDepositIdeaForm(false)} />}
       {editingDepositIdea && <TaskEventForm mode="edit" initialData={editingDepositIdea} onSubmitSuccess={handleDepositIdeaUpdated} onClose={() => setEditingDepositIdea(null)} />}
       
@@ -468,16 +665,6 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             </div>
           </div>
         </div>
-      )}
-
-      {/* Delegate Task Modal */}
-      {delegatingTask && (
-        <DelegateTaskModal
-          taskId={delegatingTask.id}
-          taskTitle={delegatingTask.title}
-          onClose={() => setDelegatingTask(null)}
-          onDelegated={handleTaskDelegated}
-        />
       )}
     </div>
   );
