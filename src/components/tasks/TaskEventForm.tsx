@@ -662,6 +662,45 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
             </div>
           )}
 
+          {/* Follow Up Date and Time - Show if Follow Up is checked */}
+          {form.needsFollowUp && form.schedulingType !== "depositIdea" && (
+            <div className="grid grid-cols-2 gap-x-4 mb-2">
+              <div>
+                <label className="block text-xs mb-1">Follow Up Date</label>
+                <DatePicker
+                  selected={form.followUpDate ? new Date(form.followUpDate + "T00:00:00") : null}
+                  onChange={date =>
+                    setForm(f => ({
+                      ...f,
+                      followUpDate: date ? format(date, "yyyy-MM-dd") : "",
+                    }))
+                  }
+                  dateFormat="MMM dd, yyyy"
+                  className="border rounded px-2 py-1 text-xs w-full"
+                  placeholderText="Select follow up date"
+                  calendarClassName="text-xs"
+                  popperClassName="small-datepicker-popup"
+                  formatWeekDay={name => name.charAt(0)}
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs mb-1">Follow Up Time</label>
+                <select
+                  name="followUpTime"
+                  value={form.followUpTime}
+                  onChange={handleChange}
+                  className="border rounded px-2 py-1 text-xs w-full"
+                >
+                  <option value="">--</option>
+                  {timeOptions.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          )}
+
           {/* Roles */}
           <div>
             <label className="block text-sm mb-1">
