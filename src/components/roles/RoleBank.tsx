@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { ChevronLeft, UserPlus, Plus, Heart, Edit, Check, X } from 'lucide-react';
+import { ChevronLeft, UserPlus, Plus, Heart, Edit, Check, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import KeyRelationshipForm from './KeyRelationshipForm';
 import UnifiedKeyRelationshipCard from './UnifiedKeyRelationshipCard';
 import TaskEventForm from '../tasks/TaskEventForm';
@@ -72,6 +72,17 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
   const [deletingDepositIdea, setDeletingDepositIdea] = useState<DepositIdea | null>(null);
+  
+  // Task view state
+  const [taskViewMode, setTaskViewMode] = useState<'quadrant' | 'list'>('quadrant');
+  const [taskSortBy, setTaskSortBy] = useState<'priority' | 'due_date' | 'completed'>('priority');
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+  const [collapsedTaskQuadrants, setCollapsedTaskQuadrants] = useState({
+    'urgent-important': false,
+    'not-urgent-important': false,
+    'urgent-not-important': false,
+    'not-urgent-not-important': false,
+  });
 
   useEffect(() => {
     fetchDomains();
@@ -150,13 +161,28 @@ console.log("DEBUG: Current auth user.id is", user?.id);
       if (taskIds.length > 0) {
         const { data: tasksData, error: tasksError } = await supabase
           .from('0007-ap-tasks')
-          .select('*')
+          .select(`
+            *,
+            task_roles:0007-ap-task-roles!task_id(role_id),
+            task_domains:0007-ap-task-domains(domain_id)
+          `)
           .in('id', taskIds)
-          .in('status', ['pending', 'in_progress']);
+          .eq('user_id', user.id);
         if (tasksError) throw tasksError;
-        setTasks(tasksData || []);
+        
+        // Separate active and completed tasks
+        const activeTasks = (tasksData || []).filter(task => 
+          task.status === 'pending' || task.status === 'in_progress'
+        );
+        const completedTasksList = (tasksData || []).filter(task => 
+          task.status === 'completed'
+        );
+        
+        setTasks(activeTasks);
+        setCompletedTasks(completedTasksList);
       } else {
         setTasks([]);
+        setCompletedTasks([]);
       }
 
       // Fetch Key Relationships
@@ -246,7 +272,228 @@ console.log("DEBUG: Current auth user.id is", user?.id);
     setEditingTask(null);
     if (selectedRole) fetchRoleData(selectedRole.id);
   };
+  
+  // Helper function to sort tasks
+  const sortTasks = (tasksToSort: Task[]) => {
+    switch (taskSortBy) {
+      case 'due_date':
+        return [...tasksToSort].sort((a, b) => {
+          if (!a.due_date && !b.due_date) return 0;
+          if (!a.due_date) return 1;
+          if (!b.due_date) return -1;
+          return new Date(a.due_date).getTime() - new Date(b.due_date).getTime();
+        });
+      case 'completed':
+        return [...tasksToSort].sort((a, b) => {
+          if (!a.completed_at && !b.completed_at) return 0;
+          if (!a.completed_at) return 1;
+          if (!b.completed_at) return -1;
+          return new Date(b.completed_at).getTime() - new Date(a.completed_at).getTime();
+        });
+      default:
+        return tasksToSort;
+    }
+  };
+  
+  // Helper component for quadrant sections
+  const QuadrantSection: React.FC<{
+    id: string;
+    title: string;
+    tasks: Task[];
+    bgColor: string;
+    textColor: string;
+    borderColor: string;
+    icon: React.ReactNode;
+  }> = ({ id, title, tasks, bgColor, textColor, borderColor, icon }) => {
+    const isCollapsed = collapsedTaskQuadrants[id as keyof typeof collapsedTaskQuadrants];
+    
+    return (
+      <div className="border rounded-lg mb-3">
+        <div 
+          className={`${bgColor} ${textColor} px-3 py-2 rounded-t-lg flex items-center justify-between cursor-pointer`}
+          onClick={() => setCollapsedTaskQuadrants(prev => ({ 
+            ...prev, 
+            [id]: !prev[id as keyof typeof prev] 
+          }))}
+        >
+          <div className="flex items-center gap-2">
+            {icon}
+            <span className="text-sm font-medium">{title}</span>
+            <span className="text-xs bg-white bg-opacity-20 rounded px-2">{tasks.length}</span>
+          </div>
+          {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+        </div>
+        {!isCollapsed && (
+          <div className="p-3 space-y-2">
+            {tasks.length === 0 ? (
+              <div className="text-gray-400 text-sm text-center py-2">No tasks</div>
+            ) : (
+              tasks.map((task) => (
+                <TaskCard 
+                  key={task.id} 
+                  task={task} 
+                  borderColor={borderColor}
+                />
+              ))
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
+  // Helper component for task cards
+  const TaskCard: React.FC<{
+    task: Task;
+    borderColor: string;
+  }> = ({ task, borderColor }) => (
+    <div 
+      className={`p-3 border-l-4 ${borderColor} bg-gray-50 rounded cursor-pointer hover:bg-gray-100 hover:shadow-sm transition-all`}
+      onClick={() => setEditingTask(task)}
+      title="Click to edit task"
+    >
+      <div className="flex items-start justify-between">
+        <div className="flex-1 min-w-0">
+          <h4 className="font-medium text-gray-900 text-sm mb-1">{task.title}</h4>
+          
+          {task.due_date && (
+            <div className="flex items-center text-xs text-gray-600 mb-2">
+              <Clock className="h-3 w-3 mr-1" />
+              <span>Due {new Date(task.due_date).toLocaleDateString()}</span>
+            </div>
+          )}
 
+          {/* Priority and Type Tags */}
+          <div className="flex flex-wrap gap-1 mb-2">
+            {task.is_urgent && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">
+                Urgent
+              </span>
+            )}
+            {task.is_important && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
+                Important
+              </span>
+            )}
+            {task.is_authentic_deposit && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">
+                Deposit
+              </span>
+            )}
+            {task.is_twelve_week_goal && (
+              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
+                12W Goal
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-1 ml-2">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTaskAction(task.id, 'complete');
+            }}
+            className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
+            title="Complete"
+          >
+            <Check className="h-3 w-3" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTaskAction(task.id, 'delegate');
+            }}
+            className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
+            title="Delegate"
+          >
+            <UserPlus className="h-3 w-3" />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleTaskAction(task.id, 'cancel');
+            }}
+            className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
+            title="Cancel"
+          >
+            <X className="h-3 w-3" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+  
+  // Task Section Component
+  const TaskSection = () => {
+    const currentTasks = taskSortBy === 'completed' ? completedTasks : tasks;
+    
+    if (taskViewMode === 'quadrant' && taskSortBy === 'priority') {
+      // Quadrant View
+      return (
+        <div>
+          <QuadrantSection
+            id="urgent-important"
+            title="Urgent & Important"
+            tasks={currentTasks.filter(task => task.is_urgent && task.is_important)}
+            bgColor="bg-red-500"
+            textColor="text-white"
+            borderColor="border-l-red-500"
+            icon={<AlertTriangle className="h-3 w-3" />}
+          />
+          
+          <QuadrantSection
+            id="not-urgent-important"
+            title="Not Urgent & Important"
+            tasks={currentTasks.filter(task => !task.is_urgent && task.is_important)}
+            bgColor="bg-green-500"
+            textColor="text-white"
+            borderColor="border-l-green-500"
+            icon={<Check className="h-3 w-3" />}
+          />
+          
+          <QuadrantSection
+            id="urgent-not-important"
+            title="Urgent & Not Important"
+            tasks={currentTasks.filter(task => task.is_urgent && !task.is_important)}
+            bgColor="bg-orange-500"
+            textColor="text-white"
+            borderColor="border-l-orange-500"
+            icon={<Clock className="h-3 w-3" />}
+          />
+          
+          <QuadrantSection
+            id="not-urgent-not-important"
+            title="Not Urgent & Not Important"
+            tasks={currentTasks.filter(task => !task.is_urgent && !task.is_important)}
+            bgColor="bg-gray-500"
+            textColor="text-white"
+            borderColor="border-l-gray-500"
+            icon={<X className="h-3 w-3" />}
+          />
+        </div>
+      );
+    } else {
+      // List View
+      return (
+        <div className="space-y-2">
+          {sortTasks(currentTasks).length === 0 ? (
+            <p className="text-center text-gray-500 py-4">
+              {taskSortBy === 'completed' ? 'No completed tasks for this role' : 'No active tasks for this role'}
+            </p>
+          ) : (
+            sortTasks(currentTasks).map((task) => (
+              <TaskCard 
+                key={task.id} 
+                task={task} 
+                borderColor="border-l-blue-500"
+              />
+            ))
+          )}
+        </div>
+      );
+    }
+  };
   const handleRelationshipSaved = () => {
     setShowRelationshipForm(false);
     if (selectedRole) fetchRoleData(selectedRole.id);
@@ -358,29 +605,48 @@ console.log("DEBUG: Current auth user.id is", user?.id);
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Current Tasks</h2>
-              <button onClick={() => setShowTaskEventForm(true)} className="flex items-center gap-2 text-blue-600 font-medium">
+              <div className="flex items-center gap-4">
+                {/* Task View Controls */}
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setTaskViewMode('quadrant')}
+                    className={`px-2 py-1 text-xs rounded ${
+                      taskViewMode === 'quadrant'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    Quadrant
+                  </button>
+                  <button
+                    onClick={() => setTaskViewMode('list')}
+                    className={`px-2 py-1 text-xs rounded ${
+                      taskViewMode === 'list'
+                        ? 'bg-blue-100 text-blue-700'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    List
+                  </button>
+                </div>
+                
+                <select
+                  value={taskSortBy}
+                  onChange={(e) => setTaskSortBy(e.target.value as 'priority' | 'due_date' | 'completed')}
+                  className="text-xs border border-gray-300 rounded px-2 py-1"
+                >
+                  <option value="priority">Priority</option>
+                  <option value="due_date">Due Date</option>
+                  <option value="completed">Completed</option>
+                </select>
+                
+                <button onClick={() => setShowTaskEventForm(true)} className="flex items-center gap-2 text-blue-600 font-medium">
                 <Plus className="h-4 w-4" /> Add Task
               </button>
+              </div>
             </div>
             {loading ? <p>Loading tasks...</p> : (
-              tasks.length > 0 ? (
-                <div className="space-y-3">
-                  {tasks.map((task) => (
-                    <div key={task.id} className="p-4 bg-white rounded-lg border relative group transition-all hover:border-blue-500 hover:shadow-sm">
-                      <div className="pr-20">
-                        <p className="font-medium">{task.title}</p>
-                        <p className="text-sm text-gray-500">Due: {new Date(task.due_date).toLocaleDateString()}</p>
-                      </div>
-                      <div className="absolute top-3 right-3 flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button onClick={() => handleTaskAction(task.id, 'complete')} title="Complete"><Check className="h-4 w-4 text-green-500" /></button>
-                        <button onClick={() => handleTaskAction(task.id, 'delegate')} title="Delegate"><UserPlus className="h-4 w-4 text-blue-500" /></button>
-                        <button onClick={() => setEditingTask(task)} title="Edit"><Edit className="h-4 w-4 text-gray-500" /></button>
-                        <button onClick={() => handleTaskAction(task.id, 'cancel')} title="Cancel"><X className="h-4 w-4 text-red-500" /></button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : <p className="text-center text-gray-500 py-4">No active tasks for this role.</p>
+              <TaskSection />
             )}
           </section>
 
