@@ -469,6 +469,16 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
           </div>
         </div>
       )}
+
+      {/* Delegate Task Modal */}
+      {delegatingTask && (
+        <DelegateTaskModal
+          taskId={delegatingTask.id}
+          taskTitle={delegatingTask.title}
+          onClose={() => setDelegatingTask(null)}
+          onDelegated={handleTaskDelegated}
+        />
+      )}
     </div>
   );
 };
