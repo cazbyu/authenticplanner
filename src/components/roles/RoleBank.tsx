@@ -1194,9 +1194,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
     const { error } = await supabase.from('0007-ap-tasks').update(updates).eq('id', taskId);
     if (error) {
-      toast.error(`Failed to ${action} task.`);
+      toast.error(\`Failed to ${action} task.`);
     } else {
-      toast.success(`Task ${action}d.`);
+      toast.success(\`Task ${action}d.`);
       if (selectedRole) fetchRoleData(selectedRole.id);
     }
   };
@@ -1251,7 +1251,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     return (
       <div className="h-full flex flex-col">
         <button 
-          className={`w-full ${bgColor} ${textColor} px-4 py-3 rounded-lg flex items-center justify-between hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
+          className={\`w-full ${bgColor} ${textColor} px-4 py-3 rounded-lg flex items-center justify-between hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
           onClick={() => setCollapsedTaskQuadrants(prev => ({ 
             ...prev, 
             [id]: !prev[id as keyof typeof prev] 
@@ -1298,7 +1298,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     borderColor: string;
   }> = ({ task, borderColor }) => (
     <div 
-      className={`p-3 border-l-4 ${borderColor} bg-gray-50 rounded cursor-pointer hover:bg-gray-100 hover:shadow-sm transition-all`}
+      className={\`p-3 border-l-4 ${borderColor} bg-gray-50 rounded cursor-pointer hover:bg-gray-100 hover:shadow-sm transition-all`}
       onClick={() => setEditingTask(task)}
       title="Click to edit task"
     >
@@ -1570,7 +1570,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setTaskViewMode('quadrant')}
-                    className={`px-2 py-1 text-xs rounded ${
+                    className={\`px-2 py-1 text-xs rounded ${
                       taskViewMode === 'quadrant'
                         ? 'bg-blue-100 text-blue-700'
                         : 'text-gray-600 hover:text-gray-900'
@@ -1580,7 +1580,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                   </button>
                   <button
                     onClick={() => setTaskViewMode('list')}
-                    className={`px-2 py-1 text-xs rounded ${
+                    className={\`px-2 py-1 text-xs rounded ${
                       taskViewMode === 'list'
                         ? 'bg-blue-100 text-blue-700'
                         : 'text-gray-600 hover:text-gray-900'
@@ -1698,8 +1698,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         <h1 className="text-2xl font-bold">Role Bank</h1>
         <div className="flex items-center gap-4">
           <div className="flex gap-2">
-            <button onClick={() => setSortBy('active')} className={`px-2 py-1 text-xs rounded ${sortBy === 'active' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>Active</button>
-            <button onClick={() => setSortBy('inactive')} className={`px-2 py-1 text-xs rounded ${sortBy === 'inactive' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>Inactive</button>
+            <button onClick={() => setSortBy('active')} className={\`px-2 py-1 text-xs rounded ${sortBy === 'active' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>Active</button>
+            <button onClick={() => setSortBy('inactive')} className={\`px-2 py-1 text-xs rounded ${sortBy === 'inactive' ? 'bg-blue-100 text-blue-700' : 'hover:bg-gray-100'}`}>Inactive</button>
           </div>
           <button onClick={() => setShowAddDepositIdeaForm(true)} className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700">
             <Plus className="h-4 w-4" /> Add Deposit Idea
