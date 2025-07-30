@@ -20,6 +20,9 @@ interface FormData {
   startTime: string;
   endTime: string;
   isAllDay: boolean;
+  needsFollowUp: boolean;
+  followUpDate: string;
+  followUpTime: string;
   selectedRoleIds: string[];
   selectedDomainIds: string[];
   selectedKeyRelationshipIds: string[];
@@ -58,6 +61,9 @@ const defaultForm: FormData = {
   startTime: "09:00",
   endTime: "10:00",
   isAllDay: false,
+  needsFollowUp: false,
+  followUpDate: format(new Date(), "yyyy-MM-dd"),
+  followUpTime: "09:00",
   selectedRoleIds: [],
   selectedDomainIds: [],
   selectedKeyRelationshipIds: [],
@@ -140,6 +146,9 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         startTime: task.start_time ? new Date(task.start_time).toTimeString().slice(0, 5) : prev.startTime,
         endTime: task.end_time ? new Date(task.end_time).toTimeString().slice(0, 5) : prev.endTime,
         isAllDay: task.is_all_day || false,
+        needsFollowUp: !!task.follow_up,
+        followUpDate: task.follow_up ? new Date(task.follow_up).toISOString().split('T')[0] : prev.followUpDate,
+        followUpTime: task.follow_up ? new Date(task.follow_up).toTimeString().slice(0, 5) : prev.followUpTime,
         urgent: task.is_urgent || false,
         important: task.is_important || false,
         authenticDeposit: task.is_authentic_deposit || false,
@@ -413,6 +422,7 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
         start_time: convertToUTC(form.dueDate, form.startTime),
         end_time: convertToUTC(form.dueDate, form.endTime),
         is_all_day: form.isAllDay,
+        follow_up: form.needsFollowUp ? convertToUTC(form.followUpDate, form.followUpTime) : null,
         is_urgent: form.urgent || false,
         is_important: form.important || false,
         is_authentic_deposit: form.authenticDeposit || false,
