@@ -28,7 +28,7 @@ interface Task {
   is_authentic_deposit: boolean;
   is_twelve_week_goal: boolean;
   notes?: string;
-  completed_at?: string;
+  completed_at?: string; // Added for sorting completed tasks
   // Added to support the form formatter
   task_roles: { role_id: string }[];
   task_domains: { domain_id: string }[];
