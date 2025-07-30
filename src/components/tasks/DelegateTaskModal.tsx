@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
 import { X, User, Phone, Mail, FileText } from 'lucide-react';
@@ -52,6 +52,7 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setError('User not authenticated');
+        setSubmitting(false);
         return;
       }
 
@@ -64,27 +65,19 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
         .maybeSingle();
 
       if (delegateQueryError) {
-        console.error('Error querying delegate:', delegateQueryError);
-        setError('Failed to check existing delegate');
-        return;
+        throw delegateQueryError;
       }
+      
       let delegateId: string;
 
       if (existingDelegate) {
         // Use existing delegate ID
         delegateId = existingDelegate.id;
         
-        // Update the existing delegate with new information if provided
         const updateData: any = {};
-        if (form.phone.trim() && !existingDelegate.phone) {
-          updateData.phone = form.phone.trim();
-        }
-        if (form.email.trim() && !existingDelegate.email) {
-          updateData.email = form.email.trim();
-        }
-        if (form.notes.trim()) {
-          updateData.notes = form.notes.trim();
-        }
+        if (form.phone.trim()) updateData.phone = form.phone.trim();
+        if (form.email.trim()) updateData.email = form.email.trim();
+        if (form.notes.trim()) updateData.notes = form.notes.trim();
 
         if (Object.keys(updateData).length > 0) {
           const { error: updateError } = await supabase
@@ -93,8 +86,7 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
             .eq('id', delegateId);
           
           if (updateError) {
-            console.error('Error updating delegate:', updateError);
-            // Don't fail the whole operation for this
+            console.warn('Could not update delegate info:', updateError.message);
           }
         }
       } else {
@@ -112,11 +104,8 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
           .single();
 
         if (delegateError || !newDelegate) {
-          console.error('Error creating delegate:', delegateError);
-          setError('Failed to create delegate contact');
-          return;
+          throw delegateError || new Error("Failed to create delegate contact");
         }
-
         delegateId = newDelegate.id;
       }
 
@@ -125,7 +114,6 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
         .from('0007-ap-tasks')
         .update({
           delegated_to_contact_id: delegateId,
-          completion_action: 'delegate',
           status: 'delegated',
           updated_at: new Date().toISOString()
         })
@@ -133,17 +121,16 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
         .eq('user_id', user.id);
 
       if (taskError) {
-        console.error('Error updating task:', taskError);
-        setError('Failed to delegate task');
-        return;
+        throw taskError;
       }
 
       toast.success(`Task delegated to ${form.name}`);
       onDelegated();
+      onClose();
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error delegating task:', err);
-      setError('An unexpected error occurred');
+      setError(err.message || 'An unexpected error occurred');
     } finally {
       setSubmitting(false);
     }
@@ -177,7 +164,6 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Name Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <User className="h-4 w-4 inline mr-1" />
@@ -194,7 +180,6 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
             />
           </div>
 
-          {/* Phone Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <Phone className="h-4 w-4 inline mr-1" />
@@ -210,7 +195,6 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
             />
           </div>
 
-          {/* Email Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <Mail className="h-4 w-4 inline mr-1" />
@@ -226,7 +210,6 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
             />
           </div>
 
-          {/* Notes Field */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               <FileText className="h-4 w-4 inline mr-1" />
@@ -242,7 +225,6 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
             />
           </div>
 
-          {/* Action Buttons */}
           <div className="flex justify-end space-x-3 pt-4">
             <button
               type="button"
