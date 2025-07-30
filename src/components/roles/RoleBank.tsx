@@ -715,7 +715,13 @@ console.log("DEBUG: Current auth user.id is", user?.id);
         
         {/* Modals for Individual Role View */}
         {showTaskEventForm && <TaskEventForm mode="create" initialData={{ selectedRoleIds: [selectedRole.id] }} onClose={() => setShowTaskEventForm(false)} onSubmitSuccess={handleTaskCreated} />}
-        {editingTask && <EditTask task={editingTask} onClose={() => setEditingTask(null)} onTaskUpdated={handleTaskUpdated} />}
+        {editingTask && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <EditTask task={editingTask} onTaskUpdated={handleTaskUpdated} onCancel={() => setEditingTask(null)} />
+            </div>
+          </div>
+        )}
         {delegatingTask && <DelegateTaskModal task={delegatingTask} onClose={() => setDelegatingTask(null)} onTaskDelegated={() => fetchRoleData(selectedRole.id)} />}
         {showRelationshipForm && <KeyRelationshipForm roleId={selectedRole.id} roleName={selectedRole.label} onClose={() => setShowRelationshipForm(false)} onRelationshipCreated={handleRelationshipSaved} />}
         {showAddDepositIdeaForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'depositIdea', selectedRoleIds: [selectedRole.id] }} onClose={() => setShowAddDepositIdeaForm(false)} onSubmitSuccess={() => fetchRoleData(selectedRole.id)} />}
