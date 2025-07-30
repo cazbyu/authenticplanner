@@ -771,15 +771,29 @@ console.log("DEBUG: Current auth user.id is", user?.id);
       </div>
       <div className="flex-1 overflow-y-auto p-6">
         {loading ? <p>Loading roles...</p> : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {roles.map(role => (
-              <button key={role.id} onClick={() => setSelectedRole(role)} className="p-4 border rounded-lg hover:shadow-md transition text-left bg-white">
-                <div className="flex items-center gap-3">
-                  <span className="text-2xl">{role.icon || '👤'}</span>
-                  <div>
-                    <h3 className="font-medium">{role.label}</h3>
-                    <p className="text-sm text-gray-500 capitalize">{role.category}</p>
+              <button 
+                key={role.id} 
+                onClick={() => setSelectedRole(role)} 
+                className="group block"
+              >
+                <div className="relative overflow-hidden rounded-xl border-2 border-gray-200 bg-white p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:-translate-y-1 hover:border-primary-300 cursor-pointer">
+                  {/* Icon */}
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary-100 text-primary-600 mb-4 group-hover:scale-110 transition-transform duration-300">
+                    <span className="text-2xl">{role.icon || '👤'}</span>
                   </div>
+
+                  {/* Content */}
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
+                    {role.label}
+                  </h3>
+                  <p className="text-sm text-gray-600 mb-4 capitalize">
+                    {role.category}
+                  </p>
+
+                  {/* Hover overlay */}
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary-50/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                 </div>
               </button>
             ))}
