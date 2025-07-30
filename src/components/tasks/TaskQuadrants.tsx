@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Clock, User, Mail, X, CheckCircle, XCircle, Users, Calendar, Target, AlertTriangle, ChevronDown, ChevronUp, Check, UserPlus } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import DelegateTaskModal from './DelegateTaskModal';
-import TaskEventForm from './TaskEventForm'; // MODIFIED: Import TaskEventForm
+import EditTask from './EditTask';
 
 interface Task {
   id: string;
@@ -13,7 +13,6 @@ interface Task {
   is_urgent: boolean;
   is_important: boolean;
   is_authentic_deposit: boolean;
-  is_twelve_week_goal: boolean;
   priority?: number;
   notes?: string;
   completed_at?: string;
@@ -34,9 +33,6 @@ interface Task {
     domain?: {
       name: string;
     };
-  }>;
-  task_key_relationships?: Array<{
-    key_relationship_id: string;
   }>;
   created_at?: string;
 }
@@ -79,13 +75,14 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
   const toggleQuadrant = (quadrantId: string) => {
     setCollapsedQuadrants(prev => ({
       ...prev,
-      [quadrantId]: !prev[quadrantId as keyof typeof prev]
+      [quadrantId]: !prev[quadrantId]
     }));
   };
 
   const handleTaskAction = async (taskId: string, action: string, e: React.MouseEvent) => {
     e.stopPropagation();
     
+    // Handle delegation differently - open modal instead of direct action
     if (action === 'delegate') {
       const task = tasks.find(t => t.id === taskId);
       if (task) {
@@ -116,6 +113,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       }
 
       if (action === 'complete') {
+        // Remove from both regular tasks and delegated tasks
         setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
         setDelegatedTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
       } else {
@@ -136,8 +134,11 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
 
   const handleTaskUpdated = () => {
     setEditingTask(null);
-    // A refresh might be needed depending on parent state management
-    // For now, we just close the modal.
+    // Refresh both task lists
+    if (sortBy === 'delegated') {
+      fetchFilteredTasks();
+    }
+    // The parent component will handle refreshing the main tasks via refreshTrigger
   };
 
   const handleEditCancel = () => {
@@ -146,6 +147,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
 
   const handleTaskDelegated = () => {
     setDelegatingTask(null);
+    // Remove the delegated task from the current view
     if (delegatingTask) {
       setTasks(prevTasks => prevTasks.filter(task => task.id !== delegatingTask.id));
     }
@@ -256,6 +258,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
             </div>
           )}
 
+          {/* Role and Domain Tags */}
           <div className="flex flex-wrap gap-1">
             {task.task_roles?.slice(0, 1).map(({ role_id }) => (
               roles[role_id] && (
@@ -316,10 +319,11 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     borderColor: string;
     icon: React.ReactNode;
   }> = ({ id, title, tasks, bgColor, textColor, borderColor, icon }) => {
-    const isCollapsed = collapsedQuadrants[id as keyof typeof collapsedQuadrants];
+    const isCollapsed = collapsedQuadrants[id];
     
     return (
       <div className="h-full flex flex-col">
+        {/* Header - Always visible */}
         <button 
           className={`w-full ${bgColor} ${textColor} px-4 py-3 rounded-lg flex items-center justify-between hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
           onClick={() => toggleQuadrant(id)}
@@ -339,6 +343,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
           </div>
         </button>
         
+        {/* Content - Only visible when expanded */}
         {!isCollapsed && (
           <div className="flex-1 bg-gray-50 rounded-lg mt-2 overflow-hidden">
             <div className="h-full overflow-y-auto p-3">
@@ -374,33 +379,15 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
 
   const sortedTasks = sortTasks(tasks);
 
+  // Filter tasks by quadrant for priority view
   const urgentImportant = sortedTasks.filter(task => task.is_urgent && task.is_important && !task.completed_at);
   const notUrgentImportant = sortedTasks.filter(task => !task.is_urgent && task.is_important && !task.completed_at);
   const urgentNotImportant = sortedTasks.filter(task => task.is_urgent && !task.is_important && !task.completed_at);
   const notUrgentNotImportant = sortedTasks.filter(task => !task.is_urgent && !task.is_important && !task.completed_at);
 
-  // --- Helper to format task data for the form ---
-  const formatTaskForForm = (task: Task) => {
-    return {
-      id: task.id,
-      title: task.title,
-      schedulingType: 'task' as const,
-      dueDate: task.due_date || '',
-      startTime: '',
-      endTime: '',
-      notes: task.notes || '',
-      urgent: task.is_urgent,
-      important: task.is_important,
-      authenticDeposit: task.is_authentic_deposit,
-      twelveWeekGoalChecked: task.is_twelve_week_goal,
-      selectedRoleIds: task.task_roles?.map(r => r.role_id) || [],
-      selectedDomainIds: task.task_domains?.map(d => d.domain_id) || [],
-      selectedKeyRelationshipIds: task.task_key_relationships?.map(kr => kr.key_relationship_id) || [],
-    };
-  };
-
   return (
     <div className="h-full flex flex-col overflow-hidden">
+      {/* Header */}
       <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-gray-200 bg-white">
         <h1 className="text-2xl font-bold text-gray-900">Task Priorities</h1>
         <div className="flex items-center">
@@ -420,11 +407,15 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         </div>
       </div>
 
+      {/* Content Area */}
       <div className="flex-1 overflow-hidden">
         {sortBy === 'priority' ? (
+          /* Priority Quadrant View - Vertical Layout */
           <div className="h-full p-4 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <div className="grid grid-cols-2 gap-4 h-full">
+              {/* Top Row */}
               <div className="flex flex-col">
+                {/* Urgent & Important - Top Left */}
                 <QuadrantSection
                   id="urgent-important"
                   title="Urgent & Important"
@@ -437,6 +428,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
               </div>
               
               <div className="flex flex-col">
+                {/* Not Urgent & Important - Top Right */}
                 <QuadrantSection
                   id="not-urgent-important"
                   title="Not Urgent & Important"
@@ -449,6 +441,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
               </div>
               
               <div className="flex flex-col">
+                {/* Urgent & Not Important - Bottom Left */}
                 <QuadrantSection
                   id="urgent-not-important"
                   title="Urgent & Not Important"
@@ -461,6 +454,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
               </div>
               
               <div className="flex flex-col">
+                {/* Not Urgent & Not Important - Bottom Right */}
                 <QuadrantSection
                   id="not-urgent-not-important"
                   title="Not Urgent & Not Important"
@@ -474,6 +468,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
             </div>
           </div>
         ) : (
+          /* List View for Due Date and Delegated */
           <div className="h-full overflow-y-auto p-4 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
             <div className="space-y-2">
               {sortedTasks.length === 0 ? (
@@ -494,6 +489,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         )}
       </div>
 
+      {/* Delegate Task Modal */}
       {delegatingTask && (
         <DelegateTaskModal
           taskId={delegatingTask.id}
@@ -503,14 +499,17 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         />
       )}
 
-      {/* MODIFIED: Use TaskEventForm for editing tasks */}
+      {/* Edit Task Modal */}
       {editingTask && (
-        <TaskEventForm
-            mode="edit"
-            initialData={formatTaskForForm(editingTask)}
-            onSubmitSuccess={handleTaskUpdated}
-            onClose={handleEditCancel}
-        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <EditTask
+              task={editingTask}
+              onTaskUpdated={handleTaskUpdated}
+              onCancel={handleEditCancel}
+            />
+          </div>
+        </div>
       )}
     </div>
   );

@@ -5,7 +5,7 @@ import KeyRelationshipForm from './KeyRelationshipForm';
 import UnifiedKeyRelationshipCard from './UnifiedKeyRelationshipCard';
 import TaskEventForm from '../tasks/TaskEventForm';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
-// import EditTask from '../tasks/EditTask'; // No longer needed
+import EditTask from '../tasks/EditTask';
 import DepositIdeaCard from '../shared/DepositIdeaCard';
 import { toast } from "sonner";
 
@@ -26,13 +26,7 @@ interface Task {
   is_urgent: boolean;
   is_important: boolean;
   is_authentic_deposit: boolean;
-  is_twelve_week_goal: boolean;
   notes?: string;
-  completed_at?: string; // Added for sorting completed tasks
-  // Added to support the form formatter
-  task_roles: { role_id: string }[];
-  task_domains: { domain_id: string }[];
-  task_key_relationships: { key_relationship_id: string }[];
 }
 
 interface KeyRelationship {
@@ -108,6 +102,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
+
+      console.log("DEBUG: Current auth user.id is", user?.id);
+      
       if (!user) return;
 
       let query = supabase
@@ -147,8 +144,12 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
+
+console.log("DEBUG: Current auth user.id is", user?.id);
+      
       if (!user) return;
 
+      // Fetch Task IDs linked to the role
       const { data: taskRoleLinks, error: taskRoleError } = await supabase
         .from('0007-ap-task-roles')
         .select('task_id')
@@ -156,19 +157,20 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       if (taskRoleError) throw taskRoleError;
       const taskIds = taskRoleLinks?.map(link => link.task_id) || [];
 
+      // Fetch Tasks
       if (taskIds.length > 0) {
         const { data: tasksData, error: tasksError } = await supabase
           .from('0007-ap-tasks')
           .select(`
             *,
             task_roles:0007-ap-task-roles!task_id(role_id),
-            task_domains:0007-ap-task-domains(domain_id),
-            task_key_relationships:0007-ap-task-key-relationships(key_relationship_id)
+            task_domains:0007-ap-task-domains(domain_id)
           `)
           .in('id', taskIds)
           .eq('user_id', user.id);
         if (tasksError) throw tasksError;
         
+        // Separate active and completed tasks
         const activeTasks = (tasksData || []).filter(task => 
           task.status === 'pending' || task.status === 'in_progress'
         );
@@ -183,6 +185,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         setCompletedTasks([]);
       }
 
+      // Fetch Key Relationships
       const { data: relationshipsData, error: relationshipsError } = await supabase
         .from('0007-ap-key-relationships')
         .select('*')
@@ -190,6 +193,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       if (relationshipsError) throw relationshipsError;
       setRelationships(relationshipsData || []);
 
+      // Fetch Deposit Idea IDs linked to the role
       const { data: roleDepositIdeaLinks, error: roleDepositError } = await supabase
         .from('0007-ap-roles-deposit-ideas')
         .select('deposit_idea_id')
@@ -197,6 +201,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       if (roleDepositError) throw roleDepositError;
       const depositIdeaIdsFromRoles = roleDepositIdeaLinks?.map(link => link.deposit_idea_id) || [];
 
+      // Fetch Deposit Idea IDs linked to Key Relationships
       const relationshipIds = relationshipsData?.map(r => r.id) || [];
       let depositIdeaIdsFromKR: string[] = [];
       if (relationshipIds.length > 0) {
@@ -208,6 +213,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         depositIdeaIdsFromKR = krDepositLinks?.map(link => link.deposit_idea_id) || [];
       }
 
+      // Combine and fetch all unique deposit ideas
       const allDepositIdeaIds = [...new Set([...depositIdeaIdsFromRoles, ...depositIdeaIdsFromKR])];
       if (allDepositIdeaIds.length > 0) {
         const { data: depositIdeasData, error: depositIdeasError } = await supabase
@@ -267,6 +273,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     if (selectedRole) fetchRoleData(selectedRole.id);
   };
   
+  // Helper function to sort tasks
   const sortTasks = (tasksToSort: Task[]) => {
     switch (taskSortBy) {
       case 'due_date':
@@ -288,6 +295,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
   };
   
+  // Helper component for quadrant sections
   const QuadrantSection: React.FC<{
     id: string;
     title: string;
@@ -301,7 +309,8 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     
     return (
       <div className="h-full flex flex-col">
-        <button 
+        {/* Header - Always visible */}
+        <div 
           className={`w-full ${bgColor} ${textColor} px-4 py-3 rounded-lg flex items-center justify-between hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
           onClick={() => setCollapsedTaskQuadrants(prev => ({ 
             ...prev, 
@@ -319,6 +328,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           </div>
         </button>
         
+        {/* Content - Only visible when expanded */}
         {!isCollapsed && (
           <div className="flex-1 bg-gray-50 rounded-lg mt-2 overflow-hidden">
             <div className="h-full overflow-y-auto p-3">
@@ -344,6 +354,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     );
   };
   
+  // Helper component for task cards
   const TaskCard: React.FC<{
     task: Task;
     borderColor: string;
@@ -364,6 +375,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             </div>
           )}
 
+          {/* Priority and Type Tags */}
           <div className="flex flex-wrap gap-1 mb-2">
             {task.is_urgent && (
               <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">
@@ -424,12 +436,15 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     </div>
   );
   
+  // Task Section Component
   const TaskSection = () => {
     const currentTasks = taskSortBy === 'completed' ? completedTasks : tasks;
     
     if (taskViewMode === 'quadrant' && taskSortBy === 'priority') {
+      // 2x2 Quadrant Grid View (like Task Priorities)
       return (
         <div className="grid grid-cols-2 gap-4 h-full">
+          {/* Top Row */}
           <div className="flex flex-col">
             <QuadrantSection
               id="urgent-important"
@@ -454,6 +469,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             />
           </div>
           
+          {/* Bottom Row */}
           <div className="flex flex-col">
             <QuadrantSection
               id="urgent-not-important"
@@ -480,6 +496,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         </div>
       );
     } else {
+      // List View
       return (
         <div className="space-y-2">
           {sortTasks(currentTasks).length === 0 ? (
@@ -537,73 +554,65 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     setDeletingDepositIdea(null);
   };
 
-  const handleEditDepositIdea = async (idea: DepositIdea) => {
-    const { data: { user } } = await supabase.auth.getUser();
+const handleEditDepositIdea = async (idea: DepositIdea) => {
+  const { data: { user } } = await supabase.auth.getUser();
 
-    if (!user) return;
-    
+console.log("DEBUG: Current auth user.id is", user?.id);
+  
+    // Fetch linked roles
     const { data: rolesData } = await supabase
       .from('0007-ap-roles-deposit-ideas')
       .select('role_id')
       .eq('deposit_idea_id', idea.id)
       .eq('user_id', user.id);
 
+  console.log("Fetched rolesData for Deposit Idea:", rolesData);
+
+    // Fetch linked domains
     const { data: domainsData } = await supabase
       .from('0007-ap-deposit-idea-domains')
       .select('domain_id')
       .eq('deposit_idea_id', idea.id)
       .eq('user_id', user.id);
 
+    // Fetch linked key relationships
     const { data: krsData } = await supabase
       .from('0007-ap-deposit-idea-key-relationships')
       .select('key_relationship_id')
       .eq('deposit_idea_id', idea.id)
-      .eq('user_id', user.id);
+  .eq('user_id', user.id);
 
+    // Fetch linked note
     let noteContent = '';
     const { data: noteLink } = await supabase
       .from('0007-ap-note-deposit-ideas')
       .select('note:0007-ap-notes(content)')
       .eq('deposit_idea_id', idea.id)
       .eq('user_id', user.id)
-      .single();
+  .single();
 
-    if (noteLink && (noteLink.note as any)) {
-      noteContent = (noteLink.note as any).content;
+    if (noteLink && noteLink.note) {
+      noteContent = noteLink.note.content;
     }
 
     const fullIdeaData = {
       ...idea,
-      notes: noteContent,
+      notes: noteContent, // Use the fetched note content
       schedulingType: 'depositIdea',
       selectedRoleIds: rolesData?.map(r => r.role_id) || [],
       selectedDomainIds: domainsData?.map(d => d.domain_id) || [],
       selectedKeyRelationshipIds: krsData?.map(kr => kr.key_relationship_id) || [],
     };
 
+  console.log("Setting editingDepositIdea:", fullIdeaData);
+
     setEditingDepositIdea(fullIdeaData);
   };
   
-  const formatTaskForForm = (task: Task) => {
-    return {
-      id: task.id,
-      title: task.title,
-      schedulingType: 'task' as const,
-      dueDate: task.due_date || '',
-      startTime: '',
-      endTime: '',
-      notes: task.notes || '',
-      urgent: task.is_urgent,
-      important: task.is_important,
-      authenticDeposit: task.is_authentic_deposit,
-      twelveWeekGoalChecked: task.is_twelve_week_goal,
-      selectedRoleIds: task.task_roles?.map(r => r.role_id) || [],
-      selectedDomainIds: task.task_domains?.map(d => d.domain_id) || [],
-      selectedKeyRelationshipIds: task.task_key_relationships?.map(kr => kr.key_relationship_id) || [],
-    };
-  };
+  // --- RENDER LOGIC ---
 
   if (selectedRole) {
+    // --- INDIVIDUAL ROLE VIEW ---
     return (
       <div className="flex flex-col h-full">
         <div className="flex items-center gap-3 p-6 border-b">
@@ -614,10 +623,12 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         </div>
         
         <div className="flex-1 overflow-y-auto p-6 space-y-8">
+          {/* Current Tasks Section */}
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Current Tasks</h2>
               <div className="flex items-center gap-4">
+                {/* Task View Controls */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => setTaskViewMode('quadrant')}
@@ -661,6 +672,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             )}
           </section>
 
+          {/* Deposit Ideas Section */}
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Deposit Ideas</h2>
@@ -685,6 +697,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             )}
           </section>
 
+          {/* Key Relationships Section */}
           <section>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Key Relationships</h2>
@@ -694,45 +707,43 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             </div>
             {loading ? <p>Loading relationships...</p> : (
               relationships.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {relationships
-                    .filter(rel => rel && typeof rel.name === 'string' && rel.name.length > 0)
-                    .map((rel) => (
-                      <UnifiedKeyRelationshipCard
-                        key={rel.id}
-                        relationship={rel}
-                        roleName={selectedRole.label}
-                        onRelationshipUpdated={() => {
-                          if (selectedRole) {
-                            fetchRoleData(selectedRole.id);
-                          }
-                        }}
-                        onRelationshipDeleted={() => {
-                          if (selectedRole) {
-                            fetchRoleData(selectedRole.id);
-                          }
-                        }}
-                      />
-                    ))}
-                </div>
-              ) : (
-                  <p className="text-center text-gray-500 py-4">No key relationships for this role.</p>
-              )
-            )}
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {relationships
+      .filter(rel => rel && typeof rel.name === 'string' && rel.name.length > 0)
+      .map((rel) => (
+        <UnifiedKeyRelationshipCard
+          key={rel.id}
+          relationship={rel}
+          roleName={selectedRole.label}
+          onRelationshipUpdated={() => {
+            if (selectedRole) {
+              fetchRoleData(selectedRole.id);
+            }
+          }}
+          onRelationshipDeleted={() => {
+            if (selectedRole) {
+              fetchRoleData(selectedRole.id);
+            }
+          }}
+        />
+      ))}
+  </div>
+) : (
+    <p className="text-center text-gray-500 py-4">No key relationships for this role.</p>
+            )
+        )}
           </section>
         </div>
         
+        {/* Modals for Individual Role View */}
         {showTaskEventForm && <TaskEventForm mode="create" initialData={{ selectedRoleIds: [selectedRole.id] }} onClose={() => setShowTaskEventForm(false)} onSubmitSuccess={handleTaskCreated} />}
-        
         {editingTask && (
-            <TaskEventForm
-                mode="edit"
-                initialData={formatTaskForForm(editingTask)}
-                onSubmitSuccess={handleTaskUpdated}
-                onClose={() => setEditingTask(null)}
-            />
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+            <div className="w-full max-w-2xl mx-4">
+              <EditTask task={editingTask} onTaskUpdated={handleTaskUpdated} onCancel={() => setEditingTask(null)} />
+            </div>
+          </div>
         )}
-        
         {delegatingTask && <DelegateTaskModal task={delegatingTask} onClose={() => setDelegatingTask(null)} onTaskDelegated={() => fetchRoleData(selectedRole.id)} />}
         {showRelationshipForm && <KeyRelationshipForm roleId={selectedRole.id} roleName={selectedRole.label} onClose={() => setShowRelationshipForm(false)} onRelationshipCreated={handleRelationshipSaved} />}
         {showAddDepositIdeaForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'depositIdea', selectedRoleIds: [selectedRole.id] }} onClose={() => setShowAddDepositIdeaForm(false)} onSubmitSuccess={() => fetchRoleData(selectedRole.id)} />}
@@ -743,6 +754,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     );
   }
 
+  // --- ROLES GRID VIEW ---
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between p-6 border-b">
@@ -759,7 +771,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       </div>
       <div className="flex-1 overflow-y-auto p-6">
         {loading ? <p>Loading roles...</p> : (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {roles.map(role => (
               <button 
                 key={role.id} 
@@ -767,15 +779,20 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
                 className="group block"
               >
                 <div className="relative overflow-hidden rounded-xl border-2 border-gray-200 bg-white p-6 transition-all duration-300 hover:shadow-lg hover:scale-105 hover:-translate-y-1 hover:border-primary-300 cursor-pointer">
+                  {/* Icon */}
                   <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-primary-100 text-primary-600 mb-4 group-hover:scale-110 transition-transform duration-300">
                     <span className="text-2xl">{role.icon || '👤'}</span>
                   </div>
+
+                  {/* Content */}
                   <h3 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-primary-600 transition-colors">
                     {role.label}
                   </h3>
                   <p className="text-sm text-gray-600 mb-4 capitalize">
                     {role.category}
                   </p>
+
+                  {/* Hover overlay */}
                   <div className="absolute inset-0 bg-gradient-to-br from-primary-50/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                 </div>
               </button>
@@ -788,6 +805,10 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   );
 };
 
+
+// --- HELPER COMPONENTS ---
+
+// This is the new, correctly styled component
 const ActivationTypeSelector: React.FC<{
   depositIdea: DepositIdea;
   selectedRole: Role;
@@ -810,21 +831,23 @@ const ActivationTypeSelector: React.FC<{
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
+            // Securely fetch all related data with user_id check
             const { data: roles } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id);
             const { data: domains } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id);
             const { data: krs } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id);
             
             const { data: noteLink, error: noteError } = await supabase.from('0007-ap-note-deposit-ideas').select('note:0007-ap-notes(content)').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id).single();
 
+            // Ignore the expected error if no note is found
             if (noteError && noteError.code !== 'PGRST116') {
                 throw noteError;
             }
 
             setPivotIds({
-              selectedRoleIds: (roles as any)?.map((r: any) => r.role_id) || [],
-              selectedDomainIds: (domains as any)?.map((d: any) => d.domain_id) || [],
-              selectedKeyRelationshipIds: (krs as any)?.map((k: any) => k.key_relationship_id) || [],
-              notes: (noteLink as any)?.note?.content || ''
+              selectedRoleIds: roles?.map(r => r.role_id) || [],
+              selectedDomainIds: domains?.map(d => d.domain_id) || [],
+              selectedKeyRelationshipIds: krs?.map(k => k.key_relationship_id) || [],
+              notes: noteLink?.note?.content || ''
             });
         } catch (error) {
             toast.error("Failed to load idea details for activation.");
@@ -883,19 +906,5 @@ const ActivationTypeSelector: React.FC<{
     </div>
   );
 };
-
-const ConfirmationModal: React.FC<{ title: string, onConfirm: () => void, onCancel: () => void, children: React.ReactNode }> = 
-({ title, onConfirm, onCancel, children }) => (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="bg-white rounded-lg p-6 max-w-md mx-4">
-      <h3 className="text-lg font-medium mb-4">{title}</h3>
-      <div className="mb-4">{children}</div>
-      <div className="flex justify-end gap-3">
-        <button onClick={onCancel} className="px-4 py-2 bg-gray-200 rounded">Cancel</button>
-        <button onClick={onConfirm} className="px-4 py-2 bg-red-600 text-white rounded">Confirm</button>
-      </div>
-    </div>
-  </div>
-);
 
 export default RoleBank;
