@@ -308,34 +308,46 @@ console.log("DEBUG: Current auth user.id is", user?.id);
     const isCollapsed = collapsedTaskQuadrants[id as keyof typeof collapsedTaskQuadrants];
     
     return (
-      <div className="border rounded-lg mb-3">
+      <div className="h-full flex flex-col">
+        {/* Header - Always visible */}
         <div 
-          className={`${bgColor} ${textColor} px-3 py-2 rounded-t-lg flex items-center justify-between cursor-pointer`}
+          className={`w-full ${bgColor} ${textColor} px-4 py-3 rounded-lg flex items-center justify-between hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
           onClick={() => setCollapsedTaskQuadrants(prev => ({ 
             ...prev, 
             [id]: !prev[id as keyof typeof prev] 
           }))}
+          type="button"
         >
-          <div className="flex items-center gap-2">
+          <div className="flex items-center space-x-2 min-w-0">
             {icon}
-            <span className="text-sm font-medium">{title}</span>
-            <span className="text-xs bg-white bg-opacity-20 rounded px-2">{tasks.length}</span>
+            <h4 className="font-medium text-sm truncate">{title}</h4>
+            <span className="text-sm opacity-90 flex-shrink-0">({tasks.length})</span>
           </div>
-          {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-        </div>
+          <div className="flex-shrink-0 ml-2">
+            {isCollapsed ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </div>
+        </button>
+        
+        {/* Content - Only visible when expanded */}
         {!isCollapsed && (
-          <div className="p-3 space-y-2">
-            {tasks.length === 0 ? (
-              <div className="text-gray-400 text-sm text-center py-2">No tasks</div>
-            ) : (
-              tasks.map((task) => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  borderColor={borderColor}
-                />
-              ))
-            )}
+          <div className="flex-1 bg-gray-50 rounded-lg mt-2 overflow-hidden">
+            <div className="h-full overflow-y-auto p-3">
+              {tasks.length === 0 ? (
+                <p className="text-gray-500 text-sm italic text-center py-4">
+                  No tasks in this category
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {tasks.map((task) => (
+                    <TaskCard 
+                      key={task.id} 
+                      task={task} 
+                      borderColor={borderColor}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
@@ -429,48 +441,58 @@ console.log("DEBUG: Current auth user.id is", user?.id);
     const currentTasks = taskSortBy === 'completed' ? completedTasks : tasks;
     
     if (taskViewMode === 'quadrant' && taskSortBy === 'priority') {
-      // Quadrant View
+      // 2x2 Quadrant Grid View (like Task Priorities)
       return (
-        <div>
-          <QuadrantSection
-            id="urgent-important"
-            title="Urgent & Important"
-            tasks={currentTasks.filter(task => task.is_urgent && task.is_important)}
-            bgColor="bg-red-500"
-            textColor="text-white"
-            borderColor="border-l-red-500"
-            icon={<AlertTriangle className="h-3 w-3" />}
-          />
+        <div className="grid grid-cols-2 gap-4 h-full">
+          {/* Top Row */}
+          <div className="flex flex-col">
+            <QuadrantSection
+              id="urgent-important"
+              title="Urgent & Important"
+              tasks={currentTasks.filter(task => task.is_urgent && task.is_important)}
+              bgColor="bg-red-500"
+              textColor="text-white"
+              borderColor="border-l-red-500"
+              icon={<AlertTriangle className="h-4 w-4" />}
+            />
+          </div>
           
-          <QuadrantSection
-            id="not-urgent-important"
-            title="Not Urgent & Important"
-            tasks={currentTasks.filter(task => !task.is_urgent && task.is_important)}
-            bgColor="bg-green-500"
-            textColor="text-white"
-            borderColor="border-l-green-500"
-            icon={<Check className="h-3 w-3" />}
-          />
+          <div className="flex flex-col">
+            <QuadrantSection
+              id="not-urgent-important"
+              title="Not Urgent & Important"
+              tasks={currentTasks.filter(task => !task.is_urgent && task.is_important)}
+              bgColor="bg-green-500"
+              textColor="text-white"
+              borderColor="border-l-green-500"
+              icon={<Check className="h-4 w-4" />}
+            />
+          </div>
           
-          <QuadrantSection
-            id="urgent-not-important"
-            title="Urgent & Not Important"
-            tasks={currentTasks.filter(task => task.is_urgent && !task.is_important)}
-            bgColor="bg-orange-500"
-            textColor="text-white"
-            borderColor="border-l-orange-500"
-            icon={<Clock className="h-3 w-3" />}
-          />
+          {/* Bottom Row */}
+          <div className="flex flex-col">
+            <QuadrantSection
+              id="urgent-not-important"
+              title="Urgent & Not Important"
+              tasks={currentTasks.filter(task => task.is_urgent && !task.is_important)}
+              bgColor="bg-orange-500"
+              textColor="text-white"
+              borderColor="border-l-orange-500"
+              icon={<Clock className="h-4 w-4" />}
+            />
+          </div>
           
-          <QuadrantSection
-            id="not-urgent-not-important"
-            title="Not Urgent & Not Important"
-            tasks={currentTasks.filter(task => !task.is_urgent && !task.is_important)}
-            bgColor="bg-gray-500"
-            textColor="text-white"
-            borderColor="border-l-gray-500"
-            icon={<X className="h-3 w-3" />}
-          />
+          <div className="flex flex-col">
+            <QuadrantSection
+              id="not-urgent-not-important"
+              title="Not Urgent & Not Important"
+              tasks={currentTasks.filter(task => !task.is_urgent && !task.is_important)}
+              bgColor="bg-gray-500"
+              textColor="text-white"
+              borderColor="border-l-gray-500"
+              icon={<X className="h-4 w-4" />}
+            />
+          </div>
         </div>
       );
     } else {
