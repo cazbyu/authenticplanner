@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp, Clock, AlertTriangle, UserPlus } from 'lucide-react';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 import TaskEventForm from '../tasks/TaskEventForm';
+import EditTask from '../tasks/EditTask';
+import DelegateTaskModal from '../tasks/DelegateTaskModal';
 
 interface KeyRelationship {
   id: string;
@@ -18,9 +20,20 @@ interface Task {
   title: string;
   status: string;
   due_date?: string;
+  start_time?: string;
+  end_time?: string;
   is_urgent: boolean;
   is_important: boolean;
   is_authentic_deposit: boolean;
+  is_twelve_week_goal?: boolean;
+  notes?: string;
+  completed_at?: string;
+  task_roles?: Array<{
+    role_id: string;
+  }>;
+  task_domains?: Array<{
+    domain_id: string;
+  }>;
 }
 
 interface DepositIdea {
@@ -67,6 +80,16 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   // State for task management
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
+  const [taskViewMode, setTaskViewMode] = useState<'quadrant' | 'list'>('quadrant');
+  const [taskSortBy, setTaskSortBy] = useState<'priority' | 'due_date' | 'completed'>('priority');
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
+  const [collapsedTaskQuadrants, setCollapsedTaskQuadrants] = useState({
+    'urgent-important': false,
+    'not-urgent-important': false,
+    'urgent-not-important': false,
+    'not-urgent-not-important': false,
+  });
   // State for deposit ideas management
   const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
   const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
@@ -107,16 +130,31 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
             title,
             status,
             due_date,
+            start_time,
+            end_time,
             is_urgent,
             is_important,
-            is_authentic_deposit
+            is_authentic_deposit,
+            is_twelve_week_goal,
+            notes,
+            completed_at,
+            task_roles:0007-ap-task-roles!task_id(role_id),
+            task_domains:0007-ap-task-domains(domain_id)
           )
         `)
         .eq('key_relationship_id', relationship.id);
       const relationshipTasks = taskLinks?.map(link => link.task).filter(Boolean) || [];
-      setTasks(relationshipTasks.filter(
+      
+      // Separate active and completed tasks
+      const activeTasks = relationshipTasks.filter(
         (task: Task) => task.status === 'pending' || task.status === 'in_progress'
-      ));
+      );
+      const completedTasksList = relationshipTasks.filter(
+        (task: Task) => task.status === 'completed'
+      );
+      
+      setTasks(activeTasks);
+      setCompletedTasks(completedTasksList);
       
       // Also check for deposit ideas linked via the junction table
       const { data: depositIdeaLinks } = await supabase
