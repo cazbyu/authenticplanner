@@ -310,7 +310,7 @@ console.log("DEBUG: Current auth user.id is", user?.id);
     return (
       <div className="h-full flex flex-col">
         {/* Header - Always visible */}
-        <div 
+        <button 
           className={`w-full ${bgColor} ${textColor} px-4 py-3 rounded-lg flex items-center justify-between hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
           onClick={() => setCollapsedTaskQuadrants(prev => ({ 
             ...prev, 
