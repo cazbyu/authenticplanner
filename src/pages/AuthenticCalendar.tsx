@@ -520,6 +520,7 @@ rounded-full bg-primary-100 text-primary-600">
     domains={domains}
     loading={loading}
                     />
+                </div>
             
               </div>
               
