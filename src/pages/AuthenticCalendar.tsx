@@ -512,14 +512,13 @@ rounded-full bg-primary-100 text-primary-600">
                   </button>
                 </div>
                 <div className="flex-1">
-                  <DragDropContext onDragEnd={() => {}}>
-                    <UnscheduledPriorities
-                      viewMode={sidebarOpen ? 'quadrant' : 'list'}
-                      tasks={tasks}
-                      setTasks={setTasks}
-                      roles={roles}
-                      domains={domains}
-                      loading={loading}
+  <UnscheduledPriorities
+    viewMode={sidebarOpen ? 'quadrant' : 'list'}
+    tasks={tasks}
+    setTasks={setTasks}
+    roles={roles}
+    domains={domains}
+    loading={loading}
                     />
             
               </div>
