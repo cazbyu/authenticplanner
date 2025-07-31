@@ -4,7 +4,6 @@ import { Compass } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskEventForm from '../components/tasks/TaskEventForm';
 import CalendarView from '../components/calendar/CalendarView';
-import { DragDropContext } from 'react-beautiful-dnd';
 import TaskQuadrants from '../components/tasks/TaskQuadrants';
 import UnscheduledPriorities from '../components/tasks/UnscheduledPriorities';
 import { useAuth } from '../contexts/AuthContext';
