@@ -50,23 +50,8 @@
 }
 
 /* Let FullCalendar handle all scrolling naturally */
-.fc-scroller {
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
-}
-
-.fc-scroller-liquid-absolute {
-  position: relative !important;
-}
 
 /* Ensure proper scrolling behavior */
-.fc-timegrid-body {
-  overflow: visible !important;
-}
-
-.fc-timegrid-slots {
-  overflow: visible !important;
-}
 
 /* Header styling */
 .fc-col-header-cell {
