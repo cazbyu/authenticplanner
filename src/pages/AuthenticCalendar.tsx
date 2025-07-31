@@ -72,7 +72,19 @@ const AuthenticCalendar: React.FC = () => {
   const sidebarRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
   
-    // Fetch all task data
+  useEffect(() => {
+    const calendarApi = calendarRef.current?.getApi();
+    if (calendarApi && (view === 'timeGridWeek' || view === 'timeGridDay')) {
+      // Use a short timeout to ensure the calendar has finished rendering
+      setTimeout(() => {
+        const now = new Date();
+        const currentTime = format(now, 'HH:mm:ss');
+        calendarApi.scrollToTime(currentTime);
+      }, 100);
+    }
+  }, [view, refreshTrigger]);
+
+  // Fetch all task data
   useEffect(() => {
     fetchAllTaskData();
   }, [refreshTrigger]);
