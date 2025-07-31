@@ -49,22 +49,23 @@
   z-index: 40 !important;
 }
 
-/* CRITICAL: Simplify scroll behavior - let FullCalendar handle everything */
+/* Let FullCalendar handle all scrolling naturally */
 .fc-scroller {
-  /* Remove all custom overrides and let FullCalendar manage scrolling */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 
 .fc-scroller-liquid-absolute {
-  /* Remove all custom overrides and let FullCalendar manage scrolling */
+  position: relative !important;
 }
 
-/* Remove all custom positioning that might conflict */
-.fc-timegrid-container,
-.fc-timegrid-body,
-.fc-timegrid-slots,
-.fc-view,
-.fc-view-harness-active > .fc-view {
-  /* Let FullCalendar handle all positioning and scrolling */
+/* Ensure proper scrolling behavior */
+.fc-timegrid-body {
+  overflow: visible !important;
+}
+
+.fc-timegrid-slots {
+  overflow: visible !important;
 }
 
 /* Header styling */

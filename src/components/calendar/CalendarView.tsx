@@ -6,6 +6,7 @@ import interactionPlugin from '@fullcalendar/interaction';
 import { supabase } from '../../supabaseClient';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import './CalendarView.css';
 
 interface CalendarViewProps {
   view: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth';
@@ -170,113 +171,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
 
     return (
       <div className="h-full">
-        <style
-          dangerouslySetInnerHTML={{
-            __html: `
-              .fc {
-                font-family: inherit;
-                height: 100% !important;
-              }
-              .fc-view-harness {
-                height: 100% !important;
-              }
-              .fc-scrollgrid-sync-inner {
-                padding: 8px 0;
-              }
-              .fc-theme-standard td,
-              .fc-theme-standard th {
-                border-color: #e5e7eb;
-              }
-              .fc-timegrid-slot {
-                height: 24px !important;
-                border-bottom: 1px solid #f3f4f6 !important;
-              }
-              .fc-timegrid-slot-label {
-                font-size: 0.75rem;
-                color: #6b7280;
-                padding-right: 1rem;
-              }
-              .fc-timegrid-axis {
-                padding-right: 0.5rem;
-              }
-              .fc-timegrid-now-indicator-line {
-                border-top: 2px solid #ef4444 !important;
-                left: 0 !important;
-                right: 0 !important;
-                margin-left: 0 !important;
-                box-shadow: 0 0 6px rgba(239, 68, 68, 0.6) !important;
-                z-index: 40 !important;
-              }
-              .fc-timegrid-now-indicator-arrow {
-                border-color: #ef4444 !important;
-                border-width: 6px 0 6px 8px !important;
-                margin-top: -6px !important;
-                z-index: 40 !important;
-              }
-              .fc-col-header-cell {
-                padding: 0;
-                background: #fff;
-              }
-              .fc-col-header-cell.fc-day-today {
-                background: transparent !important;
-              }
-              .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
-                color: #4b5563;
-              }
-              .fc-col-header-cell-cushion {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                padding: 8px 0;
-                color: #4b5563;
-                font-weight: 500;
-              }
-              .fc-col-header-cell-cushion .day-name {
-                font-size: 11px;
-                text-transform: uppercase;
-                margin-bottom: 4px;
-              }
-              .fc-col-header-cell-cushion .day-number {
-                font-size: 20px;
-                font-weight: 400;
-                width: 32px;
-                height: 32px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                border-radius: 50%;
-              }
-              .fc-col-header-cell-cushion .day-number.today {
-                background: #3b82f6;
-                color: white;
-              }
-              .fc-header-toolbar {
-                display: none !important;
-              }
-              .fc-event-dragging {
-                opacity: 0.75;
-                z-index: 999;
-                cursor: grabbing !important;
-              }
-              .fc-event {
-                cursor: grab;
-              }
-              .fc-event:active {
-                cursor: grabbing;
-              }
-              .fc-timegrid-col.fc-day-today {
-                background-color: rgba(59, 130, 246, 0.05);
-              }
-              .fc-unthemed .fc-event {
-                border-radius: 4px;
-                border: 1px solid;
-                font-size: 0.85em;
-                padding: 2px 4px;
-              }
-            `,
-          }}
-        />
-        {/* --- THIS COMPONENT USES THE PROPS FROM THE ORIGINAL, WORKING 0755 FILE --- */}
         <FullCalendar
           key={view}
           ref={ref}
@@ -301,8 +195,8 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
           nowIndicator={true}
           slotDuration="00:30:00"
           slotLabelInterval="01:00"
-          expandRows={true}
-          stickyHeaderDates={true} 
+          scrollTime="08:00:00"
+          scrollTimeReset={false}
           slotLabelFormat={{
             hour: 'numeric',
             minute: '2-digit',
@@ -320,7 +214,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotDuration: '00:15:00',
               slotLabelInterval: '01:00',
               allDaySlot: true,
-              expandRows: true,
             },
             timeGridDay: {
               dayCount: 1,
@@ -328,7 +221,6 @@ const CalendarView = forwardRef<FullCalendar, CalendarViewProps>(
               slotDuration: '00:15:00',
               slotLabelInterval: '01:00',
               allDaySlot: true,
-              expandRows: true,
             },
           }}
           datesSet={handleDatesSet}
