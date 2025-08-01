@@ -499,9 +499,7 @@ rounded-full bg-primary-100 text-primary-600">
               <div className="h-full flex flex-col">
                 <div className="p-4 border-b border-gray-200 flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Unscheduled Priorities</h2>
-                    <p className="text-sm text-gray-600 mt-1">Drag tasks to calendar to schedule</p>
-                  </div>
+                </div>
                   <button
                     onClick={() => setSidebarOpen(false)} 
                     className="p-1 hover:bg-gray-100 rounded transition-colors"
