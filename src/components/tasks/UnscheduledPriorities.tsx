@@ -4,8 +4,6 @@ import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from
 import { formatDate } from '../../utils/helpers';
 import EditTask from './EditTask';
 import DelegateTaskModal from './DelegateTaskModal';
-import Calendar from "react-calendar";
-import "react-calendar/dist/Calendar.css";
 
 // Helper Interfaces
 interface Task {
