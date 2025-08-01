@@ -212,7 +212,7 @@
 /* Style for the borderless mini-calendar in the sidebar */
 .react-calendar-borderless {
   border: none !important;
-  width: 50%;
+  width: 10%;
   font-size: 0.8rem;
 }
 
