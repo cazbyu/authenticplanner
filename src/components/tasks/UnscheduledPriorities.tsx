@@ -280,8 +280,7 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
     }
   />
 </div>
-      
-          
+                
 <h2 className="text-lg font-bold text-gray-800 mb-2">Your Priorities</h2>
 {loading ? (
   <div className="flex h-32 items-center justify-center">
