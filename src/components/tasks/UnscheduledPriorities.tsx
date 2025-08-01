@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import EditTask from './EditTask';
 import DelegateTaskModal from './DelegateTaskModal';
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 // Helper Interfaces
 interface Task {
