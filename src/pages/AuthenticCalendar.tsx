@@ -69,6 +69,8 @@ const AuthenticCalendar: React.FC = () => {
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const calendarRef = useRef<FullCalendar | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const [miniSelectedDate, setMiniSelectedDate] = useState(new Date());
+  const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(new Date());
   const { user, logout } = useAuth();
   
   useEffect(() => {
