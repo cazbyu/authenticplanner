@@ -569,7 +569,20 @@ rounded-full bg-primary-100 text-primary-600">
           {/* Main Content Area */}
           <div className="flex-1 flex flex-relative">
             {/* Show sidebar toggle when closed */}
-                        
+            // ✨ PASTE THIS NEW CODE BLOCK
+{!sidebarOpen && activeView === 'calendar' && (
+    <button
+        onClick={() => setSidebarOpen(true)}
+        className="absolute top-3 left-3 z-10 p-2 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
+        title="Show Unscheduled Priorities"
+    >
+        <img
+            src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
+            alt="Show menu"
+            className="h-5 w-5"
+        />
+    </button>
+)}            
             {/* Content */}
             <div className="flex-1 overflow-hidden">
               {activeView === 'calendar' ? (
