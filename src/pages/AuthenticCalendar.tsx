@@ -569,19 +569,26 @@ rounded-full bg-primary-100 text-primary-600">
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col">
             {/* Show sidebar toggle when closed */}
-            {!sidebarOpen && activeView === 'calendar' && (
-    <button
-        onClick={() => setSidebarOpen(true)}
-        className="absolute top-3 left-3 z-10 p-2 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
-        title="Show Unscheduled Priorities"
-    >
-        <img
-            src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
-            alt="Show menu"
-            className="h-5 w-5"
-        />
-    </button>
-)}            
+{!sidebarOpen && activeView === 'calendar' && (
+    <div className="p-2 border-b border-gray-200 bg-white">
+        <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1 text-gray-500 hover:bg-gray-100 rounded-md"
+            title="Show Unscheduled Priorities"
+        >
+            <img
+                src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
+                alt="Show menu"
+                className="h-5 w-5"
+            />
+        </button>
+    </div>
+)}
+
+{/* This div should be directly below the code you just pasted */}
+<div className="flex-1 overflow-hidden">
+    {/* ... calendar view content ... */}
+</div>            
             {/* Content */}
             <div className="flex-1 overflow-hidden">
               {activeView === 'calendar' ? (
