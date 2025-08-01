@@ -113,10 +113,9 @@ interface UnscheduledPrioritiesProps {
   roles: Record<string, Role>;
   domains: Record<string, Domain>;
   loading: boolean;
-  viewMode?: 'quadrant' | 'list';
-}
+ }
 
-const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading, viewMode = 'quadrant' }) => {
+const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, setTasks, roles, domains, loading }) => {
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
 
