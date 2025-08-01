@@ -498,30 +498,56 @@ rounded-full bg-primary-100 text-primary-600">
               className="border-r border-gray-200 bg-white flex-shrink-0 relative"
               style={{ width: `${sidebarWidth}px` }}
             >
-              <div className="h-full flex flex-col">
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                  <div>
-                </div>
-                  <button
-                    onClick={() => setSidebarOpen(false)} 
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    title="Close sidebar"
-                  >
-                    <ChevronLeft className="h-4 w-4 text-gray-500" />
-                  </button>
-                </div>
-                <div className="flex-1">
-  <UnscheduledPriorities
-    viewMode={sidebarOpen ? 'quadrant' : 'list'}
-    tasks={tasks}
-    setTasks={setTasks}
-    roles={roles}
-    domains={domains}
-    loading={loading}
-                    />
-                </div>
-            
-              </div>
+              // ✨ PASTE THIS NEW CODE BLOCK
+<div className="h-full flex flex-col">
+  {/* Mini-Calendar Section */}
+  <div className="p-3 border-b border-gray-200">
+    <div className="flex items-center justify-between mb-2">
+      {/* Calendar Header */}
+      <div className="flex items-center space-x-1">
+        <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const p = new Date(d); p.setMonth(p.getMonth() - 1); return p; })} aria-label="Previous Month">
+          <ChevronLeft className="h-4 w-4 text-gray-600" />
+        </button>
+        <span className="font-semibold text-sm text-gray-700 w-28 text-center">
+          {miniCalendarActiveStartDate.toLocaleString("default", { month: "long", year: "numeric" })}
+        </span>
+        <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const n = new Date(d); n.setMonth(n.getMonth() + 1); return n; })} aria-label="Next Month">
+          <ChevronRight className="h-4 w-4 text-gray-600" />
+        </button>
+      </div>
+      {/* Collapse Sidebar Button */}
+      <button onClick={() => setSidebarOpen(false)} className="p-1 hover:bg-gray-100 rounded-md" title="Close sidebar">
+        <ChevronLeft className="h-4 w-4 text-gray-500" />
+      </button>
+    </div>
+    {/* The Calendar Itself */}
+    <Calendar
+      value={miniSelectedDate}
+      onChange={(value) => {
+        const date = value as Date;
+        setMiniSelectedDate(date);
+        if (calendarRef.current) {
+          calendarRef.current.getApi().gotoDate(date);
+        }
+      }}
+      activeStartDate={miniCalendarActiveStartDate}
+      onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
+      className="react-calendar-borderless"
+      formatShortWeekday={(locale, date) => date.toLocaleDateString(locale, { weekday: 'narrow' })}
+    />
+  </div>
+
+  {/* Unscheduled Priorities List */}
+  <div className="flex-1 overflow-y-auto">
+    <UnscheduledPriorities
+      tasks={tasks.filter(t => !t.start_time)}
+      setTasks={setTasks}
+      roles={roles}
+      domains={domains}
+      loading={loading}
+    />
+  </div>
+</div>
               
               {/* Resize Handle */}
               <div
