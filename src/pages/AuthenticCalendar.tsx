@@ -569,8 +569,7 @@ rounded-full bg-primary-100 text-primary-600">
           {/* Main Content Area */}
           <div className="flex-1 flex flex-relative">
             {/* Show sidebar toggle when closed */}
-            // ✨ PASTE THIS NEW CODE BLOCK
-{!sidebarOpen && activeView === 'calendar' && (
+            {!sidebarOpen && activeView === 'calendar' && (
     <button
         onClick={() => setSidebarOpen(true)}
         className="absolute top-3 left-3 z-10 p-2 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
