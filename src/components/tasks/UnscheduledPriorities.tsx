@@ -115,14 +115,6 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
     }
   };
 
-  // Categorize tasks
-  const categorizedTasks = {
-    urgentImportant: tasks.filter(task => task.is_urgent && task.is_important),
-    notUrgentImportant: tasks.filter(task => !task.is_urgent && task.is_important),
-    urgentNotImportant: tasks.filter(task => task.is_urgent && !task.is_important),
-    notUrgentNotImportant: tasks.filter(task => !task.is_urgent && !task.is_important),
-  };
-
   if (loading) {
     return (
       <div className="flex h-32 items-center justify-center">
