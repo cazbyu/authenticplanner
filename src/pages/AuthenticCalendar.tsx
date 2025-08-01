@@ -303,7 +303,7 @@ const AuthenticCalendar: React.FC = () => {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
-        {(mainSidebarOpen || activeDrawer) && (
+        {activeDrawer && (
           <motion.div 
             className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
             initial="closed"
@@ -311,7 +311,6 @@ const AuthenticCalendar: React.FC = () => {
             exit="closed"
             variants={overlayVariants}
             onClick={() => {
-              setMainSidebarOpen(false);
               setActiveDrawer(null);
               setMobileNavExpanded(false);
             }}
@@ -319,245 +318,200 @@ const AuthenticCalendar: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Sidebar */}
-      
-      {/* Main Content Area */}
-      
-        {/* Header */}
-        <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
-          {/* Left Section */}
-          <div className="flex items-center space-x-4">
-            
-            {/* View Toggle */}
-            <div className="flex items-center bg-gray-100 rounded-lg p-1">
-              <button
-                onClick={() => setActiveView('calendar')}
-                className={`flex items-center justify-center p-2 rounded-md transition-colors ${
-                  activeView === 'calendar'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                title="Calendar View"
-              >
-                <CalendarIcon className="h-5 w-5" />
-              </button>
-              <button
-                onClick={() => setActiveView('priorities')}
-                className={`flex items-center justify-center p-2 rounded-md transition-colors ${
-                  activeView === 'priorities'
-                    ? 'bg-white text-blue-600 shadow-sm'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-                title="Priorities View"
-              >
-                <CheckSquare className="h-5 w-5" />
-              </button>
-            </div>
-
-            {/* Calendar Controls - Only show for calendar view */}
-            {activeView === 'calendar' && (
-              <>
-                {/* Date Navigation */}
-                <div className="flex items-center space-x-1">
-                  <button
-                    onClick={handlePrevious}
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <ChevronLeft className="h-4 w-4 text-gray-600" />
-                  </button>
-                  <button
-                    onClick={handleNext}
-                    className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <ChevronRight className="h-4 w-4 text-gray-600" />
-                  </button>
-                </div>
-
-                <span className="text-lg font-medium">
-                  {getDateDisplayText()}
-                </span>
-
-                {/* Calendar View Dropdown */}
-                <div className="relative">
-                  <select
-                    value={view}
-                    onChange={(e) => handleViewChange(e.target.value as 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth')}
-                    className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-                  >
-                    <option value="timeGridDay">Day View</option>
-                    <option value="timeGridWeek">Week View</option>
-                    <option value="dayGridMonth">Month View</option>
-                  </select>
-                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
-                </div>
-              </>
-            )}
-          </div>
-
-          {/* Right Section */}
-          <div className="flex items-center space-x-2">
+      {/* Header */}
+      <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
+        {/* Left Section */}
+        <div className="flex items-center space-x-4">
+          {/* View Toggle */}
+          <div className="flex items-center bg-gray-100 rounded-lg p-1">
             <button
-              onClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                setTaskTypeMenuPosition({ top: rect.bottom, left: rect.left });
-                setShowTaskTypeMenu(!showTaskTypeMenu);
-              }}
-              className="flex items-center justify-center w-10 h-10 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+              onClick={() => setActiveView('calendar')}
+              className={`flex items-center justify-center p-2 rounded-md transition-colors ${
+                activeView === 'calendar'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Calendar View"
             >
-              <Plus className="h-5 w-5" />
+              <CalendarIcon className="h-5 w-5" />
+            </button>
+            <button
+              onClick={() => setActiveView('priorities')}
+              className={`flex items-center justify-center p-2 rounded-md transition-colors ${
+                activeView === 'priorities'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+              title="Priorities View"
+            >
+              <CheckSquare className="h-5 w-5" />
             </button>
           </div>
-        </header>
 
-        {/* Main Content */}
-        <main className="h-[calc(100vh-73px)] flex">
-          {/* Unscheduled Priorities Sidebar */}
-          {sidebarOpen && activeView === 'calendar' && (
-            <div 
-              ref={sidebarRef}
-              className="border-r border-gray-200 bg-white flex-shrink-0 relative"
-              style={{ width: `${sidebarWidth}px` }}
-            >
-
-<div className="h-full flex flex-col">
-  {/* Mini-Calendar Section */}
-  <div className="p-3 border-b border-gray-200">
-<div className="flex items-center justify-between mb-2">
-    <div className="w-5"></div> {/* Spacer to balance the button on the right */}
-
-    {/* Centered Calendar Navigation */}
-    <div className="flex items-center space-x-1">
-        <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const p = new Date(d); p.setMonth(p.getMonth() - 1); return p; })} aria-label="Previous Month">
-            <ChevronLeft className="h-4 w-4 text-gray-600" />
-        </button>
-        <span className="font-semibold text-xs text-gray-700 w-24 text-center">
-            {miniCalendarActiveStartDate.toLocaleString("default", { month: "long", year: "numeric" })}
-        </span>
-        <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const n = new Date(d); n.setMonth(n.getMonth() + 1); return n; })} aria-label="Next Month">
-            <ChevronRight className="h-4 w-4 text-gray-600" />
-        </button>
-    </div>
-
-{/* Collapse Button with your custom image icon */}
-<button onClick={() => setSidebarOpen(false)} className="p-1 text-gray-500 hover:bg-gray-100 rounded-md" title="Close sidebar">
-    <img
-        src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
-        alt="Collapse menu"
-        className="h-3 w-3"
-    />
-</button>
-</div>
-    {/* The Calendar Itself */}
-    <Calendar
-      value={miniSelectedDate}
-      onChange={(value) => {
-        const date = value as Date;
-        setMiniSelectedDate(date);
-        if (calendarRef.current) {
-          calendarRef.current.getApi().gotoDate(date);
-        }
-      }}
-      activeStartDate={miniCalendarActiveStartDate}
-      onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
-      className="react-calendar-borderless"
-      formatShortWeekday={(locale, date) => date.toLocaleDateString(locale, { weekday: 'narrow' })}
-       showNavigation={false}
-    />
-  </div>
-
-  {/* Unscheduled Priorities List */}
-  <div className="flex-1 overflow-y-auto">
-    <UnscheduledPriorities
-      tasks={tasks.filter(t => !t.start_time)}
-      setTasks={setTasks}
-      roles={roles}
-      domains={domains}
-      loading={loading}
-    />
-  </div>
-</div>
-              
-              {/* Resize Handle */}
-              <div
-                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
-                onMouseDown={handleMouseDown}
-                title="Drag to resize"
-              />
-            </div>
+          {/* Calendar Controls */}
+          {activeView === 'calendar' && (
+            <>
+              <div className="flex items-center space-x-1">
+                <button
+                  onClick={handlePrevious}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4 text-gray-600" />
+                </button>
+                <button
+                  onClick={handleNext}
+                  className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4 text-gray-600" />
+                </button>
+              </div>
+              <span className="text-lg font-medium">
+                {getDateDisplayText()}
+              </span>
+              <div className="relative">
+                <select
+                  value={view}
+                  onChange={(e) => handleViewChange(e.target.value as 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth')}
+                  className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                >
+                  <option value="timeGridDay">Day View</option>
+                  <option value="timeGridWeek">Week View</option>
+                  <option value="dayGridMonth">Month View</option>
+                </select>
+                <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              </div>
+            </>
           )}
+        </div>
+        {/* Right Section */}
+        <div className="flex items-center space-x-2">
+          <button
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              setTaskTypeMenuPosition({ top: rect.bottom, left: rect.left });
+              setShowTaskTypeMenu(!showTaskTypeMenu);
+            }}
+            className="flex items-center justify-center w-10 h-10 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+          >
+            <Plus className="h-5 w-5" />
+          </button>
+        </div>
+      </header>
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-relative">
-            {/* Show sidebar toggle when closed */}
-{!sidebarOpen && activeView === 'calendar' && (
-    <button
-        onClick={() => setSidebarOpen(true)}
-        className="absolute top-16 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
-        title="Show Unscheduled Priorities"
-    >
-        <img
-            src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
-            alt="Show menu"
-            className="h-5 w-5"
-        />
-    </button>
-)}
-
-{/* This div should be directly below the code you just pasted */}
-<div className="flex-1 overflow-hidden">
-    {/* ... calendar view content ... */}
-</div>            
-            {/* Content */}
-            <div className="flex-1 overflow-hidden">
-              {activeView === 'calendar' ? (
-                <CalendarView
-                  ref={calendarRef}
-                  view={view}
-                  currentDate={currentDate}
-                  onDateChange={handleDateChange}
-                  refreshTrigger={refreshTrigger}
-                  onTaskUpdated={() => setRefreshTrigger(prev => prev + 1)}
-                />
-              ) : (
-                <div className="h-full overflow-hidden">
-                  <TaskQuadrants
-                    tasks={tasks} // This will include ALL tasks (scheduled and unscheduled)
-                    setTasks={setTasks}
-                    roles={roles}
-                    domains={domains}
-                    loading={loading}
-                  />
+      {/* Main Content */}
+      <main className="h-[calc(100vh-73px)] flex">
+        {/* Unscheduled Priorities Sidebar */}
+        {sidebarOpen && activeView === 'calendar' && (
+          <div 
+            ref={sidebarRef}
+            className="border-r border-gray-200 bg-white flex-shrink-0 relative"
+            style={{ width: `${sidebarWidth}px` }}
+          >
+            <div className="h-full flex flex-col">
+              <div className="p-3 border-b border-gray-200">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="w-5"></div>
+                  <div className="flex items-center space-x-1">
+                    <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const p = new Date(d); p.setMonth(p.getMonth() - 1); return p; })} aria-label="Previous Month">
+                      <ChevronLeft className="h-4 w-4 text-gray-600" />
+                    </button>
+                    <span className="font-semibold text-xs text-gray-700 w-24 text-center">
+                      {miniCalendarActiveStartDate.toLocaleString("default", { month: "long", year: "numeric" })}
+                    </span>
+                    <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const n = new Date(d); n.setMonth(n.getMonth() + 1); return n; })} aria-label="Next Month">
+                      <ChevronRight className="h-4 w-4 text-gray-600" />
+                    </button>
+                  </div>
+                  <button onClick={() => setSidebarOpen(false)} className="p-1 text-gray-500 hover:bg-gray-100 rounded-md" title="Close sidebar">
+                    <img src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png" alt="Collapse menu" className="h-3 w-3" />
+                  </button>
                 </div>
-              )}
+                <Calendar
+                  value={miniSelectedDate}
+                  onChange={(value) => {
+                    const date = value as Date;
+                    setMiniSelectedDate(date);
+                    if (calendarRef.current) {
+                      calendarRef.current.getApi().gotoDate(date);
+                    }
+                  }}
+                  activeStartDate={miniCalendarActiveStartDate}
+                  onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
+                  className="react-calendar-borderless"
+                  formatShortWeekday={(locale, date) => date.toLocaleDateString(locale, { weekday: 'narrow' })}
+                  showNavigation={false}
+                />
+              </div>
+              <div className="flex-1 overflow-y-auto">
+                <UnscheduledPriorities
+                  tasks={tasks.filter(t => !t.start_time)}
+                  setTasks={setTasks}
+                  roles={roles}
+                  domains={domains}
+                  loading={loading}
+                />
+              </div>
             </div>
+            <div
+              className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
+              onMouseDown={handleMouseDown}
+              title="Drag to resize"
+            />
           </div>
-        </main>
-      </div>
+        )}
 
-      {/* GLOBAL FLOATING DRESSER - Desktop Navigation Bar */}
+        {/* Calendar/Task Quadrant View */}
+        <div className="flex-1 flex flex-col relative">
+          {!sidebarOpen && activeView === 'calendar' && (
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="absolute top-16 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
+              title="Show Unscheduled Priorities"
+            >
+              <img src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png" alt="Show menu" className="h-5 w-5" />
+            </button>
+          )}
+          <div className="flex-1 overflow-hidden">
+            {activeView === 'calendar' ? (
+              <CalendarView
+                ref={calendarRef}
+                view={view}
+                currentDate={currentDate}
+                onDateChange={handleDateChange}
+                refreshTrigger={refreshTrigger}
+                onTaskUpdated={() => setRefreshTrigger(prev => prev + 1)}
+              />
+            ) : (
+              <div className="h-full overflow-hidden">
+                <TaskQuadrants
+                  tasks={tasks}
+                  setTasks={setTasks}
+                  roles={roles}
+                  domains={domains}
+                  loading={loading}
+                />
+              </div>
+            )}
+          </div>
+        </div>
+      </main>
+
+      {/* ALL MODALS AND DRESSERS */}
       <div className="fixed top-1/2 right-0 transform -translate-y-1/2 z-30 hidden lg:block">
         <div className="bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg">
           <div className="flex flex-col">
             {drawerItems.map((item) => {
               const IconComponent = item.icon;
               const isActive = activeDrawer === item.id;
-              
               return (
                 <button
                   key={item.id}
                   onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
-                  className={`
-                    group relative p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200
-                    ${isActive 
-                      ? 'bg-blue-50 text-blue-600 border-r-3 border-r-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }
-                  `}
+                  className={`group relative p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200 ${isActive ? 'bg-blue-50 text-blue-600 border-r-3 border-r-blue-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                   title={item.title}
                   aria-label={item.title}
                 >
                   <IconComponent className="h-5 w-5" />
-                  
                   {!isActive && (
                     <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
                       <div className="bg-gray-900 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap shadow-lg">
@@ -572,8 +526,6 @@ const AuthenticCalendar: React.FC = () => {
           </div>
         </div>
       </div>
-
-      {/* GLOBAL FLOATING DRESSER - Mobile Expandable Stack */}
       <div className="fixed bottom-4 right-4 z-30 lg:hidden">
         {!mobileNavExpanded ? (
           <button
@@ -592,22 +544,14 @@ const AuthenticCalendar: React.FC = () => {
             >
               <X className="h-5 w-5" />
             </button>
-            
             {drawerItems.map((item) => {
               const IconComponent = item.icon;
               const isActive = activeDrawer === item.id;
-              
               return (
                 <button
                   key={item.id}
                   onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
-                  className={`
-                    flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-colors
-                    ${isActive 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                    }
-                  `}
+                  className={`flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
                   title={item.title}
                   aria-label={item.title}
                 >
@@ -618,8 +562,6 @@ const AuthenticCalendar: React.FC = () => {
           </div>
         )}
       </div>
-      
-      {/* GLOBAL FLOATING DRESSER - Drawer Content */}
       <AnimatePresence>
         {activeDrawer && (
           <motion.div
@@ -642,7 +584,6 @@ const AuthenticCalendar: React.FC = () => {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              
               <div className="flex-1 overflow-y-auto">
                 {ActiveDrawerComponent && (
                   <div className="p-4">
@@ -654,8 +595,6 @@ const AuthenticCalendar: React.FC = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* TaskEventForm Modal */}
       {showTaskTypeMenu && (
         <>
           <div 
@@ -668,39 +607,25 @@ const AuthenticCalendar: React.FC = () => {
           >
             <button
               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
-              onClick={() => {
-                setTaskType('event');
-                setShowTaskTypeMenu(false);
-                setShowTaskEventForm(true);
-              }}
+              onClick={() => { setTaskType('event'); setShowTaskTypeMenu(false); setShowTaskEventForm(true); }}
             >
               Event
             </button>
             <button
               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
-              onClick={() => {
-                setTaskType('task');
-                setShowTaskTypeMenu(false);
-                setShowTaskEventForm(true);
-              }}
+              onClick={() => { setTaskType('task'); setShowTaskTypeMenu(false); setShowTaskEventForm(true); }}
             >
               Task
             </button>
             <button
               className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
-              onClick={() => {
-                setTaskType('depositIdea');
-                setShowTaskTypeMenu(false);
-                setShowTaskEventForm(true);
-              }}
+              onClick={() => { setTaskType('depositIdea'); setShowTaskTypeMenu(false); setShowTaskEventForm(true); }}
             >
               Deposit Idea
             </button>
           </div>
         </>
       )}
-
-      {/* Task/Event Form Modal */}
       {showTaskEventForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl">
@@ -713,7 +638,6 @@ const AuthenticCalendar: React.FC = () => {
           </div>
         </div>
       )}
+    </div>
   );
-};
-
 export default AuthenticCalendar;
