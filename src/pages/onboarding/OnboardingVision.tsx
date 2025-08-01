@@ -23,13 +23,13 @@ const OnboardingVision: React.FC = () => {
         if (user) {
           // Save vision statement to Supabase
           const { error } = await supabase
-            .from('0007-ap-onboarding_responses')
+            .from('0007-ap-users')
             .upsert({
               user_id: user.id,
-              vision_statement: vision.trim(),
+              vision: vision.trim(),
               updated_at: new Date().toISOString()
             }, {
-              onConflict: 'user_id'
+              .eq('id', user.id); // Change 'id' if your PK is named differently
             });
           
           if (error) {
