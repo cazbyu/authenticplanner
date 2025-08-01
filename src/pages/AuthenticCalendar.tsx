@@ -502,7 +502,6 @@ rounded-full bg-primary-100 text-primary-600">
 <div className="h-full flex flex-col">
   {/* Mini-Calendar Section */}
   <div className="p-3 border-b border-gray-200">
-  // ✨ PASTE THIS NEW BLOCK
 <div className="flex items-center justify-between mb-2">
     <div className="w-5"></div> {/* Spacer to balance the button on the right */}
 
