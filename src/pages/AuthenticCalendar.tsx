@@ -523,7 +523,7 @@ rounded-full bg-primary-100 text-primary-600">
     <img
         src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
         alt="Collapse menu"
-        className="h-5 w-5"
+        className="h-3 w-3"
     />
 </button>
 </div>
