@@ -521,7 +521,7 @@ rounded-full bg-primary-100 text-primary-600">
       </button>
     </div>
     {/* The Calendar Itself */}
-    *<Calendar
+    <Calendar
       value={miniSelectedDate}
       onChange={(value) => {
         const date = value as Date;
