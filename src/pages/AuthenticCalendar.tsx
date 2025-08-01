@@ -640,4 +640,5 @@ const AuthenticCalendar: React.FC = () => {
       )}
     </div>
   );
+};
 export default AuthenticCalendar;
