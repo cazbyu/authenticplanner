@@ -469,14 +469,15 @@ const AuthenticCalendar: React.FC = () => {
         {/* Calendar/Task Quadrant View */}
         <div className="flex-1 flex flex-col relative">
           {!sidebarOpen && activeView === 'calendar' && (
-            <button
-              onClick={() => setSidebarOpen(true)}
-              className="absolute top-16 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
-              title="Show Unscheduled Priorities"
-            >
-              <img src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png" alt="Show menu" className="h-5 w-5" />
-            </button>
-          )}
+  <button
+    onClick={() => setSidebarOpen(true)}
+    className="absolute top-4 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
+    title="Show Unscheduled Priorities"
+  >
+    <img src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png" alt="Show menu" className="h-5 w-5" />
+  </button>
+)}
+
           <div className="flex-1 overflow-hidden">
             {activeView === 'calendar' ? (
               <CalendarView
