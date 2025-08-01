@@ -274,7 +274,7 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
     }}
     activeStartDate={miniCalendarActiveStartDate}
     onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
-    calendarType="US"
+    calendarType="gregory"
     tileClassName={({ date, view }) =>
       date.toDateString() === new Date().toDateString() ? "bg-blue-100" : ""
     }
