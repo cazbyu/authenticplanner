@@ -240,7 +240,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
           data-task-id={task.id}
           draggable="true"
           onClick={() => setEditingTask(task)}
-          className="flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm hover:bg-blue-50 cursor-pointer"
+          className="flex items-center bg-white border border-gray-200 rounded-md px-2 py-1 shadow-sm hover:bg-blue-50 cursor-pointer text-sm"
         >
           <span className="text-gray-600 font-medium flex-1 truncate">
             {idx + 1}. {task.title}
