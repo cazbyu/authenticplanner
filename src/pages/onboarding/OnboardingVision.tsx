@@ -14,36 +14,35 @@ const OnboardingVision: React.FC = () => {
   const [saving, setSaving] = useState(false);
   
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (vision.trim()) {
-      setSaving(true);
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          // Save vision statement to Supabase
-          const { error } = await supabase
-  .from('0007-ap-users')
-  .update({
-    vision: vision.trim(),
-    updated_at: new Date().toISOString()
-  })
-  .eq('id', user.id); // Change 'id' if your PK is named differently
-            });
-          
-          if (error) {
-            console.error('Error saving vision statement:', error);
-          }
+  e.preventDefault();
+
+  if (vision.trim()) {
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { error } = await supabase
+          .from('0007-ap-users')
+          .update({
+            vision: vision.trim(),
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+
+        if (error) {
+          console.error('Error saving vision statement:', error);
         }
-      } catch (err) {
-        console.error('Error saving vision statement:', err);
-      } finally {
-        setSaving(false);
       }
+    } catch (err) {
+      console.error('Error saving vision statement:', err);
+    } finally {
+      setSaving(false);
     }
-    
-    goToNextStep();
-  };
+  }
+
+  goToNextStep();
+};
+
 
   const handleSkip = () => {
     goToNextStep();
