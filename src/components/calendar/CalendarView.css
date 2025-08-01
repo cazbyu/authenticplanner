@@ -222,7 +222,7 @@
 
 .react-calendar-borderless .react-calendar__tile {
   border-radius: 9999px; /* Make the day tiles circular */
-  padding: 0.3rem 0;   /* ✨ ADD THIS LINE */
+  padding: 0.2rem 0;   /* ✨ ADD THIS LINE */
   line-height: 1.2;
 }
 
