@@ -229,6 +229,58 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
     <>
       <div className="h-full flex flex-col overflow-visible" style={{ minHeight: '100%' }}>
         <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin space-y-4" style={{ height: '100%', overflowY: 'auto' }}>
+
+    <div className="mb-3 flex flex-col items-center">
+  <div className="flex items-center mb-1">
+    <button
+      className="px-2 py-1 rounded hover:bg-gray-200"
+      onClick={() => {
+        const prev = new Date(miniCalendarActiveStartDate);
+        prev.setMonth(prev.getMonth() - 1);
+        setMiniCalendarActiveStartDate(prev);
+        if (calendarRef?.current) {
+          calendarRef.current.getApi().prev();
+        }
+      }}
+      aria-label="Previous Month"
+    >
+      &#8592;
+    </button>
+    <span className="mx-3 font-semibold text-sm">
+      {miniCalendarActiveStartDate.toLocaleString("default", { month: "long", year: "numeric" })}
+    </span>
+    <button
+      className="px-2 py-1 rounded hover:bg-gray-200"
+      onClick={() => {
+        const next = new Date(miniCalendarActiveStartDate);
+        next.setMonth(next.getMonth() + 1);
+        setMiniCalendarActiveStartDate(next);
+        if (calendarRef?.current) {
+          calendarRef.current.getApi().next();
+        }
+      }}
+      aria-label="Next Month"
+    >
+      &#8594;
+    </button>
+  </div>
+  <Calendar
+    value={miniSelectedDate}
+    onChange={(date) => {
+      setMiniSelectedDate(date as Date);
+      if (calendarRef?.current) {
+        calendarRef.current.getApi().gotoDate(date as Date);
+      }
+    }}
+    activeStartDate={miniCalendarActiveStartDate}
+    onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
+    calendarType="US"
+    tileClassName={({ date, view }) =>
+      date.toDateString() === new Date().toDateString() ? "bg-blue-100" : ""
+    }
+  />
+</div>
+      
           
 <h2 className="text-lg font-bold text-gray-800 mb-2">Your Priorities</h2>
 {loading ? (
