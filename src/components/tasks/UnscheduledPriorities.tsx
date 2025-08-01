@@ -122,6 +122,10 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
 
+ // Internal state for mini-calendar
+const [miniSelectedDate, setMiniSelectedDate] = useState(new Date());
+const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(new Date());
+ 
   // Internal state for collapsing sections
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
     'urgent-important': false,
