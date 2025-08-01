@@ -42,22 +42,23 @@ const OnboardingGoals: React.FC = () => {
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           // Delete existing one-year goals for this user
-          await supabase
-            .from('0007-ap-onboarding_goals')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('goal_type', 'one_year');
-          
-          // Insert new one-year goals
-          const goalInserts = validGoals.map(goal => ({
-            user_id: user.id,
-            goal_text: goal.trim(),
-            goal_type: 'one_year'
-          }));
-          
-          const { error } = await supabase
-            .from('0007-ap-onboarding_goals')
-            .insert(goalInserts);
+          // Delete old goals for this user
+await supabase
+  .from('0007-ap-goals-1y')
+  .delete()
+  .eq('user_id', user.id);
+
+// Insert new goals for this user
+const goalInserts = validGoals.map(goal => ({
+  user_id: user.id,
+  goal_text: goal.trim(),
+  // You can drop 'goal_type' since this table is just for 1-year goals
+}));
+
+const { error } = await supabase
+  .from('0007-ap-goals-1y')
+  .insert(goalInserts);
+
           
           if (error) {
             console.error('Error saving goals:', error);
