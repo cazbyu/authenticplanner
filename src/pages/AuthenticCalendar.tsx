@@ -11,8 +11,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { FullCalendar } from '@fullcalendar/core';
 import logo from '../assets/logo.svg';
 import { supabase } from '../supabaseClient';
-
-
+import Calendar from "react-calendar";
+import "react-calendar/dist/Calendar.css";
 
 // Import drawer content components
 import RoleBank from '../components/roles/RoleBank';
