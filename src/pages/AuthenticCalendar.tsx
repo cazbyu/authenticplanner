@@ -327,14 +327,7 @@ const AuthenticCalendar: React.FC = () => {
         <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
           {/* Left Section */}
           <div className="flex items-center space-x-4">
-            <button
-              onClick={toggleMainSidebar}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors lg:hidden"
-              aria-label="Toggle main menu"
-            >
-              <Menu className="h-5 w-5 text-gray-600" />
-            </button>
-
+            
             {/* View Toggle */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
