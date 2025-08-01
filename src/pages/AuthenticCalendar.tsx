@@ -567,7 +567,7 @@ rounded-full bg-primary-100 text-primary-600">
           )}
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-relative">
             {/* Show sidebar toggle when closed */}
 *{!sidebarOpen && activeView === 'calendar' && (
     <div className="p-2 border-b border-gray-200 bg-white">
