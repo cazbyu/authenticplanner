@@ -13,6 +13,9 @@ import logo from '../assets/logo.svg';
 import { supabase } from '../supabaseClient';
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
+import { Menu } from "lucide-react";  // Make sure you have this import for the icon
+import { AnimatePresence, motion } from "framer-motion";
+
 
 // Import drawer content components
 import RoleBank from '../components/roles/RoleBank';
