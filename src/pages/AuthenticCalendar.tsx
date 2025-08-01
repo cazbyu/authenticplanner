@@ -567,21 +567,9 @@ rounded-full bg-primary-100 text-primary-600">
           )}
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-relative">
             {/* Show sidebar toggle when closed */}
-            {!sidebarOpen && activeView === 'calendar' && (
-              <div className="p-2 border-b border-gray-200 bg-white">
-                <button
-                  onClick={() => setSidebarOpen(true)}
-                  className="flex items-center space-x-2 px-3 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors"
-                  title="Show unscheduled priorities"
-                >
-                  <ChevronRight className="h-4 w-4" />
-                  <span>Show Unscheduled Priorities</span>
-                </button>
-              </div>
-            )}
-            
+                        
             {/* Content */}
             <div className="flex-1 overflow-hidden">
               {activeView === 'calendar' ? (
