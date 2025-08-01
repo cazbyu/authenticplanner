@@ -324,13 +324,7 @@ const AuthenticCalendar: React.FC = () => {
       </AnimatePresence>
 
       {/* Main Sidebar */}
-      *<motion.aside
-        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:z-10 lg:shadow-none lg:static lg:translate-x-0"
-        initial="closed"
-        animate={mainSidebarOpen ? 'open' : 'closed'}
-        variants={sidebarVariants}
-      >
-
+      
       {/* Main Content Area */}
       <div className="lg:pl-64">
         {/* Header */}
