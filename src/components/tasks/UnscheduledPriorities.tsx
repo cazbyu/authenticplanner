@@ -274,10 +274,10 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
     }}
     activeStartDate={miniCalendarActiveStartDate}
     onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
-    calendarType="gregory"
     tileClassName={({ date, view }) =>
       date.toDateString() === new Date().toDateString() ? "bg-blue-100" : ""
     }
+    formatShortWeekday={(locale, date) => ["S", "M", "T", "W", "T", "F", "S"][date.getDay()]}
   />
 </div>
                 
