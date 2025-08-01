@@ -502,25 +502,31 @@ rounded-full bg-primary-100 text-primary-600">
 <div className="h-full flex flex-col">
   {/* Mini-Calendar Section */}
   <div className="p-3 border-b border-gray-200">
-  <div className="flex items-center justify-between mb-2">
-    {/* Hamburger/Collapse Button */}
-    <button onClick={() => setSidebarOpen(false)} className="p-1 text-gray-500 hover:bg-gray-100 rounded-md" title="Close sidebar">
-        <Menu className="h-5 w-5" />
-    </button>
+  // ✨ PASTE THIS NEW BLOCK
+<div className="flex items-center justify-between mb-2">
+    <div className="w-5"></div> {/* Spacer to balance the button on the right */}
 
     {/* Centered Calendar Navigation */}
     <div className="flex items-center space-x-1">
         <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const p = new Date(d); p.setMonth(p.getMonth() - 1); return p; })} aria-label="Previous Month">
-        <ChevronLeft className="h-4 w-4 text-gray-600" />
+            <ChevronLeft className="h-4 w-4 text-gray-600" />
         </button>
         <span className="font-semibold text-xs text-gray-700 w-24 text-center">
-        {miniCalendarActiveStartDate.toLocaleString("default", { month: "long", year: "numeric" })}
+            {miniCalendarActiveStartDate.toLocaleString("default", { month: "long", year: "numeric" })}
         </span>
         <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const n = new Date(d); n.setMonth(n.getMonth() + 1); return n; })} aria-label="Next Month">
-        <ChevronRight className="h-4 w-4 text-gray-600" />
+            <ChevronRight className="h-4 w-4 text-gray-600" />
         </button>
     </div>
-    <div className="w-5"></div> {/* Spacer to balance the hamburger icon */}
+
+{/* Collapse Button with your custom image icon */}
+<button onClick={() => setSidebarOpen(false)} className="p-1 text-gray-500 hover:bg-gray-100 rounded-md" title="Close sidebar">
+    <img
+        src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
+        alt="Collapse menu"
+        className="h-5 w-5"
+    />
+</button>
 </div>
     {/* The Calendar Itself */}
     <Calendar
