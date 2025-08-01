@@ -498,7 +498,7 @@ rounded-full bg-primary-100 text-primary-600">
               className="border-r border-gray-200 bg-white flex-shrink-0 relative"
               style={{ width: `${sidebarWidth}px` }}
             >
-              // ✨ PASTE THIS NEW CODE BLOCK
+
 <div className="h-full flex flex-col">
   {/* Mini-Calendar Section */}
   <div className="p-3 border-b border-gray-200">
