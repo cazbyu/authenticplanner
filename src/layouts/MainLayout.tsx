@@ -352,7 +352,7 @@ const MainLayout: React.FC = () => {
       </AnimatePresence>
       
       {/* Main content */}
-      <main className="main-layout lg:pl-64 flex-1 flex flex-col min-h-0 h-full overflow-hidden">
+<main className={`main-layout ${!isCalendarPage ? 'lg:pl-64' : ''} flex-1 flex flex-col min-h-0 h-full overflow-hidden`}>
         <div className="flex-1 overflow-y-auto">
         <Outlet />
         </div>
