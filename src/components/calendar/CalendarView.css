@@ -207,3 +207,32 @@
 .fc-timegrid-now-indicator-container {
   z-index: 40 !important;
 }
+/* ✨ ADD THIS CSS AT THE END OF THE FILE */
+
+/* Style for the borderless mini-calendar in the sidebar */
+.react-calendar-borderless {
+  border: none !important;
+  width: 100%;
+}
+
+.react-calendar-borderless .react-calendar__navigation {
+  margin-bottom: 0;
+}
+
+.react-calendar-borderless .react-calendar__tile {
+  border-radius: 9999px; /* Make the day tiles circular */
+}
+
+.react-calendar-borderless .react-calendar__tile:enabled:hover,
+.react-calendar-borderless .react-calendar__tile:enabled:focus {
+  background-color: #f3f4f6; /* gray-100 */
+}
+
+.react-calendar-borderless .react-calendar__tile--now {
+  background: #dbeafe; /* blue-100 */
+}
+
+.react-calendar-borderless .react-calendar__tile--active {
+  background: #3b82f6; /* blue-500 */
+  color: white;
+}
