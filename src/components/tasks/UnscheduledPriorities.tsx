@@ -47,22 +47,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
 
-  // Internal state for collapsing sections
-  const [collapsedQuadrants, setCollapsedQuadrants] = useState({
-    'urgent-important': false,
-    'not-urgent-important': false,
-    'urgent-not-important': false,
-    'not-urgent-not-important': false,
-  });
-
-  // Internal function to toggle sections
-  const toggleQuadrant = (quadrantId: string) => {
-    setCollapsedQuadrants(prev => ({
-      ...prev,
-      [quadrantId]: !prev[quadrantId as keyof typeof prev],
-    }));
-  };
-  
+    
   const handleTaskEdit = (task: Task) => {
     setEditingTask(task);
   };
