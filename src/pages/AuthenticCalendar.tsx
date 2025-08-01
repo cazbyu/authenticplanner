@@ -521,7 +521,7 @@ rounded-full bg-primary-100 text-primary-600">
       </button>
     </div>
     {/* The Calendar Itself */}
-    <Calendar
+    *<Calendar
       value={miniSelectedDate}
       onChange={(value) => {
         const date = value as Date;
@@ -534,6 +534,7 @@ rounded-full bg-primary-100 text-primary-600">
       onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
       className="react-calendar-borderless"
       formatShortWeekday={(locale, date) => date.toLocaleDateString(locale, { weekday: 'narrow' })}
+       showNavigation={false}
     />
   </div>
 
