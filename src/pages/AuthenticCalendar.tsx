@@ -57,7 +57,6 @@ const AuthenticCalendar: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isViewChanging, setIsViewChanging] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'priorities'>('calendar');
@@ -205,10 +204,7 @@ const AuthenticCalendar: React.FC = () => {
     };
   }, [resizing]);
 
-  const toggleMainSidebar = () => setMainSidebarOpen(!mainSidebarOpen);
-  const closeMainSidebar = () => setMainSidebarOpen(false);
-
-  const handleDrawerSelect = (drawer: typeof activeDrawer) => {
+   const handleDrawerSelect = (drawer: typeof activeDrawer) => {
     if (activeDrawer === drawer) {
       // If clicking the same drawer, close it
       setActiveDrawer(null);
@@ -326,7 +322,7 @@ const AuthenticCalendar: React.FC = () => {
       {/* Main Sidebar */}
       
       {/* Main Content Area */}
-      <div className="lg:pl-64">
+      
         {/* Header */}
         <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
           {/* Left Section */}
@@ -724,7 +720,6 @@ const AuthenticCalendar: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
   );
 };
 
