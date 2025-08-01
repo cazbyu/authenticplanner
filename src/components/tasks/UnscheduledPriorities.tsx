@@ -224,69 +224,33 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
       <div className="h-full flex flex-col overflow-visible" style={{ minHeight: '100%' }}>
         <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin space-y-4" style={{ height: '100%', overflowY: 'auto' }}>
           
-          <QuadrantSection
-            id="urgent-important"
-            title="Urgent & Important"
-            tasks={categorizedTasks.urgentImportant}
-            bgColor="bg-red-500"
-            borderColor="border-l-red-500"
-            textColor="text-white"
-            icon={<AlertTriangle className="h-3 w-3 flex-shrink-0" />}
-            isCollapsed={collapsedQuadrants['urgent-important']}
-            onToggle={toggleQuadrant}
-            onTaskCardClick={handleTaskEdit}
-            roles={roles}
-            domains={domains}
-            handleTaskAction={handleTaskAction}
-          />
-
-          <QuadrantSection
-            id="not-urgent-important"
-            title="Not Urgent & Important"
-            tasks={categorizedTasks.notUrgentImportant}
-            bgColor="bg-green-500"
-            borderColor="border-l-green-500"
-            textColor="text-white"
-            icon={<Check className="h-3 w-3 flex-shrink-0" />}
-            isCollapsed={collapsedQuadrants['not-urgent-important']}
-            onToggle={toggleQuadrant}
-            onTaskCardClick={handleTaskEdit}
-            roles={roles}
-            domains={domains}
-            handleTaskAction={handleTaskAction}
-          />
+<h2 className="text-lg font-bold text-gray-800 mb-2">Your Priorities</h2>
+{loading ? (
+  <div className="flex h-32 items-center justify-center">
+    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
+  </div>
+) : (
+  tasks.length === 0 ? (
+    <p className="text-gray-500 italic text-center py-6">No unscheduled tasks.</p>
+  ) : (
+    <ul className="space-y-1">
+      {tasks.map((task, idx) => (
+        <li
+          key={task.id}
+          data-task-id={task.id}
+          draggable="true"
+          onClick={() => setEditingTask(task)}
+          className="flex items-center bg-white border border-gray-200 rounded-lg px-3 py-2 shadow-sm hover:bg-blue-50 cursor-pointer"
+        >
+          <span className="text-gray-600 font-medium flex-1 truncate">
+            {idx + 1}. {task.title}
+          </span>
+        </li>
+      ))}
+    </ul>
+  )
+)}
           
-          <QuadrantSection
-            id="urgent-not-important"
-            title="Urgent & Not Important"
-            tasks={categorizedTasks.urgentNotImportant}
-            bgColor="bg-orange-500"
-            borderColor="border-l-orange-500"
-            textColor="text-white"
-            icon={<Clock className="h-3 w-3 flex-shrink-0" />}
-            isCollapsed={collapsedQuadrants['urgent-not-important']}
-            onToggle={toggleQuadrant}
-            onTaskCardClick={handleTaskEdit}
-            roles={roles}
-            domains={domains}
-            handleTaskAction={handleTaskAction}
-          />
-
-          <QuadrantSection
-            id="not-urgent-not-important"
-            title="Not Urgent & Not Important"
-            tasks={categorizedTasks.notUrgentNotImportant}
-            bgColor="bg-gray-500"
-            borderColor="border-l-gray-500"
-            textColor="text-white"
-            icon={<X className="h-3 w-3 flex-shrink-0" />}
-            isCollapsed={collapsedQuadrants['not-urgent-not-important']}
-            onToggle={toggleQuadrant}
-            onTaskCardClick={handleTaskEdit}
-            roles={roles}
-            domains={domains}
-            handleTaskAction={handleTaskAction}
-          />
         </div>
 
         {editingTask && (
