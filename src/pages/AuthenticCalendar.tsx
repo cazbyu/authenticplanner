@@ -449,13 +449,13 @@ rounded-full bg-primary-100 text-primary-600">
                     onClick={handlePrevious}
                     className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
                   >
-                    <ChevronLeft className="h-4 w-4 text-gray-600" />
+                    <ChevronLeft className="h-3 w-3 text-gray-600" />
                   </button>
                   <button
                     onClick={handleNext}
                     className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
                   >
-                    <ChevronRight className="h-4 w-4 text-gray-600" />
+                    <ChevronRight className="h-3 w-3 text-gray-600" />
                   </button>
                 </div>
 
