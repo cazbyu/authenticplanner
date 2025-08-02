@@ -506,10 +506,10 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl mx-4">
             <TaskEventForm
-  mode="edit"
-  initialData={formatTaskForForm(task)} // or your normalization function
-  onClose={() => setEditingTask(null)}
-  onSubmitSuccess={handleTaskUpdated}
+                mode="edit"
+                initialData={formatTaskForForm(task)} 
+                onClose={() => setEditingTask(null)}
+                onSubmitSuccess={handleTaskUpdated}
 />
 
           </div>
