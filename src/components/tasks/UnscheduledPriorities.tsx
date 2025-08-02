@@ -55,8 +55,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
   const handleTaskUpdated = () => {
     setEditingTask(null);
     // Refresh tasks after update
-    window.location.reload(); // Simple refresh for now
-  };
+      };
 
   const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
     if (action === 'delegate') {
