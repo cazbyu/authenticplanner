@@ -2,8 +2,10 @@ import React, { useState, useRef } from 'react';
 import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
+import TaskEventForm from '../tasks/TaskEventForm';
 import EditTask from './EditTask';
 import DelegateTaskModal from './DelegateTaskModal';
+
 
 // Helper Interfaces
 interface Task {
