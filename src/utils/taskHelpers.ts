@@ -48,7 +48,12 @@ export function formatTaskForForm(task: any) {
     selectedKeyRelationshipIds:
       (task.selectedKeyRelationshipIds) ||
       (task.task_key_relationships?.map(kr => kr.key_relationship_id)) || [],
-    schedulingType: task.schedulingType || 'task',
+    schedulingType:
+  task.schedulingType ||
+  task.type || // If your DB has a "type" field
+  (task.is_authentic_deposit ? "depositIdea" : undefined) ||
+  (task.is_event ? "event" : undefined) ||
+  "task",
     weekNumber: task.weekNumber, // Optional, mostly for 12-week context
     cycleStartDate: task.cycleStartDate, // Optional
     isFromDepositIdea: !!task.isFromDepositIdea, // For deposit idea -> task conversion
