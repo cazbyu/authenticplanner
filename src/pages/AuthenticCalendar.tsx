@@ -408,6 +408,12 @@ rounded-full bg-primary-100 text-primary-600">
               <Menu className="h-5 w-5 text-gray-600" />
             </button>
 
+            
+         </div>
+
+          {/* Right Section */}
+          <div className="flex items-center space-x-2">
+
             {/* View Toggle */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
@@ -433,10 +439,6 @@ rounded-full bg-primary-100 text-primary-600">
                 <CheckSquare className="h-5 w-5" />
               </button>
             </div>
-         </div>
-
-          {/* Right Section */}
-          <div className="flex items-center space-x-2">
 
          {/* Calendar Controls - Only show for calendar view */}
 {activeView === 'calendar' && (
