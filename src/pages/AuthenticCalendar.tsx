@@ -433,14 +433,12 @@ rounded-full bg-primary-100 text-primary-600">
                 <CheckSquare className="h-5 w-5" />
               </button>
             </div>
-
-            {/* Calendar Controls - Only show for calendar view */}
-            
-          </div>
+         </div>
 
           {/* Right Section */}
           <div className="flex items-center space-x-2">
 
+         {/* Calendar Controls - Only show for calendar view */}
 {activeView === 'calendar' && (
               <>
                 {/* Date Navigation */}
