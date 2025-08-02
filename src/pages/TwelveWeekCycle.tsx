@@ -5,7 +5,7 @@ import { Plus, Calendar, Target, Users, CheckCircle, X, Clock, AlertTriangle } f
 import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
 import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
 import TaskEventForm from '../components/tasks/TaskEventForm';
-import { formatTaskForForm } from '../../utils/taskHelpers'; 
+import { formatTaskForForm } from '../utils/taskHelpers'; 
 import { parseISO, format, addDays } from 'date-fns'; // at top
 
 interface TwelveWeekGoal {
