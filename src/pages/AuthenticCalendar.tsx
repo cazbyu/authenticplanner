@@ -555,7 +555,7 @@ rounded-full bg-primary-100 text-primary-600">
             {!sidebarOpen && activeView === 'calendar' && (
   <button
     onClick={() => setSidebarOpen(true)}
-    className="absolute top-16 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
+    className="absolute top-20 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
     title="Show Unscheduled Priorities"
   >
     <img
