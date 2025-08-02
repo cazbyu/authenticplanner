@@ -474,7 +474,7 @@ rounded-full bg-primary-100 text-primary-600">
                     <option value="timeGridWeek">Week View</option>
                     <option value="dayGridMonth">Month View</option>
                   </select>
-                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+                  <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none" />
                 </div>
               </>
             )}
@@ -494,7 +494,7 @@ rounded-full bg-primary-100 text-primary-600">
 
         {/* Main Content */}
         <main className="h-[calc(100vh-73px)] flex">
-          {/* Unscheduled Priorities Sidebar */}
+          {/* Your Priorities Sidebar */}
           {sidebarOpen && activeView === 'calendar' && (
             <div 
               ref={sidebarRef}
