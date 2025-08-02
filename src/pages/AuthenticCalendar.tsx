@@ -525,7 +525,7 @@ rounded-full bg-primary-100 text-primary-600">
   className="react-calendar-borderless"
   formatShortWeekday={(_, date) => date.toLocaleString('en-US', { weekday: 'narrow' })}
   showNavigation={false}
-  calendarType="US"
+  locale="en-US"
 />
 </div>
                 <div className="flex-1">
