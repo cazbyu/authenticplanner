@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
 import { Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp, Clock, AlertTriangle, UserPlus } from 'lucide-react';
 import { getSignedImageUrl } from '../../utils/imageHelpers';
 import TaskEventForm from '../tasks/TaskEventForm';
-import EditTask from '../tasks/EditTask';
+import { formatTaskForForm } from '../../utils/taskHelpers';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 
 interface KeyRelationship {
@@ -85,6 +85,8 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   // State for task management
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const memoizedInitialData = useMemo(() => formatTaskForForm(editingTask),
+  [editingTask]);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [taskViewMode, setTaskViewMode] = useState<'quadrant' | 'list'>('quadrant');
   const [taskSortBy, setTaskSortBy] = useState<'priority' | 'due_date' | 'completed'>('priority');
@@ -641,7 +643,20 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       )}
 
       {showAddTaskForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'task', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleTaskCreated} onClose={() => setShowAddTaskForm(false)} />}
-      {editingTask && <TaskEventForm mode="edit" initialData={{ id: editingTask.id, title: editingTask.title, schedulingType: 'task', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleTaskUpdated} onClose={() => setEditingTask(null)} />}
+      {editingTask && (
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="w-full max-w-2xl mx-4">
+      <TaskEventForm
+        key={editingTask.id || "editing"}
+        mode="edit"
+        initialData={memoizedInitialData}
+        onClose={() => setEditingTask(null)}
+        onSubmitSuccess={handleTaskUpdated}
+      />
+    </div>
+  </div>
+)}
+
       {delegatingTask && <DelegateTaskModal task={delegatingTask} onClose={() => setDelegatingTask(null)} onTaskUpdated={loadRelationshipData} />}
       {showAddDepositIdeaForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'depositIdea', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleDepositIdeaCreated} onClose={() => setShowAddDepositIdeaForm(false)} />}
       {editingDepositIdea && <TaskEventForm mode="edit" initialData={editingDepositIdea} onSubmitSuccess={handleDepositIdeaUpdated} onClose={() => setEditingDepositIdea(null)} />}
