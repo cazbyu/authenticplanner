@@ -166,8 +166,7 @@ const UnscheduledPriorities: React.FC<UnscheduledPrioritiesProps> = ({ tasks, se
                  initialData={formatTaskForForm(task)}
                  onClose={() => setEditingTask(null)}
                  onSubmitSuccess={handleTaskUpdated}
-/>
-
+                 />
             </div>
           </div>
         )}
