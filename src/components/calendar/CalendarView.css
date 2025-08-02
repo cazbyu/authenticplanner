@@ -207,12 +207,11 @@
 .fc-timegrid-now-indicator-container {
   z-index: 40 !important;
 }
-/* ✨ ADD THIS CSS AT THE END OF THE FILE */
 
 /* Style for the borderless mini-calendar in the sidebar */
 .react-calendar-borderless {
   border: none !important;
-  width: 100%;
+  width: 50%;
   font-size: 0.6rem;
 }
 
