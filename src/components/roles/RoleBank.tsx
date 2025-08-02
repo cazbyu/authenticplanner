@@ -4,8 +4,8 @@ import { ChevronLeft, UserPlus, Plus, Heart, Edit, Check, X, Clock, AlertTriangl
 import KeyRelationshipForm from './KeyRelationshipForm';
 import UnifiedKeyRelationshipCard from './UnifiedKeyRelationshipCard';
 import TaskEventForm from '../tasks/TaskEventForm';
+import { formatTaskForForm } from '../../utils/taskHelpers';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
-// import EditTask from '../tasks/EditTask'; // No longer needed
 import DepositIdeaCard from '../shared/DepositIdeaCard';
 import { toast } from "sonner";
 
@@ -610,26 +610,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     setEditingDepositIdea(fullIdeaData);
   };
   
-  // --- Helper to format task data for the form ---
-  const formatTaskForForm = (task: Task) => {
-    return {
-      id: task.id,
-      title: task.title,
-      schedulingType: 'task' as const,
-      dueDate: task.due_date || '',
-      startTime: '', // Tasks in this view are unscheduled
-      endTime: '',
-      notes: task.notes || '',
-      urgent: task.is_urgent,
-      important: task.is_important,
-      authenticDeposit: task.is_authentic_deposit,
-      twelveWeekGoalChecked: task.is_twelve_week_goal,
-      selectedRoleIds: task.task_roles?.map(r => r.role_id) || [],
-      selectedDomainIds: task.task_domains?.map(d => d.domain_id) || [],
-      selectedKeyRelationshipIds: task.task_key_relationships?.map(kr => kr.key_relationship_id) || [],
-    };
-  };
-
   // --- RENDER LOGIC ---
 
   if (selectedRole) {
