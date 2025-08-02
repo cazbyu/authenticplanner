@@ -3,6 +3,7 @@ import { supabase } from '../../supabaseClient';
 import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import TaskEventForm from '../tasks/TaskEventForm';
+import { formatTaskForForm } from '../../utils/taskHelpers'; 
 import DelegateTaskModal from './DelegateTaskModal';
 
 
