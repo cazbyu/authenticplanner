@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
 import { ChevronLeft, UserPlus, Plus, Heart, Edit, Check, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import KeyRelationshipForm from './KeyRelationshipForm';
@@ -73,6 +73,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [showTaskEventForm, setShowTaskEventForm] = useState(false);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const memoizedInitialData = useMemo(() => formatTaskForForm(editingTask),[editingTask]);
   const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
   const [editingDepositIdea, setEditingDepositIdea] = useState<any | null>(null);
   const [domains, setDomains] = useState<Record<string, Domain>>({});
@@ -741,13 +742,18 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         
         {/* MODIFIED: Use TaskEventForm for editing tasks */}
         {editingTask && (
-          <TaskEventForm
-            mode="edit"
-            initialData={formatTaskForForm(editingTask)}
-            onSubmitSuccess={handleTaskUpdated}
-            onClose={() => setEditingTask(null)}
-          />
-        )}
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="w-full max-w-2xl mx-4">
+      <TaskEventForm
+        key={editingTask.id || "editing"}
+        mode="edit"
+        initialData={memoizedInitialData}
+        onClose={() => setEditingTask(null)}
+        onSubmitSuccess={handleTaskUpdated}
+      />
+    </div>
+  </div>
+)}
         
         {delegatingTask && <DelegateTaskModal task={delegatingTask} onClose={() => setDelegatingTask(null)} onTaskDelegated={() => fetchRoleData(selectedRole.id)} />}
         {showRelationshipForm && <KeyRelationshipForm roleId={selectedRole.id} roleName={selectedRole.label} onClose={() => setShowRelationshipForm(false)} onRelationshipCreated={handleRelationshipSaved} />}
