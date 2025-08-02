@@ -239,6 +239,7 @@
   background: #3b82f6; /* blue-500 */
   color: white;
 }
-.react-calendar-borderless .react-calendar__month-view__days__day--neighboringMonth {
-  color: #4b5563; /* This is a neutral dark gray */
+/* Change weekend date color to black */
+.react-calendar-borderless .react-calendar__month-view__days__day--weekend {
+  color: #000000;
 }
