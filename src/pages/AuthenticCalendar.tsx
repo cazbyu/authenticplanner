@@ -499,19 +499,34 @@ rounded-full bg-primary-100 text-primary-600">
               style={{ width: `${sidebarWidth}px` }}
             >
               <div className="h-full flex flex-col">
-                <div className="p-4 border-b border-gray-200 flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-semibold text-gray-900">Unscheduled Priorities</h2>
-                    <p className="text-sm text-gray-600 mt-1">Drag tasks to calendar to schedule</p>
-                  </div>
-                  <button
-                    onClick={() => setSidebarOpen(false)} 
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
-                    title="Close sidebar"
-                  >
-                    <ChevronLeft className="h-4 w-4 text-gray-500" />
-                  </button>
-                </div>
+                <div className="p-3 border-b border-gray-200">
+  <div className="flex items-center justify-between mb-2">
+    <div className="w-5"></div> {/* Spacer */}
+    <div className="flex items-center space-x-1">
+      <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const p = new Date(d); p.setMonth(p.getMonth() - 1); return p; })}>
+        <ChevronLeft className="h-4 w-4 text-gray-600" />
+      </button>
+      <span className="font-semibold text-xs text-gray-700 w-24 text-center">
+        {miniCalendarActiveStartDate.toLocaleString("default", { month: "long", year: "numeric" })}
+      </span>
+      <button className="p-1 rounded-full hover:bg-gray-200" onClick={() => setMiniCalendarActiveStartDate(d => { const n = new Date(d); n.setMonth(n.getMonth() + 1); return n; })}>
+        <ChevronRight className="h-4 w-4 text-gray-600" />
+      </button>
+    </div>
+    <button onClick={() => setSidebarOpen(false)} className="p-1 text-gray-500 hover:bg-gray-100 rounded-md" title="Close sidebar">
+      <img src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png" alt="Collapse menu" className="h-4 w-4" />
+    </button>
+  </div>
+  <Calendar
+    value={miniSelectedDate}
+    onChange={(d) => { setMiniSelectedDate(d as Date); if (calendarRef.current) calendarRef.current.getApi().gotoDate(d as Date); }}
+    activeStartDate={miniCalendarActiveStartDate}
+    onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
+    className="react-calendar-borderless"
+    formatShortWeekday={(_, date) => date.toLocaleString('en-US', { weekday: 'narrow' })}
+    showNavigation={false}
+  />
+</div>
                 <div className="flex-1">
   <UnscheduledPriorities
     viewMode={sidebarOpen ? 'quadrant' : 'list'}
