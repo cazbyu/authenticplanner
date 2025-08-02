@@ -468,7 +468,7 @@ rounded-full bg-primary-100 text-primary-600">
                   <select
                     value={view}
                     onChange={(e) => handleViewChange(e.target.value as 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth')}
-                    className="appearance-none bg-white border border-gray-300 rounded-md px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                    className="appearance-none bg-white border border-gray-300 rounded-sm px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
                     <option value="timeGridDay">Day View</option>
                     <option value="timeGridWeek">Week View</option>
