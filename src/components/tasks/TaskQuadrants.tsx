@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Clock, User, Mail, X, CheckCircle, XCircle, Users, Calendar, Target, AlertTriangle, ChevronDown, ChevronUp, Check, UserPlus } from 'lucide-react';
 import { supabase } from '../../supabaseClient';
 import DelegateTaskModal from './DelegateTaskModal';
@@ -67,6 +67,10 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
   const [delegatedTasks, setDelegatedTasks] = useState<Task[]>([]);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const memoizedInitialData = useMemo(() => formatTaskForForm(editingTask),
+  [editingTask]
+);
+
   const [collapsedQuadrants, setCollapsedQuadrants] = useState({
     'urgent-important': false,
     'not-urgent-important': false,
@@ -503,17 +507,19 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
 
       {/* Edit Task Modal */}
       {editingTask && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="w-full max-w-2xl mx-4">
-            <TaskEventForm
-              mode="edit"
-              initialData={formatTaskForForm(editingTask)}
-              onClose={() => setEditingTask(null)}
-              onSubmitSuccess={handleTaskUpdated}
-               />
-              </div>
-           </div>
-          )}
+  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+    <div className="w-full max-w-2xl mx-4">
+      <TaskEventForm
+        key={editingTask.id || "editing"}
+        mode="edit"
+        initialData={memoizedInitialData}
+        onClose={() => setEditingTask(null)}
+        onSubmitSuccess={handleTaskUpdated}
+      />
+    </div>
+  </div>
+)}
+
         </div>
   );
 };
