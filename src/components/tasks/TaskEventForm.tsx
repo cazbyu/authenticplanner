@@ -82,6 +82,9 @@ const TaskEventForm: React.FC<TaskEventFormProps> = ({
     ...initialData,
   });
 
+console.log("TaskEventForm initialData", initialData);
+console.log("TaskEventForm form.schedulingType", form.schedulingType);
+  
  useEffect(() => {
   if (initialData) {
     setForm((prev) => ({
