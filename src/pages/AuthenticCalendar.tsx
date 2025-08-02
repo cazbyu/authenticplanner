@@ -435,7 +435,13 @@ rounded-full bg-primary-100 text-primary-600">
             </div>
 
             {/* Calendar Controls - Only show for calendar view */}
-            {activeView === 'calendar' && (
+            
+          </div>
+
+          {/* Right Section */}
+          <div className="flex items-center space-x-2">
+
+{activeView === 'calendar' && (
               <>
                 {/* Date Navigation */}
                 <div className="flex items-center space-x-1">
@@ -472,10 +478,7 @@ rounded-full bg-primary-100 text-primary-600">
                 </div>
               </>
             )}
-          </div>
-
-          {/* Right Section */}
-          <div className="flex items-center space-x-2">
+            
             <button
               onClick={(e) => {
                 const rect = e.currentTarget.getBoundingClientRect();
