@@ -518,14 +518,15 @@ rounded-full bg-primary-100 text-primary-600">
     </button>
   </div>
   <Calendar
-    value={miniSelectedDate}
-    onChange={(d) => { setMiniSelectedDate(d as Date); if (calendarRef.current) calendarRef.current.getApi().gotoDate(d as Date); }}
-    activeStartDate={miniCalendarActiveStartDate}
-    onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
-    className="react-calendar-borderless"
-    formatShortWeekday={(_, date) => date.toLocaleString('en-US', { weekday: 'narrow' })}
-    showNavigation={false}
-  />
+  value={miniSelectedDate}
+  onChange={(d) => { setMiniSelectedDate(d as Date); if (calendarRef.current) calendarRef.current.getApi().gotoDate(d as Date); }}
+  activeStartDate={miniCalendarActiveStartDate}
+  onActiveStartDateChange={({ activeStartDate }) => setMiniCalendarActiveStartDate(activeStartDate!)}
+  className="react-calendar-borderless"
+  formatShortWeekday={(_, date) => date.toLocaleString('en-US', { weekday: 'narrow' })}
+  showNavigation={false}
+  calendarType="US"
+/>
 </div>
                 <div className="flex-1">
   <UnscheduledPriorities
