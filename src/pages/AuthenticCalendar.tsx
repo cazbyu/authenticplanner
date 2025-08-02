@@ -62,7 +62,7 @@ const AuthenticCalendar: React.FC = () => {
   const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'priorities'>('calendar');
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [sidebarWidth, setSidebarWidth] = useState(280);
   const [resizing, setResizing] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [roles, setRoles] = useState<Record<string, Role>>({});
