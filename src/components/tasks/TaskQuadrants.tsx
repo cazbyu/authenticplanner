@@ -3,6 +3,7 @@ import { Clock, User, Mail, X, CheckCircle, XCircle, Users, Calendar, Target, Al
 import { supabase } from '../../supabaseClient';
 import DelegateTaskModal from './DelegateTaskModal';
 import TaskEventForm from '../tasks/TaskEventForm';
+import { formatTaskForForm } from '../../utils/taskHelpers';
 
 
 interface Task {
