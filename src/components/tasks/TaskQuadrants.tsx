@@ -510,12 +510,11 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
                 initialData={formatTaskForForm(task)} 
                 onClose={() => setEditingTask(null)}
                 onSubmitSuccess={handleTaskUpdated}
-/>
-
-          </div>
+                />
+              </div>
+           </div>
+          )}
         </div>
-      )}
-    </div>
   );
 };
 
