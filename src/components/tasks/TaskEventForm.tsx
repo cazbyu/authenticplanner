@@ -320,9 +320,7 @@ console.log("TaskEventForm form.schedulingType", form.schedulingType);
   }, [form.selectedRoleIds]);
 
    // ----- SUBMIT -----
-    import { upsertTaskEventAndJoins } from '../../services/taskEventService';
-
-const handleSubmit = async (e: React.FormEvent) => {
+   const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setLoading(true);
 
