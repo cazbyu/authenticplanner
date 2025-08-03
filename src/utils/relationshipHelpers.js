@@ -86,3 +86,20 @@ export const relationshipConfig = [
   },
   // Add more as needed...
 ];
+/**
+ * Generates rows for a join table.
+ * @param {string} type - relationship type (matches config above)
+ * @param {string} parentId - main entity ID (note_id, goal_id, etc.)
+ * @param {string[]} childIds - array of related IDs
+ * @param {string} userId - current user
+ * @returns {object[]} array of rows to insert
+ */
+export function generateJoinRows(type, parentId, childIds, userId) {
+  const config = relationshipConfig.find(r => r.type === type);
+  if (!config) throw new Error(`Unknown relationship type: ${type}`);
+  return childIds.map(childId => ({
+    [config.parentField]: parentId,
+    [config.childField]: childId,
+    user_id: userId,
+  }));
+}
