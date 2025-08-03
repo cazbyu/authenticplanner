@@ -5,6 +5,7 @@ import { format } from "date-fns";
 import { toast } from "sonner";
 import "react-datepicker/dist/react-datepicker.css";
 import { generateJoinRows } from '../../utils/relationshipHelpers';
+import { upsertTaskEventAndJoins } from '../../services/taskEventService';
 
 // ----- TYPES -----
 interface TaskEventFormProps {
@@ -319,93 +320,28 @@ console.log("TaskEventForm form.schedulingType", form.schedulingType);
   }, [form.selectedRoleIds]);
 
    // ----- SUBMIT -----
-    const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+    import { upsertTaskEventAndJoins } from '../../services/taskEventService';
 
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Not signed in");
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
 
-      // --- Deposit Idea Logic ---
-      if (form.schedulingType === "depositIdea") {
-        
-        const ideaId = mode === 'edit' ? form.id : null;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not signed in");
 
-        if (ideaId) {
-          // ---------- EDIT MODE (CORRECTED) ----------
-          const { error: updateError } = await supabase
-            .from("0007-ap-deposit-ideas")
-            .update({ title: form.title.trim() })
-            .eq('id', ideaId);
-          if (updateError) throw updateError;
-          
-          // --- Re-link Notes ---
-          // BUG FIX: Added user_id to the delete query to satisfy RLS
-          await supabase.from("0007-ap-note-deposit-ideas").delete().eq("user_id", user.id).eq("deposit_idea_id", ideaId);
-          if (form.notes.trim()) {
-            const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
-            if (noteData) {
-              await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: ideaId, note_id: noteData.id, user_id: user.id }]);
-            }
-          }
+    await upsertTaskEventAndJoins({ form, user, mode });
 
-          // --- Re-link Roles ---
-          // BUG FIX: Added user_id to the delete query to satisfy RLS
-          await supabase.from("0007-ap-roles-deposit-ideas").delete().eq("user_id", user.id).eq("deposit_idea_id", ideaId);
-          if (form.selectedRoleIds.length > 0) {
-            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: ideaId, role_id: roleId, user_id: user.id }));
-            await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
-          }
+    toast.success(mode === "edit" ? "Updated successfully!" : "Created successfully!");
+    onSubmitSuccess();
+    onClose();
+  } catch (err) {
+    toast.error("Error saving: " + (err instanceof Error ? err.message : String(err)));
+  } finally {
+    setLoading(false);
+  }
+};
 
-          // --- Re-link Domains ---
-          // BUG FIX: Added user_id to the delete query to satisfy RLS
-          await supabase.from("0007-ap-deposit-idea-domains").delete().eq("user_id", user.id).eq("deposit_idea_id", ideaId);
-          if (form.selectedDomainIds.length > 0) {
-            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: ideaId, domain_id: domainId, user_id: user.id }));
-            await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
-          }
-
-          // --- Re-link Key Relationships ---
-          // BUG FIX: Added user_id to the delete query to satisfy RLS
-          await supabase.from("0007-ap-deposit-idea-key-relationships").delete().eq("user_id", user.id).eq("deposit_idea_id", ideaId);
-          if (form.selectedKeyRelationshipIds.length > 0) {
-            const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: ideaId, key_relationship_id: krId, user_id: user.id }));
-            await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
-          }
-          
-          toast.success("Deposit idea updated successfully!");
-
-        } else {
-          // ---------- CREATE MODE (Already Correct) ----------
-          const { data: depositIdea, error: depositIdeaError } = await supabase
-            .from("0007-ap-deposit-ideas")
-            .insert([{ user_id: user.id, title: form.title.trim(), is_active: true }])
-            .select()
-            .single();
-          if (depositIdeaError || !depositIdea) throw new Error("Failed to create deposit idea: " + (depositIdeaError?.message || "Unknown error"));
-          const newIdeaId = depositIdea.id;
-          if (form.notes.trim()) {
-            const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
-            if (noteData) await supabase.from("0007-ap-note-deposit-ideas").insert([{ deposit_idea_id: newIdeaId, note_id: noteData.id, user_id: user.id }]);
-          }
-          if (form.selectedRoleIds.length > 0) {
-            const roleInserts = form.selectedRoleIds.map(roleId => ({ deposit_idea_id: newIdeaId, role_id: roleId, user_id: user.id }));
-            await supabase.from("0007-ap-roles-deposit-ideas").insert(roleInserts);
-          }
-          if (form.selectedDomainIds.length > 0) {
-            const domainInserts = form.selectedDomainIds.map(domainId => ({ deposit_idea_id: newIdeaId, domain_id: domainId, user_id: user.id }));
-            await supabase.from("0007-ap-deposit-idea-domains").insert(domainInserts);
-          }
-          if (form.selectedKeyRelationshipIds.length > 0) {
-             const krInserts = form.selectedKeyRelationshipIds.map(krId => ({ deposit_idea_id: newIdeaId, key_relationship_id: krId, user_id: user.id }));
-             await supabase.from("0007-ap-deposit-idea-key-relationships").insert(krInserts);
-          }
-          toast.success("Deposit idea created successfully!");
-        }
-
-        onSubmitSuccess();
-        onClose();
         return; // End execution for deposit ideas
       }
 
