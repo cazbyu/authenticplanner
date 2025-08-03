@@ -424,7 +424,7 @@ console.log("TaskEventForm form.schedulingType", form.schedulingType);
         status: 'pending',
       };
 
-      *let taskId = form.id;
+      let taskId = form.id;
       if (mode === "create") {
         const { data, error } = await supabase.from("0007-ap-tasks").insert([record]).select().single();
         if (error) throw error;
@@ -437,7 +437,7 @@ console.log("TaskEventForm form.schedulingType", form.schedulingType);
 
       if (!taskId) {
         throw new Error("Could not create or find task ID to update relations.");
-      }*
+      }
       
             // --- Link Notes for Tasks ---
       let noteId: string | null = null;
