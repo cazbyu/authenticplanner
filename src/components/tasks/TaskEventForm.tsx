@@ -4,7 +4,7 @@ import DatePicker from "react-datepicker";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import "react-datepicker/dist/react-datepicker.css";
-import { generateJoinRows } from '../utils/relationshipHelpers';
+import { generateJoinRows } from '../../utils/relationshipHelpers';
 
 // ----- TYPES -----
 interface TaskEventFormProps {
