@@ -424,7 +424,7 @@ console.log("TaskEventForm form.schedulingType", form.schedulingType);
         status: 'pending',
       };
 
-      let taskId = form.id;
+      *let taskId = form.id;
       if (mode === "create") {
         const { data, error } = await supabase.from("0007-ap-tasks").insert([record]).select().single();
         if (error) throw error;
@@ -437,36 +437,48 @@ console.log("TaskEventForm form.schedulingType", form.schedulingType);
 
       if (!taskId) {
         throw new Error("Could not create or find task ID to update relations.");
-      }
+      }*
       
-      // Link Notes for Tasks
+            // --- Link Notes for Tasks ---
+      let noteId: string | null = null;
       if (form.notes.trim()) {
-        const { data: noteData } = await supabase.from("0007-ap-notes").insert([{ user_id: user.id, content: form.notes.trim() }]).select().single();
+        const { data: noteData } = await supabase
+          .from("0007-ap-notes")
+          .insert([{ user_id: user.id, content: form.notes.trim() }])
+          .select()
+          .single();
         if (noteData) {
-          await supabase.from("0007-ap-task-notes").insert([{ task_id: taskId, note_id: noteData.id }]);
+          noteId = noteData.id;
+          // Clean up old joins if necessary (optional: only if editing)
+          await supabase.from("0007-ap-task-notes").delete().eq("task_id", taskId).eq("user_id", user.id);
+          await supabase.from("0007-ap-task-notes").insert([{ task_id: taskId, note_id: noteId, user_id: user.id }]);
         }
+      } else {
+        // No note content: consider cleaning up any old note joins if needed
+        await supabase.from("0007-ap-task-notes").delete().eq("task_id", taskId).eq("user_id", user.id);
       }
 
-      // Link Relations for Tasks
-      await supabase.from("0007-ap-task-roles").delete().eq("task_id", taskId);
-      if (form.selectedRoleIds.length > 0) {
-        await supabase.from("0007-ap-task-roles").insert(form.selectedRoleIds.map((roleId) => ({ task_id: taskId, role_id: roleId })));
-      }
-      
-      await supabase.from("0007-ap-task-domains").delete().eq("task_id", taskId);
-      if (form.selectedDomainIds.length > 0) {
-        await supabase.from("0007-ap-task-domains").insert(form.selectedDomainIds.map((domainId) => ({ task_id: taskId, domain_id: domainId })));
-      }
+      // --- Link Relations for Tasks with the Helper ---
+      // Remove old joins
+      await supabase.from("0007-ap-task-roles").delete().eq("task_id", taskId).eq("user_id", user.id);
+      await supabase.from("0007-ap-task-domains").delete().eq("task_id", taskId).eq("user_id", user.id);
+      await supabase.from("0007-ap-task-key-relationships").delete().eq("task_id", taskId).eq("user_id", user.id);
+      await supabase.from("0007-ap-task-12wkgoals").delete().eq("task_id", taskId).eq("user_id", user.id);
 
-      await supabase.from("0007-ap-task-key-relationships").delete().eq("task_id", taskId);
-      if (form.selectedKeyRelationshipIds.length > 0) {
-        await supabase.from("0007-ap-task-key-relationships").insert(form.selectedKeyRelationshipIds.map((krId) => ({ task_id: taskId, key_relationship_id: krId })));
-      }
+      // Insert new joins using helper
+      const taskRoleRows = generateJoinRows("task-role", taskId, form.selectedRoleIds, user.id);
+      if (taskRoleRows.length > 0) await supabase.from("0007-ap-task-roles").insert(taskRoleRows);
 
-      await supabase.from("0007-ap-task-12wkgoals").delete().eq("task_id", taskId);
-      if (form.twelveWeekGoalChecked && form.twelveWeekGoalId) {
-        await supabase.from("0007-ap-task-12wkgoals").insert({ goal_id: form.twelveWeekGoalId, task_id: taskId });
-      }
+      const taskDomainRows = generateJoinRows("task-domain", taskId, form.selectedDomainIds, user.id);
+      if (taskDomainRows.length > 0) await supabase.from("0007-ap-task-domains").insert(taskDomainRows);
+
+      const taskKRRows = generateJoinRows("task-key-relationship", taskId, form.selectedKeyRelationshipIds, user.id);
+      if (taskKRRows.length > 0) await supabase.from("0007-ap-task-key-relationships").insert(taskKRRows);
+
+      const taskGoalRows = form.twelveWeekGoalChecked && form.twelveWeekGoalId
+        ? generateJoinRows("task-12wkgoal", taskId, [form.twelveWeekGoalId], user.id)
+        : [];
+      if (taskGoalRows.length > 0) await supabase.from("0007-ap-task-12wkgoals").insert(taskGoalRows);
 
       onSubmitSuccess();
       onClose();
