@@ -452,6 +452,7 @@ const TwelveWeekCycle: React.FC = () => {
     setTasks(tasksWithJoins);
   } catch (error) {
     console.error('Error fetching tasks:', error);
+    console.log('TASKS WITH JOINS', tasksWithJoins);
   }
 };
 
