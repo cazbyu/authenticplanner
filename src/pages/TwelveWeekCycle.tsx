@@ -393,26 +393,40 @@ const TwelveWeekCycle: React.FC = () => {
   if (!user) return;
 
   try {
-    // 1. Fetch all universal goal joins for this user (for tasks)
-    const { data: goalJoins, error: goalJoinsError } = await supabase
+    // 1. Fetch all universal joins for this user (for tasks)
+    const { data: goalJoins } = await supabase
       .from('0007-ap-universal-goals-join')
       .select('goal_id, parent_id')
       .eq('user_id', user.id)
       .eq('parent_type', 'task');
 
-    if (goalJoinsError) {
-      console.error('Error fetching universal goal joins:', goalJoinsError);
-      return;
-    }
+    const { data: roleJoins } = await supabase
+      .from('0007-ap-universal-roles-join')
+      .select('role_id, parent_id')
+      .eq('user_id', user.id)
+      .eq('parent_type', 'task');
 
+    const { data: domainJoins } = await supabase
+      .from('0007-ap-universal-domains-join')
+      .select('domain_id, parent_id')
+      .eq('user_id', user.id)
+      .eq('parent_type', 'task');
+
+    const { data: noteJoins } = await supabase
+      .from('0007-ap-universal-notes-join')
+      .select('note_id, parent_id')
+      .eq('user_id', user.id)
+      .eq('parent_type', 'task');
+
+    // 2. Find all task IDs joined to a goal
     const joinedTaskIds = goalJoins?.map(gj => gj.parent_id) || [];
     if (joinedTaskIds.length === 0) {
       setTasks([]);
       return;
     }
 
-    // 2. Fetch all tasks for this user that are linked via universal join
-    const { data: tasksData, error: tasksError } = await supabase
+    // 3. Fetch all tasks for this user that are linked via universal goal join
+    const { data: tasksData } = await supabase
       .from('0007-ap-tasks')
       .select('*')
       .eq('user_id', user.id)
@@ -420,18 +434,27 @@ const TwelveWeekCycle: React.FC = () => {
       .in('status', ['pending', 'in_progress'])
       .order('created_at', { ascending: false });
 
-    if (tasksError) {
-      console.error('Error fetching tasks:', tasksError);
-      return;
-    }
-
-    // 3. Attach the universal join goal_id to each task
-    const tasksWithGoal = (tasksData || []).map(task => {
-      const matchingJoins = goalJoins.filter(gj => gj.parent_id === task.id);
+    // 4. Attach universal join fields to each task
+    const tasksWithJoins = (tasksData || []).map(task => {
+      const matchingGoalJoins = goalJoins?.filter(gj => gj.parent_id === task.id) || [];
+      const matchingRoleJoins = roleJoins?.filter(rj => rj.parent_id === task.id) || [];
+      const matchingDomainJoins = domainJoins?.filter(dj => dj.parent_id === task.id) || [];
+      const matchingNoteJoins = noteJoins?.filter(nj => nj.parent_id === task.id) || [];
       return {
         ...task,
-        universal_goal_ids: matchingJoins.map(j => j.goal_id),
+        universal_goal_ids: matchingGoalJoins.map(j => j.goal_id),
+        universal_role_ids: matchingRoleJoins.map(r => r.role_id),
+        universal_domain_ids: matchingDomainJoins.map(d => d.domain_id),
+        universal_note_ids: matchingNoteJoins.map(n => n.note_id),
       };
+    });
+
+    setTasks(tasksWithJoins);
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+  }
+};
+
     });
 
     setTasks(tasksWithGoal);
