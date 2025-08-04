@@ -153,6 +153,14 @@ const { data: noteJoins } = await supabase
   .eq('parent_type', 'task')
   .eq('user_id', user.id);
 
+      // Fetch universal key relationship joins
+const { data: keyRelationshipJoins } = await supabase
+  .from('0007-ap-universal-key-relationships-join')
+  .select('key_relationship_id')
+  .eq('parent_id', taskId)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+
 // Fetch actual note content if you want to display it
 let noteContent = '';
 if (noteJoins && noteJoins[0]?.note_id) {
