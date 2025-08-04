@@ -190,8 +190,6 @@ if (noteJoins && noteJoins[0]?.note_id) {
   selectedDomainIds: domainJoins?.map(d => d.domain_id) || [],
   selectedKeyRelationshipIds: keyRelationshipJoins?.map(k => k.key_relationship_id) || [],
   
-
-
 }));*
 
     } catch (error) {
