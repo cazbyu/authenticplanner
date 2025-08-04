@@ -16,37 +16,59 @@ export async function upsertTaskEventAndJoins({
   let tableName = form.schedulingType === "depositIdea" ? "0007-ap-deposit-ideas" : "0007-ap-tasks";
 
   // -------- Main Record --------
-  let mainRecord: any;
-  if (form.schedulingType === "depositIdea") {
-    mainRecord = {
-      user_id: user.id,
-      title: form.title,
-      is_active: true,
-      // Add more deposit idea fields as needed
-    };
-  } else {
-    mainRecord = {
-      user_id: user.id,
-      title: form.title,
-      due_date: form.dueDate || null,
-      start_time: form.dueDate && form.startTime
-        ? new Date(`${form.dueDate}T${form.startTime}:00`).toISOString()
-        : null,
-      end_time: form.schedulingType === "event" && form.dueDate && form.endTime
-        ? new Date(`${form.dueDate}T${form.endTime}:00`).toISOString()
-        : null,
-      is_all_day: form.isAllDay,
-      is_urgent: form.urgent || false,
-      is_important: form.important || false,
-      is_authentic_deposit: form.authenticDeposit || false,
-      is_twelve_week_goal: form.twelveWeekGoalChecked || false,
-      status: "pending",
-      type: form.schedulingType, // "task" or "event"
-      goal_12wk_id: form.twelveWeekGoalChecked ? form.twelveWeekGoalId : null,
-      goal_1y_id: form.oneYearGoalId || null,
-      // Add more task/event fields as needed
-    };
-  }
+ let mainRecord: any;
+if (form.schedulingType === "depositIdea") {
+  mainRecord = {
+    user_id: user.id,
+    title: form.title,
+    is_active: true,
+    // ...other fields as needed
+  };
+} else if (form.schedulingType === "event") {
+  mainRecord = {
+    user_id: user.id,
+    title: form.title,
+    due_date: form.dueDate || null,
+    start_time: form.dueDate && form.startTime
+      ? new Date(`${form.dueDate}T${form.startTime}:00`).toISOString()
+      : null,
+    end_time: form.dueDate && form.endTime
+      ? new Date(`${form.dueDate}T${form.endTime}:00`).toISOString()
+      : null,
+    is_all_day: form.isAllDay,
+    is_urgent: form.urgent || false,
+    is_important: form.important || false,
+    is_authentic_deposit: form.authenticDeposit || false,
+    is_twelve_week_goal: form.twelveWeekGoalChecked || false,
+    status: "pending",
+    type: "event",
+    goal_12wk_id: form.twelveWeekGoalChecked ? form.twelveWeekGoalId : null,
+    goal_1y_id: form.oneYearGoalId || null,
+    // ...other fields as needed
+  };
+} else {
+  // TASK: EXPLICITLY NULL OUT END TIME
+  mainRecord = {
+    user_id: user.id,
+    title: form.title,
+    due_date: form.dueDate || null,
+    start_time: form.dueDate && form.startTime
+      ? new Date(`${form.dueDate}T${form.startTime}:00`).toISOString()
+      : null,
+    end_time: null, // <---- THIS FORCES END TIME TO BE NULL FOR TASKS!
+    is_all_day: form.isAllDay,
+    is_urgent: form.urgent || false,
+    is_important: form.important || false,
+    is_authentic_deposit: form.authenticDeposit || false,
+    is_twelve_week_goal: form.twelveWeekGoalChecked || false,
+    status: "pending",
+    type: "task",
+    goal_12wk_id: form.twelveWeekGoalChecked ? form.twelveWeekGoalId : null,
+    goal_1y_id: form.oneYearGoalId || null,
+    // ...other fields as needed
+  };
+}
+
 
   // -------- Upsert Main Record --------
   if (mode === "create") {
