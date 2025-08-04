@@ -100,29 +100,30 @@ if (mainRecord.goal_12wk_id) {
 }
 
   // -------- Universal Notes Join --------
-  if (form.notes?.trim()) {
-    const { data: noteData } = await supabase
-      .from("0007-ap-notes")
-      .insert([{ user_id: user.id, content: form.notes.trim() }])
-      .select()
-      .single();
-    if (noteData) {
-      // Clean up old joins for this parent (optional, usually not needed for universal join, but safe)
-      await supabase.from("0007-ap-universal-notes-join")
-        .delete()
-        .eq("user_id", user.id)
-        .eq("parent_type", form.schedulingType)
-        .eq("parent_id", recordId);
+  // --- Always clean up old joins, then insert a note only if field is non-empty ---
+await supabase.from("0007-ap-universal-notes-join")
+  .delete()
+  .eq("user_id", user.id)
+  .eq("parent_type", form.schedulingType)
+  .eq("parent_id", recordId);
 
-      await supabase.from("0007-ap-universal-notes-join")
-        .insert([{
-          user_id: user.id,
-          note_id: noteData.id,
-          parent_type: form.schedulingType,
-          parent_id: recordId,
-        }]);
-    }
+if (form.notes?.trim()) {
+  const { data: noteData } = await supabase
+    .from("0007-ap-notes")
+    .insert([{ user_id: user.id, content: form.notes.trim() }])
+    .select()
+    .single();
+  if (noteData) {
+    await supabase.from("0007-ap-universal-notes-join")
+      .insert([{
+        user_id: user.id,
+        note_id: noteData.id,
+        parent_type: form.schedulingType,
+        parent_id: recordId,
+      }]);
   }
+}
+
 
   // -------- Universal Roles Join --------
   if (form.selectedRoleIds?.length > 0) {
