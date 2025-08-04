@@ -690,27 +690,27 @@ const handleAddGoalNote = async (goalId: string) => {
 };
 
   const getTasksForWeek = (goalId: string, weekNumber: number) => {
-    if (!currentCycle?.start_date) return [];
-    
-    const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z'); // Treat as UTC
-    const weekStart = new Date(cycleStart);
-    weekStart.setDate(cycleStart.getDate() + (weekNumber - 1) * 7);
-    
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekStart.getDate() + 6);
-    
-    return tasks.filter(task => {
-      // Check if task is linked to this goal
-      const isLinkedToGoal = task.task_12wkgoals?.some((gt: any) => gt.goal?.id === goalId);
-      if (!isLinkedToGoal) return false;
-      
-      // Check if task falls within this week
-      if (!task.due_date) return false;
-      
-      const taskDate = new Date(task.due_date);
-      return taskDate >= weekStart && taskDate <= weekEnd;
-    });
-  };
+  if (!currentCycle?.start_date) return [];
+
+  const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z');
+  const weekStart = new Date(cycleStart);
+  weekStart.setDate(cycleStart.getDate() + (weekNumber - 1) * 7);
+
+  const weekEnd = new Date(weekStart);
+  weekEnd.setDate(weekStart.getDate() + 6);
+
+  return tasks.filter(task => {
+    // Use universal_goal_ids instead of legacy join or FK
+    const isLinkedToGoal = Array.isArray(task.universal_goal_ids) && task.universal_goal_ids.includes(goalId);
+    if (!isLinkedToGoal) return false;
+
+    // Check if task falls within this week
+    if (!task.due_date) return false;
+    const taskDate = new Date(task.due_date);
+    return taskDate >= weekStart && taskDate <= weekEnd;
+  });
+};
+
 
   const categorizeTasksByPriority = (tasks: Task[]) => {
     return {
