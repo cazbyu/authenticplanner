@@ -389,7 +389,7 @@ const TwelveWeekCycle: React.FC = () => {
     }
   };
 
-  const fetchTasks = async () => {
+ *const fetchTasks = async () => {
     if (!user) return;
 
     try {
@@ -436,7 +436,7 @@ const TwelveWeekCycle: React.FC = () => {
     } catch (error) {
       console.error('Error fetching tasks:', error);
     }
-  };
+  };*
 
   const fetchCycleNotes = async () => {
     if (!user || !currentCycle) return;
