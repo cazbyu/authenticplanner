@@ -5,7 +5,11 @@ import { generateJoinRows } from '../utils/relationshipHelpers';
 /**
  * Save (insert or update) a task/event/deposit idea and ALL related joins
  */
-export async function upsertTaskEventAndJoins({ form, user, mode,}: {
+export async function upsertTaskEventAndJoins({ form, user, mode }) {
+  // 1. Build mainRecord with new goal columns as needed
+  // 2. Insert/update main record in tasks or deposit ideas table
+  // 3. Insert universal join rows for notes, domains, etc.
+  // 4. Handle errors, return results
   form: any,
   user: any,
   mode: "create" | "edit"
