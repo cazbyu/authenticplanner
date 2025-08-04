@@ -95,7 +95,14 @@ console.log("TaskEventForm form.schedulingType", form.schedulingType);
     }));
   }
 }, [initialData]);
-  
+
+useEffect(() => {
+  if (mode === "edit" && initialData && initialData.id) {
+    fetchTaskData(initialData.id);
+  }
+  // eslint-disable-next-line
+}, [mode, initialData?.id]);
+
   const [roles, setRoles] = useState<Role[]>([]);
   const [domains, setDomains] = useState<Domain[]>([]);
   const [keyRelationships, setKeyRelationships] = useState<KeyRelationship[]>([]);
