@@ -57,7 +57,7 @@ export async function upsertTaskEventAndJoins({
     const { error } = await supabase.from(tableName).update(mainRecord).eq('id', form.id);
     if (error) throw error;
   }
-  if (!recordId) throw new Error("No record ID after upsert.");*
+  if (!recordId) throw new Error("No record ID after upsert.");
 
   // --- UNIVERSAL GOAL JOIN: Always link task to goal in universal join table if a goal is present ---
 if (mainRecord.goal_12wk_id) {
