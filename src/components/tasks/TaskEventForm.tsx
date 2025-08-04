@@ -159,21 +159,23 @@ if (noteJoins && noteJoins[0]?.note_id) {
 
       // Update form with task data
       setForm(prev => ({
-        ...prev,
-        title: task.title || '',
-        dueDate: task.due_date || prev.dueDate,
-        startTime: task.start_time ? new Date(task.start_time).toTimeString().slice(0, 5) : prev.startTime,
-        endTime: task.end_time ? new Date(task.end_time).toTimeString().slice(0, 5) : prev.endTime,
-        isAllDay: task.is_all_day || false,
-        urgent: task.is_urgent || false,
-        important: task.is_important || false,
-        authenticDeposit: task.is_authentic_deposit || false,
-        twelveWeekGoalChecked: task.is_twelve_week_goal || false,
-        notes: noteContent,
-        selectedRoleIds: task.task_roles?.map((tr: any) => tr.role_id) || [],
-        selectedDomainIds: task.task_domains?.map((td: any) => td.domain_id) || [],
-        selectedKeyRelationshipIds: task.task_key_relationships?.map((tkr: any) => tkr.key_relationship_id) || [],
-      }));
+  ...prev,
+  title: task.title || '',
+  dueDate: task.due_date || prev.dueDate,
+  startTime: task.start_time ? new Date(task.start_time).toTimeString().slice(0, 5) : prev.startTime,
+  endTime: task.end_time ? new Date(task.end_time).toTimeString().slice(0, 5) : prev.endTime,
+  isAllDay: task.is_all_day || false,
+  urgent: task.is_urgent || false,
+  important: task.is_important || false,
+  authenticDeposit: task.is_authentic_deposit || false,
+  twelveWeekGoalChecked: task.is_twelve_week_goal || false,
+  notes: noteContent,
+  selectedRoleIds: roleJoins?.map(r => r.role_id) || [],
+  selectedDomainIds: domainJoins?.map(d => d.domain_id) || [],
+  // Key relationships: keep as is unless/until you add universal join for them:
+  selectedKeyRelationshipIds: task.task_key_relationships?.map((tkr: any) => tkr.key_relationship_id) || [],
+}));
+
 
     } catch (error) {
       console.error('Error fetching task data:', error);
