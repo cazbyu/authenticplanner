@@ -173,7 +173,7 @@ if (noteJoins && noteJoins[0]?.note_id) {
 }
 
       // Update form with task data
-      *setForm(prev => ({
+      setForm(prev => ({
   ...prev,
   title: task.title || '',
   dueDate: task.due_date || prev.dueDate,
@@ -190,7 +190,7 @@ if (noteJoins && noteJoins[0]?.note_id) {
   selectedDomainIds: domainJoins?.map(d => d.domain_id) || [],
   selectedKeyRelationshipIds: keyRelationshipJoins?.map(k => k.key_relationship_id) || [],
   
-}));*
+}));
 
     } catch (error) {
       console.error('Error fetching task data:', error);
