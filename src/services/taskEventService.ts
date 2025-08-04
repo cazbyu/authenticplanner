@@ -18,7 +18,7 @@ export async function upsertTaskEventAndJoins({
   // 2. Insert/update main record in tasks or deposit ideas table
   // 3. Insert universal join rows for notes, domains, etc.
   // 4. Handle errors, return results
-}
+  
   let recordId = form.id || null;
 
   // Decide table and prepare main record
