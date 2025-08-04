@@ -187,8 +187,8 @@ if (noteJoins && noteJoins[0]?.note_id) {
   notes: noteContent,
   selectedRoleIds: roleJoins?.map(r => r.role_id) || [],
   selectedDomainIds: domainJoins?.map(d => d.domain_id) || [],
-  // Key relationships: keep as is unless/until you add universal join for them:
-  selectedKeyRelationshipIds: task.task_key_relationships?.map((tkr: any) => tkr.key_relationship_id) || [],
+  selectedKeyRelationshipIds: keyRelationshipJoins?.map(k => k.key_relationship_id) || [],
+
 }));
 
     } catch (error) {
