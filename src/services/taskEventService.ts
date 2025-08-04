@@ -5,11 +5,7 @@ import { generateJoinRows } from '../utils/relationshipHelpers';
 /**
  * Save (insert or update) a task/event/deposit idea and ALL related joins
  */
-export async function upsertTaskEventAndJoins({
-  form,
-  user,
-  mode,
-}: {
+export async function upsertTaskEventAndJoins({ form, user, mode,}: {
   form: any,
   user: any,
   mode: "create" | "edit"
@@ -18,25 +14,37 @@ export async function upsertTaskEventAndJoins({
 
   // Decide table and prepare main record
   let tableName = form.schedulingType === "depositIdea" ? "0007-ap-deposit-ideas" : "0007-ap-tasks";
-  let mainRecord: any = {
+  let mainRecord: any;
+
+if (form.schedulingType === "depositIdea") {
+  // Deposit Idea fields (NO notes, NO created_at, YES is_active)
+  mainRecord = {
     user_id: user.id,
     title: form.title,
-    is_active: true,
+    is_active: true, // Only if you want to set it; otherwise, omit for DB default
+    // (add deposit-idea-specific fields here if needed)
   };
-  if (form.schedulingType !== "depositIdea") {
-    mainRecord = {
-      ...mainRecord,
-      due_date: form.dueDate || null,
-      start_time: form.dueDate && form.startTime ? new Date(`${form.dueDate}T${form.startTime}:00`).toISOString() : null,
-      end_time: form.dueDate && form.endTime ? new Date(`${form.dueDate}T${form.endTime}:00`).toISOString() : null,
-      is_all_day: form.isAllDay,
-      is_urgent: form.urgent || false,
-      is_important: form.important || false,
-      is_authentic_deposit: form.authenticDeposit || false,
-      is_twelve_week_goal: form.twelveWeekGoalChecked || false,
-      status: 'pending',
-    };
-  }
+} else {
+  // Task or Event fields (NO is_active, NO notes, NO created_at)
+  mainRecord = {
+    user_id: user.id,
+    title: form.title,
+    due_date: form.dueDate || null,
+    start_time: form.dueDate && form.startTime
+      ? new Date(`${form.dueDate}T${form.startTime}:00`).toISOString()
+      : null,
+    end_time: form.dueDate && form.endTime
+      ? new Date(`${form.dueDate}T${form.endTime}:00`).toISOString()
+      : null,
+    is_all_day: form.isAllDay,
+    is_urgent: form.urgent || false,
+    is_important: form.important || false,
+    is_authentic_deposit: form.authenticDeposit || false,
+    is_twelve_week_goal: form.twelveWeekGoalChecked || false,
+    status: 'pending',
+    // (add any other task/event-specific fields if needed)
+  };
+}
 
   // Insert or update main record
   if (mode === "create") {
