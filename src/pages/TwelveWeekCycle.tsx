@@ -454,7 +454,7 @@ const TwelveWeekCycle: React.FC = () => {
     console.error('Error fetching tasks:', error);
   }
 };
-
+)};
     setTasks(tasksWithGoal);
   } catch (error) {
     console.error('Error fetching tasks:', error);
