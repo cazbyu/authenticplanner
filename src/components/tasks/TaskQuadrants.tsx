@@ -64,7 +64,7 @@ type SortOption = 'priority' | 'due_date' | 'delegated';
 
 const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, domains, loading }) => {
   const [sortBy, setSortBy] = useState<'priority' | 'due_date' | 'delegated' | 'completed'>('priority');
-  const [delegatedTasks, setDelegatedTasks] = useState<Task[]>([]);
+  const [filteredTasks, setFilteredTasks] = useState<Task[]>([]);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const memoizedInitialData = useMemo(() => formatTaskForForm(editingTask),
@@ -233,7 +233,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         });
       case 'delegated':
       case 'completed':
-        return delegatedTasks;
+        return filteredTasks;
       case 'priority':
       default:
         return taskList;
