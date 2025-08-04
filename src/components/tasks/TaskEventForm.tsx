@@ -176,7 +176,6 @@ if (noteJoins && noteJoins[0]?.note_id) {
   selectedKeyRelationshipIds: task.task_key_relationships?.map((tkr: any) => tkr.key_relationship_id) || [],
 }));
 
-
     } catch (error) {
       console.error('Error fetching task data:', error);
     }
