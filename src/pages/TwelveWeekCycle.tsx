@@ -821,10 +821,11 @@ const handleAddGoalNote = async (goalId: string) => {
                     </div>
                   )}
                   {task.is_authentic_deposit && (
-                    <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                      📝 {weekTasks.reduce((count, task) => count + (task.notes?.length || 0), 0)} note{weekTasks.reduce((count, task) => count + (task.notes?.length || 0), 0) !== 1 ? 's' : ''}
-                    </span>
-                  )}
+  <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+    📝 {tasks.reduce((count, task) => count + (task.notes?.length || 0), 0)} note{tasks.reduce((count, task) => count + (task.notes?.length || 0), 0) !== 1 ? 's' : ''}
+  </span>
+)}
+
                 </div>
                 <div className="flex items-center gap-1">
                   <button
