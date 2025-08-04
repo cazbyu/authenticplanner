@@ -160,45 +160,47 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
   };
 
   const fetchFilteredTasks = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+  try {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
 
-      let { data: tasks, error } = await supabase
-  .from('0007-ap-tasks')
-  .select(`
-    id,
-    title,
-    due_date,
-    is_urgent,
-    is_important,
-    created_at,
-    completed_at,
-  `)
-  .eq('user_id', user.id);
-        
-      if (sortBy === 'delegated') {
-        query = query.eq('status', 'delegated').is('completed_at', null);
-      } else if (sortBy === 'completed') {
-        query = query.eq('status', 'completed').not('completed_at', 'is', null);
-      }
-      
-      query = query.order('due_date', { ascending: true });
-      
-      const { data, error } = await query;
+    // Start building the query
+    let query = supabase
+      .from('0007-ap-tasks')
+      .select(`
+        id,
+        title,
+        due_date,
+        is_urgent,
+        is_important,
+        created_at,
+        completed_at
+      `)
+      .eq('user_id', user.id);
 
-      if (error) {
-        console.error(`Error fetching ${sortBy} tasks:`, error);
-        return;
-      }
-
-      if (sortBy === 'delegated' || sortBy === 'completed') {
-        setFilteredTasks(data || []);
-      }
-    } catch (error) {
-      console.error(`Error fetching ${sortBy} tasks:`, error);
+    if (sortBy === 'delegated') {
+      query = query.eq('status', 'delegated').is('completed_at', null);
+    } else if (sortBy === 'completed') {
+      query = query.eq('status', 'completed').not('completed_at', 'is', null);
     }
-  };
+
+    query = query.order('due_date', { ascending: true });
+
+    // Execute the query once, destructure result
+    const { data, error } = await query;
+
+    if (error) {
+      console.error(`Error fetching ${sortBy} tasks:`, error);
+      return;
+    }
+
+    if (sortBy === 'delegated' || sortBy === 'completed') {
+      setFilteredTasks(data || []);
+    }
+  } catch (error) {
+    console.error(`Error fetching ${sortBy} tasks:`, error);
+  }
+};
 
   useEffect(() => {
     if (sortBy === 'delegated' || sortBy === 'completed') {
