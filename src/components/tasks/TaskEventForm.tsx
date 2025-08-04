@@ -197,7 +197,7 @@ if (noteJoins && noteJoins[0]?.note_id) {
     }
   };
 
-  *const fetchDepositIdeaData = async (depositIdeaId: string) => {
+  const fetchDepositIdeaData = async (depositIdeaId: string) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -252,7 +252,7 @@ if (noteJoins && noteJoins[0]?.note_id) {
         selectedDomainIds: domainsData?.map((d: any) => d.domain_id) || [],
         twelveWeekGoalId: depositIdea.goal_12wk_id || "",
         selectedKeyRelationshipIds: keyRelationshipsData?.map((kr: any) => kr.key_relationship_id) || [],
-      }));*
+      }));
 
     } catch (error) {
       console.error('Error fetching deposit idea data:', error);
