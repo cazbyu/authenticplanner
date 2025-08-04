@@ -176,8 +176,6 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
     completed_at,
   `)
   .eq('user_id', user.id);
-
-        .eq('user_id', user.id);
         
       if (sortBy === 'delegated') {
         query = query.eq('status', 'delegated').is('completed_at', null);
