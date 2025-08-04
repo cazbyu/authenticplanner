@@ -109,33 +109,53 @@ console.log("TaskEventForm form.schedulingType", form.schedulingType);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // Fetch task with all relationships
-      const { data: task, error } = await supabase
-        .from('0007-ap-tasks')
-        .select(`
-          *,
-          task_roles:0007-ap-task-roles(role_id),
-          task_domains:0007-ap-task-domains(domain_id),
-          task_key_relationships:0007-ap-task-key-relationships(key_relationship_id)
-        `)
-        .eq('id', taskId)
-        .eq('user_id', user.id)
-        .single();
+      // Fetch main task (no relationships)
+const { data: task, error } = await supabase
+  .from('0007-ap-tasks')
+  .select('*')
+  .eq('id', taskId)
+  .eq('user_id', user.id)
+  .single();
 
-      if (error || !task) {
-        console.error('Error fetching task data:', error);
-        return;
-      }
+if (error || !task) {
+  console.error('Error fetching task data:', error);
+  return;
+}
 
-      // Fetch notes for this task
-      const { data: taskNotes } = await supabase
-        .from('0007-ap-task-notes')
-        .select(`
-          note:0007-ap-notes(content)
-        `)
-        .eq('task_id', taskId);
+// Fetch universal role joins
+const { data: roleJoins } = await supabase
+  .from('0007-ap-universal-roles-join')
+  .select('role_id')
+  .eq('parent_id', taskId)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
 
-      const noteContent = taskNotes?.[0]?.note?.content || '';
+// Fetch universal domain joins
+const { data: domainJoins } = await supabase
+  .from('0007-ap-universal-domains-join')
+  .select('domain_id')
+  .eq('parent_id', taskId)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+
+// Fetch universal note joins (if multiple, only grab first for now)
+const { data: noteJoins } = await supabase
+  .from('0007-ap-universal-notes-join')
+  .select('note_id')
+  .eq('parent_id', taskId)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+
+// Fetch actual note content if you want to display it
+let noteContent = '';
+if (noteJoins && noteJoins[0]?.note_id) {
+  const { data: noteRows } = await supabase
+    .from('0007-ap-notes')
+    .select('content')
+    .eq('id', noteJoins[0].note_id)
+    .single();
+  noteContent = noteRows?.content || '';
+}
 
       // Update form with task data
       setForm(prev => ({
