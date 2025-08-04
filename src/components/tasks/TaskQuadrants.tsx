@@ -197,7 +197,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       }
 
       if (sortBy === 'delegated' || sortBy === 'completed') {
-        setDelegatedTasks(data || []);
+        setFilteredTasks(data || []);
       }
     } catch (error) {
       console.error(`Error fetching ${sortBy} tasks:`, error);
