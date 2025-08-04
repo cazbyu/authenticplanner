@@ -389,54 +389,56 @@ const TwelveWeekCycle: React.FC = () => {
     }
   };
 
- *const fetchTasks = async () => {
-    if (!user) return;
+ const fetchTasks = async () => {
+  if (!user) return;
 
-    try {
-      const { data: tasksData, error: tasksError } = await supabase
-        .from('0007-ap-tasks')
-        .select(`
-          *,
-          task_roles:0007-ap-task-roles!fk_task(
-            role:0007-ap-roles(id, label, category)
-          ),
-          task_domains:0007-ap-task-domains(
-            domain:0007-ap-domains(id, name)
- 
-         ),
-          task_12wkgoals:0007-ap-task-12wkgoals(
-            goal:0007-ap-goals-12wk(id, global_cycle_id)
-          ),
-          task_notes:0007-ap-task-notes(
-            note:0007-ap-notes(id, content, created_at)
-          )
-        `)
-        .eq('user_id', user.id)
-        .eq('is_twelve_week_goal', true)
-        .in('status', ['pending', 'in_progress'])
-        .order('created_at', { ascending: false });
+  try {
+    // 1. Fetch all universal goal joins for this user (for tasks)
+    const { data: goalJoins, error: goalJoinsError } = await supabase
+      .from('0007-ap-universal-goals-join')
+      .select('goal_id, parent_id')
+      .eq('user_id', user.id)
+      .eq('parent_type', 'task');
 
-      if (tasksError) {
-        console.error('Error fetching tasks:', tasksError);
-        return;
-      }
-
-      const formattedTasks = tasksData?.map(task => ({
-        ...task,
-        roles: task.task_roles?.map((tr: any) => tr.role).filter(Boolean) || [],
-        domains: task.task_domains?.map((td: any) => td.domain).filter(Boolean) || [],
-        // Keep the raw relationship data for editing
-        task_roles: task.task_roles?.map((tr: any) => ({ role_id: tr.role?.id })).filter(Boolean) || [],
-        task_domains: task.task_domains?.map((td: any) => ({ domain_id: td.domain?.id })).filter(Boolean) || [],
-        task_12wkgoals: task.task_12wkgoals || [],
-        notes: task.task_notes?.map((tn: any) => tn.note).filter(Boolean) || []
-      })) || [];
-
-      setTasks(formattedTasks);
-    } catch (error) {
-      console.error('Error fetching tasks:', error);
+    if (goalJoinsError) {
+      console.error('Error fetching universal goal joins:', goalJoinsError);
+      return;
     }
-  };*
+
+    const joinedTaskIds = goalJoins?.map(gj => gj.parent_id) || [];
+    if (joinedTaskIds.length === 0) {
+      setTasks([]);
+      return;
+    }
+
+    // 2. Fetch all tasks for this user that are linked via universal join
+    const { data: tasksData, error: tasksError } = await supabase
+      .from('0007-ap-tasks')
+      .select('*')
+      .eq('user_id', user.id)
+      .in('id', joinedTaskIds)
+      .in('status', ['pending', 'in_progress'])
+      .order('created_at', { ascending: false });
+
+    if (tasksError) {
+      console.error('Error fetching tasks:', tasksError);
+      return;
+    }
+
+    // 3. Attach the universal join goal_id to each task
+    const tasksWithGoal = (tasksData || []).map(task => {
+      const matchingJoins = goalJoins.filter(gj => gj.parent_id === task.id);
+      return {
+        ...task,
+        universal_goal_ids: matchingJoins.map(j => j.goal_id),
+      };
+    });
+
+    setTasks(tasksWithGoal);
+  } catch (error) {
+    console.error('Error fetching tasks:', error);
+  }
+};
 
   const fetchCycleNotes = async () => {
     if (!user || !currentCycle) return;
