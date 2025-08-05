@@ -164,16 +164,13 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
       // Fetch Tasks
       if (taskIds.length > 0) {
-        const { data: tasksData, error: tasksError } = await supabase
-          .from('0007-ap-tasks')
-          .select(`
-            *,
-            task_roles:0007-ap-task-roles!task_id(role_id),
-            task_domains:0007-ap-task-domains(domain_id),
-            task_key_relationships:0007-ap-task-key-relationships(key_relationship_id)
-          `)
-          .in('id', taskIds)
-          .eq('user_id', user.id);
+        // New code — fetch just the tasks (no joins)
+const { data: tasksData, error: tasksError } = await supabase
+  .from('0007-ap-tasks')
+  .select('*')
+  .in('id', taskIds)
+  .eq('user_id', user.id);
+
         if (tasksError) throw tasksError;
         
         // Separate active and completed tasks
