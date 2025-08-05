@@ -171,6 +171,71 @@ const { data: tasksData, error: tasksError } = await supabase
   .in('id', taskIds)
   .eq('user_id', user.id);
 
+     const allTaskIds = tasksData?.map(task => task.id) || [];
+
+// Fetch roles for these tasks
+const { data: roleJoins } = await supabase
+  .from('0007-ap-universal-roles-join')
+  .select('parent_id, role_id')
+  .in('parent_id', allTaskIds)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+
+// Fetch domains for these tasks
+const { data: domainJoins } = await supabase
+  .from('0007-ap-universal-domains-join')
+  .select('parent_id, domain_id')
+  .in('parent_id', allTaskIds)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+
+// Fetch key relationships for these tasks
+const { data: krJoins } = await supabase
+  .from('0007-ap-universal-key-relationships-join')
+  .select('parent_id, key_relationship_id')
+  .in('parent_id', allTaskIds)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+
+// Fetch note joins for these tasks
+const { data: noteJoins } = await supabase
+  .from('0007-ap-universal-notes-join')
+  .select('parent_id, note_id')
+  .in('parent_id', allTaskIds)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+
+// Fetch actual note contents
+const noteIds = noteJoins?.map(j => j.note_id) || [];
+const { data: notesData } = noteIds.length
+  ? await supabase.from('0007-ap-notes').select('id, content').in('id', noteIds)
+  : { data: [] };
+
+  // Create maps for quick lookup by task id
+const rolesByTaskId = {};
+roleJoins?.forEach(j => {
+  if (!rolesByTaskId[j.parent_id]) rolesByTaskId[j.parent_id] = [];
+  rolesByTaskId[j.parent_id].push(j.role_id);
+});
+
+const domainsByTaskId = {};
+domainJoins?.forEach(j => {
+  if (!domainsByTaskId[j.parent_id]) domainsByTaskId[j.parent_id] = [];
+  domainsByTaskId[j.parent_id].push(j.domain_id);
+});
+
+const keyRelationshipsByTaskId = {};
+krJoins?.forEach(j => {
+  if (!keyRelationshipsByTaskId[j.parent_id]) keyRelationshipsByTaskId[j.parent_id] = [];
+  keyRelationshipsByTaskId[j.parent_id].push(j.key_relationship_id);
+});
+
+const notesByTaskId = {};
+noteJoins?.forEach(j => {
+  const note = notesData?.find(n => n.id === j.note_id);
+  if (note) notesByTaskId[j.parent_id] = note.content;
+});
+      
         if (tasksError) throw tasksError;
         
         // Separate active and completed tasks
@@ -181,7 +246,7 @@ const { data: tasksData, error: tasksError } = await supabase
           task.status === 'completed'
         );
         
-        setTasks(activeTasks);
+        *setTasks(activeTasks);
         setCompletedTasks(completedTasksList);
       } else {
         setTasks([]);
