@@ -6,7 +6,7 @@ import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
 import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
 import TaskEventForm from '../components/tasks/TaskEventForm';
 import { formatTaskForForm } from '../utils/taskHelpers'; 
-import { parseISO, format, addDays } from 'date-fns'; // at top
+import { parseISO, format, addDays } from 'date-fns';
 
 interface TwelveWeekGoal {
   id: string;
@@ -45,15 +45,13 @@ interface Task {
   notes?: string;
   created_at: string;
   updated_at: string;
-  roles?: Array<{ id: string; label: string; category?: string; }>;
-  domains?: Array<{ id: string; name: string; }>;
   start_time?: string;
   end_time?: string;
   is_all_day?: boolean;
   task_roles?: Array<{ role_id: string }>;
   task_domains?: Array<{ domain_id: string }>;
   task_key_relationships?: Array<{ key_relationship_id: string }>;
-  task_12wkgoals?: Array<{ goal?: { id: string } }>; // <-- ADD THIS LINE
+  universal_goal_ids?: string[];
 }
 
 interface GlobalCycle {
@@ -113,6 +111,9 @@ const TwelveWeekCycle: React.FC = () => {
     startProgress: number;
     progressBarWidth: number;
   } | null>(null);
+  const [cycleNotes, setCycleNotes] = useState<any[]>([]);
+  const [newCycleNote, setNewCycleNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -141,37 +142,39 @@ const TwelveWeekCycle: React.FC = () => {
 
       const goalIds = goals.map(goal => goal.id);
       if (goalIds.length === 0) return;
+      
+      const { data: noteJoins, error: noteJoinsError } = await supabase
+        .from('0007-ap-universal-notes-join')
+        .select('parent_id, note_id')
+        .in('parent_id', goalIds)
+        .eq('parent_type', 'goal');
+      
+      if (noteJoinsError) throw noteJoinsError;
 
-      const { data: goalNotesData, error } = await supabase
-        .from('0007-ap-goal-notes')
-        .select(`
-          goal_id,
-          note:0007-ap-notes(
-            id,
-            content,
-            created_at,
-            updated_at
-          )
-        `)
-        .in('goal_id', goalIds);
-
-      if (error) {
-        console.error('Error fetching goal notes:', error);
+      const noteIds = noteJoins?.map(j => j.note_id) || [];
+      if (noteIds.length === 0) {
+        setGoalNotes({});
         return;
       }
+      
+      const { data: notesData, error: notesError } = await supabase
+        .from('0007-ap-notes')
+        .select('id, content, created_at, updated_at')
+        .in('id', noteIds);
+      
+      if (notesError) throw notesError;
 
-      // Group notes by goal_id
       const notesByGoal: Record<string, any[]> = {};
-      goalNotesData?.forEach(item => {
-        if (item.note) {
-          if (!notesByGoal[item.goal_id]) {
-            notesByGoal[item.goal_id] = [];
+      noteJoins?.forEach(join => {
+        const note = notesData?.find(n => n.id === join.note_id);
+        if (note) {
+          if (!notesByGoal[join.parent_id]) {
+            notesByGoal[join.parent_id] = [];
           }
-          notesByGoal[item.goal_id].push(item.note);
+          notesByGoal[join.parent_id].push(note);
         }
       });
-
-      // Sort notes by created_at (newest first)
+      
       Object.keys(notesByGoal).forEach(goalId => {
         notesByGoal[goalId].sort((a, b) => 
           new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
@@ -184,7 +187,6 @@ const TwelveWeekCycle: React.FC = () => {
     }
   };
 
-  // Progress bar interaction handlers
   const handleProgressBarClick = async (e: React.MouseEvent, goalId: string) => {
     const progressBar = e.currentTarget as HTMLElement;
     const rect = progressBar.getBoundingClientRect();
@@ -230,12 +232,8 @@ const TwelveWeekCycle: React.FC = () => {
         .eq('id', goalId)
         .eq('user_id', user.id);
 
-      if (error) {
-        console.error('Error updating goal progress:', error);
-        return;
-      }
+      if (error) throw error;
 
-      // Update local state
       setGoals(prev => prev.map(goal => 
         goal.id === goalId 
           ? { ...goal, progress: newProgress }
@@ -246,7 +244,6 @@ const TwelveWeekCycle: React.FC = () => {
     }
   };
 
-  // Mouse/touch event handlers for dragging
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!draggingProgress) return;
@@ -255,7 +252,6 @@ const TwelveWeekCycle: React.FC = () => {
       const progressChange = (deltaX / draggingProgress.progressBarWidth) * 100;
       const newProgress = Math.max(0, Math.min(100, draggingProgress.startProgress + progressChange));
       
-      // Update local state immediately for smooth dragging
       setGoals(prev => prev.map(goal => 
         goal.id === draggingProgress.goalId 
           ? { ...goal, progress: Math.round(newProgress) }
@@ -271,7 +267,6 @@ const TwelveWeekCycle: React.FC = () => {
       const progressChange = (deltaX / draggingProgress.progressBarWidth) * 100;
       const newProgress = Math.max(0, Math.min(100, draggingProgress.startProgress + progressChange));
       
-      // Update local state immediately for smooth dragging
       setGoals(prev => prev.map(goal => 
         goal.id === draggingProgress.goalId 
           ? { ...goal, progress: Math.round(newProgress) }
@@ -313,75 +308,74 @@ const TwelveWeekCycle: React.FC = () => {
         .eq('is_active', true)
         .single();
 
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error fetching current cycle:', error);
-        return;
-      }
-
+      if (error && error.code !== 'PGRST116') throw error;
       setCurrentCycle(data);
     } catch (error) {
       console.error('Error fetching current cycle:', error);
     }
   };
 
-  // Calculate cycle progress
   const calculateCycleProgress = () => {
     if (!currentCycle?.start_date || !currentCycle?.reflection_end) {
       return { percentage: 0, daysRemaining: 0, totalDays: 0 };
     }
-
-    // Use current date/time (same as calendar components)
     const now = new Date();
-    const startDate = new Date(currentCycle.start_date + 'T00:00:00Z'); // Treat as UTC
-    const endDate = new Date(currentCycle.reflection_end + 'T23:59:59Z'); // End of reflection day in UTC
-    
-    // Calculate days using UTC dates to avoid timezone issues
+    const startDate = new Date(currentCycle.start_date + 'T00:00:00Z');
+    const endDate = new Date(currentCycle.reflection_end + 'T23:59:59Z');
     const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const daysPassed = Math.ceil((now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
     const daysRemaining = Math.max(0, totalDays - daysPassed);
     const percentage = Math.min(100, Math.max(0, (daysPassed / totalDays) * 100));
-
     return { percentage, daysRemaining, totalDays };
   };
 
-  // Format date range for display
   const formatCycleDateRange = () => {
-  if (!currentCycle?.start_date || !currentCycle?.reflection_end) return '';
-  const startDate = parseISO(currentCycle.start_date);
-  const endDate = parseISO(currentCycle.reflection_end);
-  return `${format(startDate, 'd MMM yyyy')} - ${format(endDate, 'd MMM yyyy')}`;
-};
+    if (!currentCycle?.start_date || !currentCycle?.reflection_end) return '';
+    const startDate = parseISO(currentCycle.start_date);
+    const endDate = parseISO(currentCycle.reflection_end);
+    return `${format(startDate, 'd MMM yyyy')} - ${format(endDate, 'd MMM yyyy')}`;
+  };
     
   const fetchGoals = async () => {
     if (!user) return;
-
+    setLoading(true);
     try {
       const { data: goalsData, error: goalsError } = await supabase
         .from('0007-ap-goals-12wk')
-        .select(`
-          *,
-          goal_domains:0007-ap-goal-domains(
-            domain:0007-ap-domains(id, name)
-          ),
-          goal_roles:0007-ap-goal-roles(
-            role:0007-ap-roles(id, label, category)
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false });
+      if (goalsError) throw goalsError;
 
-      if (goalsError) {
-        console.error('Error fetching goals:', goalsError);
+      const goalIds = goalsData?.map(g => g.id) || [];
+      if (goalIds.length === 0) {
+        setGoals([]);
         return;
       }
 
-      const formattedGoals = goalsData?.map(goal => ({
-        ...goal,
-        domains: goal.goal_domains?.map((gd: any) => gd.domain).filter(Boolean) || [],
-        roles: goal.goal_roles?.map((gr: any) => gr.role).filter(Boolean) || []
-      })) || [];
+      const [domainJoins, roleJoins, allDomains, allRoles] = await Promise.all([
+        supabase.from('0007-ap-universal-domains-join').select('parent_id, domain_id').in('parent_id', goalIds).eq('parent_type', 'goal'),
+        supabase.from('0007-ap-universal-roles-join').select('parent_id, role_id').in('parent_id', goalIds).eq('parent_type', 'goal'),
+        supabase.from('0007-ap-domains').select('id, name'),
+        supabase.from('0007-ap-roles').select('id, label, category').eq('user_id', user.id)
+      ]);
 
-      setGoals(formattedGoals);
+      const domainsMap = new Map((allDomains.data || []).map(d => [d.id, d]));
+      const rolesMap = new Map((allRoles.data || []).map(r => [r.id, r]));
+
+      const formattedGoals = goalsData?.map(goal => {
+        const domains = (domainJoins.data || [])
+            .filter(j => j.parent_id === goal.id)
+            .map(j => domainsMap.get(j.domain_id))
+            .filter(Boolean);
+        const roles = (roleJoins.data || [])
+            .filter(j => j.parent_id === goal.id)
+            .map(j => rolesMap.get(j.role_id))
+            .filter(Boolean);
+        return { ...goal, domains, roles };
+      }) || [];
+
+      setGoals(formattedGoals as TwelveWeekGoal[]);
     } catch (error) {
       console.error('Error fetching goals:', error);
     } finally {
@@ -391,41 +385,19 @@ const TwelveWeekCycle: React.FC = () => {
 
  const fetchTasks = async () => {
   if (!user) return;
-
   try {
-    // 1. Fetch all universal joins for this user (for tasks)
     const { data: goalJoins } = await supabase
       .from('0007-ap-universal-goals-join')
       .select('goal_id, parent_id')
       .eq('user_id', user.id)
       .eq('parent_type', 'task');
 
-    const { data: roleJoins } = await supabase
-      .from('0007-ap-universal-roles-join')
-      .select('role_id, parent_id')
-      .eq('user_id', user.id)
-      .eq('parent_type', 'task');
-
-    const { data: domainJoins } = await supabase
-      .from('0007-ap-universal-domains-join')
-      .select('domain_id, parent_id')
-      .eq('user_id', user.id)
-      .eq('parent_type', 'task');
-
-    const { data: noteJoins } = await supabase
-      .from('0007-ap-universal-notes-join')
-      .select('note_id, parent_id')
-      .eq('user_id', user.id)
-      .eq('parent_type', 'task');
-
-    // 2. Find all task IDs joined to a goal
     const joinedTaskIds = goalJoins?.map(gj => gj.parent_id) || [];
     if (joinedTaskIds.length === 0) {
       setTasks([]);
       return;
     }
 
-    // 3. Fetch all tasks for this user that are linked via universal goal join
     const { data: tasksData } = await supabase
       .from('0007-ap-tasks')
       .select('*')
@@ -434,51 +406,42 @@ const TwelveWeekCycle: React.FC = () => {
       .in('status', ['pending', 'in_progress'])
       .order('created_at', { ascending: false });
 
-    // 4. Attach universal join fields to each task
     const tasksWithJoins = (tasksData || []).map(task => {
       const matchingGoalJoins = goalJoins?.filter(gj => gj.parent_id === task.id) || [];
-      const matchingRoleJoins = roleJoins?.filter(rj => rj.parent_id === task.id) || [];
-      const matchingDomainJoins = domainJoins?.filter(dj => dj.parent_id === task.id) || [];
-      const matchingNoteJoins = noteJoins?.filter(nj => nj.parent_id === task.id) || [];
       return {
         ...task,
         universal_goal_ids: matchingGoalJoins.map(j => j.goal_id),
-        universal_role_ids: matchingRoleJoins.map(r => r.role_id),
-        universal_domain_ids: matchingDomainJoins.map(d => d.domain_id),
-        universal_note_ids: matchingNoteJoins.map(n => n.note_id),
       };
     });
-
     setTasks(tasksWithJoins);
   } catch (error) {
     console.error('Error fetching tasks:', error);
-    console.log('TASKS WITH JOINS', tasksWithJoins);
   }
 };
 
   const fetchCycleNotes = async () => {
     if (!user || !currentCycle) return;
-
     try {
-      const { data: notesData, error } = await supabase
-        .from('0007-ap-goal-notes')
-        .select(`
-          note:0007-ap-notes(
-            id,
-            content,
-            created_at,
-            updated_at
-          )
-        `)
-        .eq('goal_id', currentCycle.id);
+      const { data: noteJoins, error: noteJoinsError } = await supabase
+        .from('0007-ap-universal-notes-join')
+        .select('note_id')
+        .eq('parent_id', currentCycle.id)
+        .eq('parent_type', 'goal'); // Still treating cycle as a goal for notes
+      if(noteJoinsError) throw noteJoinsError;
 
-      if (error) {
-        console.error('Error fetching cycle notes:', error);
+      const noteIds = noteJoins?.map(j => j.note_id) || [];
+      if (noteIds.length === 0) {
+        setCycleNotes([]);
         return;
       }
 
-      const notes = notesData?.map(item => item.note).filter(Boolean) || [];
-      setCycleNotes(notes);
+      const { data: notesData, error: notesError } = await supabase
+        .from('0007-ap-notes')
+        .select('id, content, created_at, updated_at')
+        .in('id', noteIds);
+      if (notesError) throw notesError;
+
+      setCycleNotes(notesData || []);
     } catch (error) {
       console.error('Error fetching cycle notes:', error);
     }
@@ -486,38 +449,24 @@ const TwelveWeekCycle: React.FC = () => {
 
   const handleAddCycleNote = async () => {
     if (!newCycleNote.trim() || !user || !currentCycle) return;
-
     setSavingNote(true);
     try {
-      // Create note in centralized notes table
       const { data: noteData, error: noteError } = await supabase
         .from('0007-ap-notes')
-        .insert([{
-          user_id: user.id,
-          content: newCycleNote.trim(),
-        }])
-        .select()
-        .single();
+        .insert([{ user_id: user.id, content: newCycleNote.trim() }])
+        .select().single();
+      if (noteError || !noteData) throw noteError || new Error("Failed to create note");
 
-      if (noteError || !noteData) {
-        console.error('Error creating note:', noteError);
-        return;
-      }
-
-      // Link note to current cycle via goal-notes junction table
       const { error: linkError } = await supabase
-        .from('0007-ap-goal-notes')
+        .from('0007-ap-universal-notes-join')
         .insert([{
-          goal_id: currentCycle.id,
+          parent_id: currentCycle.id,
           note_id: noteData.id,
+          parent_type: 'goal', // Still treating cycle as a goal for notes
+          user_id: user.id
         }]);
+      if (linkError) throw linkError;
 
-      if (linkError) {
-        console.error('Error linking note to cycle:', linkError);
-        return;
-      }
-
-      // Clear form and refresh notes
       setNewCycleNote('');
       fetchCycleNotes();
     } catch (error) {
@@ -530,36 +479,23 @@ const TwelveWeekCycle: React.FC = () => {
 const handleAddGoalNote = async (goalId: string) => {
     const noteContent = newGoalNotes[goalId]?.trim();
     if (!noteContent || !user) return;
-
     setSavingNotes(prev => ({ ...prev, [goalId]: true }));
     try {
-      // Step 1: Create the note in the centralized '0007-ap-notes' table
       const { data: noteData, error: noteError } = await supabase
         .from('0007-ap-notes')
         .insert([{ user_id: user.id, content: noteContent }])
-        .select('id')
-        .single();
+        .select('id').single();
+      if (noteError || !noteData) throw noteError || new Error('Failed to create note.');
 
-      if (noteError || !noteData) {
-        throw noteError || new Error('Failed to create note.');
-      }
-
-      // Step 2: Link the new note to the goal in the '0007-ap-goal-notes' junction table
       const { error: linkError } = await supabase
-        .from('0007-ap-goal-notes')
-        .insert([{ goal_id: goalId, note_id: noteData.id }]);
+        .from('0007-ap-universal-notes-join')
+        .insert([{ goal_id: goalId, note_id: noteData.id, parent_id: goalId, parent_type: 'goal', user_id: user.id }]);
+      if (linkError) throw linkError;
 
-      if (linkError) {
-        throw linkError;
-      }
-
-      // Step 3: Clear the input and refresh the data
       setNewGoalNotes(prev => ({ ...prev, [goalId]: '' }));
-      fetchGoalNotes(); // Refresh all goal notes
-
+      fetchGoalNotes();
     } catch (error) {
       console.error('Error adding goal note:', error);
-      alert('Failed to add the note. Please try again.');
     } finally {
       setSavingNotes(prev => ({ ...prev, [goalId]: false }));
     }
@@ -572,28 +508,17 @@ const handleAddGoalNote = async (goalId: string) => {
 
   const handleSaveNoteEdit = async () => {
     if (!editingNoteId || !editingNoteContent.trim()) return;
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       const { error } = await supabase
         .from('0007-ap-notes')
-        .update({
-          content: editingNoteContent.trim(),
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', editingNoteId)
-        .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error updating note:', error);
-        return;
-      }
-
+        .update({ content: editingNoteContent.trim(), updated_at: new Date().toISOString() })
+        .eq('id', editingNoteId).eq('user_id', user.id);
+      if (error) throw error;
       setEditingNoteId(null);
       setEditingNoteContent('');
-      fetchGoalNotes(); // Refresh notes
+      fetchGoalNotes();
     } catch (error) {
       console.error('Error updating note:', error);
     }
@@ -606,23 +531,16 @@ const handleAddGoalNote = async (goalId: string) => {
 
   const handleDeleteNote = async (noteId: string) => {
     if (!confirm('Are you sure you want to delete this note?')) return;
-
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
-
       const { error } = await supabase
         .from('0007-ap-notes')
         .delete()
         .eq('id', noteId)
         .eq('user_id', user.id);
-
-      if (error) {
-        console.error('Error deleting note:', error);
-        return;
-      }
-
-      fetchGoalNotes(); // Refresh notes
+      if (error) throw error;
+      fetchGoalNotes();
     } catch (error) {
       console.error('Error deleting note:', error);
     }
@@ -630,28 +548,28 @@ const handleAddGoalNote = async (goalId: string) => {
 
   const handleGoalCreated = (newGoal: TwelveWeekGoal) => {
     setShowGoalForm(false);
-    fetchGoals(); // Refresh goals instead of manual state update
+    fetchGoals();
   };
 
   const handleGoalUpdated = (updatedGoal: TwelveWeekGoal) => {
     setEditingGoal(null);
-    fetchGoals(); // Refresh goals instead of manual state update
+    fetchGoals();
   };
 
   const handleGoalDeleted = (deletedGoalId: string) => {
     setEditingGoal(null);
-    fetchGoals(); // Refresh goals instead of manual state update
+    fetchGoals();
   };
 
   const handleTaskCreated = () => {
     setShowTaskForm(null);
     setSelectedWeek(null);
-    fetchTasks(); // Refresh tasks since new task was created
+    fetchTasks();
   };
 
   const handleTaskUpdated = () => {
     setEditingTask(null);
-    fetchTasks(); // Refresh tasks since task was updated
+    fetchTasks();
   };
 
   const handleWeeklyGoalCreated = () => {
@@ -693,39 +611,32 @@ const handleAddGoalNote = async (goalId: string) => {
   };
 
   const getWeekDates = (weekNumber: number) => {
-  if (!currentCycle?.start_date) return { start: '', end: '' };
-
-  const cycleStart = parseISO(currentCycle.start_date); // date-fns parses in local, but since only date is used, it's safe
-  const weekStart = addDays(cycleStart, (weekNumber - 1) * 7);
-  const weekEnd = addDays(weekStart, 6);
-
-  return {
-    start: format(weekStart, 'd MMM'), // e.g. '29 Jun'
-    end: format(weekEnd, 'd MMM') // e.g. '5 Jul'
+    if (!currentCycle?.start_date) return { start: '', end: '' };
+    const cycleStart = parseISO(currentCycle.start_date);
+    const weekStart = addDays(cycleStart, (weekNumber - 1) * 7);
+    const weekEnd = addDays(weekStart, 6);
+    return {
+      start: format(weekStart, 'd MMM'),
+      end: format(weekEnd, 'd MMM')
+    };
   };
-};
 
   const getTasksForWeek = (goalId: string, weekNumber: number) => {
-  if (!currentCycle?.start_date) return [];
+    if (!currentCycle?.start_date) return [];
+    const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z');
+    const weekStart = new Date(cycleStart);
+    weekStart.setUTCDate(cycleStart.getUTCDate() + (weekNumber - 1) * 7);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
 
-  const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z');
-  const weekStart = new Date(cycleStart);
-  weekStart.setDate(cycleStart.getDate() + (weekNumber - 1) * 7);
-
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 6);
-
-  return tasks.filter(task => {
-    // Use universal_goal_ids instead of legacy join or FK
-    const isLinkedToGoal = Array.isArray(task.universal_goal_ids) && task.universal_goal_ids.includes(goalId);
-    if (!isLinkedToGoal) return false;
-
-    // Check if task falls within this week
-    if (!task.due_date) return false;
-    const taskDate = new Date(task.due_date);
-    return taskDate >= weekStart && taskDate <= weekEnd;
-  });
-};
+    return tasks.filter(task => {
+      const isLinkedToGoal = Array.isArray(task.universal_goal_ids) && task.universal_goal_ids.includes(goalId);
+      if (!isLinkedToGoal) return false;
+      if (!task.due_date) return false;
+      const taskDate = new Date(task.due_date + 'T00:00:00Z');
+      return taskDate >= weekStart && taskDate <= weekEnd;
+    });
+  };
 
 
   const categorizeTasksByPriority = (tasks: Task[]) => {
@@ -741,19 +652,9 @@ const handleAddGoalNote = async (goalId: string) => {
     try {
       const { error } = await supabase
         .from('0007-ap-tasks')
-        .update({ 
-          status: 'completed',
-          completed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
-        })
+        .update({ status: 'completed', completed_at: new Date().toISOString() })
         .eq('id', taskId);
-
-      if (error) {
-        console.error('Error completing task:', error);
-        return;
-      }
-
-      // Remove from local state
+      if (error) throw error;
       setTasks(prev => prev.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error completing task:', error);
@@ -764,18 +665,9 @@ const handleAddGoalNote = async (goalId: string) => {
     try {
       const { error } = await supabase
         .from('0007-ap-tasks')
-        .update({ 
-          status: 'cancelled',
-          updated_at: new Date().toISOString()
-        })
+        .update({ status: 'cancelled' })
         .eq('id', taskId);
-
-      if (error) {
-        console.error('Error cancelling task:', error);
-        return;
-      }
-
-      // Remove from local state
+      if (error) throw error;
       setTasks(prev => prev.filter(task => task.id !== taskId));
     } catch (error) {
       console.error('Error cancelling task:', error);
@@ -813,52 +705,17 @@ const handleAddGoalNote = async (goalId: string) => {
                   <h4 className="font-medium text-sm text-gray-900 truncate">
                     {task.title}
                   </h4>
-                  {task.due_date && (
-                    <p className="text-xs text-gray-500 mt-1">
-  Due: {new Date(task.due_date + 'T00:00:00').toLocaleDateString('en-US', { 
-    day: 'numeric', 
-    month: 'short', 
-    year: 'numeric' 
-  })}
-  {task.time && ` at ${task.time}`}
-</p>
-                  )}
-                  {task.notes && task.notes.length > 0 && (
-                    <div className="mt-2">
-                      <p className="text-xs text-gray-600 font-medium">Notes:</p>
-                      {task.notes.slice(0, 2).map((note: any) => (
-                        <p key={note.id} className="text-xs text-gray-500 mb-1">
-                          {note.content}
-                        </p>
-                      ))}
-                      {task.notes.length > 2 && (
-                        <p className="text-xs text-gray-400">+{task.notes.length - 2} more note{task.notes.length > 3 ? 's' : ''}</p>
-                      )}
-                    </div>
-                  )}
-                  {task.is_authentic_deposit && (
-  <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-    📝 {tasks.reduce((count, task) => count + (task.notes?.length || 0), 0)} note{tasks.reduce((count, task) => count + (task.notes?.length || 0), 0) !== 1 ? 's' : ''}
-  </span>
-)}
-
                 </div>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCompleteTask(task.id);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); handleCompleteTask(task.id); }}
                     className="p-1 text-green-600 hover:bg-green-100 rounded"
                     title="Complete task"
                   >
                     <CheckCircle className="h-4 w-4" />
                   </button>
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleCancelTask(task.id);
-                    }}
+                    onClick={(e) => { e.stopPropagation(); handleCancelTask(task.id); }}
                     className="p-1 text-red-600 hover:bg-red-100 rounded"
                     title="Cancel task"
                   >
@@ -905,7 +762,6 @@ const handleAddGoalNote = async (goalId: string) => {
   return (
   <div className="min-h-screen bg-gray-50">
     <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header Section */}
       <div className="mb-8 flex flex-col items-center">
         <h1 className="text-3xl font-bold text-gray-900 text-center">
           {currentCycle.title || '12-Week Cycle'}
@@ -917,7 +773,6 @@ const handleAddGoalNote = async (goalId: string) => {
           )}
       </div>
 
-{/* Wide Progress Bar */}
 <div className="w-full max-w-7xl mx-auto mb-6 px-4">
   <div>
     <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
@@ -937,7 +792,6 @@ const handleAddGoalNote = async (goalId: string) => {
   </div>
 </div>
       
-      {/* Add Goal Button - Right aligned below progress bar */}
       <div className="w-full max-w-7xl mx-auto mb-10 px-4 flex justify-end">
         <button
           onClick={() => setShowGoalForm(true)}
@@ -947,7 +801,6 @@ const handleAddGoalNote = async (goalId: string) => {
           Add 12-Week Goal
         </button>
       </div>
-      {/* Goals or Empty State */}
       <div className="space-y-8">
         {goals.length === 0 ? (
           <div className="text-center py-12">
@@ -965,7 +818,6 @@ const handleAddGoalNote = async (goalId: string) => {
           </div>
         ) : (
           <div>
-            {/* Current Goals Header */}
             <div className="mb-6">
               <h2 className="text-xl font-semibold text-gray-900">Current Goals:</h2>
             </div>
@@ -978,7 +830,6 @@ const handleAddGoalNote = async (goalId: string) => {
                     <div className="flex-1">
                       <h2 className="text-xl font-semibold text-gray-900 mb-2">{goal.title}</h2>
                       
-                      {/* Interactive Progress Bar */}
                       <div className="mb-4">
                         <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
                           <span>Progress</span>
@@ -992,7 +843,6 @@ const handleAddGoalNote = async (goalId: string) => {
                             className="bg-blue-600 h-3 rounded-full transition-all duration-300 relative"
                             style={{ width: `${goal.progress}%` }}
                           >
-                            {/* Draggable handle */}
                             <div
                               className="absolute right-0 top-1/2 transform translate-x-1/2 -translate-y-1/2 w-5 h-5 bg-blue-600 border-2 border-white rounded-full cursor-grab active:cursor-grabbing shadow-md hover:scale-110 transition-transform"
                               onMouseDown={(e) => handleProgressDragStart(e, goal.id)}
@@ -1055,11 +905,9 @@ const handleAddGoalNote = async (goalId: string) => {
 
                 {expandedGoals.has(goal.id) && (
                   <div className="p-6">
-                    {/* Weekly Progress - 6 boxes in 2 rows */}
                     <div className="mb-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-4">Weekly Progress</h3>
                       
-                      {/* Weeks 1-6 */}
                       <div className="grid grid-cols-6 gap-3 mb-3">
                         {weeks.slice(0, 6).map(weekNumber => {
                           const weekDates = getWeekDates(weekNumber);
@@ -1081,11 +929,6 @@ const handleAddGoalNote = async (goalId: string) => {
                                       {weekTasks.length} task{weekTasks.length !== 1 ? 's' : ''}
                                     </p>
                                   )}
-                                  {weekTasks.some(task => task.notes && task.notes.length > 0) && (
-                                    <p className="text-xs text-purple-600 mt-1">
-                                      📝 Has notes
-                                    </p>
-                                  )}
                                 </div>
                               </button>
                             </div>
@@ -1093,7 +936,6 @@ const handleAddGoalNote = async (goalId: string) => {
                         })}
                       </div>
                       
-                      {/* Weeks 7-12 */}
                       <div className="grid grid-cols-6 gap-3 mb-4">
                         {weeks.slice(6, 12).map(weekNumber => {
                           const weekDates = getWeekDates(weekNumber);
@@ -1115,11 +957,6 @@ const handleAddGoalNote = async (goalId: string) => {
                                       {weekTasks.length} task{weekTasks.length !== 1 ? 's' : ''}
                                     </p>
                                   )}
-                                  {weekTasks.some(task => task.notes && task.notes.length > 0) && (
-                                    <p className="text-xs text-purple-600 mt-1">
-                                      📝 Has notes
-                                    </p>
-                                  )}
                                 </div>
                               </button>
                             </div>
@@ -1127,27 +964,24 @@ const handleAddGoalNote = async (goalId: string) => {
                         })}
                       </div>
                       
-                      {/* Week 13 (Reflection Week) */}
                       {currentCycle.reflection_start && currentCycle.reflection_end && (
-  <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
-    <div className="text-center">
-      <h3 className="text-lg font-semibold text-purple-900 mb-1">
-        Week 13 (Reflection Week)
-      </h3>
-      <p className="text-purple-700">
-        {format(parseISO(currentCycle.reflection_start), 'd MMM')} - {format(parseISO(currentCycle.reflection_end), 'd MMM')}
-      </p>
-    </div>
-  </div>
-)}
+                        <div className="border-2 border-purple-200 rounded-lg p-4 bg-purple-50">
+                          <div className="text-center">
+                            <h3 className="text-lg font-semibold text-purple-900 mb-1">
+                              Week 13 (Reflection Week)
+                            </h3>
+                            <p className="text-purple-700">
+                              {format(parseISO(currentCycle.reflection_start), 'd MMM')} - {format(parseISO(currentCycle.reflection_end), 'd MMM')}
+                            </p>
+                          </div>
+                        </div>
+                      )}
 
                     </div>
                     
-                    {/* Goal Notes Section */}
                     <div className="border-t border-gray-200 pt-6">
                       <h3 className="text-lg font-medium text-gray-900 mb-4">Goal Notes</h3>
                       
-                      {/* Add Note Form */}
                       <div className="mb-4">
                         <div className="flex gap-2">
                           <textarea
@@ -1167,7 +1001,6 @@ const handleAddGoalNote = async (goalId: string) => {
                         </div>
                       </div>
                       
-                      {/* Display Notes */}
                       <div className="space-y-3">
                         {goalNotes[goal.id] && goalNotes[goal.id].length > 0 ? (
                           goalNotes[goal.id].map((note: any) => (
@@ -1262,7 +1095,6 @@ const handleAddGoalNote = async (goalId: string) => {
         </div>
       </main>
 
-      {/* Week Details Modal */}
       {selectedWeek && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">
@@ -1328,7 +1160,6 @@ const handleAddGoalNote = async (goalId: string) => {
                 
                 return (
                   <div className="space-y-4">
-                    {/* Urgent & Important */}
                     <PriorityQuadrant
                       title="Urgent & Important"
                       tasks={categorizedTasks.urgentImportant}
@@ -1339,7 +1170,6 @@ const handleAddGoalNote = async (goalId: string) => {
                       onTaskEdit={setEditingTask}
                     />
 
-                    {/* Not Urgent & Important */}
                     <PriorityQuadrant
                       title="Not Urgent & Important"
                       tasks={categorizedTasks.notUrgentImportant}
@@ -1350,7 +1180,6 @@ const handleAddGoalNote = async (goalId: string) => {
                       onTaskEdit={setEditingTask}
                     />
 
-                    {/* Urgent & Not Important */}
                     <PriorityQuadrant
                       title="Urgent & Not Important"
                       tasks={categorizedTasks.urgentNotImportant}
@@ -1361,7 +1190,6 @@ const handleAddGoalNote = async (goalId: string) => {
                       onTaskEdit={setEditingTask}
                     />
 
-                    {/* Not Urgent & Not Important */}
                     <PriorityQuadrant
                       title="Not Urgent & Not Important"
                       tasks={categorizedTasks.notUrgentNotImportant}
@@ -1379,7 +1207,6 @@ const handleAddGoalNote = async (goalId: string) => {
         </div>
       )}
 
-      {/* Modals */}
       {showGoalForm && (
         <TwelveWeekGoalForm
           onClose={() => setShowGoalForm(false)}
@@ -1398,20 +1225,20 @@ const handleAddGoalNote = async (goalId: string) => {
 
       {showWeeklyGoalForm && (
         <TaskEventForm
-  mode="create"
-  onClose={() => setShowWeeklyGoalForm(null)}
-  onSubmitSuccess={handleWeeklyGoalCreated}
-  initialData={{
-    schedulingType: 'task', // Set a default value instead of reading from null
-    twelveWeekGoalId: showWeeklyGoalForm.goalId,
-    weekNumber: showWeeklyGoalForm.weekNumber,
-    cycleStartDate: currentCycle?.start_date,
-    selectedRoleIds: showWeeklyGoalForm.roles.map(r => r.id),
-    selectedDomainIds: showWeeklyGoalForm.domains.map(d => d.id),
-    notes: `Week ${showWeeklyGoalForm.weekNumber} task for 12-week goal`,
-    twelveWeekGoalChecked: true // This property only needs to be listed once
-  }}
-/>
+          mode="create"
+          onClose={() => setShowWeeklyGoalForm(null)}
+          onSubmitSuccess={handleWeeklyGoalCreated}
+          initialData={{
+            schedulingType: 'task',
+            twelveWeekGoalId: showWeeklyGoalForm.goalId,
+            weekNumber: showWeeklyGoalForm.weekNumber,
+            cycleStartDate: currentCycle?.start_date,
+            selectedRoleIds: showWeeklyGoalForm.roles.map(r => r.id),
+            selectedDomainIds: showWeeklyGoalForm.domains.map(d => d.id),
+            notes: `Week ${showWeeklyGoalForm.weekNumber} task for 12-week goal`,
+            twelveWeekGoalChecked: true
+          }}
+        />
       )}
 
       {editingWeeklyGoal && (
@@ -1423,20 +1250,19 @@ const handleAddGoalNote = async (goalId: string) => {
         />
       )}
 
-      {/* Edit Task Modal */}
       {editingTask && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="w-full max-w-2xl mx-4">
-      <TaskEventForm
-        key={editingTask.id || "editing"}
-        mode="edit"
-        initialData={memoizedInitialData}
-        onClose={() => setEditingTask(null)}
-        onSubmitSuccess={handleTaskUpdated}
-      />
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              key={editingTask.id || "editing"}
+              mode="edit"
+              initialData={memoizedInitialData}
+              onClose={() => setEditingTask(null)}
+              onSubmitSuccess={handleTaskUpdated}
+            />
+          </div>
+        </div>
+      )}
 
     </div>
   );
