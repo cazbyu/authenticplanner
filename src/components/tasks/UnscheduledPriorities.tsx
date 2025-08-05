@@ -133,7 +133,7 @@ const memoizedInitialData = useMemo(
       <div className="h-full flex flex-col overflow-visible" style={{ minHeight: '100%' }}>
         <div className="flex-1 overflow-y-auto px-4 py-4 scrollbar-thin space-y-4" style={{ height: '100%', overflowY: 'auto' }}>
                 
-<h2 className="text-lg font-bold text-gray-800 mb-2">Your Priorities</h2>
+<h2 className="text-md font-bold text-gray-800 mb-2">Your Priorities</h2>
 {loading ? (
   <div className="flex h-32 items-center justify-center">
     <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent" />
