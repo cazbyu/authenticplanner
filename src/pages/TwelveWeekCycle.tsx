@@ -1272,4 +1272,4 @@ const handleAddGoalNote = async (goalId: string) => {
   );
 };
 
-export default TwelveWeekCyc
+export default TwelveWeekCycle;
