@@ -135,14 +135,36 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
         .eq('user_id', user.id);
       const taskIds = taskKeyRels?.map(j => j.parent_id) || [];
       
-      let allTasks: Task[] = [];
+      let allTasks: any[] = [];
       if (taskIds.length > 0) {
-        const { data: tasksData, error: tasksError } = await supabase
-            .from('0007-ap-tasks')
-            .select('*, task_roles:0007-ap-universal-roles-join(role_id), task_domains:0007-ap-universal-domains-join(domain_id)')
-            .in('id', taskIds);
-        if(tasksError) throw tasksError;
-        allTasks = tasksData || [];
+          const { data: tasksData, error: tasksError } = await supabase
+              .from('0007-ap-tasks')
+              .select('*')
+              .in('id', taskIds);
+          if (tasksError) throw tasksError;
+
+          const [domainsJoinRes, rolesJoinRes] = await Promise.all([
+              supabase.from('0007-ap-universal-domains-join').select('parent_id, domain_id').in('parent_id', taskIds),
+              supabase.from('0007-ap-universal-roles-join').select('parent_id, role_id').in('parent_id', taskIds)
+          ]);
+
+          const domainsByTask = (domainsJoinRes.data || []).reduce((acc, join) => {
+              if (!acc[join.parent_id]) acc[join.parent_id] = [];
+              acc[join.parent_id].push({ domain_id: join.domain_id });
+              return acc;
+          }, {} as Record<string, { domain_id: string }[]>);
+
+          const rolesByTask = (rolesJoinRes.data || []).reduce((acc, join) => {
+              if (!acc[join.parent_id]) acc[join.parent_id] = [];
+              acc[join.parent_id].push({ role_id: join.role_id });
+              return acc;
+          }, {} as Record<string, { role_id: string }[]>);
+          
+          allTasks = (tasksData || []).map(task => ({
+              ...task,
+              task_domains: domainsByTask[task.id] || [],
+              task_roles: rolesByTask[task.id] || [],
+          }));
       }
       setTasks(allTasks.filter(t => t.status === 'pending' || t.status === 'in_progress'));
       setCompletedTasks(allTasks.filter(t => t.status === 'completed'));
