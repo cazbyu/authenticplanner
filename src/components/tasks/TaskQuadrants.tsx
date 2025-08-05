@@ -4,6 +4,7 @@ import { supabase } from '../../supabaseClient';
 import DelegateTaskModal from './DelegateTaskModal';
 import TaskEventForm from '../tasks/TaskEventForm';
 import { formatTaskForForm } from '../../utils/taskHelpers';
+import UniversalTaskCard from '../tasks/UniversalTaskCard';
 
 
 interface Task {
