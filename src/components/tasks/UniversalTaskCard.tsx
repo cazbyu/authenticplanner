@@ -1,20 +1,29 @@
 import React from "react";
 
-// Example types. Adjust these if your project uses different ones:
+// Helper for sidebar color
+function getPriorityColor(task: any) {
+  if (task.is_urgent && task.is_important) return "bg-red-500";
+  if (!task.is_urgent && task.is_important) return "bg-green-500";
+  if (task.is_urgent && !task.is_important) return "bg-yellow-400";
+  return "bg-gray-400";
+}
+
 interface UniversalTaskCardProps {
   task: {
     id: string;
     title: string;
     due_date?: string;
-    tags?: string[]; // Add domains/roles here as needed
+    is_urgent?: boolean;
+    is_important?: boolean;
     roles?: string[];
     domains?: string[];
-    // ...other task fields
+    // ...other fields
   };
   onOpen: (task: any) => void;
   onComplete?: (taskId: string) => void;
   onDelegate?: (taskId: string) => void;
   onCancel?: (taskId: string) => void;
+  onFollowUp?: (taskId: string) => void;
 }
 
 const formatDueDate = (date?: string) => {
@@ -29,34 +38,41 @@ const UniversalTaskCard: React.FC<UniversalTaskCardProps> = ({
   onComplete,
   onDelegate,
   onCancel,
+  onFollowUp,
 }) => {
   return (
     <div
       className="flex items-center justify-between border rounded-lg shadow bg-white mb-3 px-4 py-3 hover:shadow-md cursor-pointer transition"
       onClick={() => onOpen(task)}
     >
-      {/* Left colored bar */}
-      <div className="w-1 h-full rounded-l bg-blue-500 mr-4" />
-      {/* Main task info */}
+      {/* Sidebar */}
+      <div className={`w-1 h-full rounded-l ${getPriorityColor(task)} mr-4`} />
+      {/* Main content */}
       <div className="flex-1 min-w-0" onClick={e => e.stopPropagation()}>
-        <div className="font-semibold text-lg mb-0.5">{task.title}</div>
-        <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-          <span className="flex items-center gap-1">
-            <svg className="w-4 h-4 inline-block" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3M16 7V3M4 11h16M5 21h14a2 2 0 002-2v-7a2 2 0 00-2-2H5a2 2 0 00-2 2v7a2 2 0 002 2z" /></svg>
-            Due {formatDueDate(task.due_date)}
-          </span>
+        <div className="font-semibold text-lg mb-0.5 flex items-center gap-2">
+          {task.title}
+          {task.due_date && (
+            <span className="text-xs text-gray-500 font-normal">
+              ({formatDueDate(task.due_date)})
+            </span>
+          )}
         </div>
-        {/* Roles/domains as chips (optional) */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 mt-1">
+          {task.roles?.length > 0 && (
+            <span className="text-xs font-semibold text-gray-500">R:</span>
+          )}
           {task.roles?.map(role => (
             <span key={role} className="bg-gray-200 rounded-full px-2 py-0.5 text-xs">{role}</span>
           ))}
+          {task.domains?.length > 0 && (
+            <span className="text-xs font-semibold text-gray-500 ml-2">D:</span>
+          )}
           {task.domains?.map(domain => (
             <span key={domain} className="bg-purple-200 rounded-full px-2 py-0.5 text-xs">{domain}</span>
           ))}
         </div>
       </div>
-      {/* Actions (right side) */}
+      {/* Action buttons */}
       <div className="flex items-center gap-3 ml-2 shrink-0">
         {onComplete && (
           <button
@@ -71,6 +87,18 @@ const UniversalTaskCard: React.FC<UniversalTaskCardProps> = ({
             title="Delegate"
             onClick={e => { e.stopPropagation(); onDelegate(task.id); }}
           >👤+</button>
+        )}
+        {onFollowUp && (
+          <button
+            className="hover:text-indigo-600"
+            title="Follow Up"
+            onClick={e => { e.stopPropagation(); onFollowUp(task.id); }}
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+            </svg>
+          </button>
         )}
         {onCancel && (
           <button
