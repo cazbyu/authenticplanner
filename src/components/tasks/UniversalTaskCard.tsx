@@ -2,6 +2,7 @@ import React from "react";
 
 // Helper for sidebar color
 function getPriorityColor(task: any) {
+  if (task.status === "completed") return "bg-blue-500";
   if (task.is_urgent && task.is_important) return "bg-red-500";
   if (!task.is_urgent && task.is_important) return "bg-green-500";
   if (task.is_urgent && !task.is_important) return "bg-yellow-400";
