@@ -136,7 +136,6 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
   setTasks(normalizedTasks);
 }
 
-
       if (rolesRes.data) {
         const rolesMap = rolesRes.data.reduce((acc, role) => ({ ...acc, [role.id]: role }), {});
         setRoles(rolesMap);
