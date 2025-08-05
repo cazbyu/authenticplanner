@@ -104,14 +104,15 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
       // Fetch tasks, roles, and domains
       const [tasksRes, rolesRes, domainsRes] = await Promise.all([
         supabase
-          .from('0007-ap-tasks')
-          .select(`
-            *,
-            task_roles:0007-ap-task-roles!task_id(role_id),
-            task_domains:0007-ap-task-domains(domain_id)
-           `)
-          .eq('user_id', user.id)
-          .in('status', ['pending', 'in_progress']),
+  .from('0007-ap-tasks')
+  .select(`
+    *,
+    universal_roles:0007-ap-universal-roles-join(parent_id, role_id, parent_type),
+    universal_domains:0007-ap-universal-domains-join(parent_id, domain_id, parent_type)
+   `)
+  .eq('user_id', user.id)
+  .in('status', ['pending', 'in_progress']),
+
         supabase
           .from('0007-ap-roles')
           .select('id, label')
