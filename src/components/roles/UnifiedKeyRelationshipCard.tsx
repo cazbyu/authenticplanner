@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
 import { toast } from 'sonner';
-import { Plus, Trash2, Edit3, Check, X, ChevronDown, ChevronUp, Clock, AlertTriangle, UserPlus } from 'lucide-react';
-import { getSignedImageUrl } from '../../utils/imageHelpers';
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react';
 import TaskEventForm from '../tasks/TaskEventForm';
 import { formatTaskForForm } from '../../utils/taskHelpers';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
+import UniversalTaskCard from '../tasks/UniversalTaskCard';
 
 interface KeyRelationship {
   id: string;
@@ -28,12 +28,8 @@ interface Task {
   is_twelve_week_goal?: boolean;
   notes?: string;
   completed_at?: string;
-  task_roles?: Array<{
-    role_id: string;
-  }>;
-  task_domains?: Array<{
-    domain_id: string;
-  }>;
+  task_roles?: Array<{ role_id: string }>;
+  task_domains?: Array<{ domain_id: string }>;
 }
 
 interface DepositIdea {
@@ -41,6 +37,8 @@ interface DepositIdea {
   title?: string;
   notes?: string;
   is_active: boolean;
+  activated_at?: string;
+  archived?: boolean;
 }
 
 interface Note {
@@ -55,6 +53,11 @@ interface Role {
   label: string;
 }
 
+interface Domain {
+    id: string;
+    name: string;
+}
+
 interface UnifiedKeyRelationshipCardProps {
   relationship: KeyRelationship;
   roleName: string;
@@ -66,206 +69,137 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
   relationship,
   roleName,
   onRelationshipUpdated,
-  onRelationshipDeleted,
 }) => {
-  // State for the relationship data
   const [name, setName] = useState(relationship.name);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-  // State for tasks, deposit ideas, and notes
   const [tasks, setTasks] = useState<Task[]>([]);
   const [depositIdeas, setDepositIdeas] = useState<DepositIdea[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
-  // State for new note input - simplified to single content box
   const [newNote, setNewNote] = useState('');
   const [addingNote, setAddingNote] = useState(false);
-
-  // Collapsible
   const [isExpanded, setIsExpanded] = useState(false);
-  // State for task management
   const [showAddTaskForm, setShowAddTaskForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
-  const memoizedInitialData = useMemo(() => formatTaskForForm(editingTask),
-  [editingTask]);
+  const memoizedInitialData = useMemo(() => formatTaskForForm(editingTask), [editingTask]);
   const [delegatingTask, setDelegatingTask] = useState<Task | null>(null);
-  const [taskViewMode, setTaskViewMode] = useState<'quadrant' | 'list'>('quadrant');
   const [taskSortBy, setTaskSortBy] = useState<'priority' | 'due_date' | 'completed'>('priority');
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
-  const [collapsedTaskQuadrants, setCollapsedTaskQuadrants] = useState({
-    'urgent-important': false,
-    'not-urgent-important': false,
-    'urgent-not-important': false,
-    'not-urgent-not-important': false,
-  });
-  // State for deposit ideas management
   const [showAddDepositIdeaForm, setShowAddDepositIdeaForm] = useState(false);
-  const [editingDepositIdea, setEditingDepositIdea] = useState<DepositIdea | null>(null);
+  const [editingDepositIdea, setEditingDepositIdea] = useState<any | null>(null);
   const [deletingDepositIdea, setDeletingDepositIdea] = useState<DepositIdea | null>(null);
   const [activatingDepositIdea, setActivatingDepositIdea] = useState<DepositIdea | null>(null);
+  const [allRoles, setAllRoles] = useState<Record<string, Role>>({});
+  const [allDomains, setAllDomains] = useState<Record<string, Domain>>({});
 
-  // Load initial data
   useEffect(() => {
-    loadRelationshipData();
-    loadNotes();
-    loadImage();
-  }, [relationship.id]);
+    if (isExpanded) {
+        fetchRolesAndDomains();
+        loadRelationshipData();
+        loadNotes();
+    }
+  }, [relationship.id, isExpanded]);
 
-  const loadImage = async () => {
-    if (relationship.image_path) {
-      const signedUrl = await getSignedImageUrl(relationship.image_path);
-      if (signedUrl) setImagePreview(signedUrl);
-    } else {
-      setImagePreview(null);
+  const fetchRolesAndDomains = async () => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const [rolesRes, domainsRes] = await Promise.all([
+            supabase.from('0007-ap-roles').select('id, label').eq('user_id', user.id),
+            supabase.from('0007-ap-domains').select('id, name')
+        ]);
+
+        if (rolesRes.data) {
+            const rolesMap = rolesRes.data.reduce((acc, role) => ({ ...acc, [role.id]: role }), {});
+            setAllRoles(rolesMap);
+        }
+        if (domainsRes.data) {
+            const domainsMap = domainsRes.data.reduce((acc, domain) => ({ ...acc, [domain.id]: domain }), {});
+            setAllDomains(domainsMap);
+        }
+    } catch (error) {
+        console.error("Error fetching all roles and domains:", error);
     }
   };
 
-  // Fetch tasks and deposit ideas for this key relationship
   const loadRelationshipData = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-
-      console.log("DEBUG: Current auth user.id is", user?.id);
-
       if (!user) return;
 
       // Fetch tasks
-      // Step 1: Fetch all task-key-relationship joins for this relationship
-const { data: taskKeyRels } = await supabase
-  .from('0007-ap-universal-key-relationships-join')
-  .select('parent_id')
-  .eq('key_relationship_id', relationship.id)
-  .eq('parent_type', 'task')
-  .eq('user_id', user.id);
-
-const taskIds = taskKeyRels?.map(j => j.parent_id) || [];
-
-// Step 2: Fetch all tasks by ID
-const { data: tasksData } = await supabase
-  .from('0007-ap-tasks')
-  .select('*')
-  .in('id', taskIds)
-  .eq('user_id', user.id);
-
-// Step 3: Fetch universal roles/domains/notes for these tasks
-
-// ROLES
-const { data: roleJoins } = await supabase
-  .from('0007-ap-universal-roles-join')
-  .select('parent_id, role_id')
-  .in('parent_id', taskIds)
-  .eq('parent_type', 'task')
-  .eq('user_id', user.id);
-const rolesByTaskId = {};
-roleJoins?.forEach(j => {
-  if (!rolesByTaskId[j.parent_id]) rolesByTaskId[j.parent_id] = [];
-  rolesByTaskId[j.parent_id].push(j.role_id);
-});
-
-// DOMAINS
-const { data: domainJoins } = await supabase
-  .from('0007-ap-universal-domains-join')
-  .select('parent_id, domain_id')
-  .in('parent_id', taskIds)
-  .eq('parent_type', 'task')
-  .eq('user_id', user.id);
-const domainsByTaskId = {};
-domainJoins?.forEach(j => {
-  if (!domainsByTaskId[j.parent_id]) domainsByTaskId[j.parent_id] = [];
-  domainsByTaskId[j.parent_id].push(j.domain_id);
-});
-
-// NOTES
-const { data: noteJoins } = await supabase
-  .from('0007-ap-universal-notes-join')
-  .select('parent_id, note_id')
-  .in('parent_id', taskIds)
-  .eq('parent_type', 'task')
-  .eq('user_id', user.id);
-const noteIds = noteJoins?.map(j => j.note_id) || [];
-const { data: notesData } = noteIds.length
-  ? await supabase.from('0007-ap-notes').select('id, content').in('id', noteIds)
-  : { data: [] };
-const notesByTaskId = {};
-noteJoins?.forEach(j => {
-  const note = notesData?.find(n => n.id === j.note_id);
-  if (note) notesByTaskId[j.parent_id] = note.content;
-});
-
-// Step 4: Attach relationships to each task
-const relationshipTasks = (tasksData || []).map(task => ({
-  ...task,
-  selectedRoleIds: rolesByTaskId[task.id] || [],
-  selectedDomainIds: domainsByTaskId[task.id] || [],
-  notes: notesByTaskId[task.id] || "",
-}));
-
-setTasks(relationshipTasks.filter(
-  (task: any) => task.status === 'pending' || task.status === 'in_progress'
-));
+      const { data: taskKeyRels } = await supabase
+        .from('0007-ap-universal-key-relationships-join')
+        .select('parent_id')
+        .eq('key_relationship_id', relationship.id)
+        .eq('parent_type', 'task')
+        .eq('user_id', user.id);
+      const taskIds = taskKeyRels?.map(j => j.parent_id) || [];
       
-      // Also check for deposit ideas linked via the junction table
-      const { data: depositIdeaLinks } = await supabase
-        .from('0007-ap-deposit-idea-key-relationships')
-        .select(`
-          deposit_idea:0007-ap-deposit-ideas(
-            id,
-            title,
-            notes,
-            is_active,
-            activated_at,
-            archived
-          )
-        `)
-        .eq('key_relationship_id', relationship.id);
-      const linkedDepositIdeas = depositIdeaLinks?.map(link => link.deposit_idea).filter(idea => 
-        idea && 
-        idea.is_active && 
-        !idea.activated_at && 
-        (!idea.archived || idea.archived === false)
-      ) || [];
+      let allTasks: Task[] = [];
+      if (taskIds.length > 0) {
+        const { data: tasksData, error: tasksError } = await supabase
+            .from('0007-ap-tasks')
+            .select('*, task_roles:0007-ap-universal-roles-join(role_id), task_domains:0007-ap-universal-domains-join(domain_id)')
+            .in('id', taskIds);
+        if(tasksError) throw tasksError;
+        allTasks = tasksData || [];
+      }
+      setTasks(allTasks.filter(t => t.status === 'pending' || t.status === 'in_progress'));
+      setCompletedTasks(allTasks.filter(t => t.status === 'completed'));
+      
+      // Fetch deposit ideas
+      const { data: ideaKeyRels } = await supabase
+        .from('0007-ap-universal-key-relationships-join')
+        .select('parent_id')
+        .eq('key_relationship_id', relationship.id)
+        .eq('parent_type', 'deposit_idea')
+        .eq('user_id', user.id);
+      const ideaIds = ideaKeyRels?.map(j => j.parent_id) || [];
 
-      // Combine and remove duplicates
-      const allDepositIdeas = [...linkedDepositIdeas];
-      const uniqueDepositIdeas = allDepositIdeas.filter((idea, index, self) => 
-        index === self.findIndex(i => i.id === idea.id)
-      );
-      setDepositIdeas(uniqueDepositIdeas);
+      let allIdeas: DepositIdea[] = [];
+      if(ideaIds.length > 0) {
+        const { data: ideasData, error: ideasError } = await supabase
+            .from('0007-ap-deposit-ideas')
+            .select('*')
+            .in('id', ideaIds)
+            .eq('is_active', true)
+            .is('activated_at', null)
+            .or('archived.is.null,archived.eq.false');
+        if(ideasError) throw ideasError;
+        allIdeas = ideasData || [];
+      }
+      setDepositIdeas(allIdeas);
+
     } catch (error) {
       console.error('Error loading relationship data:', error);
+      toast.error("Failed to load relationship details.");
     }
   };
 
-  // Fetch notes
   const loadNotes = async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
-
-      console.log("DEBUG: Current auth user.id is", user?.id);
-
       if (!user) return;
 
       const { data: noteLinks } = await supabase
-        .from('0007-ap-note-key-relationships')
-        .select(`
-          note:0007-ap-notes(id, content, created_at, updated_at, user_id)
-        `)
-        .eq('key_relationship_id', relationship.id);
-      const relationshipNotes = noteLinks?.map(link => link.note).filter(Boolean) || [];
+        .from('0007-ap-universal-notes-join')
+        .select('note:0007-ap-notes(id, content, created_at, updated_at)')
+        .eq('parent_id', relationship.id)
+        .eq('parent_type', 'key_relationship')
+        .eq('user_id', user.id);
+        
+      const relationshipNotes = noteLinks?.map((link: any) => link.note).filter(Boolean) || [];
       setNotes(relationshipNotes);
     } catch (error) {
       console.error('Error loading notes:', error);
     }
   };
 
-  // Add note - simplified to single content
   const addNote = async () => {
     if (!newNote.trim()) return;
     setAddingNote(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-
-      console.log("DEBUG: Current auth user.id is", user?.id);
-
       if (!user) throw new Error("User not authenticated");
 
       const { data: noteData, error: noteError } = await supabase
@@ -273,20 +207,12 @@ setTasks(relationshipTasks.filter(
         .insert({ user_id: user.id, content: newNote.trim() })
         .select()
         .single();
-      if (noteError) {
-        toast.error("Failed to add note: " + noteError.message);
-        setAddingNote(false);
-        return;
-      }
+      if (noteError) throw noteError;
 
       const { error: linkError } = await supabase
-        .from('0007-ap-note-key-relationships')
-        .insert({ note_id: noteData.id, key_relationship_id: relationship.id });
-      if (linkError) {
-        toast.error("Failed to link note: " + linkError.message);
-        setAddingNote(false);
-        return;
-      }
+        .from('0007-ap-universal-notes-join')
+        .insert({ note_id: noteData.id, parent_id: relationship.id, parent_type: 'key_relationship', user_id: user.id });
+      if (linkError) throw linkError;
 
       setNewNote('');
       loadNotes();
@@ -297,9 +223,17 @@ setTasks(relationshipTasks.filter(
     setAddingNote(false);
   };
 
-  // Helper function to sort tasks
+  const getTaskPriority = (task: Task) => {
+    if (task.is_urgent && task.is_important) return 1;
+    if (!task.is_urgent && task.is_important) return 2;
+    if (task.is_urgent && !task.is_important) return 3;
+    return 4;
+  };
+
   const sortTasks = (tasksToSort: Task[]) => {
     switch (taskSortBy) {
+      case 'priority':
+        return [...tasksToSort].sort((a, b) => getTaskPriority(a) - getTaskPriority(b));
       case 'due_date':
         return [...tasksToSort].sort((a, b) => {
           if (!a.due_date && !b.due_date) return 0;
@@ -318,158 +252,70 @@ setTasks(relationshipTasks.filter(
         return tasksToSort;
     }
   };
-
-  // Helper component for quadrant sections
-  const QuadrantSection: React.FC<{
-    id: string;
-    title: string;
-    tasks: Task[];
-    bgColor: string;
-    textColor: string;
-    borderColor: string;
-    icon: React.ReactNode;
-  }> = ({ id, title, tasks, bgColor, textColor, borderColor, icon }) => {
-    const isCollapsed = collapsedTaskQuadrants[id as keyof typeof collapsedTaskQuadrants];
+  
+  const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
+    if (action === 'delegate') {
+      const task = tasks.find(t => t.id === taskId) || completedTasks.find(t => t.id === taskId);
+      if (task) setDelegatingTask(task);
+      return;
+    }
     
-    return (
-      <div className="border rounded-lg">
-        <div 
-          className={`${bgColor} ${textColor} px-3 py-2 rounded-t-lg flex items-center justify-between cursor-pointer`}
-          onClick={() => setCollapsedTaskQuadrants(prev => ({ ...prev, [id]: !prev[id as keyof typeof prev] }))}
-        >
-          <div className="flex items-center gap-2">
-            {icon}
-            <span className="text-sm font-medium">{title}</span>
-            <span className="text-xs bg-white bg-opacity-20 rounded px-2">{tasks.length}</span>
-          </div>
-          {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-        </div>
-        {!isCollapsed && (
-          <div className="p-2 space-y-1">
-            {tasks.length === 0 ? (
-              <div className="text-gray-400 text-sm text-center py-2">No tasks</div>
-            ) : (
-              tasks.map((task) => (
-                <TaskCard 
-                  key={task.id} 
-                  task={task} 
-                  borderColor={borderColor}
-                />
-              ))
-            )}
-          </div>
-        )}
-      </div>
-    );
+    const updates = {
+      status: action === 'complete' ? 'completed' : 'cancelled',
+      completed_at: action === 'complete' ? new Date().toISOString() : null,
+    };
+
+    const { error } = await supabase.from('0007-ap-tasks').update(updates).eq('id', taskId);
+    if (error) {
+      toast.error(`Failed to ${action} task.`);
+    } else {
+      toast.success(`Task ${action}d.`);
+      loadRelationshipData();
+    }
   };
 
-  // Helper component for task cards
-  const TaskCard: React.FC<{
-    task: Task;
-    borderColor: string;
-  }> = ({ task, borderColor }) => (
-    <div className={`p-2 border-l-4 ${borderColor} bg-gray-50 rounded text-sm`}>
-      <div className="flex items-center justify-between">
-        <span className="flex-1">{task.title}</span>
-        <div className="flex items-center gap-1">
-          {task.is_authentic_deposit && (
-            <span className="text-xs bg-green-100 text-green-700 px-1 rounded">AD</span>
-          )}
-          {task.is_twelve_week_goal && (
-            <span className="text-xs bg-blue-100 text-blue-700 px-1 rounded">12W</span>
-          )}
-        </div>
-      </div>
-      {task.due_date && (
-        <div className="text-xs text-gray-500 mt-1">
-          Due: {new Date(task.due_date).toLocaleDateString()}
-        </div>
-      )}
-      <div className="flex justify-end items-center gap-1 mt-2">
-        <button 
-          onClick={() => handleEditTask(task)}
-          className="text-xs bg-blue-600 text-white rounded px-2 py-1 hover:bg-blue-700 transition-colors"
-        >
-          Edit
-        </button>
-        <button 
-          onClick={() => setDelegatingTask(task)}
-          className="text-xs bg-purple-600 text-white rounded px-2 py-1 hover:bg-purple-700 transition-colors"
-        >
-          <UserPlus className="h-3 w-3" />
-        </button>
-      </div>
-    </div>
-  );
-
-  // Handlers for tasks and ideas
   const handleTaskCreated = () => { setShowAddTaskForm(false); loadRelationshipData(); };
-  const handleEditTask = (task: Task) => { setEditingTask(task); };
   const handleTaskUpdated = () => { setEditingTask(null); loadRelationshipData(); };
   const handleDepositIdeaCreated = () => { setShowAddDepositIdeaForm(false); loadRelationshipData(); };
-  
+  const handleDepositIdeaUpdated = () => { setEditingDepositIdea(null); loadRelationshipData(); };
+
   const handleEditDepositIdea = async (idea: DepositIdea) => {
     const { data: { user } } = await supabase.auth.getUser();
-  // Fetch linked roles
-  const { data: rolesData } = await supabase
-    .from('0007-ap-roles-deposit-ideas')
-    .select('role_id')
-    .eq('deposit_idea_id', idea.id)
-    .eq('user_id', user.id);
-    
-    console.log('Fetched rolesData for Deposit Idea:', rolesData);
-
-  // Fetch linked domains
-  const { data: domainsData } = await supabase
-    .from('0007-ap-deposit-idea-domains')
-    .select('domain_id')
-    .eq('deposit_idea_id', idea.id)
-    .eq('user_id', user.id);
-
-  // Fetch linked key relationships
-  const { data: krsData } = await supabase
-    .from('0007-ap-deposit-idea-key-relationships')
-    .select('key_relationship_id')
-    .eq('deposit_idea_id', idea.id)
-    .eq('user_id', user.id);
-
-  // Fetch linked notes
-  let noteContent = '';
-  const { data: noteLink } = await supabase
-    .from('0007-ap-note-deposit-ideas')
-    .select('note:0007-ap-notes(content)')
-    .eq('deposit_idea_id', idea.id)
-    .eq('user_id', user.id)
-    .single();
-
-    console.log("Fetched rolesData for Deposit Idea:", rolesData);
-
-  if (noteLink && noteLink.note) {
-    noteContent = noteLink.note.content;
-  }
-
-  const fullIdeaData = {
-    ...idea,
-    notes: noteContent,
-    schedulingType: 'depositIdea',
-    selectedRoleIds: rolesData?.map(r => String(r.role_id)) || [],
-    selectedDomainIds: domainsData?.map(d => String(d.domain_id)) || [],
-    selectedKeyRelationshipIds: krsData?.map(kr => String(kr.key_relationship_id)) || [],
+    if (!user) return;
+  
+    const parentId = idea.id;
+    const parentType = 'deposit_idea';
+  
+    const [rolesJoinRes, domainsJoinRes, krJoinRes, notesJoinRes] = await Promise.all([
+      supabase.from('0007-ap-universal-roles-join').select('role_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id),
+      supabase.from('0007-ap-universal-domains-join').select('domain_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id),
+      supabase.from('0007-ap-universal-key-relationships-join').select('key_relationship_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id),
+      supabase.from('0007-ap-universal-notes-join').select('note_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id)
+    ]);
+  
+    let noteContent = '';
+    const noteId = notesJoinRes.data?.[0]?.note_id;
+    if (noteId) {
+      const { data: noteData } = await supabase.from('0007-ap-notes').select('content').eq('id', noteId).single();
+      noteContent = noteData?.content || '';
+    }
+  
+    const fullIdeaData = {
+      ...idea,
+      notes: noteContent,
+      schedulingType: 'depositIdea',
+      selectedRoleIds: rolesJoinRes.data?.map(r => r.role_id) || [],
+      selectedDomainIds: domainsJoinRes.data?.map(d => d.domain_id) || [],
+      selectedKeyRelationshipIds: krJoinRes.data?.map(kr => kr.key_relationship_id) || [],
+    };
+  
+    setEditingDepositIdea(fullIdeaData as any);
   };
-  console.log('Setting editingDepositIdea:', fullIdeaData);
-  setEditingDepositIdea(fullIdeaData);
-};
-
-
-  const handleDepositIdeaUpdated = () => { setEditingDepositIdea(null); loadRelationshipData(); };
 
   const handleDeleteDepositIdea = async () => {
     if (!deletingDepositIdea) return;
     try {
       const { data: { user } } = await supabase.auth.getUser();
-
-      console.log("DEBUG: Current auth user.id is", user?.id);
-
       if (!user) return;
       const { error } = await supabase.from('0007-ap-deposit-ideas').delete().eq('id', deletingDepositIdea.id).eq('user_id', user.id);
       if (error) {
@@ -477,8 +323,8 @@ setTasks(relationshipTasks.filter(
       } else {
         toast.success('Deposit idea deleted successfully!');
         setDeletingDepositIdea(null);
-        loadRelationshipData(); // This only refreshes the current card
-        onRelationshipUpdated(); // This tells the parent page to refresh
+        loadRelationshipData();
+        onRelationshipUpdated();
       }
     } catch (error) {
       toast.error('Failed to delete deposit idea');
@@ -504,7 +350,6 @@ setTasks(relationshipTasks.filter(
   return (
     <div className="bg-white border border-gray-200 rounded-xl p-4 mb-4 shadow-sm relative">
       <div className="flex items-center mb-3">
-        {imagePreview && <img src={imagePreview} alt={name} className="h-10 w-10 rounded-full object-cover border mr-3" />}
         <div>
           <div className="font-bold text-lg text-gray-900">{name}</div>
           <div className="text-sm text-gray-500">{roleName}</div>
@@ -526,31 +371,7 @@ setTasks(relationshipTasks.filter(
               <button onClick={() => setShowAddTaskForm(true)} className="ml-auto text-xs bg-blue-600 text-white rounded px-1 py-0.5 hover:bg-blue-700 transition-colors">Add</button>
             </div>
             
-            {/* Task View Controls */}
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setTaskViewMode('quadrant')}
-                  className={`px-2 py-1 text-xs rounded ${
-                    taskViewMode === 'quadrant'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  Quadrant
-                </button>
-                <button
-                  onClick={() => setTaskViewMode('list')}
-                  className={`px-2 py-1 text-xs rounded ${
-                    taskViewMode === 'list'
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  List
-                </button>
-              </div>
-              
+            <div className="flex items-center justify-end mb-3">
               <select
                 value={taskSortBy}
                 onChange={(e) => setTaskSortBy(e.target.value as 'priority' | 'due_date' | 'completed')}
@@ -562,68 +383,28 @@ setTasks(relationshipTasks.filter(
               </select>
             </div>
 
-            {/* Task Content */}
-            {taskViewMode === 'quadrant' && taskSortBy === 'priority' ? (
-              // Quadrant View
-              <div className="space-y-2">
-                <QuadrantSection
-                  id="urgent-important"
-                  title="Urgent & Important"
-                  tasks={tasks.filter(task => task.is_urgent && task.is_important)}
-                  bgColor="bg-red-500"
-                  textColor="text-white"
-                  borderColor="border-l-red-500"
-                  icon={<AlertTriangle className="h-3 w-3" />}
-                />
-                
-                <QuadrantSection
-                  id="not-urgent-important"
-                  title="Not Urgent & Important"
-                  tasks={tasks.filter(task => !task.is_urgent && task.is_important)}
-                  bgColor="bg-green-500"
-                  textColor="text-white"
-                  borderColor="border-l-green-500"
-                  icon={<Check className="h-3 w-3" />}
-                />
-                
-                <QuadrantSection
-                  id="urgent-not-important"
-                  title="Urgent & Not Important"
-                  tasks={tasks.filter(task => task.is_urgent && !task.is_important)}
-                  bgColor="bg-orange-500"
-                  textColor="text-white"
-                  borderColor="border-l-orange-500"
-                  icon={<Clock className="h-3 w-3" />}
-                />
-                
-                <QuadrantSection
-                  id="not-urgent-not-important"
-                  title="Not Urgent & Not Important"
-                  tasks={tasks.filter(task => !task.is_urgent && !task.is_important)}
-                  bgColor="bg-gray-500"
-                  textColor="text-white"
-                  borderColor="border-l-gray-500"
-                  icon={<X className="h-3 w-3" />}
-                />
-              </div>
-            ) : (
-              // List View
-              <div className="space-y-1">
-                {sortTasks(taskSortBy === 'completed' ? completedTasks : tasks).length === 0 ? (
-                  <div className="text-gray-400 text-sm text-center py-4">
-                    {taskSortBy === 'completed' ? 'No completed tasks' : 'No tasks for this relationship'}
-                  </div>
-                ) : (
-                  sortTasks(taskSortBy === 'completed' ? completedTasks : tasks).map((task) => (
-                    <TaskCard 
-                      key={task.id} 
-                      task={task} 
-                      borderColor="border-l-blue-500"
+            <div className="space-y-1">
+              {sortTasks(taskSortBy === 'completed' ? completedTasks : tasks).length === 0 ? (
+                <div className="text-gray-400 text-sm text-center py-4">
+                  {taskSortBy === 'completed' ? 'No completed tasks' : 'No tasks for this relationship'}
+                </div>
+              ) : (
+                sortTasks(taskSortBy === 'completed' ? completedTasks : tasks).map((task) => (
+                    <UniversalTaskCard
+                        key={task.id}
+                        task={{
+                            ...task,
+                            roles: (task.task_roles || []).map(tr => allRoles[tr.role_id]?.label).filter(Boolean),
+                            domains: (task.task_domains || []).map(td => allDomains[td.domain_id]?.name).filter(Boolean),
+                        }}
+                        onOpen={() => setEditingTask(task)}
+                        onComplete={(id) => handleTaskAction(id, 'complete')}
+                        onDelegate={(id) => handleTaskAction(id, 'delegate')}
+                        onCancel={(id) => handleTaskAction(id, 'cancel')}
                     />
-                  ))
-                )}
-              </div>
-            )}
+                ))
+              )}
+            </div>
           </div>
 
           {/* --- Deposit Ideas --- */}
@@ -692,22 +473,22 @@ setTasks(relationshipTasks.filter(
 
       {showAddTaskForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'task', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleTaskCreated} onClose={() => setShowAddTaskForm(false)} />}
       {editingTask && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-    <div className="w-full max-w-2xl mx-4">
-      <TaskEventForm
-        key={editingTask.id || "editing"}
-        mode="edit"
-        initialData={memoizedInitialData}
-        onClose={() => setEditingTask(null)}
-        onSubmitSuccess={handleTaskUpdated}
-      />
-    </div>
-  </div>
-)}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="w-full max-w-2xl mx-4">
+            <TaskEventForm
+              key={editingTask.id || "editing"}
+              mode="edit"
+              initialData={memoizedInitialData}
+              onClose={() => setEditingTask(null)}
+              onSubmitSuccess={handleTaskUpdated}
+            />
+          </div>
+        </div>
+      )}
 
       {delegatingTask && <DelegateTaskModal task={delegatingTask} onClose={() => setDelegatingTask(null)} onTaskUpdated={loadRelationshipData} />}
       {showAddDepositIdeaForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'depositIdea', selectedRoleIds: [relationship.role_id], selectedKeyRelationshipIds: [relationship.id] }} onSubmitSuccess={handleDepositIdeaCreated} onClose={() => setShowAddDepositIdeaForm(false)} />}
-      {editingDepositIdea && <TaskEventForm mode="edit" initialData={editingDepositIdea} onSubmitSuccess={handleDepositIdeaUpdated} onClose={() => setEditingDepositIdea(null)} />}
+      {editingDepositIdea && <TaskEventForm mode="edit" initialData={editingDepositIdea as any} onSubmitSuccess={handleDepositIdeaUpdated} onClose={() => setEditingDepositIdea(null)} />}
       
       {deletingDepositIdea && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black bg-opacity-50">
@@ -748,23 +529,29 @@ const ActivationTypeSelector: React.FC<{
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return;
 
-            // Securely fetch all related data with user_id check
-            const { data: roles } = await supabase.from('0007-ap-roles-deposit-ideas').select('role_id').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id);
-            const { data: domains } = await supabase.from('0007-ap-deposit-idea-domains').select('domain_id').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id);
-            const { data: krs } = await supabase.from('0007-ap-deposit-idea-key-relationships').select('key_relationship_id').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id);
-            
-            const { data: noteLink, error: noteError } = await supabase.from('0007-ap-note-deposit-ideas').select('note:0007-ap-notes(content)').eq('deposit_idea_id', depositIdea.id).eq('user_id', user.id).single();
+            const parentId = depositIdea.id;
+            const parentType = 'deposit_idea';
 
-            // Ignore the expected error if no note is found
-            if (noteError && noteError.code !== 'PGRST116') {
-                throw noteError;
+            const [rolesJoinRes, domainsJoinRes, krJoinRes, notesJoinRes] = await Promise.all([
+              supabase.from('0007-ap-universal-roles-join').select('role_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id),
+              supabase.from('0007-ap-universal-domains-join').select('domain_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id),
+              supabase.from('0007-ap-universal-key-relationships-join').select('key_relationship_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id),
+              supabase.from('0007-ap-universal-notes-join').select('note_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id)
+            ]);
+            
+            let noteContent = '';
+            const noteId = notesJoinRes.data?.[0]?.note_id;
+            if (noteId) {
+              const { data: noteData, error: noteError } = await supabase.from('0007-ap-notes').select('content').eq('id', noteId).single();
+              if (noteError && noteError.code !== 'PGRST116') throw noteError;
+              noteContent = noteData?.content || '';
             }
 
             setPivotIds({
-              selectedRoleIds: roles?.map(r => r.role_id) || [],
-              selectedDomainIds: domains?.map(d => d.domain_id) || [],
-              selectedKeyRelationshipIds: krs?.map(k => k.key_relationship_id) || [],
-              notes: noteLink?.note?.content || ''
+              selectedRoleIds: rolesJoinRes.data?.map((r: any) => r.role_id) || [],
+              selectedDomainIds: domainsJoinRes.data?.map((d: any) => d.domain_id) || [],
+              selectedKeyRelationshipIds: krJoinRes.data?.map((k: any) => k.key_relationship_id) || [],
+              notes: noteContent
             });
         } catch (error) {
             toast.error("Failed to load idea details for activation.");
@@ -782,9 +569,9 @@ const ActivationTypeSelector: React.FC<{
         title: depositIdea.title,
         notes: pivotIds.notes,
         schedulingType: showTaskEventForm,
-        selectedRoleIds: pivotIds.selectedRoleIds.length ? pivotIds.selectedRoleIds : [selectedRole.id],
+        selectedRoleIds: pivotIds.selectedRoleIds.length > 0 ? pivotIds.selectedRoleIds : [selectedRole.id],
         selectedDomainIds: pivotIds.selectedDomainIds,
-        selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds.length ? pivotIds.selectedKeyRelationshipIds : (relationship ? [relationship.id] : []),
+        selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds.length > 0 ? pivotIds.selectedKeyRelationshipIds : (relationship ? [relationship.id] : []),
         authenticDeposit: true,
         isFromDepositIdea: true,
         originalDepositIdeaId: depositIdea.id
