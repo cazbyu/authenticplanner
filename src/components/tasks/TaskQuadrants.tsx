@@ -359,12 +359,21 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
               ) : (
                 <div className="space-y-2">
                   {tasks.map((task) => (
-                    <TaskCard 
-                      key={task.id} 
-                      task={task} 
-                      borderColor={borderColor}
-                    />
-                  ))}
+  <UniversalTaskCard
+    key={task.id}
+    task={{
+      ...task,
+      roles: (task.task_roles || []).map(tr => roles[tr.role_id]?.label).filter(Boolean),
+      domains: (task.task_domains || []).map(td => domains[td.domain_id]?.name).filter(Boolean),
+    }}
+    onOpen={() => handleTaskEdit(task)}
+    onComplete={(id) => handleTaskAction(id, 'complete', { stopPropagation: () => {} } as any)}
+    onDelegate={(id) => handleTaskAction(id, 'delegate', { stopPropagation: () => {} } as any)}
+    onCancel={(id) => handleTaskAction(id, 'cancel', { stopPropagation: () => {} } as any)}
+    // onFollowUp={...} // add when you have a follow up handler
+  />
+))}
+
                 </div>
               )}
             </div>
