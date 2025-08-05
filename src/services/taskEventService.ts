@@ -128,16 +128,22 @@ if (form.notes?.trim()) {
   // -------- Universal Roles Join --------
   if (form.selectedRoleIds?.length > 0) {
     // Remove old joins for this parent
+        // Force parent_type = "task" for all task saves/updates
+    const joinParentType = form.schedulingType === "task" ? "task"
+                          : form.schedulingType === "event" ? "event"
+                          : "depositIdea";
+
+    // ...then, when working with join tables:
     await supabase.from("0007-ap-universal-roles-join")
       .delete()
       .eq("user_id", user.id)
-      .eq("parent_type", form.schedulingType)
+      .eq("parent_type", joinParentType)
       .eq("parent_id", recordId);
 
     const roleRows = form.selectedRoleIds.map((roleId: string) => ({
       user_id: user.id,
       role_id: roleId,
-      parent_type: form.schedulingType,
+      parent_type: joinParentType,
       parent_id: recordId,
     }));
     await supabase.from("0007-ap-universal-roles-join").insert(roleRows);
