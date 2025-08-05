@@ -47,7 +47,11 @@ const UniversalTaskCard: React.FC<UniversalTaskCardProps> = ({
       onClick={() => onOpen(task)}
     >
       {/* Sidebar */}
-      <div className={`w-1 h-full rounded-l ${getPriorityColor(task)} mr-4`} />
+      <div
+  className={`flex items-center justify-between border rounded-lg shadow bg-white mb-3 px-4 py-3 hover:shadow-md cursor-pointer transition border-l-8 ${getPriorityColor(task)}`}
+  onClick={() => onOpen(task)}
+>
+
       {/* Main content */}
       <div className="flex-1 min-w-0" onClick={e => e.stopPropagation()}>
         <div className="font-semibold text-lg mb-0.5 flex items-center gap-2">
