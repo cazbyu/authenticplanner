@@ -133,19 +133,17 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
       if (!user) return;
 
       let query = supabase
-        .from('0007-ap-tasks')
-        .select(`
-          id,
-          title,
-          due_date,
-          is_urgent,
-          is_important,
-          created_at,
-          completed_at,
-          status,
-          task_roles,
-          task_domains
-        `)
+  .from('0007-ap-tasks')
+  .select(`
+    id,
+    title,
+    due_date,
+    is_urgent,
+    is_important,
+    created_at,
+    completed_at,
+    status
+  `)
         .eq('user_id', user.id);
 
       if (sortBy === 'delegated') {
