@@ -148,176 +148,157 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   };
 
   const fetchRoleData = async (roleId: string) => {
-    try {
-      setLoading(true);
-      const { data: { user } } = await supabase.auth.getUser();
+  try {
+    setLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
 
-      if (!user) return;
+    if (!user) return;
 
-      // Fetch Task IDs linked to the role
-      const { data: taskRoleLinks, error: taskRoleError } = await supabase
-        .from('0007-ap-task-roles')
-        .select('task_id')
-        .eq('role_id', roleId);
-      if (taskRoleError) throw taskRoleError;
-      const taskIds = taskRoleLinks?.map(link => link.task_id) || [];
+    // 1. Get all task IDs linked to this role using the universal roles join
+    const { data: roleJoins, error: roleJoinsError } = await supabase
+      .from('0007-ap-universal-roles-join')
+      .select('parent_id')
+      .eq('role_id', roleId)
+      .eq('parent_type', 'task')
+      .eq('user_id', user.id);
 
-      // Fetch Tasks
-      if (taskIds.length > 0) {
-        // New code — fetch just the tasks (no joins)
-const { data: tasksData, error: tasksError } = await supabase
-  .from('0007-ap-tasks')
-  .select('*')
-  .in('id', taskIds)
-  .eq('user_id', user.id);
+    if (roleJoinsError) throw roleJoinsError;
+    const taskIds = roleJoins?.map(j => j.parent_id) || [];
 
-     const allTaskIds = tasksData?.map(task => task.id) || [];
-
-// Fetch roles for these tasks
-const { data: roleJoins } = await supabase
-  .from('0007-ap-universal-roles-join')
-  .select('parent_id, role_id')
-  .in('parent_id', allTaskIds)
-  .eq('parent_type', 'task')
-  .eq('user_id', user.id);
-
-// Fetch domains for these tasks
-const { data: domainJoins } = await supabase
-  .from('0007-ap-universal-domains-join')
-  .select('parent_id, domain_id')
-  .in('parent_id', allTaskIds)
-  .eq('parent_type', 'task')
-  .eq('user_id', user.id);
-
-// Fetch key relationships for these tasks
-const { data: krJoins } = await supabase
-  .from('0007-ap-universal-key-relationships-join')
-  .select('parent_id, key_relationship_id')
-  .in('parent_id', allTaskIds)
-  .eq('parent_type', 'task')
-  .eq('user_id', user.id);
-
-// Fetch note joins for these tasks
-const { data: noteJoins } = await supabase
-  .from('0007-ap-universal-notes-join')
-  .select('parent_id, note_id')
-  .in('parent_id', allTaskIds)
-  .eq('parent_type', 'task')
-  .eq('user_id', user.id);
-
-// Fetch actual note contents
-const noteIds = noteJoins?.map(j => j.note_id) || [];
-const { data: notesData } = noteIds.length
-  ? await supabase.from('0007-ap-notes').select('id, content').in('id', noteIds)
-  : { data: [] };
-
-  // Create maps for quick lookup by task id
-const rolesByTaskId = {};
-roleJoins?.forEach(j => {
-  if (!rolesByTaskId[j.parent_id]) rolesByTaskId[j.parent_id] = [];
-  rolesByTaskId[j.parent_id].push(j.role_id);
-});
-
-const domainsByTaskId = {};
-domainJoins?.forEach(j => {
-  if (!domainsByTaskId[j.parent_id]) domainsByTaskId[j.parent_id] = [];
-  domainsByTaskId[j.parent_id].push(j.domain_id);
-});
-
-const keyRelationshipsByTaskId = {};
-krJoins?.forEach(j => {
-  if (!keyRelationshipsByTaskId[j.parent_id]) keyRelationshipsByTaskId[j.parent_id] = [];
-  keyRelationshipsByTaskId[j.parent_id].push(j.key_relationship_id);
-});
-
-const notesByTaskId = {};
-noteJoins?.forEach(j => {
-  const note = notesData?.find(n => n.id === j.note_id);
-  if (note) notesByTaskId[j.parent_id] = note.content;
-});
-      
-        if (tasksError) throw tasksError;
-        
-        // Separate active and completed tasks
-        const activeTasks = (tasksData || []).filter(task =>
-  task.status === 'pending' || task.status === 'in_progress'
-).map(task => ({
-  ...task,
-  selectedRoleIds: rolesByTaskId[task.id] || [],
-  selectedDomainIds: domainsByTaskId[task.id] || [],
-  selectedKeyRelationshipIds: keyRelationshipsByTaskId[task.id] || [],
-  notes: notesByTaskId[task.id] || ""
-}));
-
-const completedTasksList = (tasksData || []).filter(task =>
-  task.status === 'completed'
-).map(task => ({
-  ...task,
-  selectedRoleIds: rolesByTaskId[task.id] || [],
-  selectedDomainIds: domainsByTaskId[task.id] || [],
-  selectedKeyRelationshipIds: keyRelationshipsByTaskId[task.id] || [],
-  notes: notesByTaskId[task.id] || ""
-}));
-
-setTasks(activeTasks);
-setCompletedTasks(completedTasksList);
-
-      } else {
-        setTasks([]);
-        setCompletedTasks([]);
-      }
-
-      // Fetch Key Relationships
-      const { data: relationshipsData, error: relationshipsError } = await supabase
-        .from('0007-ap-key-relationships')
+    // 2. Fetch all tasks for those IDs (if any)
+    let tasksData: Task[] = [];
+    if (taskIds.length > 0) {
+      const { data, error } = await supabase
+        .from('0007-ap-tasks')
         .select('*')
-        .eq('role_id', roleId);
-      if (relationshipsError) throw relationshipsError;
-      setRelationships(relationshipsData || []);
-
-      // Fetch Deposit Idea IDs linked to the role
-      const { data: roleDepositIdeaLinks, error: roleDepositError } = await supabase
-        .from('0007-ap-roles-deposit-ideas')
-        .select('deposit_idea_id')
-        .eq('role_id', roleId);
-      if (roleDepositError) throw roleDepositError;
-      const depositIdeaIdsFromRoles = roleDepositIdeaLinks?.map(link => link.deposit_idea_id) || [];
-
-      // Fetch Deposit Idea IDs linked to Key Relationships
-      const relationshipIds = relationshipsData?.map(r => r.id) || [];
-      let depositIdeaIdsFromKR: string[] = [];
-      if (relationshipIds.length > 0) {
-        const { data: krDepositLinks, error: krDepositError } = await supabase
-          .from('0007-ap-deposit-idea-key-relationships')
-          .select('deposit_idea_id')
-          .in('key_relationship_id', relationshipIds);
-        if (krDepositError) throw krDepositError;
-        depositIdeaIdsFromKR = krDepositLinks?.map(link => link.deposit_idea_id) || [];
-      }
-
-      // Combine and fetch all unique deposit ideas
-      const allDepositIdeaIds = [...new Set([...depositIdeaIdsFromRoles, ...depositIdeaIdsFromKR])];
-      if (allDepositIdeaIds.length > 0) {
-        const { data: depositIdeasData, error: depositIdeasError } = await supabase
-          .from('0007-ap-deposit-ideas')
-          .select('*')
-          .in('id', allDepositIdeaIds)
-          .eq('is_active', true)
-          .is('activated_at', null)
-          .or('archived.is.null,archived.eq.false');
-        if (depositIdeasError) throw depositIdeasError;
-        setRoleDepositIdeas(depositIdeasData || []);
-      } else {
-        setRoleDepositIdeas([]);
-      }
-
-    } catch (error) {
-      console.error('Error fetching role data:', error);
-      toast.error('Failed to load role details.');
-    } finally {
-      setLoading(false);
+        .in('id', taskIds)
+        .eq('user_id', user.id);
+      if (error) throw error;
+      tasksData = data || [];
     }
-  };
+
+    // 3. Fetch all joins for those tasks
+    const [domainsJoinRes, krJoinRes, notesJoinRes] = await Promise.all([
+      supabase
+        .from('0007-ap-universal-domains-join')
+        .select('parent_id, domain_id')
+        .in('parent_id', taskIds)
+        .eq('parent_type', 'task')
+        .eq('user_id', user.id),
+      supabase
+        .from('0007-ap-universal-key-relationships-join')
+        .select('parent_id, key_relationship_id')
+        .in('parent_id', taskIds)
+        .eq('parent_type', 'task')
+        .eq('user_id', user.id),
+      supabase
+        .from('0007-ap-universal-notes-join')
+        .select('parent_id, note_id')
+        .in('parent_id', taskIds)
+        .eq('parent_type', 'task')
+        .eq('user_id', user.id)
+    ]);
+
+    // 4. Fetch notes content for all linked notes
+    const noteIds = (notesJoinRes.data || []).map(j => j.note_id) || [];
+    const { data: notesData } = noteIds.length
+      ? await supabase.from('0007-ap-notes').select('id, content').in('id', noteIds)
+      : { data: [] };
+
+    // 5. Merge joins into each task
+    const domainsByTaskId = {};
+    (domainsJoinRes.data || []).forEach(j => {
+      if (!domainsByTaskId[j.parent_id]) domainsByTaskId[j.parent_id] = [];
+      domainsByTaskId[j.parent_id].push(j.domain_id);
+    });
+
+    const keyRelationshipsByTaskId = {};
+    (krJoinRes.data || []).forEach(j => {
+      if (!keyRelationshipsByTaskId[j.parent_id]) keyRelationshipsByTaskId[j.parent_id] = [];
+      keyRelationshipsByTaskId[j.parent_id].push(j.key_relationship_id);
+    });
+
+    const notesByTaskId = {};
+    (notesJoinRes.data || []).forEach(j => {
+      const note = notesData?.find(n => n.id === j.note_id);
+      if (note) notesByTaskId[j.parent_id] = note.content;
+    });
+
+    // 6. Attach arrays to each task object for UI
+    const activeTasks = (tasksData || []).filter(task =>
+      task.status === 'pending' || task.status === 'in_progress'
+    ).map(task => ({
+      ...task,
+      task_roles: [{ role_id: roleId }], // This view is filtered by role
+      task_domains: (domainsByTaskId[task.id] || []).map(domain_id => ({ domain_id })),
+      task_key_relationships: (keyRelationshipsByTaskId[task.id] || []).map(key_relationship_id => ({ key_relationship_id })),
+      notes: notesByTaskId[task.id] || ""
+    }));
+
+    const completedTasksList = (tasksData || []).filter(task =>
+      task.status === 'completed'
+    ).map(task => ({
+      ...task,
+      task_roles: [{ role_id: roleId }],
+      task_domains: (domainsByTaskId[task.id] || []).map(domain_id => ({ domain_id })),
+      task_key_relationships: (keyRelationshipsByTaskId[task.id] || []).map(key_relationship_id => ({ key_relationship_id })),
+      notes: notesByTaskId[task.id] || ""
+    }));
+
+    setTasks(activeTasks);
+    setCompletedTasks(completedTasksList);
+
+    // 7. Fetch Key Relationships for this role
+    const { data: relationshipsData, error: relationshipsError } = await supabase
+      .from('0007-ap-key-relationships')
+      .select('*')
+      .eq('role_id', roleId);
+    if (relationshipsError) throw relationshipsError;
+    setRelationships(relationshipsData || []);
+
+    // 8. Fetch Deposit Ideas for this role (using your legacy join, or update to universal if you standardize deposit idea joins)
+    const { data: roleDepositIdeaLinks, error: roleDepositError } = await supabase
+      .from('0007-ap-roles-deposit-ideas')
+      .select('deposit_idea_id')
+      .eq('role_id', roleId);
+    if (roleDepositError) throw roleDepositError;
+    const depositIdeaIdsFromRoles = roleDepositIdeaLinks?.map(link => link.deposit_idea_id) || [];
+
+    // Fetch Deposit Idea IDs linked to Key Relationships
+    const relationshipIds = relationshipsData?.map(r => r.id) || [];
+    let depositIdeaIdsFromKR: string[] = [];
+    if (relationshipIds.length > 0) {
+      const { data: krDepositLinks, error: krDepositError } = await supabase
+        .from('0007-ap-deposit-idea-key-relationships')
+        .select('deposit_idea_id')
+        .in('key_relationship_id', relationshipIds);
+      if (krDepositError) throw krDepositError;
+      depositIdeaIdsFromKR = krDepositLinks?.map(link => link.deposit_idea_id) || [];
+    }
+
+    // Combine and fetch all unique deposit ideas
+    const allDepositIdeaIds = [...new Set([...depositIdeaIdsFromRoles, ...depositIdeaIdsFromKR])];
+    if (allDepositIdeaIds.length > 0) {
+      const { data: depositIdeasData, error: depositIdeasError } = await supabase
+        .from('0007-ap-deposit-ideas')
+        .select('*')
+        .in('id', allDepositIdeaIds)
+        .eq('is_active', true)
+        .is('activated_at', null)
+        .or('archived.is.null,archived.eq.false');
+      if (depositIdeasError) throw depositIdeasError;
+      setRoleDepositIdeas(depositIdeasData || []);
+    } else {
+      setRoleDepositIdeas([]);
+    }
+
+  } catch (error) {
+    console.error('Error fetching role data:', error);
+    toast.error('Failed to load role details.');
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
     if (action === 'delegate') {
