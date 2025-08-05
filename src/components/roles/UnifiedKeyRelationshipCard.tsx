@@ -129,31 +129,79 @@ const UnifiedKeyRelationshipCard: React.FC<UnifiedKeyRelationshipCardProps> = ({
       if (!user) return;
 
       // Fetch tasks
-      const { data: taskLinks } = await supabase
-        .from('0007-ap-task-key-relationships')
-        .select(`
-          task:0007-ap-tasks(
-            id,
-            title,
-            status,
-            due_date,
-            start_time,
-            end_time,
-            is_urgent,
-            is_important,
-            is_authentic_deposit,
-            is_twelve_week_goal,
-            notes,
-            completed_at,
-            task_roles:0007-ap-task-roles!task_id(role_id),
-            task_domains:0007-ap-task-domains(domain_id)
-          )
-        `)
-        .eq('key_relationship_id', relationship.id);
-      const relationshipTasks = taskLinks?.map(link => link.task).filter(Boolean) || [];
-      setTasks(relationshipTasks.filter(
-        (task: Task) => task.status === 'pending' || task.status === 'in_progress'
-      ));
+      // Step 1: Fetch all task-key-relationship joins for this relationship
+const { data: taskKeyRels } = await supabase
+  .from('0007-ap-universal-key-relationships-join')
+  .select('parent_id')
+  .eq('key_relationship_id', relationship.id)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+
+const taskIds = taskKeyRels?.map(j => j.parent_id) || [];
+
+// Step 2: Fetch all tasks by ID
+const { data: tasksData } = await supabase
+  .from('0007-ap-tasks')
+  .select('*')
+  .in('id', taskIds)
+  .eq('user_id', user.id);
+
+// Step 3: Fetch universal roles/domains/notes for these tasks
+
+// ROLES
+const { data: roleJoins } = await supabase
+  .from('0007-ap-universal-roles-join')
+  .select('parent_id, role_id')
+  .in('parent_id', taskIds)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+const rolesByTaskId = {};
+roleJoins?.forEach(j => {
+  if (!rolesByTaskId[j.parent_id]) rolesByTaskId[j.parent_id] = [];
+  rolesByTaskId[j.parent_id].push(j.role_id);
+});
+
+// DOMAINS
+const { data: domainJoins } = await supabase
+  .from('0007-ap-universal-domains-join')
+  .select('parent_id, domain_id')
+  .in('parent_id', taskIds)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+const domainsByTaskId = {};
+domainJoins?.forEach(j => {
+  if (!domainsByTaskId[j.parent_id]) domainsByTaskId[j.parent_id] = [];
+  domainsByTaskId[j.parent_id].push(j.domain_id);
+});
+
+// NOTES
+const { data: noteJoins } = await supabase
+  .from('0007-ap-universal-notes-join')
+  .select('parent_id, note_id')
+  .in('parent_id', taskIds)
+  .eq('parent_type', 'task')
+  .eq('user_id', user.id);
+const noteIds = noteJoins?.map(j => j.note_id) || [];
+const { data: notesData } = noteIds.length
+  ? await supabase.from('0007-ap-notes').select('id, content').in('id', noteIds)
+  : { data: [] };
+const notesByTaskId = {};
+noteJoins?.forEach(j => {
+  const note = notesData?.find(n => n.id === j.note_id);
+  if (note) notesByTaskId[j.parent_id] = note.content;
+});
+
+// Step 4: Attach relationships to each task
+const relationshipTasks = (tasksData || []).map(task => ({
+  ...task,
+  selectedRoleIds: rolesByTaskId[task.id] || [],
+  selectedDomainIds: domainsByTaskId[task.id] || [],
+  notes: notesByTaskId[task.id] || "",
+}));
+
+setTasks(relationshipTasks.filter(
+  (task: any) => task.status === 'pending' || task.status === 'in_progress'
+));
       
       // Also check for deposit ideas linked via the junction table
       const { data: depositIdeaLinks } = await supabase
