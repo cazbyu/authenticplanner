@@ -8,6 +8,7 @@ import { formatTaskForForm } from '../../utils/taskHelpers';
 import DelegateTaskModal from '../tasks/DelegateTaskModal';
 import DepositIdeaCard from '../shared/DepositIdeaCard';
 import { toast } from "sonner";
+import UniversalTaskCard from '../tasks/UniversalTaskCard'; // Import the UniversalTaskCard
 
 // Interfaces
 interface Role {
@@ -29,7 +30,6 @@ interface Task {
   is_twelve_week_goal: boolean;
   notes?: string;
   completed_at?: string; // Added for sorting completed tasks
-  // Added to support the form formatter
   task_roles: { role_id: string }[];
   task_domains: { domain_id: string }[];
   task_key_relationships: { key_relationship_id: string }[];
@@ -81,18 +81,11 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
   const [deletingDepositIdea, setDeletingDepositIdea] = useState<DepositIdea | null>(null);
   
   // Task view state
-  const [taskViewMode, setTaskViewMode] = useState<'quadrant' | 'list'>('quadrant');
-  const [taskSortBy, setTaskSortBy] = useState<'priority' | 'due_date' | 'completed'>('priority');
+  const [taskSortBy, setTaskSortBy] = useState<'due_date' | 'priority' | 'completed'>('due_date');
   const [completedTasks, setCompletedTasks] = useState<Task[]>([]);
-  const [collapsedTaskQuadrants, setCollapsedTaskQuadrants] = useState({
-    'urgent-important': false,
-    'not-urgent-important': false,
-    'urgent-not-important': false,
-    'not-urgent-not-important': false,
-  });
 
   useEffect(() => {
-    fetchDomains();
+    fetchRolesAndDomains(); // Fetch all roles and domains for the UniversalTaskCard
   }, []);
 
   useEffect(() => {
@@ -104,6 +97,32 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       fetchRoleData(selectedRole.id);
     }
   }, [selectedRole]);
+
+  const [allRoles, setAllRoles] = useState<Record<string, Role>>({});
+  const [allDomains, setAllDomains] = useState<Record<string, Domain>>({});
+
+  const fetchRolesAndDomains = async () => {
+    try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const [rolesRes, domainsRes] = await Promise.all([
+            supabase.from('0007-ap-roles').select('id, label').eq('user_id', user.id),
+            supabase.from('0007-ap-domains').select('id, name')
+        ]);
+
+        if (rolesRes.data) {
+            const rolesMap = rolesRes.data.reduce((acc, role) => ({ ...acc, [role.id]: role }), {});
+            setAllRoles(rolesMap);
+        }
+        if (domainsRes.data) {
+            const domainsMap = domainsRes.data.reduce((acc, domain) => ({ ...acc, [domain.id]: domain }), {});
+            setAllDomains(domainsMap);
+        }
+    } catch (error) {
+        console.error("Error fetching all roles and domains:", error);
+    }
+  };
 
   const fetchRoles = async () => {
     try {
@@ -133,25 +152,13 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
   };
 
-  const fetchDomains = async () => {
-    try {
-      const { data: domainData, error } = await supabase.from('0007-ap-domains').select('id, name');
-      if (error) throw error;
-      setDomains(
-        (domainData || []).reduce((acc, d) => ({ ...acc, [d.id]: d }), {})
-      );
-    } catch (err) {
-      console.error("Error fetching domains:", err);
-    }
-  };
-
   const fetchRoleData = async (roleId: string) => {
     try {
       setLoading(true);
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      // 1. Get all task IDs linked to this role using the universal roles join
+      // 1. Get all task IDs linked to this role
       const { data: roleJoins, error: roleJoinsError } = await supabase
         .from('0007-ap-universal-roles-join')
         .select('parent_id')
@@ -162,75 +169,47 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       if (roleJoinsError) throw roleJoinsError;
       const taskIds = roleJoins?.map(j => j.parent_id) || [];
 
-      // 2. Fetch all tasks for those IDs (if any)
-      let tasksData: Task[] = [];
+      // 2. Fetch all tasks for those IDs, and separately fetch their joins
+      let tasksData: any[] = [];
       if (taskIds.length > 0) {
-        const { data, error } = await supabase
-          .from('0007-ap-tasks')
-          .select('*')
-          .in('id', taskIds)
-          .eq('user_id', user.id);
-        if (error) throw error;
-        tasksData = data || [];
+          const { data, error } = await supabase
+              .from('0007-ap-tasks')
+              .select('*')
+              .in('id', taskIds)
+              .eq('user_id', user.id);
+          if (error) throw error;
+
+          const [domainsJoinRes, rolesJoinRes] = await Promise.all([
+              supabase.from('0007-ap-universal-domains-join').select('parent_id, domain_id').in('parent_id', taskIds),
+              supabase.from('0007-ap-universal-roles-join').select('parent_id, role_id').in('parent_id', taskIds)
+          ]);
+
+          const domainsByTask = (domainsJoinRes.data || []).reduce((acc, join) => {
+              if (!acc[join.parent_id]) acc[join.parent_id] = [];
+              acc[join.parent_id].push({ domain_id: join.domain_id });
+              return acc;
+          }, {} as Record<string, { domain_id: string }[]>);
+
+          const rolesByTask = (rolesJoinRes.data || []).reduce((acc, join) => {
+              if (!acc[join.parent_id]) acc[join.parent_id] = [];
+              acc[join.parent_id].push({ role_id: join.role_id });
+              return acc;
+          }, {} as Record<string, { role_id: string }[]>);
+
+          tasksData = (data || []).map(task => ({
+              ...task,
+              task_domains: domainsByTask[task.id] || [],
+              task_roles: rolesByTask[task.id] || [],
+          }));
       }
 
-      // 3. Fetch all joins for those tasks
-      const [domainsJoinRes, krJoinRes, notesJoinRes] = await Promise.all([
-        supabase.from('0007-ap-universal-domains-join').select('parent_id, domain_id').in('parent_id', taskIds).eq('parent_type', 'task').eq('user_id', user.id),
-        supabase.from('0007-ap-universal-key-relationships-join').select('parent_id, key_relationship_id').in('parent_id', taskIds).eq('parent_type', 'task').eq('user_id', user.id),
-        supabase.from('0007-ap-universal-notes-join').select('parent_id, note_id').in('parent_id', taskIds).eq('parent_type', 'task').eq('user_id', user.id)
-      ]);
-
-      // 4. Fetch notes content for all linked notes
-      const noteIds = (notesJoinRes.data || []).map(j => j.note_id) || [];
-      const { data: notesData } = noteIds.length
-        ? await supabase.from('0007-ap-notes').select('id, content').in('id', noteIds)
-        : { data: [] };
-
-      // 5. Merge joins into each task
-      const domainsByTaskId: Record<string, string[]> = {};
-      (domainsJoinRes.data || []).forEach(j => {
-        if (!domainsByTaskId[j.parent_id]) domainsByTaskId[j.parent_id] = [];
-        domainsByTaskId[j.parent_id].push(j.domain_id);
-      });
-
-      const keyRelationshipsByTaskId: Record<string, string[]> = {};
-      (krJoinRes.data || []).forEach(j => {
-        if (!keyRelationshipsByTaskId[j.parent_id]) keyRelationshipsByTaskId[j.parent_id] = [];
-        keyRelationshipsByTaskId[j.parent_id].push(j.key_relationship_id);
-      });
-
-      const notesByTaskId: Record<string, string> = {};
-      (notesJoinRes.data || []).forEach(j => {
-        const note = notesData?.find(n => n.id === j.note_id);
-        if (note) notesByTaskId[j.parent_id] = note.content;
-      });
-
-      // 6. Attach arrays to each task object for UI
-      const activeTasks = (tasksData || []).filter(task =>
-        task.status === 'pending' || task.status === 'in_progress'
-      ).map(task => ({
-        ...task,
-        task_roles: [{ role_id: roleId }], // This view is filtered by role
-        task_domains: (domainsByTaskId[task.id] || []).map(domain_id => ({ domain_id })),
-        task_key_relationships: (keyRelationshipsByTaskId[task.id] || []).map(key_relationship_id => ({ key_relationship_id })),
-        notes: notesByTaskId[task.id] || ""
-      }));
-
-      const completedTasksList = (tasksData || []).filter(task =>
-        task.status === 'completed'
-      ).map(task => ({
-        ...task,
-        task_roles: [{ role_id: roleId }],
-        task_domains: (domainsByTaskId[task.id] || []).map(domain_id => ({ domain_id })),
-        task_key_relationships: (keyRelationshipsByTaskId[task.id] || []).map(key_relationship_id => ({ key_relationship_id })),
-        notes: notesByTaskId[task.id] || ""
-      }));
+      const activeTasks = tasksData.filter(task => task.status === 'pending' || task.status === 'in_progress');
+      const completedTasksList = tasksData.filter(task => task.status === 'completed');
 
       setTasks(activeTasks);
       setCompletedTasks(completedTasksList);
 
-      // 7. Fetch Key Relationships for this role
+      // 3. Fetch Key Relationships for this role
       const { data: relationshipsData, error: relationshipsError } = await supabase
         .from('0007-ap-key-relationships')
         .select('*')
@@ -238,8 +217,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       if (relationshipsError) throw relationshipsError;
       setRelationships(relationshipsData || []);
 
-      // 8. Fetch Deposit Ideas for this role using the universal join tables
-      // Get deposit ideas linked directly to the role
+      // 4. Fetch Deposit Ideas for this role
       const { data: roleJoinsForIdeas, error: roleJoinsErrorForIdeas } = await supabase
         .from('0007-ap-universal-roles-join')
         .select('parent_id')
@@ -250,7 +228,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       if (roleJoinsErrorForIdeas) throw roleJoinsErrorForIdeas;
       const depositIdeaIdsFromRoles = roleJoinsForIdeas?.map(j => j.parent_id) || [];
 
-      // Get deposit ideas linked via the role's key relationships
       const relationshipIds = relationshipsData?.map(r => r.id) || [];
       let depositIdeaIdsFromKR: string[] = [];
       if (relationshipIds.length > 0) {
@@ -265,7 +242,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
         depositIdeaIdsFromKR = krJoinsForIdeas?.map(j => j.parent_id) || [];
       }
 
-      // Combine and fetch all unique deposit ideas
       const allDepositIdeaIds = [...new Set([...depositIdeaIdsFromRoles, ...depositIdeaIdsFromKR])];
 
       if (allDepositIdeaIds.length > 0) {
@@ -292,7 +268,7 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
 
   const handleTaskAction = async (taskId: string, action: 'complete' | 'delegate' | 'cancel') => {
     if (action === 'delegate') {
-      const task = tasks.find(t => t.id === taskId);
+      const task = tasks.find(t => t.id === taskId) || completedTasks.find(t => t.id === taskId);
       if (task) setDelegatingTask(task);
       return;
     }
@@ -326,9 +302,17 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     if (selectedRole) fetchRoleData(selectedRole.id);
   };
   
-  // Helper function to sort tasks
+  const getTaskPriority = (task: Task) => {
+    if (task.is_urgent && task.is_important) return 1;
+    if (!task.is_urgent && task.is_important) return 2;
+    if (task.is_urgent && !task.is_important) return 3;
+    return 4;
+  };
+
   const sortTasks = (tasksToSort: Task[]) => {
     switch (taskSortBy) {
+      case 'priority':
+        return [...tasksToSort].sort((a, b) => getTaskPriority(a) - getTaskPriority(b));
       case 'due_date':
         return [...tasksToSort].sort((a, b) => {
           if (!a.due_date && !b.due_date) return 0;
@@ -348,227 +332,36 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     }
   };
   
-  // Helper component for quadrant sections
-  const QuadrantSection: React.FC<{
-    id: string;
-    title: string;
-    tasks: Task[];
-    bgColor: string;
-    textColor: string;
-    borderColor: string;
-    icon: React.ReactNode;
-  }> = ({ id, title, tasks, bgColor, textColor, borderColor, icon }) => {
-    const isCollapsed = collapsedTaskQuadrants[id as keyof typeof collapsedTaskQuadrants];
-    
-    return (
-      <div className="h-full flex flex-col">
-        {/* Header - Always visible */}
-        <button 
-          className={`w-full ${bgColor} ${textColor} px-4 py-3 rounded-lg flex items-center justify-between hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500`}
-          onClick={() => setCollapsedTaskQuadrants(prev => ({ 
-            ...prev, 
-            [id]: !prev[id as keyof typeof prev] 
-          }))}
-          type="button"
-        >
-          <div className="flex items-center space-x-2 min-w-0">
-            {icon}
-            <h4 className="font-medium text-sm truncate">{title}</h4>
-            <span className="text-sm opacity-90 flex-shrink-0">({tasks.length})</span>
-          </div>
-          <div className="flex-shrink-0 ml-2">
-            {isCollapsed ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-          </div>
-        </button>
-        
-        {/* Content - Only visible when expanded */}
-        {!isCollapsed && (
-          <div className="flex-1 bg-gray-50 rounded-lg mt-2 overflow-hidden">
-            <div className="h-full overflow-y-auto p-3">
-              {tasks.length === 0 ? (
-                <p className="text-gray-500 text-sm italic text-center py-4">
-                  No tasks in this category
-                </p>
-              ) : (
-                <div className="space-y-2">
-                  {tasks.map((task) => (
-                    <TaskCard 
-                      key={task.id} 
-                      task={task} 
-                      borderColor={borderColor}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
-  
-  // Helper component for task cards
-  const TaskCard: React.FC<{
-    task: Task;
-    borderColor: string;
-  }> = ({ task, borderColor }) => (
-    <div 
-      className={`p-3 border-l-4 ${borderColor} bg-gray-50 rounded cursor-pointer hover:bg-gray-100 hover:shadow-sm transition-all`}
-      onClick={() => setEditingTask(task)}
-      title="Click to edit task"
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
-          <h4 className="font-medium text-gray-900 text-sm mb-1">{task.title}</h4>
-          
-          {task.due_date && (
-            <div className="flex items-center text-xs text-gray-600 mb-2">
-              <Clock className="h-3 w-3 mr-1" />
-              <span>Due {new Date(task.due_date).toLocaleDateString()}</span>
-            </div>
-          )}
-
-          {/* Priority and Type Tags */}
-          <div className="flex flex-wrap gap-1 mb-2">
-            {task.is_urgent && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">
-                Urgent
-              </span>
-            )}
-            {task.is_important && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-blue-100 text-blue-700">
-                Important
-              </span>
-            )}
-            {task.is_authentic_deposit && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">
-                Deposit
-              </span>
-            )}
-            {task.is_twelve_week_goal && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs bg-purple-100 text-purple-700">
-                12W Goal
-              </span>
-            )}
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-1 ml-2">
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleTaskAction(task.id, 'complete');
-            }}
-            className="p-1 rounded-full hover:bg-green-100 hover:text-green-600 transition-colors"
-            title="Complete"
-          >
-            <Check className="h-3 w-3" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleTaskAction(task.id, 'delegate');
-            }}
-            className="p-1 rounded-full hover:bg-blue-100 hover:text-blue-600 transition-colors"
-            title="Delegate"
-          >
-            <UserPlus className="h-3 w-3" />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleTaskAction(task.id, 'cancel');
-            }}
-            className="p-1 rounded-full hover:bg-red-100 hover:text-red-600 transition-colors"
-            title="Cancel"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-  
-  // Task Section Component
   const TaskSection = () => {
     const currentTasks = taskSortBy === 'completed' ? completedTasks : tasks;
-    
-    if (taskViewMode === 'quadrant' && taskSortBy === 'priority') {
-      // 2x2 Quadrant Grid View (like Task Priorities)
-      return (
-        <div className="grid grid-cols-2 gap-4 h-full">
-          {/* Top Row */}
-          <div className="flex flex-col">
-            <QuadrantSection
-              id="urgent-important"
-              title="Urgent & Important"
-              tasks={currentTasks.filter(task => task.is_urgent && task.is_important)}
-              bgColor="bg-red-500"
-              textColor="text-white"
-              borderColor="border-l-red-500"
-              icon={<AlertTriangle className="h-4 w-4" />}
-            />
-          </div>
-          
-          <div className="flex flex-col">
-            <QuadrantSection
-              id="not-urgent-important"
-              title="Not Urgent & Important"
-              tasks={currentTasks.filter(task => !task.is_urgent && task.is_important)}
-              bgColor="bg-green-500"
-              textColor="text-white"
-              borderColor="border-l-green-500"
-              icon={<Check className="h-4 w-4" />}
-            />
-          </div>
-          
-          {/* Bottom Row */}
-          <div className="flex flex-col">
-            <QuadrantSection
-              id="urgent-not-important"
-              title="Urgent & Not Important"
-              tasks={currentTasks.filter(task => task.is_urgent && !task.is_important)}
-              bgColor="bg-orange-500"
-              textColor="text-white"
-              borderColor="border-l-orange-500"
-              icon={<Clock className="h-4 w-4" />}
-            />
-          </div>
-          
-          <div className="flex flex-col">
-            <QuadrantSection
-              id="not-urgent-not-important"
-              title="Not Urgent & Not Important"
-              tasks={currentTasks.filter(task => !task.is_urgent && !task.is_important)}
-              bgColor="bg-gray-500"
-              textColor="text-white"
-              borderColor="border-l-gray-500"
-              icon={<X className="h-4 w-4" />}
-            />
-          </div>
-        </div>
-      );
-    } else {
-      // List View
-      return (
+    const sortedTasks = sortTasks(currentTasks);
+
+    return (
         <div className="space-y-2">
-          {sortTasks(currentTasks).length === 0 ? (
-            <p className="text-center text-gray-500 py-4">
-              {taskSortBy === 'completed' ? 'No completed tasks for this role' : 'No active tasks for this role'}
-            </p>
-          ) : (
-            sortTasks(currentTasks).map((task) => (
-              <TaskCard 
-                key={task.id} 
-                task={task} 
-                borderColor="border-l-blue-500"
-              />
-            ))
-          )}
+            {sortedTasks.length === 0 ? (
+                <p className="text-center text-gray-500 py-4">
+                    {taskSortBy === 'completed' ? 'No completed tasks for this role' : 'No active tasks for this role'}
+                </p>
+            ) : (
+                sortedTasks.map((task) => (
+                    <UniversalTaskCard
+                        key={task.id}
+                        task={{
+                            ...task,
+                            roles: (task.task_roles || []).map(tr => allRoles[tr.role_id]?.label).filter(Boolean),
+                            domains: (task.task_domains || []).map(td => allDomains[td.domain_id]?.name).filter(Boolean),
+                        }}
+                        onOpen={() => setEditingTask(task)}
+                        onComplete={(id) => handleTaskAction(id, 'complete')}
+                        onDelegate={(id) => handleTaskAction(id, 'delegate')}
+                        onCancel={(id) => handleTaskAction(id, 'cancel')}
+                    />
+                ))
+            )}
         </div>
-      );
-    }
+    );
   };
+
   const handleRelationshipSaved = () => {
     setShowRelationshipForm(false);
     if (selectedRole) fetchRoleData(selectedRole.id);
@@ -611,7 +404,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    // Fetch linked items using universal join tables
     const parentId = idea.id;
     const parentType = 'deposit_idea';
 
@@ -622,7 +414,6 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
       supabase.from('0007-ap-universal-notes-join').select('note_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id)
     ]);
 
-    // Fetch note content if a note is linked
     let noteContent = '';
     const noteId = notesJoinRes.data?.[0]?.note_id;
     if (noteId) {
@@ -661,37 +452,13 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold">Current Tasks</h2>
               <div className="flex items-center gap-4">
-                {/* Task View Controls */}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setTaskViewMode('quadrant')}
-                    className={`px-2 py-1 text-xs rounded ${
-                      taskViewMode === 'quadrant'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    Quadrant
-                  </button>
-                  <button
-                    onClick={() => setTaskViewMode('list')}
-                    className={`px-2 py-1 text-xs rounded ${
-                      taskViewMode === 'list'
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'text-gray-600 hover:text-gray-900'
-                    }`}
-                  >
-                    List
-                  </button>
-                </div>
-                
                 <select
                   value={taskSortBy}
-                  onChange={(e) => setTaskSortBy(e.target.value as 'priority' | 'due_date' | 'completed')}
+                  onChange={(e) => setTaskSortBy(e.target.value as 'due_date' | 'priority' | 'completed')}
                   className="text-xs border border-gray-300 rounded px-2 py-1"
                 >
-                  <option value="priority">Priority</option>
                   <option value="due_date">Due Date</option>
+                  <option value="priority">Priority</option>
                   <option value="completed">Completed</option>
                 </select>
                 
@@ -785,9 +552,9 @@ const RoleBank: React.FC<RoleBankProps> = ({ selectedRole: propSelectedRole, onB
           </div>
         )}
         
-        {delegatingTask && <DelegateTaskModal task={delegatingTask} onClose={() => setDelegatingTask(null)} onTaskDelegated={() => fetchRoleData(selectedRole.id)} />}
+        {delegatingTask && <DelegateTaskModal task={delegatingTask} onClose={() => setDelegatingTask(null)} onTaskDelegated={() => { if(selectedRole) fetchRoleData(selectedRole.id) }} />}
         {showRelationshipForm && <KeyRelationshipForm roleId={selectedRole.id} roleName={selectedRole.label} onClose={() => setShowRelationshipForm(false)} onRelationshipCreated={handleRelationshipSaved} />}
-        {showAddDepositIdeaForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'depositIdea', selectedRoleIds: [selectedRole.id] }} onClose={() => setShowAddDepositIdeaForm(false)} onSubmitSuccess={() => fetchRoleData(selectedRole.id)} />}
+        {showAddDepositIdeaForm && <TaskEventForm mode="create" initialData={{ schedulingType: 'depositIdea', selectedRoleIds: [selectedRole.id] }} onClose={() => setShowAddDepositIdeaForm(false)} onSubmitSuccess={() => { if(selectedRole) fetchRoleData(selectedRole.id) }} />}
         {editingDepositIdea && <TaskEventForm mode="edit" initialData={{...editingDepositIdea, schedulingType: 'depositIdea'}} onClose={() => setEditingDepositIdea(null)} onSubmitSuccess={handleDepositIdeaUpdated} />}
         {activatingDepositIdea && <ActivationTypeSelector depositIdea={activatingDepositIdea} selectedRole={selectedRole} onClose={() => setActivatingDepositIdea(null)} onActivated={handleDepositIdeaActivated} />}
         {deletingDepositIdea && <ConfirmationModal title="Delete Deposit Idea" onConfirm={confirmDeleteDepositIdea} onCancel={() => setDeletingDepositIdea(null)}><p>Are you sure you want to delete "{deletingDepositIdea.title}"?</p></ConfirmationModal>}
@@ -874,7 +641,6 @@ const ActivationTypeSelector: React.FC<{
           const parentId = depositIdea.id;
           const parentType = 'deposit_idea';
 
-          // Fetch all joins simultaneously
           const [rolesJoinRes, domainsJoinRes, krJoinRes, notesJoinRes] = await Promise.all([
             supabase.from('0007-ap-universal-roles-join').select('role_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id),
             supabase.from('0007-ap-universal-domains-join').select('domain_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id),
@@ -882,7 +648,6 @@ const ActivationTypeSelector: React.FC<{
             supabase.from('0007-ap-universal-notes-join').select('note_id').eq('parent_id', parentId).eq('parent_type', parentType).eq('user_id', user.id)
           ]);
 
-          // Fetch note content if a note is linked
           let noteContent = '';
           const noteId = notesJoinRes.data?.[0]?.note_id;
           if (noteId) {
@@ -914,9 +679,9 @@ const ActivationTypeSelector: React.FC<{
         title: depositIdea.title,
         notes: pivotIds.notes,
         schedulingType: showTaskEventForm,
-        selectedRoleIds: pivotIds.selectedRoleIds.length ? pivotIds.selectedRoleIds : [selectedRole.id],
+        selectedRoleIds: pivotIds.selectedRoleIds.length > 0 ? pivotIds.selectedRoleIds : [selectedRole.id],
         selectedDomainIds: pivotIds.selectedDomainIds,
-        selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds.length ? pivotIds.selectedKeyRelationshipIds : (relationship ? [relationship.id] : []),
+        selectedKeyRelationshipIds: pivotIds.selectedKeyRelationshipIds.length > 0 ? pivotIds.selectedKeyRelationshipIds : (relationship ? [relationship.id] : []),
         authenticDeposit: true,
         isFromDepositIdea: true,
         originalDepositIdeaId: depositIdea.id
