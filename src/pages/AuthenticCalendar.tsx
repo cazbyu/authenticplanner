@@ -132,18 +132,22 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
 ]);
 
 
-      if (tasksRes.data) {
+      const rolesJoin = rolesJoinRes.data || [];
+const domainsJoin = domainsJoinRes.data || [];
+
+if (tasksRes.data) {
   const normalizedTasks = tasksRes.data.map(task => ({
     ...task,
-    task_roles: (task.universal_roles || [])
-      .filter(r => r.parent_type === "task")
+    task_roles: rolesJoin
+      .filter(r => r.parent_id === task.id)
       .map(r => ({ role_id: r.role_id })),
-    task_domains: (task.universal_domains || [])
-      .filter(d => d.parent_type === "task")
+    task_domains: domainsJoin
+      .filter(d => d.parent_id === task.id)
       .map(d => ({ domain_id: d.domain_id })),
   }));
   setTasks(normalizedTasks);
 }
+
 
       if (rolesRes.data) {
         const rolesMap = rolesRes.data.reduce((acc, role) => ({ ...acc, [role.id]: role }), {});
