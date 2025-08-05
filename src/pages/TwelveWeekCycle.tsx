@@ -623,24 +623,22 @@ const handleAddGoalNote = async (goalId: string) => {
 
   const getTasksForWeek = (goalId: string, weekNumber: number) => {
     if (!currentCycle?.start_date) return [];
-    
-    const cycleStart = new Date(currentCycle.start_date);
-    const weekStart = addDays(cycleStart, (weekNumber - 1) * 7);
-    const weekEnd = addDays(weekStart, 6);
+  
+    const cycleStart = new Date(currentCycle.start_date + 'T00:00:00Z');
+    const weekStart = new Date(cycleStart);
+    weekStart.setUTCDate(cycleStart.getUTCDate() + (weekNumber - 1) * 7);
+  
+    const weekEnd = new Date(weekStart);
+    weekEnd.setUTCDate(weekStart.getUTCDate() + 6);
   
     return tasks.filter(task => {
       const isLinkedToGoal = Array.isArray(task.universal_goal_ids) && task.universal_goal_ids.includes(goalId);
       if (!isLinkedToGoal) return false;
   
       if (!task.due_date) return false;
-      const taskDate = new Date(task.due_date);
+      const taskDate = new Date(task.due_date + 'T00:00:00Z');
       
-      // Normalize dates to midnight to compare just the date part, avoiding timezone issues
-      const taskDay = new Date(taskDate.getUTCFullYear(), taskDate.getUTCMonth(), taskDate.getUTCDate());
-      const weekStartDay = new Date(weekStart.getFullYear(), weekStart.getMonth(), weekStart.getDate());
-      const weekEndDay = new Date(weekEnd.getFullYear(), weekEnd.getMonth(), weekEnd.getDate());
-  
-      return taskDay >= weekStartDay && taskDay <= weekEndDay;
+      return taskDate >= weekStart && taskDate <= weekEnd;
     });
   };
 
@@ -1274,4 +1272,4 @@ const handleAddGoalNote = async (goalId: string) => {
   );
 };
 
-export default TwelveWeekCycle
+export default TwelveWeekCyc
