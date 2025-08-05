@@ -239,15 +239,29 @@ noteJoins?.forEach(j => {
         if (tasksError) throw tasksError;
         
         // Separate active and completed tasks
-        const activeTasks = (tasksData || []).filter(task => 
-          task.status === 'pending' || task.status === 'in_progress'
-        );
-        const completedTasksList = (tasksData || []).filter(task => 
-          task.status === 'completed'
-        );
-        
-        *setTasks(activeTasks);
-        setCompletedTasks(completedTasksList);
+        const activeTasks = (tasksData || []).filter(task =>
+  task.status === 'pending' || task.status === 'in_progress'
+).map(task => ({
+  ...task,
+  selectedRoleIds: rolesByTaskId[task.id] || [],
+  selectedDomainIds: domainsByTaskId[task.id] || [],
+  selectedKeyRelationshipIds: keyRelationshipsByTaskId[task.id] || [],
+  notes: notesByTaskId[task.id] || ""
+}));
+
+const completedTasksList = (tasksData || []).filter(task =>
+  task.status === 'completed'
+).map(task => ({
+  ...task,
+  selectedRoleIds: rolesByTaskId[task.id] || [],
+  selectedDomainIds: domainsByTaskId[task.id] || [],
+  selectedKeyRelationshipIds: keyRelationshipsByTaskId[task.id] || [],
+  notes: notesByTaskId[task.id] || ""
+}));
+
+setTasks(activeTasks);
+setCompletedTasks(completedTasksList);
+
       } else {
         setTasks([]);
         setCompletedTasks([]);
