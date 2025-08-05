@@ -88,7 +88,7 @@ const TaskQuadrants: React.FC<TaskQuadrantsProps> = ({ tasks, setTasks, roles, d
         updates.status = 'completed';
       }
       if (action === 'cancel') {
-        updates.status = 'canceled';
+        updates.status = 'cancelled';
       }
       const { error } = await supabase
         .from('0007-ap-tasks')
