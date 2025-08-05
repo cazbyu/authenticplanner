@@ -123,7 +123,19 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
           .select('id, name')
       ]);
 
-      if (tasksRes.data) setTasks(tasksRes.data);
+      if (tasksRes.data) {
+  const normalizedTasks = tasksRes.data.map(task => ({
+    ...task,
+    task_roles: (task.universal_roles || [])
+      .filter(r => r.parent_type === "task")
+      .map(r => ({ role_id: r.role_id })),
+    task_domains: (task.universal_domains || [])
+      .filter(d => d.parent_type === "task")
+      .map(d => ({ domain_id: d.domain_id })),
+  }));
+  setTasks(normalizedTasks);
+}
+
       if (rolesRes.data) {
         const rolesMap = rolesRes.data.reduce((acc, role) => ({ ...acc, [role.id]: role }), {});
         setRoles(rolesMap);
