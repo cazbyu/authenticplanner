@@ -29,7 +29,7 @@ const DelegateTaskModal: React.FC<DelegateTaskModalProps> = ({
     try {
       // Insert into delegated table
       const { error: insertError } = await supabase
-        .from("0007-ap-delegated")
+        .from("0007-ap-delegates")
         .insert([
           {
             task_id: taskId,
