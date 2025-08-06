@@ -1,6 +1,6 @@
 import React, { useState, useRef, useMemo } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Check, UserPlus, X, Clock, AlertTriangle, ChevronDown, ChevronUp, Bell } from 'lucide-react';
 import { formatDate } from '../../utils/helpers';
 import TaskEventForm from '../tasks/TaskEventForm';
 import { formatTaskForForm } from '../../utils/taskHelpers'; 
@@ -110,7 +110,7 @@ const memoizedInitialData = useMemo(
     }
   };
 
-  const formatDate = (dateStr: string | undefined) => {
+  const formatTaskDate = (dateStr: string | undefined) => {
     if (!dateStr) return null;
     try {
       const date = new Date(dateStr);
@@ -120,6 +120,13 @@ const memoizedInitialData = useMemo(
     }
   };
 
+  const getPriorityColor = (task: Task) => {
+    if (task.status === "completed") return "border-blue-500";
+    if (task.is_urgent && task.is_important) return "border-red-500";
+    if (!task.is_urgent && task.is_important) return "border-green-500";
+    if (task.is_urgent && !task.is_important) return "border-yellow-400";
+    return "border-gray-400";
+  };
   if (loading) {
     return (
       <div className="flex h-32 items-center justify-center">
@@ -142,21 +149,70 @@ const memoizedInitialData = useMemo(
   tasks.length === 0 ? (
     <p className="text-gray-500 italic text-center py-6">No unscheduled tasks.</p>
   ) : (
-    <ul className="space-y-1">
+    <div className="space-y-2">
       {tasks.map((task, idx) => (
-        <li
+        <div
           key={task.id}
           data-task-id={task.id}
           draggable="true"
+          className={`flex items-center justify-between border rounded-lg shadow bg-white px-3 py-2 hover:shadow-md cursor-pointer transition border-l-4 ${getPriorityColor(task)}`}
           onClick={() => setEditingTask(task)}
-          className="flex items-center bg-white border border-gray-200 rounded-md px-2 py-1 shadow-sm hover:bg-blue-50 cursor-pointer text-xs"
         >
-          <span className="text-gray-600 font-medium flex-1 truncate">
-            {idx + 1}. {task.title}
-          </span>
-        </li>
+          <div className="flex-1 min-w-0">
+            <div className="font-medium text-sm flex items-center gap-2">
+              {task.title}
+              {task.due_date && (
+                <span className="text-xs text-gray-500 font-normal">
+                  ({formatTaskDate(task.due_date)})
+                </span>
+              )}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 ml-2 shrink-0" onClick={(e) => e.stopPropagation()}>
+            <button
+              className="hover:text-indigo-600 p-1"
+              title="Follow Up"
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                // Add follow up functionality here if needed
+              }}
+            >
+              <Bell className="w-3 h-3" />
+            </button>
+            <button
+              className="hover:text-green-600 p-1"
+              title="Complete"
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                handleTaskAction(task.id, 'complete');
+              }}
+            >
+              <Check className="w-3 h-3" />
+            </button>
+            <button
+              className="hover:text-blue-600 p-1"
+              title="Delegate"
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                handleTaskAction(task.id, 'delegate');
+              }}
+            >
+              <UserPlus className="w-3 h-3" />
+            </button>
+            <button
+              className="hover:text-red-600 p-1"
+              title="Cancel"
+              onClick={(e) => { 
+                e.stopPropagation(); 
+                handleTaskAction(task.id, 'cancel');
+              }}
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        </div>
       ))}
-    </ul>
+    </div>
   )
 )}
           
