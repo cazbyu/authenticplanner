@@ -1188,19 +1188,20 @@ const handleAddGoalNote = async (goalId: string) => {
           key={task.id}
           task={{
             ...task,
-            // Map roles/domains to readable names, just like TaskQuadrants
-            roles: (task.task_roles || []).map(tr => {
+          roles: (task.task_roles || []).map(tr => {
               const match = selectedWeek.roles.find(r => r.id === tr.role_id);
-              return match ? match.label : undefined;
+            return match ? match.label : undefined;
             }).filter(Boolean),
-            domains: (task.task_domains || []).map(td => {
+          domains: (task.task_domains || []).map(td => {
               const match = selectedWeek.domains.find(d => d.id === td.domain_id);
-              return match ? match.name : undefined;
+             return match ? match.name : undefined;
             }).filter(Boolean)
           }}
           onOpen={() => setEditingTask(task)}
           onComplete={id => handleCompleteTask(id)}
           onCancel={id => handleCancelTask(id)}
+          onDelegate={id => handleDelegateTask(id)}
+          onFollowUp={id => handleFollowUpTask(id)}
         />
       ))
     )}
