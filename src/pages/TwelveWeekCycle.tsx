@@ -679,6 +679,18 @@ const handleAddGoalNote = async (goalId: string) => {
     }
   };
 
+  const handleDelegateTask = (taskId: string) => {
+  // TODO: Add your logic to delegate a task here.
+  // For now, just log it!
+  console.log("Delegate task", taskId);
+};
+
+const handleFollowUpTask = (taskId: string) => {
+  // TODO: Add your follow-up logic here.
+  // For now, just log it!
+  console.log("Follow up task", taskId);
+};
+
   const PriorityQuadrant: React.FC<{
     title: string;
     tasks: Task[];
