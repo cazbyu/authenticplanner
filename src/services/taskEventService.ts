@@ -105,8 +105,8 @@ export async function upsertTaskEventAndJoins({
   if (!recordId) throw new Error("No record ID after upsert.");
 
   // --- UNIVERSAL GOAL JOIN: Always link task/event/depositIdea to goal in universal join table if a goal is present ---
-console.log("JOIN CHECK", form.twelveWeekGoalChecked, form.twelveWeekGoalId, form);
-"JOIN BLOCK DEBUG:",
+console.log(
+  "JOIN BLOCK DEBUG",
   {
     twelveWeekGoalChecked: form.twelveWeekGoalChecked,
     twelveWeekGoalId: form.twelveWeekGoalId,
@@ -114,6 +114,7 @@ console.log("JOIN CHECK", form.twelveWeekGoalChecked, form.twelveWeekGoalId, for
     recordId
   }
 );
+
     
   if (form.twelveWeekGoalChecked && form.twelveWeekGoalId) {
     // Remove any previous links for this record to avoid duplicates
