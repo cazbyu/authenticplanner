@@ -113,9 +113,9 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen h-full flex flex-col bg-gray-50">
-      {/* Mobile header - Hide on calendar page */}
-      {!isCalendarPage && (
-        <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-4 shadow-sm md:px-6 lg:hidden">
+      {/* Header for all screens except calendar page */}
+{!isCalendarPage && (
+  <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-4 shadow-sm md:px-6">
           <button 
             onClick={toggleSidebar}
             className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
