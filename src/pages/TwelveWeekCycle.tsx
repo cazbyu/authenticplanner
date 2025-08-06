@@ -5,6 +5,7 @@ import { Plus, Calendar, Target, Users, CheckCircle, X, Clock, AlertTriangle } f
 import TwelveWeekGoalForm from '../components/goals/TwelveWeekGoalForm';
 import TwelveWeekGoalEditForm from '../components/goals/TwelveWeekGoalEditForm';
 import TaskEventForm from '../components/tasks/TaskEventForm';
+import UniversalTaskCard from '../tasks/UniversalTaskCard';
 import { formatTaskForForm } from '../utils/taskHelpers'; 
 import { parseISO, format, addDays } from 'date-fns';
 
@@ -1163,48 +1164,49 @@ const handleAddGoalNote = async (goalId: string) => {
                 const categorizedTasks = categorizeTasksByPriority(weekTasks);
                 
                 return (
-                  <div className="space-y-4">
-                    <PriorityQuadrant
-                      title="Urgent & Important"
-                      tasks={categorizedTasks.urgentImportant}
-                      bgColor="bg-red-500"
-                      borderColor="border-l-red-500"
-                      textColor="text-white"
-                      icon={<AlertTriangle className="h-4 w-4" />}
-                      onTaskEdit={setEditingTask}
-                    />
+  <div className="space-y-2">
+    {weekTasks.length === 0 ? (
+      <div className="text-center py-12 text-gray-500">
+        <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
+        <p className="text-lg font-medium mb-2">No tasks for Week {selectedWeek.weekNumber} yet.</p>
+        <p className="text-sm mb-6">Add your first task to get started with this week.</p>
+        <button
+          onClick={() => setShowWeeklyGoalForm({
+            goalId: selectedWeek.goalId,
+            weekNumber: selectedWeek.weekNumber,
+            domains: selectedWeek.domains,
+            roles: selectedWeek.roles
+          })}
+          className="text-blue-600 hover:text-blue-700 font-medium"
+        >
+          Add your first task
+        </button>
+      </div>
+    ) : (
+      weekTasks.map(task => (
+        <UniversalTaskCard
+          key={task.id}
+          task={{
+            ...task,
+            // Map roles/domains to readable names, just like TaskQuadrants
+            roles: (task.task_roles || []).map(tr => {
+              const match = selectedWeek.roles.find(r => r.id === tr.role_id);
+              return match ? match.label : undefined;
+            }).filter(Boolean),
+            domains: (task.task_domains || []).map(td => {
+              const match = selectedWeek.domains.find(d => d.id === td.domain_id);
+              return match ? match.name : undefined;
+            }).filter(Boolean)
+          }}
+          onOpen={() => setEditingTask(task)}
+          onComplete={id => handleCompleteTask(id)}
+          onCancel={id => handleCancelTask(id)}
+        />
+      ))
+    )}
+  </div>
+);
 
-                    <PriorityQuadrant
-                      title="Not Urgent & Important"
-                      tasks={categorizedTasks.notUrgentImportant}
-                      bgColor="bg-green-500"
-                      borderColor="border-l-green-500"
-                      textColor="text-white"
-                      icon={<CheckCircle className="h-4 w-4" />}
-                      onTaskEdit={setEditingTask}
-                    />
-
-                    <PriorityQuadrant
-                      title="Urgent & Not Important"
-                      tasks={categorizedTasks.urgentNotImportant}
-                      bgColor="bg-orange-500"
-                      borderColor="border-l-orange-500"
-                      textColor="text-white"
-                      icon={<Clock className="h-4 w-4" />}
-                      onTaskEdit={setEditingTask}
-                    />
-
-                    <PriorityQuadrant
-                      title="Not Urgent & Not Important"
-                      tasks={categorizedTasks.notUrgentNotImportant}
-                      bgColor="bg-gray-500"
-                      borderColor="border-l-gray-500"
-                      textColor="text-white"
-                      icon={<X className="h-4 w-4" />}
-                      onTaskEdit={setEditingTask}
-                    />
-                  </div>
-                );
               })()}
             </div>
           </div>
