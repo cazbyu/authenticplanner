@@ -221,7 +221,8 @@ console.log(
   }
 
   // -------- Universal Extra Goals Join --------
-  // For advanced scenarios, link parent to extra goals (other than the direct goal_id)
+  if (form.extraGoalIds?.length > 0) {
+  // Only run this if extra goals exist!
   await supabase
     .from("0007-ap-universal-goals-join")
     .delete()
@@ -229,15 +230,15 @@ console.log(
     .eq("parent_type", joinParentType)
     .eq("parent_id", recordId);
 
-  if (form.extraGoalIds?.length > 0) {
-    const goalRows = form.extraGoalIds.map((goalId: string) => ({
-      user_id: user.id,
-      goal_id: goalId,
-      parent_type: joinParentType,
-      parent_id: recordId
-    }));
-    await supabase.from("0007-ap-universal-goals-join").insert(goalRows);
-  }
+  const goalRows = form.extraGoalIds.map((goalId) => ({
+    user_id: user.id,
+    goal_id: goalId,
+    parent_type: joinParentType,
+    parent_id: recordId
+  }));
+  await supabase.from("0007-ap-universal-goals-join").insert(goalRows);
+}
+
 
   // You can add more universal join logic for other entities here as needed!
 }
