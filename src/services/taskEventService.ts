@@ -105,21 +105,21 @@ export async function upsertTaskEventAndJoins({
   if (!recordId) throw new Error("No record ID after upsert.");
 
   // --- UNIVERSAL GOAL JOIN: Always link task/event/depositIdea to goal in universal join table if a goal is present ---
-  if (mainRecord.goal_12wk_id) {
+  if (form.twelveWeekGoalChecked && form.twelveWeekGoalId) {
     // Remove any previous links for this record to avoid duplicates
     await supabase
       .from("0007-ap-universal-goals-join")
       .delete()
       .eq("user_id", user.id)
-      .eq("parent_type", joinParentType)
+      .eq("parent_type", "task")
       .eq("parent_id", recordId);
 
     // Insert the new universal join row
     await supabase.from("0007-ap-universal-goals-join").insert([
       {
         user_id: user.id,
-        goal_id: mainRecord.goal_12wk_id,
-        parent_type: joinParentType,
+        goal_id: form.twelveWeekGoalId,
+        parent_type: "task",
         parent_id: recordId
       }
     ]);
