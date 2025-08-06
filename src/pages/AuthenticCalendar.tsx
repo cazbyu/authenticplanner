@@ -588,8 +588,7 @@ rounded-full bg-primary-100 text-primary-600">
             className="absolute top-20 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
             title="Show Unscheduled Priorities"
           >
-        <div className="flex-1 overflow-hidden flex justify-center">
-          <div className="w-full max-w-none">
+            <img
               src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
               alt="Show menu"
               className="h-5 w-5"
@@ -659,7 +658,6 @@ rounded-full bg-primary-100 text-primary-600">
                 </button>
               );
             })}
-          </div>
           </div>
         </div>
       </div>
