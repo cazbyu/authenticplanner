@@ -583,18 +583,19 @@ rounded-full bg-primary-100 text-primary-600">
           <div className="flex-1 flex flex-relative">
             {/* Show sidebar toggle when closed */}
             {!sidebarOpen && activeView === 'calendar' && (
-  <button
-    onClick={() => setSidebarOpen(true)}
-    className="absolute top-20 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
-    title="Show Unscheduled Priorities"
-  >
-    <img
-      src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
-      alt="Show menu"
-      className="h-5 w-5"
-    />
-  </button>
-)}
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="absolute top-20 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
+            title="Show Unscheduled Priorities"
+          >
+        <div className="flex-1 overflow-hidden flex justify-center">
+          <div className="w-full max-w-none">
+              src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
+              alt="Show menu"
+              className="h-5 w-5"
+            />
+          </button>
+        )}
             
             {/* Content */}
             <div className="flex-1 overflow-hidden">
@@ -625,7 +626,7 @@ rounded-full bg-primary-100 text-primary-600">
 
       {/* GLOBAL FLOATING DRESSER - Desktop Navigation Bar */}
       <div className="fixed top-1/2 right-0 transform -translate-y-1/2 z-30 hidden lg:block">
-        <div className="bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg">
+        <div className="bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg overflow-hidden">
           <div className="flex flex-col">
             {drawerItems.map((item) => {
               const IconComponent = item.icon;
@@ -636,7 +637,7 @@ rounded-full bg-primary-100 text-primary-600">
                   key={item.id}
                   onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
                   className={`
-                    group relative p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200
+                    group relative p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200 overflow-hidden
                     ${isActive 
                       ? 'bg-blue-50 text-blue-600 border-r-3 border-r-blue-600 shadow-sm' 
                       : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
@@ -648,7 +649,7 @@ rounded-full bg-primary-100 text-primary-600">
                   <IconComponent className="h-5 w-5" />
                   
                   {!isActive && (
-                    <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50">
+                    <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
                       <div className="bg-gray-900 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap shadow-lg">
                         {item.title}
                         <div className="absolute left-full top-1/2 transform -translate-y-1/2 w-0 h-0 border-l-4 border-l-gray-900 border-t-2 border-t-transparent border-b-2 border-b-transparent"></div>
@@ -658,6 +659,7 @@ rounded-full bg-primary-100 text-primary-600">
                 </button>
               );
             })}
+          </div>
           </div>
         </div>
       </div>
