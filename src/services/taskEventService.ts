@@ -122,7 +122,7 @@ console.log(
       .from("0007-ap-universal-goals-join")
       .delete()
       .eq("user_id", user.id)
-      .eq("parent_type", "task")
+      .eq("parent_type",joinParentType)
       .eq("parent_id", recordId);
 
     // Insert the new universal join row
