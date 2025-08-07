@@ -64,7 +64,7 @@ const Dashboard: React.FC = () => {
     activeRoles: 0,
     weeklyScore: 0,
     upcomingEvents: 0,
-    pendingNotes: 0
+    pendingNotes: 0,
     activeTwelveWeekGoals: 0,
     currentWeekNumber: 0,
     cycleProgress: 0
