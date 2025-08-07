@@ -25,6 +25,9 @@ interface DashboardStats {
   weeklyScore: number;
   upcomingEvents: number;
   pendingNotes: number;
+  activeTwelveWeekGoals: number;
+  currentWeekNumber: number;
+  cycleProgress: number;
 }
 
 interface QuickTask {
@@ -43,6 +46,14 @@ interface UpcomingEvent {
   is_all_day: boolean;
 }
 
+interface TwelveWeekGoal {
+  id: string;
+  title: string;
+  progress: number;
+  status: string;
+  start_date: string;
+  end_date: string;
+}
 const Dashboard: React.FC = () => {
   const { user } = useAuth();
   const [stats, setStats] = useState<DashboardStats>({
@@ -54,9 +65,13 @@ const Dashboard: React.FC = () => {
     weeklyScore: 0,
     upcomingEvents: 0,
     pendingNotes: 0
+    activeTwelveWeekGoals: 0,
+    currentWeekNumber: 0,
+    cycleProgress: 0
   });
   const [quickTasks, setQuickTasks] = useState<QuickTask[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<UpcomingEvent[]>([]);
+  const [activeTwelveWeekGoals, setActiveTwelveWeekGoals] = useState<TwelveWeekGoal[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -86,7 +101,8 @@ const Dashboard: React.FC = () => {
         completedTasksRes,
         rolesRes,
         eventsRes,
-        notesRes
+        notesRes,
+        twelveWeekGoalsRes
       ] = await Promise.all([
         // Active tasks
         supabase
@@ -126,7 +142,15 @@ const Dashboard: React.FC = () => {
         supabase
           .from('0007-ap-notes')
           .select('id')
+          .eq('user_id', authUser.id),
+        
+        // 12-week goals
+        supabase
+          .from('0007-ap-goals-12wk')
+          .select('id, title, progress, status, start_date, end_date')
           .eq('user_id', authUser.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
       ]);
 
       const tasks = tasksRes.data || [];
@@ -134,6 +158,7 @@ const Dashboard: React.FC = () => {
       const roles = rolesRes.data || [];
       const events = eventsRes.data || [];
       const notes = notesRes.data || [];
+      const twelveWeekGoals = twelveWeekGoalsRes.data || [];
 
       // Calculate stats
       const urgentTasks = tasks.filter(t => t.is_urgent).length;
@@ -144,6 +169,21 @@ const Dashboard: React.FC = () => {
       const weeklyScore = (completedDeposits * 5) + 
                          (completedTasks.filter(t => !t.is_authentic_deposit).length * 2);
 
+      // Calculate 12-week cycle stats
+      let currentWeekNumber = 0;
+      let cycleProgress = 0;
+      
+      if (twelveWeekGoals.length > 0) {
+        // Find the most recent active goal to determine current week
+        const mostRecentGoal = twelveWeekGoals[0];
+        if (mostRecentGoal.start_date) {
+          const startDate = new Date(mostRecentGoal.start_date);
+          const today = new Date();
+          const daysDiff = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+          currentWeekNumber = Math.min(Math.max(Math.floor(daysDiff / 7) + 1, 1), 12);
+          cycleProgress = Math.round((currentWeekNumber / 12) * 100);
+        }
+      }
       setStats({
         totalTasks: tasks.length,
         urgentTasks,
@@ -152,7 +192,10 @@ const Dashboard: React.FC = () => {
         activeRoles: roles.length,
         weeklyScore,
         upcomingEvents: events.length,
-        pendingNotes: notes.length
+        pendingNotes: notes.length,
+        activeTwelveWeekGoals: twelveWeekGoals.length,
+        currentWeekNumber,
+        cycleProgress
       });
 
       // Set quick tasks (top 5 priority tasks)
@@ -167,6 +210,7 @@ const Dashboard: React.FC = () => {
       
       setQuickTasks(priorityTasks);
       setUpcomingEvents(events);
+      setActiveTwelveWeekGoals(twelveWeekGoals);
 
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
@@ -272,6 +316,72 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* 12 Week Cycle Overview */}
+        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-xl p-6 text-white mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-xl font-semibold mb-2">12 Week Cycle Progress</h2>
+              <div className="flex items-center space-x-4">
+                <div>
+                  <p className="text-sm opacity-90">Current Week</p>
+                  <p className="text-2xl font-bold">{stats.currentWeekNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm opacity-90">Active Goals</p>
+                  <p className="text-2xl font-bold">{stats.activeTwelveWeekGoals}</p>
+                </div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm opacity-90">Cycle Progress</div>
+              <div className="text-3xl font-bold">{stats.cycleProgress}%</div>
+            </div>
+          </div>
+          
+          {/* Progress Bar */}
+          <div className="w-full bg-white/20 rounded-full h-3 mb-4">
+            <div 
+              className="bg-white h-3 rounded-full transition-all duration-300"
+              style={{ width: `${stats.cycleProgress}%` }}
+            />
+          </div>
+          
+          {/* Active Goals Preview */}
+          {activeTwelveWeekGoals.length > 0 && (
+            <div className="space-y-2">
+              <p className="text-sm font-medium opacity-90">Active 12-Week Goals:</p>
+              {activeTwelveWeekGoals.slice(0, 3).map(goal => (
+                <div key={goal.id} className="flex items-center justify-between bg-white/10 rounded-lg p-3">
+                  <span className="text-sm font-medium">{goal.title}</span>
+                  <div className="flex items-center space-x-2">
+                    <div className="w-16 bg-white/20 rounded-full h-2">
+                      <div 
+                        className="bg-white h-2 rounded-full"
+                        style={{ width: `${goal.progress}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-medium">{goal.progress}%</span>
+                  </div>
+                </div>
+              ))}
+              {activeTwelveWeekGoals.length > 3 && (
+                <p className="text-xs opacity-75">
+                  +{activeTwelveWeekGoals.length - 3} more goals
+                </p>
+              )}
+            </div>
+          )}
+          
+          <div className="mt-4 pt-4 border-t border-white/20">
+            <Link
+              to="/twelve-week-cycle"
+              className="inline-flex items-center text-sm font-medium hover:underline"
+            >
+              View Full 12 Week Cycle
+              <ArrowRight className="h-4 w-4 ml-1" />
+            </Link>
+          </div>
+        </div>
         {/* Main Dashboard Cards */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
           {/* Authentic Calendar Card */}
@@ -485,6 +595,17 @@ const Dashboard: React.FC = () => {
               </Link>
               
               <Link
+                to="/twelve-week-cycle"
+                className="flex items-center justify-between w-full p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                <div className="flex items-center space-x-3">
+                  <Target className="h-4 w-4 text-primary-600" />
+                  <span className="text-sm font-medium text-gray-900">Manage 12-Week Goals</span>
+                </div>
+                <ArrowRight className="h-4 w-4 text-gray-400" />
+              </Link>
+              
+              <Link
                 to="/role-bank"
                 className="flex items-center justify-between w-full p-3 bg-white rounded-lg hover:bg-gray-50 transition-colors"
               >
@@ -498,10 +619,59 @@ const Dashboard: React.FC = () => {
           </div>
         </div>
 
+        {/* 12 Week Goals Detail Section */}
+        {activeTwelveWeekGoals.length > 0 && (
+          <div className="bg-white rounded-xl border border-gray-200 p-6 mb-8">
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center space-x-2">
+                <Target className="h-6 w-6 text-purple-600" />
+                <h2 className="text-xl font-semibold text-gray-900">Active 12-Week Goals</h2>
+              </div>
+              <Link
+                to="/twelve-week-cycle"
+                className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+              >
+                Manage All Goals →
+              </Link>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {activeTwelveWeekGoals.map(goal => (
+                <div key={goal.id} className="border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <h4 className="font-medium text-gray-900 flex-1">{goal.title}</h4>
+                    <span className="text-sm font-semibold text-purple-600 ml-2">{goal.progress}%</span>
+                  </div>
+                  
+                  <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
+                    <div 
+                      className="bg-purple-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${goal.progress}%` }}
+                    />
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>
+                      Started: {goal.start_date ? new Date(goal.start_date).toLocaleDateString() : 'Not set'}
+                    </span>
+                    <span>
+                      Ends: {goal.end_date ? new Date(goal.end_date).toLocaleDateString() : 'Not set'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         {/* Recent Activity */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
           <div className="space-y-3">
+            <div className="flex items-center space-x-3 text-sm">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span className="text-gray-600">Currently in week {stats.currentWeekNumber} of 12-week cycle</span>
+              <span className="text-gray-400">Today</span>
+            </div>
             <div className="flex items-center space-x-3 text-sm">
               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
               <span className="text-gray-600">Completed 3 authentic deposits this week</span>
