@@ -10,10 +10,10 @@ import logo from '../assets/logo.svg';
 import { useAuth } from '../contexts/AuthContext';
 
 // Drawer content components
-import StrategicGoals from './pages/StrategicGoals';
-import Reflections from './pages/Reflections';
-import Scorecard from './pages/Scorecard';
-import Tasks from './pages/Tasks';
+import StrategicGoals from '../pages/StrategicGoals';
+import Reflections from '../pages/Reflections';
+import Scorecard from '../pages/Scorecard';
+import Tasks from '../pages/Tasks';
 
 const drawerItems = [
   { id: 'tasks',       title: 'Tasks',           description: 'View and manage your tasks',            icon: Briefcase, component: Tasks },
