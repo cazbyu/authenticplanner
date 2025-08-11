@@ -1,6 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, ChevronLeft, ChevronRight, ChevronDown, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase } from 'lucide-react';
-import { Compass } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, ChevronDown, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase, X, Archive, Compass } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskEventForm from '../components/tasks/TaskEventForm';
 import CalendarView from '../components/calendar/CalendarView';
@@ -58,6 +57,7 @@ const AuthenticCalendar: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'priorities'>('calendar');
+  const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarWidth, setSidebarWidth] = useState(250);
   const [resizing, setResizing] = useState(false);
@@ -342,20 +342,12 @@ if (tasksRes.data) {
 </AnimatePresence>
 
       {/* Main Content Area */}
-      <div className="lg:pl-64">
+      <div>
         {/* Header */}
         <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
           {/* Left Section */}
           <div className="flex items-center space-x-4">
-            <button
-              onClick={toggleMainSidebar}
-              className="p-2 hover:bg-gray-100 rounded-full transition-colors lg:hidden"
-              aria-label="Toggle main menu"
-            >
-              <Menu className="h-5 w-5 text-gray-600" />
-            </button>
-
-            
+                        
          </div>
 
           {/* Right Section */}
