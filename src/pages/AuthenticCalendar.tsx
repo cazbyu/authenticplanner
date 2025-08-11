@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Plus, ChevronLeft, ChevronRight, ChevronDown, Menu, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase, X, Archive } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, ChevronDown, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase } from 'lucide-react';
 import { Compass } from 'lucide-react';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import TaskEventForm from '../components/tasks/TaskEventForm';
@@ -9,7 +9,6 @@ import UnscheduledPriorities from '../components/tasks/UnscheduledPriorities';
 import { useAuth } from '../contexts/AuthContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { FullCalendar } from '@fullcalendar/core';
-import logo from '../assets/logo.svg';
 import { supabase } from '../supabaseClient';
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
@@ -57,8 +56,6 @@ const AuthenticCalendar: React.FC = () => {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isViewChanging, setIsViewChanging] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [mainSidebarOpen, setMainSidebarOpen] = useState(false);
-  const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'priorities'>('calendar');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -231,10 +228,7 @@ if (tasksRes.data) {
     };
   }, [resizing]);
 
-  const toggleMainSidebar = () => setMainSidebarOpen(!mainSidebarOpen);
-  const closeMainSidebar = () => setMainSidebarOpen(false);
-
-  const handleDrawerSelect = (drawer: typeof activeDrawer) => {
+    const handleDrawerSelect = (drawer: typeof activeDrawer) => {
     if (activeDrawer === drawer) {
       // If clicking the same drawer, close it
       setActiveDrawer(null);
@@ -333,92 +327,19 @@ if (tasksRes.data) {
     <div className="min-h-screen bg-gray-50">
       {/* Mobile sidebar overlay */}
       <AnimatePresence>
-        {(mainSidebarOpen || activeDrawer) && (
-          <motion.div 
-            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-            initial="closed"
-            animate="open"
-            exit="closed"
-            variants={overlayVariants}
-            onClick={() => {
-              setMainSidebarOpen(false);
-              setActiveDrawer(null);
-              setMobileNavExpanded(false);
-            }}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Main Sidebar */}
-      <motion.aside
-        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:z-10 lg:shadow-none lg:static lg:translate-x-0"
-        initial="closed"
-        animate={mainSidebarOpen ? 'open' : 'closed'}
-        variants={sidebarVariants}
-      >
-        <div className="flex h-full flex-col">
-          <div className="flex h-16 items-center justify-between px-4">
-            <div className="flex items-center space-x-2">
-              <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
-              <span className="text-lg font-bold text-primary-600">Authentic Planner</span>
-            </div>
-            <button 
-              onClick={closeMainSidebar}
-              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600 lg:hidden"
-              aria-label="Close menu"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          
-          <div className="flex-1 overflow-y-auto px-3 py-4">
-            <nav className="space-y-1">
-              {navItems.map((item) => {
-                const isActive = window.location.pathname === item.path;
-                const IconComponent = item.icon;
-                
-                return (
-                  <a
-                    key={item.path}
-                    href={item.path}
-                    className={`group flex items-center rounded-md px-3 py-2 text-sm font-medium ${
-                      isActive
-                        ? 'bg-primary-50 text-primary-600'
-                        : 'text-gray-700 hover:bg-gray-100'
-                    }`}
-                    onClick={closeMainSidebar}
-                  >
-                    <IconComponent className={`mr-3 h-5 w-5 ${isActive ? 'text-primary-500' : 'text-gray-500'}`} />
-                    {item.name}
-                  </a>
-                );
-              })}
-            </nav>
-          </div>
-          
-          {/* User section */}
-          <div className="border-t border-gray-200 p-4">
-            <div className="flex items-center space-x-3">
-              <div className="flex h-10 w-10 items-center justify-center 
-rounded-full bg-primary-100 text-primary-600">
-                {user?.name?.charAt(0) || 'U'}
-              </div>
-              <div className="flex-1 truncate">
-                <p className="text-sm font-medium text-gray-900">{user?.name || 'Demo User'}</p>
-                <p className="truncate text-xs text-gray-500">{user?.email || 'demo@example.com'}</p>
-              </div>
-            </div>
-            
-            <button
-              onClick={logout}
-              className="mt-4 flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
-            >
-              <span className="mr-3 h-5 w-5">🚪</span>
-              Sign out
-            </button>
-          </div>
-        </div>
-      </motion.aside>
+  {activeDrawer && (
+    <motion.div
+      className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+      initial="closed"
+      animate="open"
+      exit="closed"
+      variants={overlayVariants}
+      onClick={() => {
+        setActiveDrawer(null);
+      }}
+    />
+  )}
+</AnimatePresence>
 
       {/* Main Content Area */}
       <div className="lg:pl-64">
