@@ -44,7 +44,7 @@ const MainLayout: React.FC = () => {
 
   const handleDrawerSelect = (drawer: string) => {
     setActiveDrawer((curr) => (curr === drawer ? null : drawer));
-    setDresserOpen(true);
+    setDresserOpen(false);
   };
 
   const handleDresserDragEnd = (_e: any, info: any) => {
