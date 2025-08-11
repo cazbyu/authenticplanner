@@ -6,7 +6,7 @@ import {
   Target, BookOpen, BarChart3, Briefcase, Archive, ChevronRight
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import logo from './assets/logo.svg';
+import logo from '../assets/logo.svg';
 import { useAuth } from './contexts/AuthContext';
 
 // Drawer content components
