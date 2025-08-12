@@ -33,13 +33,14 @@ const navItems = [
 
 const MainLayout: React.FC = () => {
   const { user, logout } = useAuth();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [dresserOpen, setDresserOpen] = useState(false);
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
   const [dresserPosition, setDresserPosition] = useState({ x: 0, y: 0 });
   const location = useLocation();
 
-  const toggleSidebar = () => setSidebarCollapsed((s) => !s);
+  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+const closeSidebar = () => setSidebarOpen(false);
 
   const handleDrawerSelect = (drawer: string) => {
     setActiveDrawer((curr) => (curr === drawer ? null : drawer));
