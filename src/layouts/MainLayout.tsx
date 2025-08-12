@@ -53,6 +53,25 @@ const selectDrawer = (drawer: typeof activeDrawer) => {
     setActiveDrawer(drawer);
 };
 
+const sidebarVariants = {
+    open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
+    closed: { x: '-100%', transition: { type: 'spring', stiffness: 300, damping: 30 } },
+  };
+
+  const drawerVariants = {
+    open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
+    closed: { x: '100%', transition: { type: 'spring', stiffness: 300, damping: 30 } },
+  };
+
+  const overlayVariants = {
+    open: { opacity: 1, transition: { duration: 0.3 } },
+    closed: { opacity: 0, transition: { duration: 0.3 } },
+  };
+
+  const ActiveDrawerComponent = activeDrawer 
+    ? drawerItems.find(item => item.id === activeDrawer)?.component 
+    : null;
+  
   const ActiveDrawerComponent =
     activeDrawer ? drawerItems.find((item) => item.id === activeDrawer)?.component : null;
 
