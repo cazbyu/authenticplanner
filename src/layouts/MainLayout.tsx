@@ -169,11 +169,9 @@ const selectDrawer = (drawer: typeof activeDrawer) => {
 
       {/* Main content pushed by sidebar width */}
       <main
-        className={`flex-1 flex flex-col min-h-0 h-full overflow-hidden transition-all duration-300
-        ${sidebarCollapsed ? 'ml-0' : 'ml-64'}`}
-      >
-        <Outlet />
-      </main>
+        <main className="lg:pl-64">
+    <Outlet />
+</main>
 
       {/* GLOBAL FLOATING DRESSER - Desktop */}
       <div className="fixed top-1/2 right-0 -translate-y-1/2 z-30 hidden lg:block">
