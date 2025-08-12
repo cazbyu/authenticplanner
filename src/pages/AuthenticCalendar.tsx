@@ -411,65 +411,66 @@ if (tasksRes.data) {
 
         {/* Main Content */}
         <main className="h-[calc(100vh-73px)] flex">
-          {/* Your Priorities Sidebar */}
-          {sidebarOpen && activeView === 'calendar' && (
-            <div 
-              ref={sidebarRef}
-              className="border-r border-gray-200 bg-white flex-shrink-0 relative"
-              style={{ width: `${sidebarWidth}px` }}
-            >
-              <div className="h-full flex flex-col">
-                <div className="p-3 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-sm font-semibold text-gray-800">Priority Order</h3>
-                    <button 
-                      onClick={() => setSidebarOpen(false)} 
-                      className="p-1 text-gray-500 hover:bg-gray-100 rounded-md" 
-                      title="Close sidebar"
+            {/* Your Priorities Sidebar */}
+            <AnimatePresence>
+                {sidebarOpen && activeView === 'calendar' && (
+                    <motion.div
+                        ref={sidebarRef}
+                        className="border-r border-gray-200 bg-white flex-shrink-0"
+                        initial={{ width: 0, opacity: 0 }}
+                        animate={{ width: 250, opacity: 1 }}
+                        exit={{ width: 0, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
                     >
-                      <img src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png" alt="Collapse menu" className="h-4 w-4" />
-                    </button>
-                  </div>
-                  <p className="text-xs text-gray-600 mt-1">Drag tasks to reorder by priority</p>
-                </div>
-                <div className="flex-1">
-  <UnscheduledPriorities
-    viewMode={sidebarOpen ? 'quadrant' : 'list'}
-    tasks={tasks}
-    setTasks={setTasks}
-    roles={roles}
-    domains={domains}
-    loading={loading}
-                    />
-                </div>
-            
-              </div>
-              
-              {/* Resize Handle */}
-              <div
-                className="absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-500 transition-colors"
-                onMouseDown={handleMouseDown}
-                title="Drag to resize"
-              />
-            </div>
-          )}
+                        <div className="h-full flex flex-col">
+                            <div className="p-3 border-b border-gray-200">
+                                <div className="flex items-center justify-between">
+                                    <h3 className="text-sm font-semibold text-gray-800">Priority Order</h3>
+                                </div>
+                                <p className="text-xs text-gray-600 mt-1">Drag tasks to reorder by priority</p>
+                            </div>
+                            <div className="flex-1">
+                                <UnscheduledPriorities
+                                    viewMode={sidebarOpen ? 'quadrant' : 'list'}
+                                    tasks={tasks}
+                                    setTasks={setTasks}
+                                    roles={roles}
+                                    domains={domains}
+                                    loading={loading}
+                                />
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-          {/* Main Content Area */}
-          <div className="flex-1 flex flex-relative">
-            {/* Show sidebar toggle when closed */}
-            {!sidebarOpen && activeView === 'calendar' && (
-          <button
-            onClick={() => setSidebarOpen(true)}
-            className="absolute top-20 left-3 z-10 p-1.5 bg-white rounded-md shadow-lg hover:bg-gray-100 transition-colors"
-            title="Show Unscheduled Priorities"
-          >
-            <img
-              src="https://wyipyiahvjcvnwoxwttd.supabase.co/storage/v1/object/public/calendar-attachments//Hamburger.png"
-              alt="Show menu"
-              className="h-5 w-5"
-            />
-          </button>
-        )}
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-relative">
+                {/* Content */}
+                <div className="flex-1 overflow-hidden">
+                    {activeView === 'calendar' ? (
+                        <CalendarView
+                            ref={calendarRef}
+                            view={view}
+                            currentDate={currentDate}
+                            onDateChange={handleDateChange}
+                            refreshTrigger={refreshTrigger}
+                            onTaskUpdated={() => setRefreshTrigger(prev => prev + 1)}
+                        />
+                    ) : (
+                        <div className="h-full overflow-hidden">
+                            <TaskQuadrants
+                                tasks={tasks} // This will include ALL tasks (scheduled and unscheduled)
+                                setTasks={setTasks}
+                                roles={roles}
+                                domains={domains}
+                                loading={loading}
+                            />
+                        </div>
+                    )}
+                </div>
+            </div>
+        </main>
             
             {/* Content */}
             <div className="flex-1 overflow-hidden">
