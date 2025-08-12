@@ -59,8 +59,6 @@ const AuthenticCalendar: React.FC = () => {
   const [activeView, setActiveView] = useState<'calendar' | 'priorities'>('calendar');
   const [mobileNavExpanded, setMobileNavExpanded] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [sidebarWidth, setSidebarWidth] = useState(250);
-  const [resizing, setResizing] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [roles, setRoles] = useState<Record<string, Role>>({});
   const [domains, setDomains] = useState<Record<string, Domain>>({});
@@ -203,32 +201,7 @@ if (tasksRes.data) {
     e.preventDefault();
   };
 
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!resizing) return;
-      
-      const newWidth = e.clientX;
-      if (newWidth >= 200 && newWidth <= 600) {
-        setSidebarWidth(newWidth);
-      }
-    };
-
-    const handleMouseUp = () => {
-      setResizing(false);
-    };
-
-    if (resizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-  }, [resizing]);
-
-    const handleDrawerSelect = (drawer: typeof activeDrawer) => {
+      const handleDrawerSelect = (drawer: typeof activeDrawer) => {
     if (activeDrawer === drawer) {
       // If clicking the same drawer, close it
       setActiveDrawer(null);
