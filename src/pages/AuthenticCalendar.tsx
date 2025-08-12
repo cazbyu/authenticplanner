@@ -320,7 +320,12 @@ if (tasksRes.data) {
         <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
           {/* Left Section */}
           <div className="flex items-center space-x-4">
-                        
+            <button
+                onClick={() => setSidebarOpen(!sidebarOpen)}
+                className="p-1.5 hover:bg-gray-100 rounded-full transition-colors"
+            >
+                <Menu className="h-5 w-5 text-gray-600" />
+            </button>
          </div>
 
           {/* Right Section */}
