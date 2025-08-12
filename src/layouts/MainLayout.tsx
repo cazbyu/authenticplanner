@@ -72,9 +72,6 @@ const sidebarVariants = {
     ? drawerItems.find(item => item.id === activeDrawer)?.component 
     : null;
   
-  const ActiveDrawerComponent =
-    activeDrawer ? drawerItems.find((item) => item.id === activeDrawer)?.component : null;
-
   return (
     <div className="min-h-screen h-full flex flex-col bg-gray-50">
       {/* Mobile header */}
