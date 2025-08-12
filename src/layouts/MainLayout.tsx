@@ -75,7 +75,7 @@ const MainLayout: React.FC = () => {
       {/* Left Sidebar - always mounted; collapses from 64 to 16 */}
       <aside
         className={`fixed inset-y-0 left-0 z-50 bg-white shadow-lg transition-all duration-300 flex flex-col
-        ${sidebarCollapsed ? 'w-16' : 'w-64'}`}
+        ${sidebarCollapsed ? 'hidden' : 'w-64'}`}
       >
         {/* Spacer for header height */}
         <div className="h-16" />
