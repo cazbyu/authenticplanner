@@ -169,7 +169,7 @@ const selectDrawer = (drawer: typeof activeDrawer) => {
 
       {/* Main content pushed by sidebar width */}
       <main
-        <main className="lg:pl-64">
+        className="lg:pl-64">
     <Outlet />
 </main>
 
