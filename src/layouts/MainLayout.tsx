@@ -131,7 +131,7 @@ const MainLayout: React.FC = () => {
       {/* Main content pushed by sidebar width */}
       <main
         className={`flex-1 flex flex-col min-h-0 h-full overflow-hidden transition-all duration-300
-        ${sidebarCollapsed ? 'ml-16' : 'ml-64'}`}
+        ${sidebarCollapsed ? 'ml-0' : 'ml-64'}`}
       >
         <Outlet />
       </main>
