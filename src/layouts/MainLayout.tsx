@@ -1,8 +1,9 @@
 // MainLayout.tsx
 import React, { useState } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import { Menu, Home, Calendar, Settings, Users, Compass, Clock,
-  Target, BookOpen, BarChart3, Briefcase, Archive, ChevronRight
+import { 
+  Menu, Home, Calendar, Settings, Users, Compass, Clock,
+  Target, BookOpen, BarChart3, Briefcase, Archive, ChevronRight, X, LogOut, Drama as Drawer 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import logo from '../assets/logo.svg';
