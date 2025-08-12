@@ -34,23 +34,24 @@ const navItems = [
 
 const MainLayout: React.FC = () => {
   const { user, logout } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [dresserOpen, setDresserOpen] = useState(false);
-  const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
-  const [dresserPosition, setDresserPosition] = useState({ x: 0, y: 0 });
-  const location = useLocation();
+const [sidebarOpen, setSidebarOpen] = useState(false);
+const [drawerOpen, setDrawerOpen] = useState(false);
+const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
+const location = useLocation();
 
-  const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
+const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
 const closeSidebar = () => setSidebarOpen(false);
 
-  const handleDrawerSelect = (drawer: string) => {
-    setActiveDrawer((curr) => (curr === drawer ? null : drawer));
-    setDresserOpen(false);
-  };
+const toggleDrawer = () => {
+    setDrawerOpen(!drawerOpen);
+    if (!drawerOpen) {
+    setActiveDrawer(null);
+    }
+};
 
-  const handleDresserDragEnd = (_e: any, info: any) => {
-    setDresserPosition({ x: info.point.x, y: info.point.y });
-  };
+const selectDrawer = (drawer: typeof activeDrawer) => {
+    setActiveDrawer(drawer);
+};
 
   const ActiveDrawerComponent =
     activeDrawer ? drawerItems.find((item) => item.id === activeDrawer)?.component : null;
