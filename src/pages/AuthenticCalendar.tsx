@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Plus, ChevronLeft, ChevronRight, ChevronDown, Calendar as CalendarIcon, CheckSquare, Users, Target, BookOpen, BarChart3, Briefcase, X, Archive, Compass, Menu } from 'lucide-react';
-import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
 import TaskEventForm from '../components/tasks/TaskEventForm';
 import CalendarView from '../components/calendar/CalendarView';
 import TaskQuadrants from '../components/tasks/TaskQuadrants';
@@ -53,7 +53,6 @@ const AuthenticCalendar: React.FC = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<'timeGridDay' | 'timeGridWeek' | 'dayGridMonth'>('timeGridWeek');
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [isViewChanging, setIsViewChanging] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
   const [activeView, setActiveView] = useState<'calendar' | 'priorities'>('calendar');
@@ -64,14 +63,11 @@ const AuthenticCalendar: React.FC = () => {
   const [domains, setDomains] = useState<Record<string, Domain>>({});
   const calendarRef = useRef<FullCalendar | null>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const { user, logout } = useAuth();
-  const [miniSelectedDate, setMiniSelectedDate] = useState(new Date());
-const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(new Date());
+  const { user } = useAuth();
   
   useEffect(() => {
     const calendarApi = calendarRef.current?.getApi();
     if (calendarApi && (view === 'timeGridWeek' || view === 'timeGridDay')) {
-      // Use a short timeout to ensure the calendar has finished rendering
       setTimeout(() => {
         const now = new Date();
         const currentTime = format(now, 'HH:mm:ss');
@@ -80,7 +76,6 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
     }
   }, [view, refreshTrigger]);
 
-  // Fetch all task data
   useEffect(() => {
     fetchAllTaskData();
   }, [refreshTrigger]);
@@ -88,7 +83,6 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
   const fetchAllTaskData = async () => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
-      console.warn('No authenticated user found when fetching tasks');
       setLoading(false);
       return;
     }
@@ -96,53 +90,50 @@ const [miniCalendarActiveStartDate, setMiniCalendarActiveStartDate] = useState(n
     setLoading(true);
     
     try {
-      // Fetch tasks, roles, and domains
       const tasksRes = await supabase
-  .from('0007-ap-tasks')
-  .select('*')
-  .eq('user_id', user.id)
-  .in('status', ['pending', 'in_progress']);
+        .from('0007-ap-tasks')
+        .select('*')
+        .eq('user_id', user.id)
+        .in('status', ['pending', 'in_progress']);
 
-  const taskIds = (tasksRes.data || []).map(t => t.id);
+      const taskIds = (tasksRes.data || []).map(t => t.id);
 
       const [rolesJoinRes, domainsJoinRes, rolesRes, domainsRes] = await Promise.all([
-  supabase
-    .from('0007-ap-universal-roles-join')
-    .select('parent_id, role_id, parent_type')
-    .in('parent_id', taskIds)
-    .eq('parent_type', 'task'),
-  supabase
-    .from('0007-ap-universal-domains-join')
-    .select('parent_id, domain_id, parent_type')
-    .in('parent_id', taskIds)
-    .eq('parent_type', 'task'),
-  supabase
-    .from('0007-ap-roles')
-    .select('id, label')
-    .eq('user_id', user.id)
-    .eq('is_active', true),
-  supabase
-    .from('0007-ap-domains')
-    .select('id, name')
-]);
-
+        supabase
+          .from('0007-ap-universal-roles-join')
+          .select('parent_id, role_id, parent_type')
+          .in('parent_id', taskIds)
+          .eq('parent_type', 'task'),
+        supabase
+          .from('0007-ap-universal-domains-join')
+          .select('parent_id, domain_id, parent_type')
+          .in('parent_id', taskIds)
+          .eq('parent_type', 'task'),
+        supabase
+          .from('0007-ap-roles')
+          .select('id, label')
+          .eq('user_id', user.id)
+          .eq('is_active', true),
+        supabase
+          .from('0007-ap-domains')
+          .select('id, name')
+      ]);
 
       const rolesJoin = rolesJoinRes.data || [];
-const domainsJoin = domainsJoinRes.data || [];
+      const domainsJoin = domainsJoinRes.data || [];
 
-if (tasksRes.data) {
-  const normalizedTasks = tasksRes.data.map(task => ({
-    ...task,
-    task_roles: rolesJoin
-      .filter(r => r.parent_id === task.id)
-      .map(r => ({ role_id: r.role_id })),
-    task_domains: domainsJoin
-      .filter(d => d.parent_id === task.id)
-      .map(d => ({ domain_id: d.domain_id })),
-  }));
-  setTasks(normalizedTasks);
-}
-
+      if (tasksRes.data) {
+        const normalizedTasks = tasksRes.data.map(task => ({
+          ...task,
+          task_roles: rolesJoin
+            .filter(r => r.parent_id === task.id)
+            .map(r => ({ role_id: r.role_id })),
+          task_domains: domainsJoin
+            .filter(d => d.parent_id === task.id)
+            .map(d => ({ domain_id: d.domain_id })),
+        }));
+        setTasks(normalizedTasks);
+      }
 
       if (rolesRes.data) {
         const rolesMap = rolesRes.data.reduce((acc, role) => ({ ...acc, [role.id]: role }), {});
@@ -160,7 +151,6 @@ if (tasksRes.data) {
   };
 
   const handleDateChange = (newStart: Date) => {
-    // Always update the current date when calendar changes
     setCurrentDate(newStart);
   };
 
@@ -168,7 +158,6 @@ if (tasksRes.data) {
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
       calendarApi.prev();
-      // Get the new date after navigation and update state
       const newDate = calendarApi.getDate();
       setCurrentDate(newDate);
     }
@@ -178,38 +167,29 @@ if (tasksRes.data) {
     if (calendarRef.current) {
       const calendarApi = calendarRef.current.getApi();
       calendarApi.next();
-      // Get the new date after navigation and update state
       const newDate = calendarApi.getDate();
       setCurrentDate(newDate);
     }
   };
 
   const handleViewChange = (newView: 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth') => {
-  setView(newView);
-  if (newView === 'timeGridDay') {
-    setCurrentDate(new Date());
-  }
-};
+    setView(newView);
+    if (newView === 'timeGridDay') {
+      setCurrentDate(new Date());
+    }
+  };
 
   const handleTaskCreated = () => {
     setShowTaskEventForm(false);
     setRefreshTrigger(prev => prev + 1);
   };
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    setResizing(true);
-    e.preventDefault();
-  };
-
-      const handleDrawerSelect = (drawer: typeof activeDrawer) => {
+  const handleDrawerSelect = (drawer: typeof activeDrawer) => {
     if (activeDrawer === drawer) {
-      // If clicking the same drawer, close it
       setActiveDrawer(null);
     } else {
-      // Open the selected drawer
       setActiveDrawer(drawer);
     }
-    // Close mobile nav when selecting a drawer
     setMobileNavExpanded(false);
   };
 
@@ -223,13 +203,11 @@ if (tasksRes.data) {
         const isSameMonth = weekStart.getMonth() === weekEnd.getMonth();
 
         if (isSameMonth) {
-          // Example: "Jul 21 – 27, 2025"
           return `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'd, yyyy')}`;
         } else {
-          // Example: "Jul 27 – Aug 2, 2025"
           return `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d, yyyy')}`;
         }
-        }
+      }
       case 'dayGridMonth':
         return format(currentDate, 'MMMM yyyy');
       default:
@@ -237,88 +215,46 @@ if (tasksRes.data) {
     }
   };
 
-  const navItems = [
-    { name: 'Authentic Calendar', path: '/', icon: CalendarIcon },
-    { name: '12 Week Cycle', path: '/twelve-week-cycle', icon: CheckSquare },
-    { name: 'Role Bank', path: '/role-bank', icon: Users },
-    { name: 'Domain Dashboard', path: '/domains', icon: Compass },
-    { name: 'Settings', path: '/settings', icon: CheckSquare },
-  ];
-
   const drawerItems = [
-    {
-      id: 'tasks',
-      title: 'Tasks',
-      description: 'View and manage your tasks',
-      icon: Briefcase,
-      component: Tasks
-    },
-    {
-      id: 'goals',
-      title: 'Strategic Goals',
-      description: 'Review your mission, vision, and goals',
-      icon: Target,
-      component: StrategicGoals
-    },
- 
-    {
-      id: 'reflections',
-      title: 'Reflections',
-      description: 'View your task-related notes and reflections',
-      icon: BookOpen,
-      component: Reflections
-    },
-    {
-      id: 'scorecard',
-      title: 'Scorecard',
-      description: 'Track your balance and progress',
-      icon: BarChart3,
-      component: Scorecard
-    }
+    { id: 'tasks', title: 'Tasks', icon: Briefcase, component: Tasks },
+    { id: 'goals', title: 'Strategic Goals', icon: Target, component: StrategicGoals },
+    { id: 'reflections', title: 'Reflections', icon: BookOpen, component: Reflections },
+    { id: 'scorecard', title: 'Scorecard', icon: BarChart3, component: Scorecard }
   ];
-
-  const sidebarVariants = {
-    open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
-    closed: { x: '-100%', transition: { type: 'spring', stiffness: 300, damping: 30 } },
-  };
-
-  const drawerVariants = {
-    open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
-    closed: { x: '100%', transition: { type: 'spring', stiffness: 300, damping: 30 } },
-  };
 
   const overlayVariants = {
     open: { opacity: 1, transition: { duration: 0.3 } },
     closed: { opacity: 0, transition: { duration: 0.3 } },
   };
 
+  const drawerVariants = {
+    open: { x: 0, transition: { type: 'spring', stiffness: 300, damping: 30 } },
+    closed: { x: '100%', transition: { type: 'spring', stiffness: 300, damping: 30 } },
+  };
+  
   const ActiveDrawerComponent = activeDrawer 
     ? drawerItems.find(item => item.id === activeDrawer)?.component 
     : null;
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile sidebar overlay */}
       <AnimatePresence>
-  {activeDrawer && (
-    <motion.div
-      className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
-      initial="closed"
-      animate="open"
-      exit="closed"
-      variants={overlayVariants}
-      onClick={() => {
-        setActiveDrawer(null);
-      }}
-    />
-  )}
-</AnimatePresence>
+        {activeDrawer && (
+          <motion.div
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={overlayVariants}
+            onClick={() => {
+              setActiveDrawer(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* Main Content Area */}
       <div>
-        {/* Header */}
         <header className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-white">
-          {/* Left Section */}
           <div className="flex items-center space-x-4">
             <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -326,12 +262,9 @@ if (tasksRes.data) {
             >
                 <Menu className="h-5 w-5 text-gray-600" />
             </button>
-         </div>
+          </div>
 
-          {/* Right Section */}
           <div className="flex items-center space-x-2">
-
-            {/* View Toggle */}
             <div className="flex items-center bg-gray-100 rounded-lg p-1">
               <button
                 onClick={() => setActiveView('calendar')}
@@ -357,10 +290,8 @@ if (tasksRes.data) {
               </button>
             </div>
 
-         {/* Calendar Controls - Only show for calendar view */}
-{activeView === 'calendar' && (
+            {activeView === 'calendar' && (
               <>
-                {/* Date Navigation */}
                 <div className="flex items-center space-x-1">
                   <button
                     onClick={handlePrevious}
@@ -375,21 +306,16 @@ if (tasksRes.data) {
                     <ChevronRight className="h-3 w-3 text-gray-600" />
                   </button>
                 </div>
-
-                <span className="text-lg font-medium">
-                  {getDateDisplayText()}
-                </span>
-
-                {/* Calendar View Dropdown */}
+                <span className="text-lg font-medium">{getDateDisplayText()}</span>
                 <div className="relative">
                   <select
                     value={view}
                     onChange={(e) => handleViewChange(e.target.value as 'timeGridDay' | 'timeGridWeek' | 'dayGridMonth')}
                     className="appearance-none bg-white border border-gray-300 rounded-sm px-3 py-1.5 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
                   >
-                    <option value="timeGridDay">Day View</option>
-                    <option value="timeGridWeek">Week View</option>
-                    <option value="dayGridMonth">Month View</option>
+                    <option value="timeGridDay">Day</option>
+                    <option value="timeGridWeek">Week</option>
+                    <option value="dayGridMonth">Month</option>
                   </select>
                   <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400 pointer-events-none" />
                 </div>
@@ -409,29 +335,25 @@ if (tasksRes.data) {
           </div>
         </header>
 
-        {/* Main Content */}
         <main className="h-[calc(100vh-73px)] flex">
-            {/* Your Priorities Sidebar */}
             <AnimatePresence>
                 {sidebarOpen && activeView === 'calendar' && (
                     <motion.div
                         ref={sidebarRef}
-                        className="border-r border-gray-200 bg-white flex-shrink-0"
+                        className="border-r border-gray-200 bg-white flex-shrink-0 overflow-hidden"
                         initial={{ width: 0, opacity: 0 }}
                         animate={{ width: 250, opacity: 1 }}
                         exit={{ width: 0, opacity: 0 }}
                         transition={{ duration: 0.3 }}
                     >
-                        <div className="h-full flex flex-col">
+                        <div className="h-full flex flex-col w-[250px]">
                             <div className="p-3 border-b border-gray-200">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="text-sm font-semibold text-gray-800">Priority Order</h3>
-                                </div>
-                                <p className="text-xs text-gray-600 mt-1">Drag tasks to reorder by priority</p>
+                                <h3 className="text-sm font-semibold text-gray-800">Priority Order</h3>
+                                <p className="text-xs text-gray-600 mt-1">Drag tasks to reorder</p>
                             </div>
                             <div className="flex-1">
                                 <UnscheduledPriorities
-                                    viewMode={sidebarOpen ? 'quadrant' : 'list'}
+                                    viewMode={'quadrant'}
                                     tasks={tasks}
                                     setTasks={setTasks}
                                     roles={roles}
@@ -444,9 +366,7 @@ if (tasksRes.data) {
                 )}
             </AnimatePresence>
 
-            {/* Main Content Area */}
-            <div className="flex-1 flex flex-relative">
-                {/* Content */}
+            <div className="flex-1 flex relative">
                 <div className="flex-1 overflow-hidden">
                     {activeView === 'calendar' ? (
                         <CalendarView
@@ -460,7 +380,7 @@ if (tasksRes.data) {
                     ) : (
                         <div className="h-full overflow-hidden">
                             <TaskQuadrants
-                                tasks={tasks} // This will include ALL tasks (scheduled and unscheduled)
+                                tasks={tasks}
                                 setTasks={setTasks}
                                 roles={roles}
                                 domains={domains}
@@ -471,58 +391,23 @@ if (tasksRes.data) {
                 </div>
             </div>
         </main>
-            
-            {/* Content */}
-            <div className="flex-1 overflow-hidden">
-              {activeView === 'calendar' ? (
-                <CalendarView
-                  ref={calendarRef}
-                  view={view}
-                  currentDate={currentDate}
-                  onDateChange={handleDateChange}
-                  refreshTrigger={refreshTrigger}
-                  onTaskUpdated={() => setRefreshTrigger(prev => prev + 1)}
-                />
-              ) : (
-                <div className="h-full overflow-hidden">
-                  <TaskQuadrants
-                    tasks={tasks} // This will include ALL tasks (scheduled and unscheduled)
-                    setTasks={setTasks}
-                    roles={roles}
-                    domains={domains}
-                    loading={loading}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
-        </main>
       </div>
 
-      {/* GLOBAL FLOATING DRESSER - Desktop Navigation Bar */}
       <div className="fixed top-1/2 right-0 transform -translate-y-1/2 z-30 hidden lg:block">
         <div className="bg-white border-l border-t border-b border-gray-200 rounded-l-lg shadow-lg overflow-hidden">
           <div className="flex flex-col">
             {drawerItems.map((item) => {
               const IconComponent = item.icon;
               const isActive = activeDrawer === item.id;
-              
               return (
                 <button
                   key={item.id}
                   onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
-                  className={`
-                    group relative p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200 overflow-hidden
-                    ${isActive 
-                      ? 'bg-blue-50 text-blue-600 border-r-3 border-r-blue-600 shadow-sm' 
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }
-                  `}
+                  className={`group relative p-3 border-b border-gray-100 last:border-b-0 transition-all duration-200 overflow-hidden ${isActive ? 'bg-blue-50 text-blue-600 border-r-3 border-r-blue-600 shadow-sm' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'}`}
                   title={item.title}
                   aria-label={item.title}
                 >
                   <IconComponent className="h-5 w-5" />
-                  
                   {!isActive && (
                     <div className="absolute right-full mr-3 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50 whitespace-nowrap">
                       <div className="bg-gray-900 text-white text-xs rounded-md px-2 py-1 whitespace-nowrap shadow-lg">
@@ -538,7 +423,6 @@ if (tasksRes.data) {
         </div>
       </div>
 
-      {/* GLOBAL FLOATING DRESSER - Mobile Expandable Stack */}
       <div className="fixed bottom-4 right-4 z-30 lg:hidden">
         {!mobileNavExpanded ? (
           <button
@@ -557,22 +441,14 @@ if (tasksRes.data) {
             >
               <X className="h-5 w-5" />
             </button>
-            
             {drawerItems.map((item) => {
               const IconComponent = item.icon;
               const isActive = activeDrawer === item.id;
-              
               return (
                 <button
                   key={item.id}
                   onClick={() => handleDrawerSelect(item.id as typeof activeDrawer)}
-                  className={`
-                    flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-colors
-                    ${isActive 
-                      ? 'bg-blue-600 text-white' 
-                      : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
-                    }
-                  `}
+                  className={`flex items-center justify-center w-12 h-12 rounded-full shadow-lg transition-colors ${isActive ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'}`}
                   title={item.title}
                   aria-label={item.title}
                 >
@@ -584,7 +460,6 @@ if (tasksRes.data) {
         )}
       </div>
       
-      {/* GLOBAL FLOATING DRESSER - Drawer Content */}
       <AnimatePresence>
         {activeDrawer && (
           <motion.div
@@ -596,9 +471,7 @@ if (tasksRes.data) {
           >
             <div className="flex h-full flex-col">
               <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {drawerItems.find(item => item.id === activeDrawer)?.title}
-                </h2>
+                <h2 className="text-lg font-semibold text-gray-900">{drawerItems.find(item => item.id === activeDrawer)?.title}</h2>
                 <button
                   onClick={() => setActiveDrawer(null)}
                   className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
@@ -607,7 +480,6 @@ if (tasksRes.data) {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              
               <div className="flex-1 overflow-y-auto">
                 {ActiveDrawerComponent && (
                   <div className="p-4">
@@ -620,52 +492,17 @@ if (tasksRes.data) {
         )}
       </AnimatePresence>
 
-      {/* TaskEventForm Modal */}
       {showTaskTypeMenu && (
         <>
-          <div 
-            className="fixed inset-0 z-40" 
-            onClick={() => setShowTaskTypeMenu(false)}
-          />
-          <div 
-            className="fixed z-50 bg-white rounded-md shadow-lg py-1 border border-gray-200"
-            style={{ top: taskTypeMenuPosition.top + 5, left: taskTypeMenuPosition.left }}
-          >
-            <button
-              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
-              onClick={() => {
-                setTaskType('event');
-                setShowTaskTypeMenu(false);
-                setShowTaskEventForm(true);
-              }}
-            >
-              Event
-            </button>
-            <button
-              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
-              onClick={() => {
-                setTaskType('task');
-                setShowTaskTypeMenu(false);
-                setShowTaskEventForm(true);
-              }}
-            >
-              Task
-            </button>
-            <button
-              className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors"
-              onClick={() => {
-                setTaskType('depositIdea');
-                setShowTaskTypeMenu(false);
-                setShowTaskEventForm(true);
-              }}
-            >
-              Deposit Idea
-            </button>
+          <div className="fixed inset-0 z-40" onClick={() => setShowTaskTypeMenu(false)} />
+          <div className="fixed z-50 bg-white rounded-md shadow-lg py-1 border border-gray-200" style={{ top: taskTypeMenuPosition.top + 5, left: taskTypeMenuPosition.left }}>
+            <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors" onClick={() => { setTaskType('event'); setShowTaskTypeMenu(false); setShowTaskEventForm(true); }}>Event</button>
+            <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors" onClick={() => { setTaskType('task'); setShowTaskTypeMenu(false); setShowTaskEventForm(true); }}>Task</button>
+            <button className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 transition-colors" onClick={() => { setTaskType('depositIdea'); setShowTaskTypeMenu(false); setShowTaskEventForm(true); }}>Deposit Idea</button>
           </div>
         </>
       )}
 
-      {/* Task/Event Form Modal */}
       {showTaskEventForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
           <div className="w-full max-w-2xl">
