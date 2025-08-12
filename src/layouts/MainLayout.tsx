@@ -56,78 +56,114 @@ const closeSidebar = () => setSidebarOpen(false);
 
   return (
     <div className="min-h-screen h-full flex flex-col bg-gray-50">
-      {/* Header - always visible */}
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-4 shadow-sm md:px-6">
-        <button
+      {/* Mobile header */}
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between bg-white px-4 shadow-sm md:px-6 lg:hidden">
+        <button 
           onClick={toggleSidebar}
-          className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-          aria-label={sidebarCollapsed ? 'Expand menu' : 'Collapse menu'}
-          title={sidebarCollapsed ? 'Expand menu' : 'Collapse menu'}
+          className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
+          aria-label="Toggle menu"
         >
           <Menu className="h-6 w-6" />
         </button>
-
-        <div className="flex items-center gap-2">
+        
+        <div className="flex items-center space-x-2">
           <img src={logo} alt="Authentic Planner" className="h-8 w-8" />
           <span className="text-lg font-bold text-primary-600">Authentic Planner</span>
         </div>
+        
+        <button
+          onClick={toggleDrawer}
+          className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600"
+          aria-label="Toggle floating dresser"
+        >
+          <Drawer className="h-6 w-6" />
+        </button>
       </header>
-
-      {/* Left Sidebar - always mounted; collapses from 64 to 16 */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 bg-white shadow-lg transition-all duration-300 flex flex-col
-        ${sidebarCollapsed ? 'hidden' : 'w-64'}`}
+      
+      {/* Mobile sidebar overlay */}
+      <AnimatePresence>
+        {(sidebarOpen || drawerOpen) && (
+          <motion.div 
+            className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+            initial="closed"
+            animate="open"
+            exit="closed"
+            variants={overlayVariants}
+            onClick={() => {
+              closeSidebar();
+              setDrawerOpen(false);
+              setActiveDrawer(null);
+            }}
+          />
+        )}
+      </AnimatePresence>
+      
+      {/* Sidebar */}
+      <motion.aside
+        className="fixed inset-y-0 left-0 z-50 w-64 bg-white shadow-lg lg:z-10 lg:shadow-none"
+        initial="closed"
+        animate={sidebarOpen ? 'open' : 'closed'}
+        variants={sidebarVariants}
       >
-        {/* Spacer for header height */}
-        <div className="h-16" />
-
-        {/* Nav Links */}
-        <nav className="flex-1 overflow-y-auto px-2 py-4">
-          {navItems.map((item) => {
-            const isActive =
-              location.pathname === item.path ||
-              (item.path !== '/' && location.pathname.startsWith(item.path));
-            const ItemIcon = item.icon;
-            return (
-              <Link
-                key={item.path}
-                to={item.path}
-                className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors
-                  ${isActive ? 'bg-primary-50 text-primary-600' : 'text-gray-700 hover:bg-gray-100'}
-                  ${sidebarCollapsed ? 'justify-center px-2' : ''}`}
-                title={item.name}
-              >
-                <ItemIcon className="h-5 w-5" />
-                {!sidebarCollapsed && <span>{item.name}</span>}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* User info & Sign out */}
-        <div className={`border-t border-gray-200 p-4 ${sidebarCollapsed ? 'px-1' : ''}`}>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-600">
-              {user?.name?.charAt(0) || 'U'}
-            </div>
-            {!sidebarCollapsed && (
-              <div className="flex-1 truncate">
-                <p className="text-sm font-medium text-gray-900">{user?.name || 'User'}</p>
-                <p className="truncate text-xs text-gray-500">{user?.email || ''}</p>
-              </div>
-            )}
+        <div className="flex h-full flex-col">
+          <div className="flex h-16 items-center justify-between px-4">
+            <div className="w-8" /> {/* Spacer */}
+            <button 
+              onClick={closeSidebar}
+              className="rounded-md p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-600 lg:hidden"
+              aria-label="Close menu"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-
-          <button
-            onClick={logout}
-            className={`mt-3 w-full flex items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm hover:bg-gray-50
-              ${sidebarCollapsed ? 'px-2' : ''}`}
-          >
-            <ChevronRight className="h-4 w-4" />
-            {!sidebarCollapsed && <span>Sign out</span>}
-          </button>
+          
+          <div className="flex-1 overflow-y-auto px-3 py-4">
+           <nav className="space-y-1">
+              {navItems.map((item) => {
+                const isActive = location.pathname === item.path;
+                const ItemIcon = item.icon;
+                
+                return (
+                   <Link
+                    key={item.path}
+                    to={item.path}
+                    className={`group flex items-center rounded-md px-3 py-2 text-sm font-medium ${
+                       isActive
+                        ? 'bg-primary-50 text-primary-600'
+                        : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                    onClick={closeSidebar}
+                  >
+                   <ItemIcon className={`mr-3 h-5 w-5 ${isActive ? 'text-primary-500' : 'text-gray-500'}`} />
+                    {item.name}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+          
+          {/* User section */}
+          <div className="border-t border-gray-200 p-4">
+            <div className="flex items-center space-x-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary-100 text-primary-600">
+                 {user?.name.charAt(0) || 'U'}
+              </div>
+              <div className="flex-1 truncate">
+                <p className="text-sm font-medium text-gray-900">{user?.name}</p>
+                <p className="truncate text-xs text-gray-500">{user?.email}</p>
+              </div>
+            </div>
+            
+            <button
+              onClick={logout}
+              className="mt-4 flex w-full items-center rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
+            >
+              <LogOut className="mr-3 h-5 w-5" />
+               Sign out
+            </button>
+          </div>
         </div>
-      </aside>
+      </motion.aside>
 
       {/* Main content pushed by sidebar width */}
       <main
