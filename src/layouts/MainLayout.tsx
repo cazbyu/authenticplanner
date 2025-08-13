@@ -37,6 +37,8 @@ const MainLayout: React.FC = () => {
 const [sidebarOpen, setSidebarOpen] = useState(false);
 const [drawerOpen, setDrawerOpen] = useState(false);
 const [activeDrawer, setActiveDrawer] = useState<'tasks' | 'goals' | 'reflections' | 'scorecard' | null>(null);
+const [dresserOpen, setDresserOpen] = useState(false);
+const [dresserPosition, setDresserPosition] = useState({ x: 0, y: 0 });
 const location = useLocation();
 
 const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
@@ -51,6 +53,15 @@ const toggleDrawer = () => {
 
 const selectDrawer = (drawer: typeof activeDrawer) => {
     setActiveDrawer(drawer);
+};
+
+const handleDrawerSelect = (drawer: typeof activeDrawer) => {
+  setActiveDrawer(drawer);
+  setDresserOpen(true);
+};
+
+const handleDresserDragEnd = (event: any, info: any) => {
+  setDresserPosition({ x: info.offset.x, y: info.offset.y });
 };
 
 const sidebarVariants = {
